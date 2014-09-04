@@ -1,7 +1,6 @@
 {
     "name":"kassko/data-access",
-    "description":"Bundle pour l'accès aux données et le mapping en objet des données",
-    "keywords":["hydration", "hydrate", "extract", "data", , "access", "mapper"],
+    "keywords":["hydration", "hydrate", "extract", "data", "access", "mapper"],
     "require":{
         "php":">=5.5.0",
         "doctrine/common": "~2.4",
