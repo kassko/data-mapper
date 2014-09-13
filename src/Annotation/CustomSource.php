@@ -3,26 +3,20 @@
 namespace Kassko\DataAccess\Annotation;
 
 /**
-* Property annotations to be used in ToOne annotations or ToMany annotations.
-*
-* @author kko
+* @Annotation
+* @Target("PROPERTY")
 */
-trait AssociationCommonTrait
+final class CustomSource
 {
-	/**
+    /**
      * @var string
      */
-    public $entityClass;
+    public $class;
 
     /**
      * @var string
      */
-    public $repositoryClass;
-
-    /**
-     * @var string
-     */
-    public $findMethod;
+    public $method;
 
     /**
      * La stratégie de récupération à utiliser pour cette association

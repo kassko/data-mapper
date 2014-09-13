@@ -45,6 +45,12 @@ class ClassMetadata
     private $fieldsWithHydrationStrategy = [];
     private $toOneAssociations = [];
     private $toManyAssociations = [];
+
+    /**
+     * Source (class and method) which hydrate a field.
+     * @var array
+     */
+    private $customHydrationSource = [];
     private $objectListenerClasses = [];
     private $idGetter;
     private $idSetter;
@@ -187,7 +193,7 @@ class ClassMetadata
             ||
             ! isset($this->toOneAssociations[$mappedFieldName]['findMethod'])
             ||
-            ! isset($this->toOneAssociations[$mappedFieldName]['lazyFetching'])
+            ! isset($this->toOneAssociations[$mappedFieldName]['lazyLoading'])
         ) {
             throw ObjectMappingException::notFoundAssociationInfo($mappedFieldName, $this->reflectionClass->getName());
         }
@@ -196,7 +202,7 @@ class ClassMetadata
             $this->toOneAssociations[$mappedFieldName]['entityClass'],
             isset($this->toOneAssociations[$mappedFieldName]['repositoryClass']) ? $this->toOneAssociations[$mappedFieldName]['repositoryClass'] : null,
             $this->toOneAssociations[$mappedFieldName]['findMethod'],
-            $this->toOneAssociations[$mappedFieldName]['lazyFetching'],
+            $this->toOneAssociations[$mappedFieldName]['lazyLoading'],
         ];
     }
 
@@ -206,7 +212,7 @@ class ClassMetadata
             throw ObjectMappingException::notFoundAssociation($mappedFieldName, $this->reflectionClass->getName());
         }
 
-        $infoKeys = ['name', 'entityClass', 'findMethod', 'lazyFetching'];
+        $infoKeys = ['name', 'entityClass', 'findMethod', 'lazyLoading'];
         foreach ($infoKeys as $infoKey) {
 
             if (! isset($this->toManyAssociations[$mappedFieldName][$infoKey])) {
@@ -220,7 +226,7 @@ class ClassMetadata
             $this->toManyAssociations[$mappedFieldName]['entityClass'],
             isset($this->toManyAssociations[$mappedFieldName]['repositoryClass']) ? $this->toManyAssociations[$mappedFieldName]['repositoryClass'] : null,
             $this->toManyAssociations[$mappedFieldName]['findMethod'],
-            $this->toManyAssociations[$mappedFieldName]['lazyFetching'],
+            $this->toManyAssociations[$mappedFieldName]['lazyLoading'],
         ];
     }
 
@@ -601,7 +607,7 @@ class ClassMetadata
         return $this->fieldsWithHydrationStrategy;
     }
 
-    //Kassko: A REVOIR ! Ici n'est pas le lieu pour faire ce traitement.
+    //Kassko: TO REVIEW.
     public function setFieldsWithHydrationStrategy(array $fieldsWithHydrationStrategy)
     {
         $this->fieldsWithHydrationStrategy = $fieldsWithHydrationStrategy;
@@ -705,7 +711,7 @@ class ClassMetadata
     public function getTypeOfMappedField($mappedFieldName)
     {
         if (null != $data = $this->getDataForField($mappedFieldName, $this->columnDataName)) {
-            return $data['type'];//<=== A REVOIR !!! Kassko
+            return $data['type'];//<=== TO REVIEW !!! Kassko
         }
 
         return 'string';
@@ -919,4 +925,60 @@ class ClassMetadata
 
         return $this->fieldsDataByKey[$mappedFieldName][$columnDataName];
     }
+
+    /**
+     * Gets the Source (class and method) which hydrate a field.
+     *
+     * @return array
+     */
+    /*
+    public function getCustomHydrationSources()
+    {
+        return $this->customHydrationSource;
+    }
+    */
+
+    public function hasCustomHydrationSource($mappedFieldName)
+    {
+        return isset($this->customHydrationSource[$mappedFieldName]);
+    }
+
+    public function getFieldsWithCustomHydrationSource()
+    {
+        return array_keys($this->customHydrationSource);
+    }
+
+    public function getCustomHydrationSourceInfo($mappedFieldName)
+    {
+        return [
+            $this->customHydrationSource[$mappedFieldName]['class'],
+            $this->customHydrationSource[$mappedFieldName]['method'],
+            $this->customHydrationSource[$mappedFieldName]['lazyLoading']
+        ];
+    }
+
+    /**
+     * Sets the Source (class and method) which hydrate a field.
+     *
+     * @param array $customHydrationSource the hydration sources
+     *
+     * @return self
+     */
+    public function setCustomHydrationSources(array $customHydrationSource)
+    {
+        $this->customHydrationSource = $customHydrationSource;
+
+        return $this;
+    }
+
+    /*
+    public function getHydrationSourcesByIndexedBySources(array $hydrationSources)
+    {
+        $key = $annotation->class.$annotation->hydrationMethod;
+        if (! isset($sourcesAnnotation[$key])) {
+            $sourcesAnnotation[$key] = [];
+        }
+        $sourcesAnnotation[$key][$mappedFieldName] = (array)$annotation;
+    }
+    */
 }

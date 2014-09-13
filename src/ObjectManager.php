@@ -2,6 +2,7 @@
 
 namespace Kassko\DataAccess;
 
+use Doctrine\Common\Annotations\AnnotationRegistry;
 use Kassko\ClassResolver\ClassResolverInterface;
 use Kassko\DataAccess\ClassMetadata\ClassMetadataFactoryInterface;
 use Kassko\DataAccess\Configuration\Configuration;
@@ -9,11 +10,13 @@ use Kassko\DataAccess\Exception\ObjectMappingException;
 use Kassko\DataAccess\Hydrator;
 use Kassko\DataAccess\Hydrator\HydrationStrategy\ClosureHydrationStrategy;
 use Kassko\DataAccess\Hydrator\HydrationStrategy\DateHydrationStrategy;
+use Kassko\DataAccess\LazyLoader\LazyLoaderFactoryInterface;
 use Kassko\DataAccess\Listener\Events;
 use Kassko\DataAccess\Listener\ObjectListenerResolverInterface;
 use Kassko\DataAccess\Query\CacheConfig;
 use Kassko\DataAccess\Query\ResultManager;
-use Doctrine\Common\Annotations\AnnotationRegistry;
+use Kassko\DataAccess\Registry\Registry;
+use Psr\Log\LoggerInterface;
 
 /**
 * Manage persistent object.
@@ -27,6 +30,7 @@ class ObjectManager
     private $resultManager;
     private $objectListenerResolver;
     private $classResolver;
+    private $lazyLoaderFactory;
     private $hydratorInstances = [];
 
     private static $eventToRegisterData = [
@@ -176,6 +180,17 @@ class ObjectManager
         return $repo->$findMethod();
     }
 
+    public function findFromCustomHydrationSource($customSourceClass, $customSourceMethod, $object)
+    {
+        $customSource = $this->classResolver ? $this->classResolver->resolve($customSourceClass) : new $repositoryClass;
+
+        if (! method_exists($customSource, $customSourceMethod) || ! is_callable([$customSource, $customSourceMethod])) {
+            throw new \BadMethodCallException(sprintf('Erreur lors de l\'appel de la méthode "%s::%s"', get_class($customSource), $customSourceMethod));
+        }
+
+        $customSource->$customSourceMethod($object);
+    }
+
     public function getRepository($objectClass)
     {
         $metadata = $this->getMetadata($objectClass);
@@ -245,6 +260,20 @@ class ObjectManager
     public function setClassResolver(ClassResolverInterface $classResolver)
     {
         $this->classResolver = $classResolver;
+
+        return $this;
+    }
+
+    public function setLazyLoaderFactory(LazyLoaderFactoryInterface $lazyLoaderFactory)
+    {
+        Registry::getInstance()->setLazyLoaderFactory($this->lazyLoaderFactory = $lazyLoaderFactory);
+
+        return $this;
+    }
+
+    public function setLogger(LoggerInterface $logger)
+    {
+        Registry::getInstance()->setLogger($logger);
 
         return $this;
     }

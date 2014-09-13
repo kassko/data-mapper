@@ -28,6 +28,11 @@ class Hydrator extends AbstractHydrator
     */
     protected $memberAccessStrategy;
 
+    /**
+     * Permet le suivi des propriétés déjà hydratés. Uniquement les propriétés hydratés par des sources externes.
+     */
+    private $customHydrationSourceDone;
+
 
     /**
 	* Constructor
@@ -121,7 +126,7 @@ class Hydrator extends AbstractHydrator
                     $data[$this->getRelationFieldNameExtraction($originalFieldName)] = $targetData;
                 } //elseif ($this->metadata->isCollectionValuedAssociation($mappedFieldName)) {
 
-                    //Kassko Seul le cas de l'association one to one est géré !
+                    //Kassko Only the use case of toOne association is handled !
                 //}
             } else {
 
@@ -165,12 +170,23 @@ class Hydrator extends AbstractHydrator
             $this->walkToManyHydration($mappedFieldName, $object, false);
         }
 
+        $this->customHydrationSourceDone = [];
+        foreach ($this->metadata->getFieldsWithCustomHydrationSource() as $mappedFieldName) {
+
+            if ($this->metadata->hasCustomHydrationSource($mappedFieldName)) {
+                $this->walkHydrationByCustomSource($mappedFieldName, $object, false);
+            }
+        }
+
         return $object;
     }
 
-    public function loadAssociation($object, $mappedFieldName)
+    public function loadProperty($object, $mappedFieldName)
     {
-        if ($this->metadata->isSingleValuedAssociation($mappedFieldName)) {
+        if ($this->metadata->hasCustomHydrationSource($mappedFieldName)) {
+
+            $this->walkHydrationByCustomSource($mappedFieldName, $object, true);
+        } elseif ($this->metadata->isSingleValuedAssociation($mappedFieldName)) {
 
             $this->walkToOneHydration($mappedFieldName, $object, $this->memberAccessStrategy->getValue($object, $mappedFieldName), true);
         } elseif ($this->metadata->isCollectionValuedAssociation($mappedFieldName)) {
@@ -230,7 +246,23 @@ class Hydrator extends AbstractHydrator
         return true;
     }
 
-    protected function walkToOneHydration($mappedFieldName, $object, $value, $enforceFetching)
+    protected function walkHydrationByCustomSource($mappedFieldName, $object, $enforceLoading)
+    {
+        if ($this->metadata->isNotManaged($mappedFieldName)) {
+            return false;
+        }
+
+        list($class, $method, $lazyLoading) = $this->metadata->getCustomHydrationSourceInfo($mappedFieldName);
+        $key = $class.$method;
+
+        if (! isset($this->customHydrationSourceDone[$key]) && ($enforceLoading || ! $lazyLoading)) {
+
+            $this->findFromCustomHydrationSource($class, $method, $object);
+            $this->customHydrationSourceDone[$key] = true;
+        }
+    }
+
+    protected function walkToOneHydration($mappedFieldName, $object, $value, $enforceLoading)
     {
         if ($this->metadata->isNotManaged($mappedFieldName)) {
             return false;
@@ -240,9 +272,9 @@ class Hydrator extends AbstractHydrator
             $value = $this->handleTypeConversions($value, $this->metadata->getTypeOfMappedField($mappedFieldName));
         }
 
-        list($objectClass, $repositoryClass, $findMethod, $lazyFetching) = $this->metadata->getSingleValuedAssociationInfo($mappedFieldName);
+        list($objectClass, $repositoryClass, $findMethod, $lazyLoading) = $this->metadata->getSingleValuedAssociationInfo($mappedFieldName);
 
-        if (false === $enforceFetching && true === $lazyFetching) {
+        if (false === $enforceLoading && true === $lazyLoading) {
 
             //On force à définir la propriété directement.
             //Comme on fait du lazy loading, on ne stocke pas l'objet hydraté mais juste son id.
@@ -289,11 +321,11 @@ class Hydrator extends AbstractHydrator
         return $valueObjectHydrator->hydrate($data);
     }
 
-    protected function walkToManyHydration($mappedFieldName, $object, $enforceFetching)
+    protected function walkToManyHydration($mappedFieldName, $object, $enforceLoading)
     {
-        list($associationName, $objectClass, $repositoryClass, $findMethod, $lazyFetching) = $this->metadata->getCollectionValuedAssociationInfo($mappedFieldName);
+        list($associationName, $objectClass, $repositoryClass, $findMethod, $lazyLoading) = $this->metadata->getCollectionValuedAssociationInfo($mappedFieldName);
 
-        if (false === $enforceFetching && true === $lazyFetching) {
+        if (false === $enforceLoading && true === $lazyLoading) {
             return false;
         }
 
@@ -339,6 +371,11 @@ class Hydrator extends AbstractHydrator
     protected function findCollection($objectClass, $findMethod, $repositoryClass)
     {
         return $this->objectManager->findCollection($objectClass, $findMethod, $repositoryClass);
+    }
+
+    protected function findFromCustomHydrationSource($customSourceClass, $customSourceMethod, $object)
+    {
+        $this->objectManager->findFromCustomHydrationSource($customSourceClass, $customSourceMethod, $object);
     }
 
     /**

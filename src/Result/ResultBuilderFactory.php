@@ -12,7 +12,6 @@ use Kassko\DataAccess\ObjectManager;
 class ResultBuilderFactory implements ResultBuilderFactoryInterface
 {
     protected $objectManager;
-    protected $data;
 
     public function __construct(ObjectManager $objectManager)
     {

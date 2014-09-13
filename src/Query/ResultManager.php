@@ -14,7 +14,7 @@ use Kassko\DataAccess\Query\Exception\OptimisticLockException;
 class ResultManager
 {
     private $identityMap = [];
-    private $entityId = [];
+    private $objectHashToObjectIdMap = [];
     private $objectManager;
 
     public function __construct(ObjectManager $objectManager)
@@ -41,12 +41,12 @@ class ResultManager
         $hashedId = $this->getHashedIdFromId($id);
 
         //On essaie de récupèrer l'entité d'identité $id dans l'identity map'.
-        if (isset($this->identityMap[$objectClass][$hashedId])) {//echo 'map';
+        if (isset($this->identityMap[$objectClass][$hashedId])) {
             return $this->identityMap[$objectClass][$hashedId];
         }
 
         //On essaie de récupèrer l'entité d'identité $id dans le cache.
-        if (null !== $cacheParam) {//echo 'cache';
+        if (null !== $cacheParam) {
 
             $objectCacheKey = $this->getCacheKey($hashedId, $objectClass);
             $cache = $cacheParam->getCache();
@@ -183,6 +183,7 @@ class ResultManager
         $objectClass = get_class($object);
         $hashedId = $this->getHashedIdFromObject($object);
         unset($this->identityMap[$objectClass][$hashedId]);
+        unset($this->objectHashToObjectIdMap[$hashedId]);
 
         if (null !== $cacheParam) {
 
@@ -209,18 +210,24 @@ class ResultManager
 
     private function getId($object)
     {
+        $objectHash = spl_object_hash($object);
+
+        if (isset($this->objectHashToObjectIdMap[$objectHash])) {
+            return $this->objectHashToObjectIdMap[$objectHash];
+        }
+
         $metadata = $this->objectManager->getMetadata($objectClass = get_class($object));
         $hydrator = $this->objectManager->createHydratorFor($objectClass);
 
         if ($metadata->hasId()) {
-            return $metadata->extractId($object, $hydrator);
+            $this->objectHashToObjectIdMap[$objectHash] = $metadata->extractId($object, $hydrator);
+        } elseif ($metadata->hasIdComposite()) {
+            $this->objectHashToObjectIdMap[$objectHash] = $metadata->extractIdComposite($object, $hydrator);
+        } else {
+            $this->objectHashToObjectIdMap[$objectHash] = $metadata->extractField($object, 'id', $hydrator);
         }
 
-        if ($metadata->hasIdComposite()) {
-            return $metadata->extractIdComposite($object, $hydrator);
-        }
-
-        return $metadata->extractField($object, 'id', $hydrator);
+        return $this->objectHashToObjectIdMap[$objectHash];
     }
 
     private function getVersion($object)

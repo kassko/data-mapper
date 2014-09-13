@@ -29,6 +29,7 @@ class AnnotationLoader implements LoaderInterface
     private static $objectListenersAnnotationName = OM\EntityListeners::class;
     private static $toOneAnnotationName = OM\ToOne::class;
     private static $toManyAnnotationName = OM\ToMany::class;
+    private static $customHydrationSourceAnnotationName = OM\CustomSource::class;
 
     private static $preExtractAnnotationName = OM\PreExtract::class;
     private static $postExtractAnnotationName = OM\PostExtract::class;
@@ -134,6 +135,7 @@ class AnnotationLoader implements LoaderInterface
         $toMapped = [];
         $toOneAssociations = [];
         $toManyAssociations = [];
+        $customHydrationSources = [];
         $mappedIdFieldName = null;
         $mappedIdCompositePartFieldName = [];
         $mappedVersionFieldName = null;
@@ -207,6 +209,11 @@ class AnnotationLoader implements LoaderInterface
                         }
                         break;
 
+                    case self::$customHydrationSourceAnnotationName:
+
+                        $customHydrationSources[$mappedFieldName] = (array)$annotation;
+                        break;
+
                     case self::$valueObjectAnnotationName:
 
                         if (! isset($valueObjectsByKey[$mappedFieldName])) {
@@ -271,6 +278,10 @@ class AnnotationLoader implements LoaderInterface
 
         if (count($toManyAssociations)) {
             $this->objectMetadata->setToManyAssociations($toManyAssociations);
+        }
+
+        if (count($customHydrationSources)) {
+            $this->objectMetadata->setCustomHydrationSources($customHydrationSources);
         }
 
         if (isset($mappedIdFieldName)) {

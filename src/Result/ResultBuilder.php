@@ -15,20 +15,15 @@ use Kassko\DataAccess\Result\Exception\NonUniqueResultException;
  */
 class ResultBuilder
 {
-    private $data;
+    private $objectManager;
     private $objectClass;
+    private $data;
 
-    public function __construct(ObjectManager $objectManager, $objectClass, $data = null)
+    public function __construct(ObjectManager $objectManager, $objectClass, $data)
     {
         $this->objectManager = $objectManager;
         $this->objectClass = $objectClass;
         $this->data = $data;
-    }
-
-    public function setData($data)
-    {
-        $this->data = $data;
-        return $this;
     }
 
     /**
@@ -192,23 +187,6 @@ class ResultBuilder
         $rh = new ResultExtractor($this->objectManager);
 
         return $rh->extract($this->objectClass, $this->data);
-    }
-
-    /**
-     * Load an object property.
-     * Property can be loaded only when needed for performance reason.
-     *
-     * @param array $object The object for wich we have to load property
-     * @param array $propertyName The property to load
-     */
-    public function loadProperty($object, $propertyName)
-    {
-        if (get_class($object) !== $this->objectClass) {
-            throw new \LogicException(sprintf("L'objet n'est pas du type attendu. Valeur '%s' attendue. Valeur '%s' obtenue.", $this->objectClass, get_class($object)));
-        }
-
-        $hydrator = $this->objectManager->getHydratorFor($this->objectClass);
-        $hydrator->loadAssociation($object, $propertyName);
     }
 
     private function doGetResult($indexOfBy)
