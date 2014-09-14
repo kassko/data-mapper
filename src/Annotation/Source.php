@@ -6,7 +6,7 @@ namespace Kassko\DataAccess\Annotation;
 * @Annotation
 * @Target("PROPERTY")
 */
-final class CustomSource
+final class Source
 {
     /**
      * @var string

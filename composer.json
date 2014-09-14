@@ -1,5 +1,10 @@
 {
     "name":"kassko/data-access",
+    "authors": [
+        {
+            "name":"Kasko"
+        }
+    ],
     "keywords":[
         "orm", "hydration", "hydrate", "extract", "data", "access",
         "mapper", "dao", "entity", "repository"

@@ -2,6 +2,8 @@
 
 namespace Kassko\DataAccess\Hydrator\MemberAccessStrategy;
 
+use Kassko\DataAccess\ClassMetadata\ClassMetadata;
+
 /**
 * Contract for member access strategies.
 *
@@ -9,7 +11,7 @@ namespace Kassko\DataAccess\Hydrator\MemberAccessStrategy;
 */
 interface MemberAccessStrategyInterface
 {
-	function prepare($object);
+	function prepare($object, ClassMetadata $metadata);
 	function getValue($object, $fieldName);
 	function setScalarValue($value, $object, $fieldName);
 	function setObjectValue($subObjectClassName, $object, $fieldName);

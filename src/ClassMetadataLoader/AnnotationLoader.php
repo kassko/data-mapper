@@ -29,7 +29,9 @@ class AnnotationLoader implements LoaderInterface
     private static $objectListenersAnnotationName = OM\EntityListeners::class;
     private static $toOneAnnotationName = OM\ToOne::class;
     private static $toManyAnnotationName = OM\ToMany::class;
-    private static $customHydrationSourceAnnotationName = OM\CustomSource::class;
+    private static $customHydrationSourceAnnotationName = OM\Source::class;
+    private static $getterAnnotationName = OM\Getter::class;
+    private static $setterAnnotationName = OM\Setter::class;
 
     private static $preExtractAnnotationName = OM\PreExtract::class;
     private static $postExtractAnnotationName = OM\PostExtract::class;
@@ -144,6 +146,8 @@ class AnnotationLoader implements LoaderInterface
         $mappedTransientFieldNames = [];
         $mappedManagedFieldNames = [];
         $fieldsWithHydrationStrategy = [];
+        $getters = [];
+        $setters = [];
 
         foreach ($this->objectReflectionClass->getProperties() as $reflectionProperty) {
             $mappedFieldNames[] = $mappedFieldName = $reflectionProperty->getName();
@@ -246,6 +250,14 @@ class AnnotationLoader implements LoaderInterface
                     case self::$transientAnnotationName:
                         $mappedTransientFieldNames[] = $mappedFieldName;
                         break;
+
+                    case self::$getterAnnotationName:
+                        $getters[$mappedFieldName] = (array)$annotation;
+                        break;
+
+                    case self::$setterAnnotationName:
+                        $setters[$mappedFieldName] = (array)$annotation;
+                        break;
                 }
             }
 
@@ -318,6 +330,14 @@ class AnnotationLoader implements LoaderInterface
 
         if (count($fieldsWithHydrationStrategy)) {
             $this->objectMetadata->setFieldsWithHydrationStrategy($fieldsWithHydrationStrategy);
+        }
+
+        if (count($getters)) {
+            $this->objectMetadata->setGetters($getters);
+        }
+
+        if (count($setters)) {
+            $this->objectMetadata->setSetters($setters);
         }
     }
 }

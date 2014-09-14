@@ -2,6 +2,8 @@
 
 namespace Kassko\DataAccess\Hydrator\MemberAccessStrategy;
 
+use Kassko\DataAccess\ClassMetadata\ClassMetadata;
+
 /**
 * Access logic by getters/issers/setters to object members to hydrate.
 *
@@ -10,14 +12,16 @@ namespace Kassko\DataAccess\Hydrator\MemberAccessStrategy;
 class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
 {
 	private $classMethods;
+	private $classMetadata;
 
-	public function prepare($object)
+	public function prepare($object, ClassMetadata $classMetadata)
 	{
 		if (! is_object($object)) {
 			throw new \InvalidArgumentException(sprintf('Invalid object. An object was expecting but value [%s] given.', is_array($object)?'array':$object));
 		}
 
 		$this->classMethods = get_class_methods($object);
+		$this->classMetadata = $classMetadata;
 	}
 
 	public function getValue($object, $fieldName)
@@ -26,30 +30,24 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
 			return null;
 		}
 
-		foreach ($this->getGetterMethods($fieldName) as $currentGetterMethod) {
+		$getter = $this->classMetadata->getterise($fieldName);
 
-			if (in_array($currentGetterMethod, $this->classMethods)) {
-				$getterMethod = $currentGetterMethod;
-				break;
-			}
-		}
-
-		return isset($getterMethod) ? $object->$getterMethod() : null;
+		return isset($getter) && in_array($setter, $this->classMethods) ? $object->$getter() : null;
 	}
 
 	public function setScalarValue($value, $object, $fieldName)
 	{
-		$this->classMethods = get_class_methods($object);
+		$setter = $this->classMetadata->setterise($fieldName);
 
-		$setter = 'set'.ucfirst($fieldName);
-		if (in_array($setter, $this->classMethods)) {
+		if (isset($setter) && in_array($setter, $this->classMethods)) {
 			$object->$setter($value);
 		}
 	}
 
 	public function setObjectValue($subObjectClassName, $object, $fieldName)
 	{
-		$setter = 'set'.ucfirst($fieldName);
+		$setter = $this->classMetadata->setterise($fieldName);
+
 		if (in_array($setter, $this->classMethods)) {
 			if ('DateTime' != $subObjectClassName) {
 				$value = new $subObjectClassName;
@@ -66,7 +64,7 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
 
 	public function setSingleAssociation($subObject, $object, $fieldName)
 	{
-		$setter = 'set'.ucfirst($fieldName);
+		$setter = $this->classMetadata->setterise($fieldName);
 		if (in_array($setter, $this->classMethods)) {
 
 			$object->$setter($subObject);
@@ -90,16 +88,5 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
 		}
 
 		return false;
-	}
-
-	private function getGetterMethods($fieldName)
-	{
-		$fieldName = ucfirst($fieldName);
-
-		return [
-			'get'.$fieldName,
-			'is'.$fieldName,
-			'has'.$fieldName,
-		];
 	}
 }

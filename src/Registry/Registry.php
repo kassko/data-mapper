@@ -4,7 +4,6 @@ namespace Kassko\DataAccess\Registry;
 
 use Kassko\DataAccess\LazyLoader\LazyLoaderFactoryInterface;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 
 /**
  * Registry

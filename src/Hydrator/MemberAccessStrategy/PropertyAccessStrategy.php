@@ -2,8 +2,8 @@
 
 namespace Kassko\DataAccess\Hydrator\MemberAccessStrategy;
 
+use Kassko\DataAccess\ClassMetadata\ClassMetadata;
 use ReflectionClass;
-use ReflectionException;
 
 /**
 * Access logic by property to object members to hydrate.
@@ -14,9 +14,9 @@ class PropertyAccessStrategy implements MemberAccessStrategyInterface
 {
 	private $reflectionClass;
 
-	public function prepare($object)
+	public function prepare($object, ClassMetadata $metadata)
 	{
-		$this->reflectionClass = new ReflectionClass($object);
+		$this->reflectionClass =  $metadata->getReflectionClass();//new ReflectionClass($object);
 	}
 
 	public function getValue($object, $fieldName)

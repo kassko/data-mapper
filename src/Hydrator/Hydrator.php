@@ -404,7 +404,7 @@ class Hydrator extends AbstractHydrator
     private function createMemberAccessStrategy($object)
 	{
 		$memberAccessStrategy = $this->isPropertyAccessStrategyOn ? new MemberAccessStrategy\PropertyAccessStrategy : new MemberAccessStrategy\GetterSetterAccessStrategy;
-		$memberAccessStrategy->prepare($object);
+		$memberAccessStrategy->prepare($object, $this->metadata);
 
 		return $memberAccessStrategy;
 	}
@@ -412,7 +412,7 @@ class Hydrator extends AbstractHydrator
     private function createPropertyAccessStrategy($object)
     {
         $memberAccessStrategy = new MemberAccessStrategy\PropertyAccessStrategy;
-        $memberAccessStrategy->prepare($object);
+        $memberAccessStrategy->prepare($object, $this->metadata);
 
         return $memberAccessStrategy;
     }

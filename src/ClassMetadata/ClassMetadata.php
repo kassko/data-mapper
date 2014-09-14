@@ -45,6 +45,8 @@ class ClassMetadata
     private $fieldsWithHydrationStrategy = [];
     private $toOneAssociations = [];
     private $toManyAssociations = [];
+    private $getters = [];
+    private $setters = [];
 
     /**
      * Source (class and method) which hydrate a field.
@@ -303,19 +305,6 @@ class ClassMetadata
         return $this;
     }
 
-    /*
-    public function getPhpMetadataClass()
-    {
-        return $this->phpMetadataClass;
-    }
-
-    public function setPhpMetadataClass($phpMetadataClass)
-    {
-        $this->phpMetadataClass = $phpMetadataClass;
-        return $this;
-    }
-    */
-
     public function setOriginalFieldNames(array $fieldNames)
     {
         $this->originalFieldNames = $fieldNames;
@@ -363,9 +352,6 @@ class ClassMetadata
     public function setMappedIdFieldName($mappedIdFieldName)
     {
         $this->mappedIdFieldName = $mappedIdFieldName;
-        $this->idGetter = self::getterise($this->mappedIdFieldName);
-        $this->idSetter = self::setterise($this->mappedIdFieldName);
-
         return $this;
     }
 
@@ -388,9 +374,6 @@ class ClassMetadata
     public function setMappedVersionFieldName($mappedVersionFieldName)
     {
         $this->mappedVersionFieldName = $mappedVersionFieldName;
-        $this->versionGetter = self::getterise($this->mappedVersionFieldName);
-        $this->versionSetter = self::setterise($this->mappedVersionFieldName);
-
         return $this;
     }
 
@@ -415,17 +398,6 @@ class ClassMetadata
         $this->toMapped = $toMapped;
         return $this;
     }
-
-    /*public function getColumnAnnotationName()
-    {
-        return $this->columnDataName;
-    }
-
-    public function setColumnAnnotationName($columnDataName)
-    {
-        $this->columnDataName = $columnDataName;
-        return $this;
-    }*/
 
     public function isPropertyAccessStrategyEnabled()
     {
@@ -847,78 +819,96 @@ class ClassMetadata
     public function extractField($object, $fieldName, Hydrator $hydrator)
     {
         return $hydrator->extractProperty($object, $fieldName);
-
-        /*
-        if (! $this->propertyAccessStrategyEnabled) {
-
-            $idGetter = $this->getterise($fieldName);
-
-            if (method_exists($object, $idGetter)) {
-                return $object->$idGetter();
-            }
-
-            throw new ObjectMappingException(
-                sprintf("L'entité '%s' n'a pas la méthode '%s'.",
-                get_class($object)),
-                $idGetter
-            );
-        }
-
-        if (property_exists($object, $idGetter)) {
-            return $object->$fieldName;
-        }
-
-        throw new ObjectMappingException(
-                sprintf("L'entité '%s' n'a pas la propriété '%s'.",
-                get_class($object)),
-                $fieldName
-            );
-        */
     }
 
     public function getIdGetter()
     {
+        if (null === $this->idGetter) {
+            $this->idGetter = $this->getterise($this->mappedIdFieldName);
+        }
+
         return $this->idGetter;
     }
 
     public function getIdSetter()
     {
+        if (null === $this->idGetter) {
+            $this->idSetter = $this->setterise($this->mappedIdFieldName);
+        }
+
         return $this->idSetter;
     }
 
     public function getVersionGetter()
     {
+        if (null === $this->versionSetter) {
+            $this->versionSetter = $this->getterise($this->mappedVersionFieldName);
+        }
+
         return $this->versionGetter;
     }
 
     public function getVersionSetter()
     {
+        if (null === $this->versionSetter) {
+            $this->versionSetter = $this->setterise($this->mappedVersionFieldName);
+        }
+
         return $this->versionSetter;
     }
 
-    private function getterise($mappedFieldName)
+    public function getterise($mappedFieldName)
     {
-        return isset($mappedFieldName) ? 'get'.ucfirst($mappedFieldName) : null;
+        if (! isset($mappedFieldName)) {
+            return null;
+        }
+
+        if (isset($this->getters[$mappedFieldName])) {
+
+            if (isset($this->getters[$mappedFieldName]['name'])) {
+                return $this->getters[$mappedFieldName]['name'];
+            }
+
+            switch ($type = $this->getters[$mappedFieldName]['type']) {
+
+                case 'get':
+                case 'is':
+                case 'has':
+                    return $type.ucfirst($mappedFieldName);
+            }
+
+            throw ObjectMappingException::invalidGetter($mappedFieldName, $this->getters[$mappedFieldName]);
+        }
+
+        return 'get'.ucfirst($mappedFieldName);
     }
 
-    private static function setterise($mappedFieldName)
+    public function setterise($mappedFieldName)
     {
-        return isset($mappedFieldName) ? 'set'.ucfirst($mappedFieldName) : null;
-    }
+        if (! isset($mappedFieldName)) {
+            return null;
+        }
 
-    /*public function beforeEventsExist()
-    {
-        return isset($this->onBeforeExtract) || isset($this->onBeforeHydrate);
-    }
+        if (isset($this->setters[$mappedFieldName])) {
 
-    public function afterEventsExist()
-    {
-        return isset($this->onAfterExtract) || isset($this->onAfterHydrate);
-    }*/
+            if (isset($this->setters[$mappedFieldName]['name'])) {
+                return $this->setters[$mappedFieldName]['name'];
+            }
+
+            switch ($type = $this->setters[$mappedFieldName]['type']) {
+
+                case 'set':
+                    return $type.ucfirst($mappedFieldName);
+            }
+
+            throw ObjectMappingException::invalidSetter($mappedFieldName, $this->setters[$mappedFieldName]);
+        }
+
+        return 'set'.ucfirst($mappedFieldName);
+    }
 
     private function getDataForField($mappedFieldName, $columnDataName)
-    {//echo 'columnDataName => ['.$this->columnDataName.']';
-
+    {
         if (! isset($this->fieldsDataByKey[$mappedFieldName][$columnDataName])) {
             return null;
         }
@@ -971,14 +961,17 @@ class ClassMetadata
         return $this;
     }
 
-    /*
-    public function getHydrationSourcesByIndexedBySources(array $hydrationSources)
+    public function setGetters(array $getters)
     {
-        $key = $annotation->class.$annotation->hydrationMethod;
-        if (! isset($sourcesAnnotation[$key])) {
-            $sourcesAnnotation[$key] = [];
-        }
-        $sourcesAnnotation[$key][$mappedFieldName] = (array)$annotation;
+        $this->getters = $getters;
+
+        return $this;
     }
-    */
+
+    public function setSetters(array $setters)
+    {
+        $this->setters = $setters;
+
+        return $this;
+    }
 }

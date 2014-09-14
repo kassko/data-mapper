@@ -80,6 +80,7 @@ You can do more advanced mapping:
 
 use Kassko\DataAccess\Annotation as OM;
 use Kassko\DataAccess\Hydrator\HydrationContextInterface;
+use Kassko\DataAccess\Hydrator\Value;
 use \DateTime;
 
 class Watch
@@ -115,9 +116,10 @@ class Watch
     private $stopWatch;
 
     /**
-     * @OM\Column(readStrategy="hydrateBool", writeStrategy="extractBool", getter="canBeCustomized")
+     * @OM\Column(readStrategy="hydrateBool", writeStrategy="extractBool")
+     * @OM\Getter(name="canBeCustomized")
      */
-    private $customizable;
+    private $customizable;//Naturally, we also can customize setters.
 
     private $noSealDate = false;
 
@@ -193,12 +195,16 @@ class Watch
 
     public function readBrand(Value $value, HydrationContextInterface $context)
     {
-        $value->value = ! isset($this->brandCodeToLabelMap[$value->value]) ?: $this->brandCodeToLabelMap[$value->value];
+        if (isset(self::$brandCodeToLabelMap[$value->value])) {
+            $value->value = self::$brandCodeToLabelMap[$value->value];
+        }
     }
 
     public function writeBrand(Value $value, HydrationContextInterface $context)
     {
-        $value->value = ! isset(self::brandLabelToCodeMap[$value->value]) ?: self::brandLabelToCodeMap[$value->value];
+        if (isset(self::$brandLabelToCodeMap[$value->value])) {
+            $value->value = self::$brandLabelToCodeMap[$value->value];
+        }
     }
 
     public function hydrateBool(Value $value, HydrationContextInterface $context)
@@ -233,7 +239,7 @@ class Watch
             $value = $context->getItem('seal_date');
         }
 
-        $this->sealDate = DateTime::createFromFormat('Y-m-d', $value);
+        $this->sealDate = DateTime::createFromFormat('Y-m-d H:i:s', $value);
     }
 
     /**
@@ -244,7 +250,7 @@ class Watch
         if ($this->noSealDate) {
             $context->setItem('seal_date', '');
         } else {
-            $context->setItem('seal_date', $this->sealDate->format('Y-m-d'));
+            $context->setItem('seal_date', $this->sealDate->format('Y-m-d H:i:s'));
         }
     }
 }
@@ -254,7 +260,7 @@ This result set:
 ```php
 [
     'brand' => 'some brand',
-    'COLOR' => 'blue',
+    'color' => 'blue',
     'created_date' => '2014 09 14 12:36:52',
     'waterProof' => '1',
     'stopWatch' => 'X',
@@ -265,25 +271,25 @@ This result set:
 
 Will be transform like that:
 ```php
-object(Watch)
-{
-    ["brand":"Watch":private]=> string(10) "some brand"
-    ["color":"Watch":private]=> string(4) "blue"
-    ["createdDate":"Watch":private]=> object (DateTime) {"2014 09 14 12:36:52"}
-    ["waterProof":"Watch":private]=> bool "true"
-    ["stopWatch":"Watch":private]=> bool "true"
-    ["customizable":"Watch":private]=> bool "false"
-    ["sealDate":"Watch":private]=> object (DateTime) {"2014 09 14 12:36:52"}
+object(Solfa\Bundle\ScalesBundle\Scales\Watch)#283 (8) {
+    ["brand":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> string(10) "some brand"
+    ["color":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> string(4) "blue"
+    ["createdDate":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=>
+        object(DateTime)#320 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
+    ["sealDate":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=>
+        object(DateTime)#319 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
+    ["waterProof":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> bool(true) ["stopWatch":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> bool(true)
+    ["customizable":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> bool(false) ["noSealDate":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> bool(true)
 }
 ```
 
 As you can see,
-* You can process a customized property hydration or extraction.
+* You can customize property hydration or property extraction.
 * You can convert a date before hydrating or extracting it.
 * Isser (isWaterProof()) and has methods (hasStopWatch()) are handled.
 * But you can specify custom getter/setter (canBeCustomized()).
 
-There are a lot of other features.
+There is a lot of other features.
 
 * You can build an object from several sources.
 Imagine an object with a property hydrated from SqlServer, an other from Elastic search, an other from a web service, and an other from MongoDb:

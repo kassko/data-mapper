@@ -101,4 +101,50 @@ class ObjectMappingException extends Exception
 	{
 		return new self(sprintf("No association metadata found for property %s on class %s.", $fieldName, $objectClassName));
 	}
+
+	public static function invalidGetter($fieldName, array $config)
+	{
+		return new self(
+                sprintf(
+                    'Invalid "getter" configuration for field "%s". Values given : "%s".',
+                    $fieldName,
+                    '['
+                    .implode(
+                        ','
+                        ,
+                        array_map(
+                            function($key, $value) {
+                                return $key.' => '.$value;
+                            },
+                            array_keys($config),
+                            $config
+                        )
+                    )
+                    .']'
+                )
+            );
+	}
+
+	public static function invalidSetter($fieldName, array $config)
+	{
+		return new self(
+                sprintf(
+                    'Invalid "setter" configuration for field "%s". Values given : "%s".',
+                    $fieldName,
+                    '['
+                    .implode(
+                        ','
+                        ,
+                        array_map(
+                            function($key, $value) {
+                                return $key.' => '.$value;
+                            },
+                            array_keys($config),
+                            $config
+                        )
+                    )
+                    .']'
+                )
+            );
+	}
 }
