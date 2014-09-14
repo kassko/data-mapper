@@ -832,7 +832,7 @@ class ClassMetadata
 
     public function getIdSetter()
     {
-        if (null === $this->idGetter) {
+        if (null === $this->idSetter) {
             $this->idSetter = $this->setterise($this->mappedIdFieldName);
         }
 
@@ -841,8 +841,8 @@ class ClassMetadata
 
     public function getVersionGetter()
     {
-        if (null === $this->versionSetter) {
-            $this->versionSetter = $this->getterise($this->mappedVersionFieldName);
+        if (null === $this->versionGetter) {
+            $this->versionGetter = $this->getterise($this->mappedVersionFieldName);
         }
 
         return $this->versionGetter;
