@@ -14,10 +14,5 @@
         "psr-4":{
             "Kassko\\DataAccess\\": "src"
         }
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "0.1.x-alpha"
-        }
     }
 }
