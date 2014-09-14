@@ -10,7 +10,7 @@ Installation
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-access": "alpha"
+    "kassko/data-access": "dev-master"
 }
 ```
 
