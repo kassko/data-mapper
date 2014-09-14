@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\ModelExtension;
+namespace Kassko\DataAccess\ObjectExtension;
 
 use Kassko\DataAccess\Registry\Registry;
 
