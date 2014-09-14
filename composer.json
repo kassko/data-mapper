@@ -8,11 +8,16 @@
         "php":">=5.5.0",
         "doctrine/common": "~2.4",
         "zendframework/zend-stdlib": "~2.3",
-        "kassko/class-resolver": "dev-master"
+        "kassko/class-resolver": "~0.1@alpha"
     },
     "autoload":{
         "psr-4":{
             "Kassko\\DataAccess\\": "src"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.1.x-alpha"
         }
     }
 }
