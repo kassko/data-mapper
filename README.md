@@ -37,6 +37,8 @@ And inversely, you extract your object properties to have a raw result set.
 
 To do that, you annotate your entity:
 ```php
+use Kassko\DataAccess\Annotation as OM;
+
 class Watch
 {
     /**
@@ -247,8 +249,66 @@ class Watch
     }
 }
 ```
+
+This result set:
+```php
+[
+    'brand' => 'some brand',
+    'COLOR' => 'blue',
+    'created_date' => '2014 09 14 12:36:52',
+    'waterProof' => '1',
+    'stopWatch' => 'X',
+    'customizable' => '0',
+    'seal_date' => ''
+]
+```
+
+Will be transform like that:
+```php
+object(Watch)
+{
+    ["brand":"Watch":private]=> string(10) "some brand"
+    ["color":"Watch":private]=> string(4) "blue"
+    ["createdDate":"Watch":private]=> object (DateTime) {"2014 09 14 12:36:52"}
+    ["waterProof":"Watch":private]=> bool "true"
+    ["stopWatch":"Watch":private]=> bool "true"
+    ["customizable":"Watch":private]=> bool "false"
+    ["sealDate":"Watch":private]=> object (DateTime) {"2014 09 14 12:36:52"}
+}
+```
+
 As you can see,
-You can process a customized property hydration or extraction.
-You can convert a date before hydrating or extracting it.
-Isser (isWaterProof()) and has methods (hasStopWatch()) are handled.
-But you can specify custom getter/setter (canBeCustomized()).
+* You can process a customized property hydration or extraction.
+* You can convert a date before hydrating or extracting it.
+* Isser (isWaterProof()) and has methods (hasStopWatch()) are handled.
+* But you can specify custom getter/setter (canBeCustomized()).
+
+There are a lot of other features.
+
+* You can build an object from several sources.
+Imagine an object with a property hydrated from SqlServer, an other from Elastic search, an other from a web service, and an other from MongoDb:
+
+* You can lazy load properties.
+
+* You can load asociations.
+
+* You can cache your object.
+
+* You can attach listeners to an action.
+
+* If all colum use a same option, you configure this option in "entity" annotation. This annotation is placed at the object level.
+
+* You can use public properties instead of getters/seters.
+
+* You can map value objects.
+
+* You can use Yaml format if you prefer this one to annotations.
+
+* You can log in your object without injecting to it a logger dependency.
+
+These features will be explained and detailled later.
+
+Api utilization
+---------------
+
+This section will be written later.
