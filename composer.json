@@ -1,6 +1,9 @@
 {
     "name":"kassko/data-access",
-    "keywords":["hydration", "hydrate", "extract", "data", "access", "mapper"],
+    "keywords":[
+        "orm", "hydration", "hydrate", "extract", "data", "access",
+        "mapper", "dao", "entity", "repository"
+    ],
     "require":{
         "php":">=5.5.0",
         "doctrine/common": "~2.4",
