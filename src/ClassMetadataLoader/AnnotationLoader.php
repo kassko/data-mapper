@@ -29,7 +29,7 @@ class AnnotationLoader implements LoaderInterface
     private static $objectListenersAnnotationName = OM\EntityListeners::class;
     private static $toOneAnnotationName = OM\ToOne::class;
     private static $toManyAnnotationName = OM\ToMany::class;
-    private static $customHydrationSourceAnnotationName = OM\Source::class;
+    private static $customHydrationSourceAnnotationName = OM\Provider::class;
     private static $getterAnnotationName = OM\Getter::class;
     private static $setterAnnotationName = OM\Setter::class;
 

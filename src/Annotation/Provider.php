@@ -6,7 +6,7 @@ namespace Kassko\DataAccess\Annotation;
 * @Annotation
 * @Target("PROPERTY")
 */
-final class Source
+final class Provider
 {
     /**
      * @var string
@@ -19,7 +19,7 @@ final class Source
     public $method;
 
     /**
-     * La stratégie de récupération à utiliser pour cette association
+     * Loading strategy to use for this provider.
      *
      * @var bool
      */

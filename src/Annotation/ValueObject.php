@@ -26,7 +26,7 @@ final class ValueObject
     public $fieldNames = [];
 }
 
-//NE PAS SUPPRIMER LE CODE COMMENTE CI-DESSOUS !
+//DO NOT KILL THE FOLLOWING COMMENTED CODE !
 /*
 Array (
  	[adresseVente] => Array (

@@ -25,7 +25,7 @@ trait AssociationCommonTrait
     public $findMethod;
 
     /**
-     * La stratégie de récupération à utiliser pour cette association
+     * Loading strategy to use for this association.
      *
      * @var bool
      */
