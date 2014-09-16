@@ -31,6 +31,7 @@ class ObjectManager
     private $objectListenerResolver;
     private $classResolver;
     private $lazyLoaderFactory;
+    private $logger;
     private $hydratorInstances = [];
 
     private static $eventToRegisterData = [
@@ -271,9 +272,9 @@ class ObjectManager
         return $this;
     }
 
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger = null)
     {
-        Registry::getInstance()->setLogger($logger);
+        Registry::getInstance()->setLogger($this->logger = $logger);
 
         return $this;
     }

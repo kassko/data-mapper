@@ -26,6 +26,11 @@ trait LazyLoadableTrait
                 self::$loaded[$objectHash] = [];
             }
             self::$loaded[$objectHash][$propertyName] = true;
+
+            //Mark properties loaded when $propertyName is loaded.
+            foreach ($lazyLoader->getPropertiesLoadedTogether($propertyName) as $otherLoadedPropertyName) {
+                self::$loaded[$objectHash][$otherLoadedPropertyName] = true;
+            }
         }
     }
 

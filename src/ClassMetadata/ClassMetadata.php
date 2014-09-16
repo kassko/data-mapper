@@ -30,7 +30,6 @@ class ClassMetadata
     private $repositoryClass;
     private $objectReadDateFormat;
     private $objectWriteDateFormat;
-    //private $phpMetadataClass;
     private $propertyAccessStrategyEnabled;
 
     /**
@@ -87,8 +86,6 @@ class ClassMetadata
         return $this->reflectionClass->getName();
     }
 
-
-
     /**
     * Gets the ReflectionClass instance for this mapped class.
     *
@@ -101,13 +98,6 @@ class ClassMetadata
 
     public function compile()
     {
-        //Pour chaque champs, on injecte les réglages hérités si aucun réglage n'est défini au niveau du champs considéré.
-        //Cela évitera de résoudre à chaque fois la valeurs de l'options, en regardant d'abord au niveau du chammps puis au niveau de l'objet.
-        //On regardera tout le temps au niveau du champs.
-
-        //VOIR POUR EVITER DE FAIRE DES ISSET, TRAVAILLER A AVOIR EN PERMANENCE TOUTES LES CLES MAIS INITIALISEES A NULL PAR DEFAUT
-        //PUIS ENSUITE, RETIRER TOUS lES ISSET ACTUELLEMENT FAITS.
-
         if (isset($this->objectReadDateFormat) || isset($this->objectWriteDateFormat)) {
 
             foreach ($this->fieldsDataByKey as $fieldName => &$fieldDataByKey) {
@@ -124,7 +114,7 @@ class ClassMetadata
                 }
             }
 
-            unset($fieldDataByKey);//Par précaution !
+            unset($fieldDataByKey);
         }
     }
 
@@ -231,31 +221,6 @@ class ClassMetadata
             $this->toManyAssociations[$mappedFieldName]['lazyLoading'],
         ];
     }
-
-    /*
-    public function getAssociationFindMethod($mappedFieldName)
-    {
-        if (array_key_exists($mappedFieldName, $this->toOneAssociations)) {
-
-            if (isset($this->toOneAssociations[$mappedFieldName]['findMethod'])) {
-
-                return $this->toOneAssociations[$mappedFieldName]['findMethod'];
-            }
-        }
-
-
-        if (array_key_exists($mappedFieldName, $this->toManyAssociations)) {
-
-            if (isset($this->toManyAssociations[$mappedFieldName]['entityClass'])) {
-
-                return $this->toManyAssociations[$mappedFieldName]['entityClass'];
-            }
-        }
-
-
-        throw ObjectMappingException::notFoundAssociationFindMethod($mappedFieldName, $this->reflectionClass->getName());
-    }
-    */
 
     public function isSingleValuedAssociation($mappedFieldName)
     {
@@ -565,21 +530,11 @@ class ClassMetadata
         return $this;
     }
 
-    /*public function getHydrationStrategyByField($mappedFieldName)
-    {
-        if (array_key_exists($mappedFieldName, $this->fieldsWithHydrationStrategy)) {
-            return $this->fieldsWithHydrationStrategy[$mappedFieldName];
-        }
-
-        return null;
-    }*/
-
     public function getFieldsWithHydrationStrategy()
     {
         return $this->fieldsWithHydrationStrategy;
     }
 
-    //Kassko: TO REVIEW.
     public function setFieldsWithHydrationStrategy(array $fieldsWithHydrationStrategy)
     {
         $this->fieldsWithHydrationStrategy = $fieldsWithHydrationStrategy;
@@ -587,7 +542,6 @@ class ClassMetadata
         return $this;
     }
 
-    //VOIR pour ne pas réevaluer à chaque fois les champs sans stratégie d'hydratation.
     public function computeFieldsWithHydrationStrategy()
     {
         $fieldsWithHydrationStrategy = [];
@@ -662,19 +616,6 @@ class ClassMetadata
         return $this;
     }
 
-    /*
-    public function findFieldWithAnnotation($annotationName, $default=null)
-    {
-        foreach ($this->fieldsDataByKey as $fieldName => $annotations) {
-            if (array_key_exists($annotationName, $annotations)) {
-                return $fieldName;
-            }
-        }
-
-        return $default;
-    }
-    */
-
     public function getOriginalFieldNames()
     {
         return $this->originalFieldNames;
@@ -683,7 +624,7 @@ class ClassMetadata
     public function getTypeOfMappedField($mappedFieldName)
     {
         if (null != $data = $this->getDataForField($mappedFieldName, $this->columnDataName)) {
-            return $data['type'];//<=== TO REVIEW !!! Kassko
+            return $data['type'];
         }
 
         return 'string';
@@ -693,7 +634,6 @@ class ClassMetadata
     {
         if (! isset($this->toOriginal[$mappedFieldName])) {
             return $mappedFieldName;
-            //throw ObjectMappingException::originalFieldNameNotFound($mappedFieldName);
         }
 
         return $this->toOriginal[$mappedFieldName];
@@ -703,33 +643,14 @@ class ClassMetadata
     {
         if (! isset($this->toMapped[$originalFieldName])) {
             return $originalFieldName;
-            //throw ObjectMappingException::mappedFieldNameNotFound($originalFieldName);
         }
 
         return $this->toMapped[$originalFieldName];
     }
 
-    /*
-    public function getOriginalsDateFieldNames()
-    {
-        return array_map(
-            function ($dateMappedFieldName) {
-                return $this->getOriginalFieldName($dateMappedFieldName);
-            },
-            $this->mappedDateFieldNames
-        );
-    }
-    */
-
     public function mergeValueObjectMetadata($valueObjectClassName, ClassMetadata $valueObjectMetadata)
     {
         $this->valueObjectsMetadata[$valueObjectClassName] = $valueObjectMetadata;
-        /*
-        $this->mappedDateFieldNames = array_merge(
-            $this->mappedDateFieldNames,
-            $objectMetadata->getMappedDateFieldNames()
-        );
-        */
     }
 
     public function isMappedDateField($mappedFieldName)
@@ -743,7 +664,7 @@ class ClassMetadata
     }
 
     public function getReadDateFormatByMappedField($mappedFieldName, $default)
-    {//Kassko VOIR POUR EVITER LE ISSET, AVOIR EN PERMANENCE TOUTES LES CLES MAIS INITIALISEES A NULL PAR DEFAUT
+    {
         if (null != $data = $this->getDataForField($mappedFieldName, $this->columnDataName)) {
             return isset($data['readDateFormat']) ? $data['readDateFormat'] : $this->objectReadDateFormat;//<=== A REVOIR !!! Kassko
         }
@@ -973,5 +894,32 @@ class ClassMetadata
         $this->setters = $setters;
 
         return $this;
+    }
+
+    /**
+     * Retrieve fields with the same provider as $mappedFieldNameRef.
+     *
+     * @param array $mappedFieldNameRef The reference field.
+     *
+     * @return array
+     */
+    public function getFieldsWithSameProvider($mappedFieldNameRef)
+    {
+        if (! isset($this->customHydrationSource[$mappedFieldNameRef])) {
+            throw new ObjectMappingException(sprintf('A "provider" metadata is expected for the field "%s".', $mappedFieldNameRef));
+        }
+
+        $class = $this->customHydrationSource[$mappedFieldNameRef]['class'];
+        $method = $this->customHydrationSource[$mappedFieldNameRef]['method'];
+
+        $propLoadedTogether = [];
+        foreach ($this->customHydrationSource as $mappedFieldName => $value) {
+
+            if ($mappedFieldName !== $mappedFieldNameRef && $value['class'] === $class && $value['method'] === $method) {
+                $propLoadedTogether[] = $mappedFieldName;
+            }
+        }
+
+        return $propLoadedTogether;
     }
 }
