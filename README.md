@@ -294,35 +294,35 @@ As you can see,
 There is a lot of others features.
 
 * You can work with associations.
-[see more in relation reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/association.md).
+[see more in relation reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/association.md).
 
 * You can build an object from several sources.
 Imagine an object witch requires multiple sources fetching to represent it (SqlServer, Elastic search, Web Service, MongoDb).
-[see more in provider reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/provider.md).
+[see more in provider reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/provider.md).
 
 * You can lazy load properties.
-[see more in lazy loading reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/lazy_loading.md).
+[see more in lazy loading reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/lazy_loading.md).
 
 * You can cache your object.
-[see more in cache reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/cache.md).
+[see more in cache reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/cache.md).
 
 * You can attach listeners to an action.
-[see more in listener reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/listener.md).
+[see more in listener reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/listener.md).
 
 * If all columns use a same option, you configure this option in "entity" annotation. This annotation is placed at the object level.
-[see more in entity annotation documentation](https://github.com/kassko/data-access/blob/alpha/doc/entity_annotation.md).
+[see more in entity annotation documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/entity_annotation.md).
 
 * You can use public properties instead of getters/setters.
-[see more in public properties reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/public_property.md).
+[see more in public properties reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/public_property.md).
 
 * You can map value objects.
-[see more in value objets reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/value_object.md).
+[see more in value objets reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/value_object.md).
 
 * You can use Yaml format if you prefer this one rather than annotations.
-[see more in yaml reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/yaml.md).
+[see more in yaml reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml.md).
 
 * You can log in your object without injecting to it a logger dependency.
-[see more in log reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/log.md).
+[see more in log reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/log.md).
 
 These features will be explained and detailled later.
 
