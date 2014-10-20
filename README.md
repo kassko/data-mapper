@@ -1,7 +1,9 @@
 data-access
 ==================
 
-data-access help you to represent some data like objects and work with objects.
+data-access
+* help you to represent some data like objects and work with objects.
+* simplify integration of multiple data sources (mssql, mysql, nosql databases, webservices ...)
 
 
 Installation
@@ -25,7 +27,7 @@ You have a result set:
 ]
 ```
 
-You hydrate an object with this result set:
+You hydrate an object from this result set:
 ```php
 object(Watch) (2)
 {
@@ -119,7 +121,7 @@ class Watch
      * @OM\Column(readStrategy="hydrateBool", writeStrategy="extractBool")
      * @OM\Getter(name="canBeCustomized")
      */
-    private $customizable;//Naturally, we also can customize setters.
+    private $customizable;//Naturally, we also can customize setters with "Setter" annotation.
 
     private $noSealDate = false;
 
@@ -289,32 +291,42 @@ As you can see,
 * Isser (isWaterProof()) and has methods (hasStopWatch()) are handled.
 * But you can specify custom getter/setter (canBeCustomized()).
 
-There is a lot of other features.
+There is a lot of others features.
+
+* You can work with associations.
+[see more in relation reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/association.md).
 
 * You can build an object from several sources.
-Imagine an object with a property hydrated from SqlServer, an other from Elastic search, an other from a web service, and an other from MongoDb:
+Imagine an object witch requires multiple sources fetching to represent it (SqlServer, Elastic search, Web Service, MongoDb).
+[see more in provider reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/provider.md).
 
 * You can lazy load properties.
-
-* You can load asociations.
+[see more in lazy loading reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/lazy_loading.md).
 
 * You can cache your object.
+[see more in cache reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/cache.md).
 
 * You can attach listeners to an action.
+[see more in listener reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/listener.md).
 
-* If all colum use a same option, you configure this option in "entity" annotation. This annotation is placed at the object level.
+* If all columns use a same option, you configure this option in "entity" annotation. This annotation is placed at the object level.
+[see more in entity annotation documentation](https://github.com/kassko/data-access/blob/alpha/doc/entity_annotation.md).
 
-* You can use public properties instead of getters/seters.
+* You can use public properties instead of getters/setters.
+[see more in public properties reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/public_property.md).
 
 * You can map value objects.
+[see more in value objets reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/value_object.md).
 
-* You can use Yaml format if you prefer this one to annotations.
+* You can use Yaml format if you prefer this one rather than annotations.
+[see more in yaml reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/yaml.md).
 
 * You can log in your object without injecting to it a logger dependency.
+[see more in log reference documentation](https://github.com/kassko/data-access/blob/alpha/doc/log.md).
 
 These features will be explained and detailled later.
 
-Api utilization
+Api usage
 ---------------
 
 This section will be written later.

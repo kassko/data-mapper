@@ -29,7 +29,7 @@ class Hydrator extends AbstractHydrator
     protected $memberAccessStrategy;
 
     /**
-     * Permet le suivi des propriétés déjà hydratés. Uniquement les propriétés hydratés par des sources externes.
+     * Track properties already hydrated. Only properties hydrated by custom sources.
      */
     private $customHydrationSourceDone;
 
@@ -74,7 +74,7 @@ class Hydrator extends AbstractHydrator
     }
 
     /**
-	* Extrait les données d'un objet selon une logique d'accès à ses membres (par les getters/setters ou directement par les propriétés).
+	* Extract data from an object.
 	*
 	* @param object $object
 	* @throws RuntimeException
@@ -116,7 +116,7 @@ class Hydrator extends AbstractHydrator
                     $targetObjectMetadata = $this->objectManager->getMetadata($targetObjectClass = get_class($targetObject));
 
                     if (null === $targetIdFieldName = $targetObjectMetadata->getIdFieldName()) {
-                        throw new ObjectMappingException(sprintf("Les relations ne sont pas gérées pour l'objet [%s]. Cet objet n'a pas de métadonnée d'identité.", $targetObjectClass));
+                        throw new ObjectMappingException(sprintf("Cannot work with associations with object [%s]. This object have not identity defined in its metadata.", $targetObjectClass));
                     }
 
                     $targetObjectHydrator = $this->objectManager->createHydratorFor(get_class($targetObject));
@@ -126,12 +126,12 @@ class Hydrator extends AbstractHydrator
                     $data[$this->getRelationFieldNameExtraction($originalFieldName)] = $targetData;
                 } //elseif ($this->metadata->isCollectionValuedAssociation($mappedFieldName)) {
 
-                    //Kassko Only the use case of toOne association is handled !
+                    //Kassko Todo actually only the use case of toOne association is handled !
                 //}
             } else {
 
                 $value = $this->memberAccessStrategy->getValue($object, $mappedFieldName);
-                $value = $this->extractValue($mappedFieldName, $value, $object, $data);//Faut-il vraiment transmettre un $data en transition ???
+                $value = $this->extractValue($mappedFieldName, $value, $object, $data);
 
                 $data[$originalFieldName] = $value;
             }
@@ -141,7 +141,7 @@ class Hydrator extends AbstractHydrator
     }
 
     /**
-	* Extrait les données d'un objet selon une logique d'accès à ses membres (par les getters/setters ou directement par les propriétés).
+	* Extract data from an object.
 	*
 	* @param array $data
 	* @param object $object
@@ -158,16 +158,22 @@ class Hydrator extends AbstractHydrator
                 $this->walkValueObjectHydration($mappedFieldName, $object, $data);
             } elseif ($this->metadata->hasAssociation($mappedFieldName)) {
 
-                $this->walkToOneHydration($mappedFieldName, $object, $data[$this->metadata->getOriginalFieldName($mappedFieldName)], false);
+                $this->walkToOneHydration(
+                    $mappedFieldName,
+                    $object,
+                    $data[$this->metadata->getOriginalFieldName($mappedFieldName)],
+                    false
+                );
             } else {
 
                 $this->walkHydration($mappedFieldName, $object, $value, $data);
             }
         }
 
+        $id = $data[$this->metadata->getIdFieldName()];
         foreach ($this->metadata->getCollectionValuedAssociations() as $mappedFieldName) {
 
-            $this->walkToManyHydration($mappedFieldName, $object, false);
+            $this->walkToManyHydration($mappedFieldName, $object, $id, false);
         }
 
         $this->customHydrationSourceDone = [];
@@ -233,8 +239,8 @@ class Hydrator extends AbstractHydrator
 
         $value = $this->hydrateValue($mappedFieldName, $value, $data, $object);
 
-        //On appelle pas le setter d'un DateTime quand la valeur à définir est nulle ou vide.
-        //On fait ainsi plutôt que d'initialiser ce Datetime par défaut à la date du jour.
+        //We do not call the setter for a DateTime when the value to defined is null or empty.
+        //We do so instead of initialize this DateTime to the current date.
         if (empty($value) && $this->metadata->isMappedDateField($mappedFieldName)) {
             return true;
         }
@@ -242,6 +248,52 @@ class Hydrator extends AbstractHydrator
         //if ($this->hasStrategy($mappedFieldName)) {
             $this->memberAccessStrategy->setScalarValue($value, $object, $mappedFieldName);
         //}
+
+        return true;
+    }
+
+    protected function walkToOneHydration($mappedFieldName, $object, $value, $enforceLoading)
+    {
+        if ($this->metadata->isNotManaged($mappedFieldName)) {
+            return false;
+        }
+
+        if (! $this->hasStrategy($mappedFieldName)) {
+            $value = $this->handleTypeConversions($value, $this->metadata->getTypeOfMappedField($mappedFieldName));
+        }
+
+        list($objectClass, $repositoryClass, $findMethod, $lazyLoading) = $this->metadata->getSingleValuedAssociationInfo($mappedFieldName);
+
+        if (false === $enforceLoading && true === $lazyLoading) {
+
+            $this->setTemporaryValueForPropertyToLazyLoad($value, $object, $mappedFieldName);
+            return false;
+        }
+
+        $idFieldName = $this->metadata->getIdFieldName();
+        if (! isset($idFieldName)) {
+            throw new ObjectMappingException(sprintf("We cannot work with association with this object [%s]. This object have not an identity in its metadata.", $objectClass));
+        }
+
+        if ($this->metadata->isSingleValuedAssociation($mappedFieldName)) {
+
+            $this->hydrateToOne($objectClass, $value, $mappedFieldName, $object, $findMethod, $repositoryClass);
+        }
+
+        return true;
+    }
+
+    protected function walkToManyHydration($mappedFieldName, $object, $value, $enforceLoading)
+    {
+        list($associationName, $objectClass, $repositoryClass, $findMethod, $lazyLoading) = $this->metadata->getCollectionValuedAssociationInfo($mappedFieldName);
+
+        if (false === $enforceLoading && true === $lazyLoading) {
+
+            $this->setTemporaryValueForPropertyToLazyLoad($id, $object, $mappedFieldName);
+            return false;
+        }
+
+        $this->hydrateToMany($objectClass, $id, $mappedFieldName, $object, $findMethod, $repositoryClass, $associationName);
 
         return true;
     }
@@ -262,54 +314,6 @@ class Hydrator extends AbstractHydrator
         }
     }
 
-    protected function walkToOneHydration($mappedFieldName, $object, $value, $enforceLoading)
-    {
-        if ($this->metadata->isNotManaged($mappedFieldName)) {
-            return false;
-        }
-
-        if (! $this->hasStrategy($mappedFieldName)) {
-            $value = $this->handleTypeConversions($value, $this->metadata->getTypeOfMappedField($mappedFieldName));
-        }
-
-        list($objectClass, $repositoryClass, $findMethod, $lazyLoading) = $this->metadata->getSingleValuedAssociationInfo($mappedFieldName);
-
-        if (false === $enforceLoading && true === $lazyLoading) {
-
-            //On force à définir la propriété directement.
-            //Comme on fait du lazy loading, on ne stocke pas l'objet hydraté mais juste son id.
-            //On ne peut pas définir la propriété à cet id par le biais du setter car le setter caste sur le type de l'objet attendu.
-            if (! $this->memberAccessStrategy instanceof MemberAccessStrategy\PropertyAccessStrategy) {
-                $memberAccessStrategy = $this->createPropertyAccessStrategy($object);
-            } else {
-                $memberAccessStrategy = $this->memberAccessStrategy;
-            }
-
-            $memberAccessStrategy->setScalarValue($value, $object, $mappedFieldName);
-
-            return false;
-        }
-
-        $idFieldName = $this->metadata->getIdFieldName();
-        if (! isset($idFieldName)) {
-            throw new ObjectMappingException(sprintf("Les relations ne sont pas gérées pour l'objet [%s]. Cet objet n'a pas de métadonnée d'identité.", $objectClass));
-        }
-
-        if ($this->metadata->isSingleValuedAssociation($mappedFieldName)) {
-
-            $this->hydrateToOne(
-                $objectClass,
-                $value,
-                $mappedFieldName,
-                $object,//Ce n'est pas idFieldName que l'on veut, mais l'id de l'entité en relation.
-                $findMethod,
-                $repositoryClass
-            );
-        }
-
-        return true;
-    }
-
     protected function walkValueObjectHydration($mappedFieldName, $object, $data)
     {
         if ($this->metadata->isNotManaged($mappedFieldName)) {
@@ -321,39 +325,26 @@ class Hydrator extends AbstractHydrator
         return $valueObjectHydrator->hydrate($data);
     }
 
-    protected function walkToManyHydration($mappedFieldName, $object, $enforceLoading)
-    {
-        list($associationName, $objectClass, $repositoryClass, $findMethod, $lazyLoading) = $this->metadata->getCollectionValuedAssociationInfo($mappedFieldName);
-
-        if (false === $enforceLoading && true === $lazyLoading) {
-            return false;
-        }
-
-        $this->hydrateToMany($objectClass, $mappedFieldName, $object, $findMethod, $repositoryClass, $associationName);
-
-        return true;
-    }
-
     protected function hydrateToOne($objectClass, $id, $mappedFieldName, $object, $findMethod, $repositoryClass)
     {
         $subObject = $this->find($objectClass, $id, $findMethod, $repositoryClass) ?: new $objectClass;
         $this->memberAccessStrategy->setSingleAssociation($subObject, $object, $mappedFieldName);
     }
 
-    protected function hydrateToMany($objectClass, $mappedFieldName, $object, $findMethod, $repositoryClass, $associationName)
+    protected function hydrateToMany($objectClass, $id, $mappedFieldName, $object, $findMethod, $repositoryClass, $associationName)
     {
-        $subObjects = $this->findCollection($objectClass, $findMethod, $repositoryClass) ?: [];
+        $subObjects = $this->findCollection($objectClass, $id, $findMethod, $repositoryClass) ?: [];
         $this->memberAccessStrategy->setCollectionAssociation($subObjects, $object, $mappedFieldName, $associationName);
     }
 
     /**
-     * Trouve un objet à partir d'un nom de classe et d'une identité.
+     * Find an object from a FQCN and an identity.
      *
-     * @param string $objectClass Classe de l'objet à trouver.
-     * @param mixed $id Identité de l'objet à trouver.
-     * @param mixed $findMethod Méthode permettant de récupérer l'objet.
+     * @param string $objectClass FQCN of object to find.
+     * @param mixed $id Identity of object to find.
+     * @param mixed $findMethod Method witch find object.
      *
-     * @return object|null Renvoi l'objet ou null s'il n'est pas trouvé.
+     * @return object|null Return the object or null if it's not found.
      */
     protected function find($objectClass, $id, $findMethod, $repositoryClass)
     {
@@ -361,12 +352,12 @@ class Hydrator extends AbstractHydrator
     }
 
     /**
-     * Trouve une collection d'objets à partir d'un nom de classe.
+     * Find a collection from a FQCN.
      *
-     * @param string $objectClass Classe de l'objet à trouver.
-     * @param mixed $findMethod Méthode permettant de récupérer la collection d'objets.
+     * @param string $objectClass FQCN of object to find.
+     * @param mixed $findMethod Method witch find collection.
      *
-     * @return object|null Renvoi l'objet ou null s'il n'est pas trouvé.
+     * @return object|null Renvoi the collection or null if it's not found.
      */
     protected function findCollection($objectClass, $findMethod, $repositoryClass)
     {
@@ -378,20 +369,20 @@ class Hydrator extends AbstractHydrator
         $this->objectManager->findFromCustomHydrationSource($customSourceClass, $customSourceMethod, $object);
     }
 
-    /**
-     * Trouve un objet à partir d'un nom de classe et d'une identité.
-     *
-     * @param string $objectClass Classe de l'objet à trouver.
-     * @param mixed $id Identité de l'objet à trouver.
-     *
-     * @return object|null Renvoi l'objet ou null s'il n'est pas trouvé.
-     */
-    /*
-    protected function findByCallable($objectClass, $finderName)
+    protected function setTemporaryValueForPropertyToLazyLoad($value, $object, $mappedFieldName)
     {
-        return $this->objectManager->findByCallable($objectClass, $finderName);
+        //The property will be lazy loaded.
+        //We just set the id of object to lazy load in the property.
+        //We cannot use the setter to put this id because it cast on object type.
+        //Later we will transform this id to the corresponding object.
+        if (! $this->memberAccessStrategy instanceof MemberAccessStrategy\PropertyAccessStrategy) {
+            $memberAccessStrategy = $this->createPropertyAccessStrategy($object);
+        } else {
+            $memberAccessStrategy = $this->memberAccessStrategy;
+        }
+
+        $memberAccessStrategy->setScalarValue($value, $object, $mappedFieldName);
     }
-    */
 
     protected function doPrepare($object)
     {
