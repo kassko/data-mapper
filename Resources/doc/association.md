@@ -30,7 +30,7 @@ class Keyboard
 
     /**
      * @OM\ToOne(entityClass="Manufacturer", findMethod="find")
-     * @OM\Column
+     * @OM\Column(name="manufacturer_id")
      */
     private $manufacturer;
 
@@ -109,6 +109,32 @@ class ManufacturerManager
     public function find($id)
     {
         //Some stuff to find the manufacturer.
+    }
+}
+```
+
+Usage:
+```php
+$data = [
+    'id' => 1,
+    'color' => 'blue',
+    'manufacturer_id' => 1
+];
+
+//=====> Here some stuff to create $resultBuilderFactory <=====
+$resultBuilder = $resultBuilderFactory->createResultBuilder($data, 'Keyboard');
+var_dump($resultBuilder->getSingleResult());
+```
+
+Display result:
+```php
+object(Keyboard)#283 (8) {
+    ["id":"Keyboard":private]=> int(1)
+    ["color":"Keyboard":private]=> string(4) "blue"
+    ["manufacturer":"Manufacturer":private]=>
+    object(Manufacturer)#320 (3) {
+        ["id":"Manufacturer":private]=> int(1)
+        ["name":"Manufacturer":private]=> string(10) "Some brand"
     }
 }
 ```
@@ -206,7 +232,7 @@ class ShopManager
      */
     public function findByKeyboard($id)
     {
-        //Some stuff to find shops witch sale the keyboard from identity "$id".
+        //Some stuff to find shops witch sale the keyboard with identity "$id".
     }
 }
 ```
@@ -275,6 +301,42 @@ class Keyboard
     public function insertShop(Shop $shop)
     {
         $this->shops[] = $shops;
+    }
+}
+```
+
+Usage:
+```php
+$data = [
+    'id' => 1,
+    'color' => 'blue'
+];
+
+//=====> Here some stuff to create $resultBuilderFactory <=====
+$resultBuilder = $resultBuilderFactory->createResultBuilder($data, 'Keyboard');
+var_dump($resultBuilder->getSingleResult());
+```
+
+Possible display result:
+```php
+object(Keyboard)#283 (8) {
+    ["id":"Keyboard":private]=> int(1)
+    ["color":"Keyboard":private]=> string(4) "blue"
+    array(3) {
+        [0] =>
+        ["shops":"Shop":private]=>
+            object(Shop)#320 (3) {
+                ["id":"Shop":private]=> int(1)
+                ["name":"Shop":private]=> string(14) "Shop A"
+            }
+        }
+        [1] =>
+        ["shops":"Shop":private]=>
+            object(Shop)#320 (3) {
+                ["id":"Shop":private]=> int(2)
+                ["name":"Shop":private]=> string(14) "Shop B"
+            }
+        }
     }
 }
 ```
