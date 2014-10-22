@@ -77,6 +77,36 @@ class Watch
 
 A property without "Column" annotation is not managed (no hydrated and no extracted).
 
+And you hydrate your object:
+```php
+use Kassko\DataAccess\DataAccessProvider;
+
+$data = [
+    'brand' => 'some brand',
+    'COLOR' => 'blue'
+];
+
+$provider = new DataAccessProvider;
+$resultBuilderFactory = $provider->getResultBuilderFactory();
+$resultBuilder = $resultBuilderFactory->createResultBuilder('Watch', $data);
+$result = $resultBuilder->getResult();
+```
+
+And inversely you extract values from your object:
+```php
+use Kassko\DataAccess\DataAccessProvider;
+
+$keyBoard = (new Watch)
+    ->setBrand('some brand')
+    ->setColor('blue')
+;
+
+$provider = new DataAccessProvider;
+$resultBuilderFactory = $provider->getResultBuilderFactory();
+$resultBuilder = $resultBuilderFactory->createResultBuilder('Watch');
+$result = $resultBuilder->getRawResult();
+```
+
 You can do more advanced mapping:
 ```php
 

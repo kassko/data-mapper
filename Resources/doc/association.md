@@ -115,14 +115,17 @@ class ManufacturerManager
 
 Usage:
 ```php
+use Kassko\DataAccess\DataAccessProvider;
+
 $data = [
     'id' => 1,
     'color' => 'blue',
     'manufacturer_id' => 1
 ];
 
-//=====> Here some stuff to create $resultBuilderFactory <=====
-$resultBuilder = $resultBuilderFactory->createResultBuilder($data, 'Keyboard');
+$provider = new DataAccessProvider;
+$resultBuilderFactory = $provider->getResultBuilderFactory();
+$resultBuilder = $resultBuilderFactory->createResultBuilder('Keyboard', $data);
 var_dump($resultBuilder->getSingleResult());
 ```
 
