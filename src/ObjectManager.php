@@ -2,7 +2,6 @@
 
 namespace Kassko\DataAccess;
 
-use Doctrine\Common\Annotations\AnnotationRegistry;
 use Kassko\ClassResolver\ClassResolverInterface;
 use Kassko\DataAccess\ClassMetadata\ClassMetadataFactoryInterface;
 use Kassko\DataAccess\Configuration\Configuration;

@@ -6,6 +6,7 @@ use BadMethodCallException;
 use Kassko\DataAccess\ObjectManager;
 use Kassko\DataAccess\Result\Exception\NoResultException;
 use Kassko\DataAccess\Result\Exception\NonUniqueResultException;
+use Kassko\DataAccess\Result\Exception\NotFoundIndexException;
 
 /**
  * Transform raw results into object representation.
@@ -159,12 +160,24 @@ class ResultBuilder
             case (0 === strpos($method, 'getResultIndexedBy')):
 
                 $indexOfBy = lcfirst(substr($method, 18));
+
+                $metadata = $this->objectManager->getMetadata($this->objectClass);
+                if (! $metadata->existsMappedFieldName($indexOfBy)) {
+                    throw new NotFoundIndexException($this->objectClass, $indexOfBy);
+                }
+
                 $result = $this->doGetResult($indexOfBy);
                 break;
 
             case (0 === strpos($method, 'getIterableResultIndexedBy')):
 
                 $indexOfBy = lcfirst(substr($method, 26));
+
+                $metadata = $this->objectManager->getMetadata($this->objectClass);
+                if (! $metadata->existsMappedFieldName($indexOfBy)) {
+                    throw new NotFoundIndexException($this->objectClass, $indexOfBy);
+                }
+
                 $result = $this->doGetIterableResult($indexOfBy);
                 break;
 

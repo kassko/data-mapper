@@ -2,7 +2,7 @@
 
 namespace Kassko\DataAccess\Configuration;
 
-use Doctrine\Common\Cache\Cache as CacheInterface;
+use Kassko\DataAccess\Cache\CacheInterface;
 
 /**
  * Hold cache configuration.
@@ -14,6 +14,7 @@ class CacheConfiguration
 	private $enabled = false;
 	private $cache;
 	private $lifeTime = 0;
+	private $shared = false;
 
 	public function isEnabled()
 	{
@@ -45,6 +46,17 @@ class CacheConfiguration
 	public function setLifeTime($lifeTime)
 	{
 		$this->lifeTime = $lifeTime;
+		return $this;
+	}
+
+	public function isShared()
+	{
+		return $this->shared;
+	}
+
+	public function setShared($shared)
+	{
+		$this->shared = $shared;
 		return $this;
 	}
 }

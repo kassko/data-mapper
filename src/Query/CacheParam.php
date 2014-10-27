@@ -3,7 +3,7 @@
 namespace Kassko\DataAccess\Query;
 
 use Kassko\DataAccess\Configuration\Configuration;
-use Doctrine\Common\Cache\Cache as CacheInterface;
+use Kassko\DataAccess\Cache\CacheInterface;
 
 /**
 * Hold user cache settings.
@@ -21,14 +21,16 @@ class CacheParam
 	private $enabled;
 	private $key;
 	private $lifeTime;
+	private $shared;
 
 	public function __construct(Configuration $configuration, $parent)
 	{
 		$cacheConfig = $configuration->getResultCacheConfig();
 
 		$this->enabled = $cacheConfig->isEnabled();
-		$this->cache = $cacheConfig->getCache();
 		$this->lifeTime = $cacheConfig->getLifeTime();
+		$this->cache = $cacheConfig->getCache();
+		$this->shared = $cacheConfig->isShared();
 		$this->parent = $parent;
 	}
 
@@ -37,12 +39,16 @@ class CacheParam
 		return $this->parent;
 	}
 
-	public function setParam($key, $lifeTime = 0, $cache = null)
+	public function setParam($key, $lifeTime = 0, $cache = null, $shared = null)
 	{
 		$this->key = $key;
 
 		if (0 !== $lifeTime) {
 			$this->lifeTime = $lifeTime;
+		}
+
+		if (null !== $shared) {
+			$this->shared = $shared;
 		}
 
 		if ($cache) {
@@ -78,6 +84,17 @@ class CacheParam
 	public function setLifeTime($lifeTime)
 	{
 		$this->lifeTime = $lifeTime;
+		return $this;
+	}
+
+	public function isShared()
+	{
+		return $this->shared;
+	}
+
+	public function setShared($shared)
+	{
+		$this->shared = $shared;
 		return $this;
 	}
 

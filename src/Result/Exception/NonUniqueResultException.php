@@ -13,7 +13,7 @@ class NonUniqueResultException extends \Exception
 	{
 		parent::__construct(
             sprintf(
-                'Only one result was expected but several results obtained for entity "%s".',
+                'Only one result was expected but several results obtained for object "%s".',
                 $objectClass
             )
         );

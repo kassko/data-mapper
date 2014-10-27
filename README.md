@@ -86,13 +86,25 @@ $data = [
     'COLOR' => 'blue'
 ];
 
-$provider = new DataAccessProvider;
+$provider = DataAccessProvider::getInstance();
 $resultBuilderFactory = $provider->getResultBuilderFactory();
 $resultBuilder = $resultBuilderFactory->createResultBuilder('Watch', $data);
 $result = $resultBuilder->getResult();
+var_dump($result);
 ```
 
-And inversely you extract values from your object:
+The code above will display:
+```php
+array(1) {
+    [0]=>
+    object(Watch)#283 (8) {
+        ["brand":"Watch":private]=> string(10) "some brand"
+        ["color":"Watch":private]=> string(4) "blue"
+    }
+}
+```
+
+Inversely, you can extract values from your object:
 ```php
 use Kassko\DataAccess\DataAccessProvider;
 
@@ -101,10 +113,124 @@ $keyBoard = (new Watch)
     ->setColor('blue')
 ;
 
-$provider = new DataAccessProvider;
+$provider = DataAccessProvider::getInstance();
 $resultBuilderFactory = $provider->getResultBuilderFactory();
 $resultBuilder = $resultBuilderFactory->createResultBuilder('Watch');
 $result = $resultBuilder->getRawResult();
+var_dump($result);
+```
+
+The code above will display:
+```php
+array(2) {
+  ['brand']=>
+  'some brand'
+  ['COLOR']=>
+  'blue'
+  }
+}
+```
+
+As you can see, the getResult() method return the object in an array. Maybe you would prefer to get the object instead of an array containing this object. There are severals ways to get results:
+
+```php
+    /**
+    Return an array of objects.
+    So return an array with only one object, if only one fullfill the request.
+    */
+    $resultBuilder->getResult();
+```
+
+```php
+    /**
+    Return one object or null if no result found.
+
+    If severals results are found, throw an exception
+    Kassko\DataAccess\Result\Exception\NonUniqueResultException.
+    */
+    $resultBuilder->getOneOrNullResult();
+```
+
+```php
+    /**
+    Return the object found or a default result (like a Watch instance).
+
+    If more than one result are found, throw an exception
+    Kassko\DataAccess\Result\Exception\NonUniqueResultException.
+    */
+    $resultBuilder->getOneOrDefaultResult(new Watch);
+```
+
+```php
+    /**
+    Return the object found.
+
+    If more than one result are found, throw an exception
+    Kassko\DataAccess\Result\Exception\NonUniqueResultException.
+
+    If no result found, throw an exception
+    Kassko\DataAccess\Result\Exception\NoResultException.
+    */
+    $resultBuilder->getSingleResult();
+```
+
+```php
+    Return the first object found or null if no result found.
+    $resultBuilder->getFirstOrNullResult();
+```
+
+```php
+    /**
+    Return the first object found or a default result (like a Watch instance).
+
+    If no result found, throw an exception
+    Kassko\DataAccess\Result\Exception\NoResultException.
+    */
+    $resultBuilder->getFirstOrDefaultResult(new Watch);
+```
+
+```php
+    /**
+    Return an array indexed by a property value (like "brand" value).
+
+    If the index does not exists, throw an exception Kassko\DataAccess\Result\Exception\NotFoundIndexException.
+
+    If the same index is found twice, throw an exception
+    Kassko\DataAccess\Result\Exception\DuplicatedIndexException.
+    */
+    $resultBuilder->getResultIndexedByBrand();//Indexed by brand value
+    //or
+    $resultBuilder->getResultIndexedByColor();//Indexed by color value
+```
+
+```php
+    /**
+    Return an iterator.
+
+    Result will not be hydrated immediately but only when you will iterate the results (with "foreach" for example).
+    */
+    $result = $resultBuilder->getIterableResult();
+    foreach ($result as $object) {//$object is hydrated
+
+        if ($object->getColor() === 'blue') {
+            break;
+
+            //We found the good object then we stop the loop and others objects in results will not be hydrated.
+        }
+    }
+```
+
+```php
+    /**
+    Return an iterator indexed by a property value (like "brand" value).
+
+    If the index does not exists, throw an exception Kassko\DataAccess\Result\Exception\NotFoundIndexException.
+
+    If the same index is found twice, throw an exception Kassko\DataAccess\Result\Exception\DuplicatedIndexException.
+    */
+    $resultBuilder->getIterableResultIndexedByBrand();
+    //or
+    $resultBuilder->getIterableResultIndexedByColor();
 ```
 
 You can do more advanced mapping:
@@ -303,15 +429,15 @@ This result set:
 
 Will be transform like that:
 ```php
-object(Solfa\Bundle\ScalesBundle\Scales\Watch)#283 (8) {
-    ["brand":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> string(10) "some brand"
-    ["color":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> string(4) "blue"
-    ["createdDate":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=>
+object(Watch)#283 (8) {
+    ["brand":"Watch":private]=> string(10) "some brand"
+    ["color":"Watch":private]=> string(4) "blue"
+    ["createdDate":"Watch":private]=>
         object(DateTime)#320 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
-    ["sealDate":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=>
+    ["sealDate":"Watch":private]=>
         object(DateTime)#319 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
-    ["waterProof":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> bool(true) ["stopWatch":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> bool(true)
-    ["customizable":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> bool(false) ["noSealDate":"Solfa\Bundle\ScalesBundle\Scales\Watch":private]=> bool(true)
+    ["waterProof":"Watch":private]=> bool(true) ["stopWatch":"Watch":private]=> bool(true)
+    ["customizable":"Watch":private]=> bool(false) ["noSealDate":"Watch":private]=> bool(true)
 }
 ```
 

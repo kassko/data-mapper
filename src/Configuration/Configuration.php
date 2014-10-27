@@ -11,7 +11,14 @@ use Kassko\DataAccess\ClassMetadata\ClassMetadataFactoryOptionsAwareInterface;
  */
 class Configuration
 {
+    /**
+     * @var CacheConfiguration The class metadata cache config
+     */
     private $classMetadataCacheConfig;
+
+    /**
+     * @var CacheConfiguration The result cache config
+     */
     private $resultCacheConfig;
 
     /**

@@ -7,6 +7,7 @@ use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Cache\ArrayCache;
 use Kassko\ClassResolver\ClosureClassResolver;
 use Kassko\ClassResolver\FactoryClassResolver;
+use Kassko\DataAccessBundle\Bridge\Adapter\FromDoctrineCacheAdapter;
 use Kassko\DataAccess\ClassMetadataLoader\AnnotationLoader;
 use Kassko\DataAccess\ClassMetadataLoader\DelegatingLoader;
 use Kassko\DataAccess\ClassMetadataLoader\LoaderResolver;
@@ -29,6 +30,17 @@ class DataAccessProvider
     private $objectListenerResolver;
     private $logger;
     private $cache = [];
+
+    public static function getInstance()
+    {
+        static $instance;
+
+        if (null === $instance) {
+            $instance = new static;
+        }
+
+        return $instance;
+    }
 
     public function getResultBuilderFactory()
     {
@@ -78,8 +90,8 @@ class DataAccessProvider
 
                 //Configuration
                 $configuration = (new Configuration)
-                    ->setClassMetadataCacheConfig(new CacheConfiguration(new ArrayCache))
-                    ->setResultCacheConfig(new CacheConfiguration(new ArrayCache))
+                    ->setClassMetadataCacheConfig(new CacheConfiguration(new FromDoctrineCacheAdapter(new ArrayCache)))
+                    ->setResultCacheConfig(new CacheConfiguration(new FromDoctrineCacheAdapter(new ArrayCache)))
                 ;
 
                 //ClassMetadataFactory
@@ -125,4 +137,8 @@ class DataAccessProvider
 
         return $this->cache[$key];
     }
+
+    private function __construct() {}
+
+    private function __clone() {}
 }

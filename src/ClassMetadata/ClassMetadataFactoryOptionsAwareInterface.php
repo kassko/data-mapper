@@ -2,7 +2,7 @@
 
 namespace Kassko\DataAccess\ClassMetadata;
 
-use Doctrine\Common\Cache\Cache as CacheInterface;
+use Kassko\DataAccess\Cache\CacheInterface;
 
 /**
 * Abstraction for initialize ClassMetadataFactory from configuration

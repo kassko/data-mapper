@@ -166,7 +166,6 @@ An association "to many" is used similarly.
 
 ```php
 use Kassko\DataAccess\Annotation as OM;
-use Doctrine\Common\Collections\ArrayCollection;
 
 class Keyboard
 {
@@ -199,7 +198,7 @@ class Keyboard
 
     public function __construct()
     {
-        $this->shops = new ArrayCollection();
+        $this->shops = [];
     }
 
     public function getColor()
@@ -286,7 +285,6 @@ If the "Shop" FQCN (full qualified class name) is "Kassko\Sample\Shop", the asso
 You can override this association name:
 ```php
 use Kassko\DataAccess\Annotation as OM;
-use Doctrine\Common\Collections\ArrayCollection;
 
 class Keyboard
 {
@@ -298,7 +296,7 @@ class Keyboard
 
     public function __construct()
     {
-        $this->shops = new ArrayCollection();
+        $this->shops = [];
     }
 
     public function insertShop(Shop $shop)

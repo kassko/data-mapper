@@ -40,12 +40,12 @@ class ResultManager
     ) {
         $hashedId = $this->getHashedIdFromId($id);
 
-        //On essaie de récupèrer l'entité d'identité $id dans l'identity map'.
+        //Try to get entity from the identity map.
         if (isset($this->identityMap[$objectClass][$hashedId])) {
             return $this->identityMap[$objectClass][$hashedId];
         }
 
-        //On essaie de récupèrer l'entité d'identité $id dans le cache.
+        //Try to get the entity in cache.
         if (null !== $cacheParam) {
 
             $objectCacheKey = $this->getCacheKey($hashedId, $objectClass);
@@ -61,23 +61,9 @@ class ResultManager
             return $data;
         }
 
-        //echo 'query';
-
-        //A défaut, on récupère l'entité d'identité $id dans le stockage.
-
+        //Get the entity from the storage and update the identity map.
         return $this->identityMap[$objectClass][$hashedId] = call_user_func_array($callback, [$objectClass]);
     }
-
-    /*
-    private function loadVersionInObjectFromRawResult($object, $rawResult)
-    {
-        $metadata = $this->objectManager->getMetadata($objectClass = get_class($object));
-        $mappedVersionFieldName = $metadata->getMappedVersionFieldName();
-
-        $hydrator = $this->objectManager->createHydratorFor($objectClass);
-        $hydrator->hydrateProperty($object, $mappedVersionFieldName, $rawResult, 1);
-    }
-    */
 
     public function findBy(
         Callable $callback,
@@ -92,13 +78,13 @@ class ResultManager
             throw new \LogicException('Une clé de cache doit être spécifiée pour les requêtes de lecture non CRUD.');
         }
 
-        //On ajoute le FQCN à la clé fournie pour favoriser son unicité.
+        //Append the FQCN to the key to be sure its unique.
         $collectionCacheKey = $objectClass.$collectionCacheKey;
 
         $cache = $cacheParam->getCache();
         if ($cache->contains($collectionCacheKey)) {
 
-            //On récupère du cache de requêtes les id des objets de la collection.
+            //Get from query cache the id's of object in the collection.
             $idCollection = $cache->fetch($collectionCacheKey);
             $collection = [];
 
@@ -106,13 +92,14 @@ class ResultManager
 
                 $hashedId = $this->getHashedIdFromId($id);
 
-                //On ne veut pas avoir des instances différentes d'entités de même identité. On veut renvoyer l'éventuelle instance existante.
+                //We do not want severals instances of entity for a same identity
+                //so we return the existing in memory instance.
                 if (isset($this->identityMap[$objectClass][$hashedId])) {
 
                     $object = $this->identityMap[$objectClass][$hashedId];
                 } else {
 
-                    //On récupère l'objet dans le cache des entités et on met-à-jour l'identity map.
+                    //Get the object from the object cache and update the identity map.
                     $objectCacheKey = $this->getCacheKey($hashedId, $objectClass);
                     if ($cache->contains($objectCacheKey)) {
 
@@ -121,9 +108,9 @@ class ResultManager
                          $cache->fetch($objectCacheKey);
                     } else {
 
-                        //Un objet de la collection n'est plus dans le cache des entités.
-                        //La cohérence des données du cache de requêtes n'est donc plus assurée,
-                        //Alors on requête le stockage et on remet dans le cache de requêtes la collection d'identités.
+                        //An object of the collection is not in the object cache anymore,
+                        //so data of the query cache are not consistent anymore,
+                        //then we read the storage and we update the cache with the collection.
                         return $this->cacheFindBy($callback, $objectClass, $cache, $collectionCacheKey, $cacheParam->getLifeTime());
                     }
                 }
@@ -146,21 +133,21 @@ class ResultManager
     ) {
         $result = call_user_func_array($callback, [$objectClass]);
 
-        $this->checkOptimisticConcurrency($object, $findCallback);
+        $this->checkOptimisticConcurrency($object, $findCallback, $cacheParam);
 
         if (null === $cacheParam) {
             return $result;
         }
 
-        //L'entité a changé, on la retire du cache des entités.
+        //Entity has changed, we remove it from the object cache.
         $this->detachObject($object, $cacheParam);
 
         if (null === $findCallback) {
             return $result;
         }
 
-        //On veut récupérer les modifications faîtes sur l'entité.
-        //Rappelons que l'on vient de la supprimer du cache des entités, elle sera donc raffraichie à partir de la couche stockage.
+        //We want a fresh object (with changes).
+        //Because it had been removed from object cache, it will be refresh from the storage.
         return call_user_func_array($findCallback, [$id]);
     }
 
@@ -172,7 +159,7 @@ class ResultManager
     ) {
         $result = call_user_func_array($callback, [$objectClass]);
 
-        //L'entité a été supprimé, on la retire du cache des entités.
+        //Entity has been removed, we remove it from the object cache.
         $this->detachObject($object, $cacheParam);
 
         return $result;
@@ -245,12 +232,12 @@ class ResultManager
 
     private function cacheFindBy(Callable $callback, $objectClass, $cache, $collectionCacheKey, $lifeTime)
     {
-        //A défaut, on récupère la collection du stockage.
+        //Fetch the object collection from storage.
         $collection = call_user_func_array($callback, [$objectClass]);
 
         $collectionToCache = $this->normalizeResultSetForCaching($collection);
 
-        //Et on met en cache la collection où les entités sont représentés par leurs id.
+        //Cache the fetched collection, only its object ids.
         $collectionId = array_map(
             function ($object) {
 
@@ -275,17 +262,25 @@ class ResultManager
     }
 
 
-    private function checkOptimisticConcurrency($object, Callable $findCallback = null)
+    private function checkOptimisticConcurrency($object, Callable $findCallback = null, CacheParam $cacheParam = null)
     {
-        if (null !== $findCallback && null !== $version = $this->getVersion($object)) {
+        if (null !== $version = $this->getVersion($object)) {
 
             $idRef = $this->getId($object);
-            $objectRef = call_user_func_array($findCallback, [$idRef]);
+            $hashedId = $this->getHashedIdFromId($idRef);
+            $objectCacheKey = $this->getCacheKey($hashedId, get_class($object));
+
+            //If the cache is shared, fetch the ref object from it.
+            if ($cacheParam->isShared() && $cache = $cacheParam->getCache() && $cache->contains($objectCacheKey)) {
+
+                $objectRef = $cache->fetch($objectCacheKey);
+            } elseif (null !== $findCallback) {//Otherwise fetch the ref object from the storage.
+
+                $objectRef = call_user_func_array($findCallback, [$idRef]);
+            }
 
             $versionRef = $this->getVersion($objectRef);
-
             if ($version !== $versionRef = $this->getVersion($objectRef)) {
-
                 throw OptimisticLockException::versionMismatch($object, $versionRef, $version);
             }
         }

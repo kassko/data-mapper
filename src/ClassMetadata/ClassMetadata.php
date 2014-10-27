@@ -922,4 +922,9 @@ class ClassMetadata
 
         return $propLoadedTogether;
     }
+
+    public function existsMappedFieldName($mappedFieldName)
+    {
+        return in_array($mappedFieldName, $this->mappedFieldNames);
+    }
 }
