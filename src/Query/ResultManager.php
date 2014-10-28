@@ -29,7 +29,7 @@ class ResultManager
         CacheParam $cacheParam = null
     ) {
 
-        return call_user_func_array($callback, [$objectClass]);
+        return $callback($objectClass);
     }
 
     public function find(
@@ -55,14 +55,14 @@ class ResultManager
                 return $this->identityMap[$objectClass][$hashedId] = $cache->fetch($objectCacheKey);
             }
 
-            $data = $this->identityMap[$objectClass][$hashedId] = call_user_func_array($callback, [$objectClass]);
+            $data = $this->identityMap[$objectClass][$hashedId] = $callback($objectClass);
             $cache->save($objectCacheKey, $data, $cacheParam->getLifeTime());
 
             return $data;
         }
 
         //Get the entity from the storage and update the identity map.
-        return $this->identityMap[$objectClass][$hashedId] = call_user_func_array($callback, [$objectClass]);
+        return $this->identityMap[$objectClass][$hashedId] = $callback($objectClass);
     }
 
     public function findBy(
@@ -71,7 +71,7 @@ class ResultManager
         CacheParam $cacheParam = null
     ) {
         if (null === $cacheParam) {
-            return call_user_func_array($callback, [$objectClass]);
+            return $callback($objectClass);
         }
 
         if (null === $collectionCacheKey = $cacheParam->getKey()) {
@@ -131,7 +131,7 @@ class ResultManager
         Callable $findCallback = null,
         CacheParam $cacheParam = null
     ) {
-        $result = call_user_func_array($callback, [$objectClass]);
+        $result = $callback($objectClass);
 
         $this->checkOptimisticConcurrency($object, $findCallback, $cacheParam);
 
@@ -148,7 +148,7 @@ class ResultManager
 
         //We want a fresh object (with changes).
         //Because it had been removed from object cache, it will be refresh from the storage.
-        return call_user_func_array($findCallback, [$id]);
+        return $findCallback($id);
     }
 
     public function delete(
@@ -157,7 +157,7 @@ class ResultManager
         $objectClass,
         CacheParam $cacheParam = null
     ) {
-        $result = call_user_func_array($callback, [$objectClass]);
+        $result = $callback($objectClass);
 
         //Entity has been removed, we remove it from the object cache.
         $this->detachObject($object, $cacheParam);
@@ -233,7 +233,7 @@ class ResultManager
     private function cacheFindBy(Callable $callback, $objectClass, $cache, $collectionCacheKey, $lifeTime)
     {
         //Fetch the object collection from storage.
-        $collection = call_user_func_array($callback, [$objectClass]);
+        $collection = $callback($objectClass);
 
         $collectionToCache = $this->normalizeResultSetForCaching($collection);
 
@@ -276,7 +276,7 @@ class ResultManager
                 $objectRef = $cache->fetch($objectCacheKey);
             } elseif (null !== $findCallback) {//Otherwise fetch the ref object from the storage.
 
-                $objectRef = call_user_func_array($findCallback, [$idRef]);
+                $objectRef = $findCallback($idRef);
             }
 
             $versionRef = $this->getVersion($objectRef);
