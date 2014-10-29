@@ -7,10 +7,15 @@ namespace Kassko\DataAccess\Cache;
  *
  * @author kko
  */
-interface CacheAdapterInterface extends CacheInterface
+abstract class CacheAdapter implements CacheInterface
 {
+    protected $wrappedCache;
+
     /**
      * @param mixed $wrappedCache The cache to adapt to data access cache interface
      */
-    function setWrappedCache($wrappedCache);
+    public function setWrappedCache($wrappedCache)
+    {
+        $this->wrappedCache = $wrappedCache;
+    }
 }

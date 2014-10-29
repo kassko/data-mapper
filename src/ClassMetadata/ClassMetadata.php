@@ -708,6 +708,9 @@ class ClassMetadata
 
     public function getIdFieldName()
     {
+        if (! isset($this->mappedIdFieldName)) {
+            throw new ObjectMappingException(sprintf('In your use case, the Id field name is needed for object "%s"', $this->getName()));
+        }
         return $this->getOriginalFieldName($this->mappedIdFieldName);
     }
 
