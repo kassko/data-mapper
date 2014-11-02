@@ -5,9 +5,10 @@ namespace Kassko\DataAccess;
 use Closure;
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Cache\ArrayCache;
+use Symfony\Component\EventDispatcher;
 use Kassko\ClassResolver\ClosureClassResolver;
 use Kassko\ClassResolver\FactoryClassResolver;
-use Kassko\DataAccessBundle\Bridge\Adapter\FromDoctrineCacheAdapter;
+use Kassko\Common\Bridge\BridgeInterface;
 use Kassko\DataAccess\ClassMetadataLoader\AnnotationLoader;
 use Kassko\DataAccess\ClassMetadataLoader\DelegatingLoader;
 use Kassko\DataAccess\ClassMetadataLoader\LoaderResolver;
@@ -21,11 +22,13 @@ use Psr\Log\LoggerInterface;
 
 /**
 * Construct and provide main objects of DataAccess with a default configuration.
+* Useful for environment without dependency container.
 *
 * @author kko
 */
 class DataAccessProvider
 {
+    private $bridge;
     private $classResolver;
     private $objectListenerResolver;
     private $logger;
@@ -52,16 +55,22 @@ class DataAccessProvider
 
                 //LazyLoaderFactory
                 $lazyLoaderFactory = new LazyLoaderFactory($objectManager);
-                Registry::getInstance()->setLazyLoaderFactory($lazyLoaderFactory);
+                Registry::getInstance()[Registry::KEY_LAZY_LOADER_FACTORY] = $lazyLoaderFactory;
 
                 //Logger
                 if (isset($this->logger)) {
-                    Registry::getInstance()->setLogger($this->logger);
+                    Registry::getInstance()[Registry::KEY_LOGGER] = $this->logger;
                 }
 
                 return new ResultBuilderFactory($objectManager);
             }
         );
+    }
+
+    public function setBridge(BridgeInterface $bridge)
+    {
+        $this->bridge = $bridge;
+        return $this;
     }
 
     public function setClassResolver(Closure $classResolver)
@@ -90,8 +99,8 @@ class DataAccessProvider
 
                 //Configuration
                 $configuration = (new Configuration)
-                    ->setClassMetadataCacheConfig(new CacheConfiguration(new FromDoctrineCacheAdapter(new ArrayCache)))
-                    ->setResultCacheConfig(new CacheConfiguration(new FromDoctrineCacheAdapter(new ArrayCache)))
+                    ->setClassMetadataCacheConfig(new CacheConfiguration($this->bridge->adaptCache(new ArrayCache)))
+                    ->setResultCacheConfig(new CacheConfiguration($this->bridge->adaptCache(new ArrayCache)))
                 ;
 
                 //ClassMetadataFactory
@@ -113,7 +122,10 @@ class DataAccessProvider
 
                 //ObjectListenerResolver
                 if (isset($this->objectListenerResolver)) {
-                    $olr = new ClosureObjectListenerResolver($this->objectListenerResolver);
+                    $olr =
+                        (new ClosureObjectListenerResolver($this->objectListenerResolver))
+                        ->setEventManager(new EventDispatcher)
+                    ;
                 }
 
                 //ObjectManager

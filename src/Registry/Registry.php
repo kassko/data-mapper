@@ -2,27 +2,23 @@
 
 namespace Kassko\DataAccess\Registry;
 
-use Kassko\DataAccess\LazyLoader\LazyLoaderFactoryInterface;
-use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Registry
  *
  * @author kko
  */
-final class Registry
+final class Registry implements \ArrayAccess, \IteratorAggregate
 {
-    /**
-     * Lazy loader factory
-     * @var LazyLoaderFactoryInterface
-     */
-    private $lazyLoaderFactory;
+    const KEY_LAZY_LOADER_FACTORY = 'lazy_loader_factory';
+    const KEY_LOGGER = 'logger';
 
     /**
-     * Logger
-     * @var LoggerInterface
+     * Hold data
+     * @var array
      */
-    private $logger;
+    private $registry = [];
 
     public static function getInstance()
     {
@@ -36,51 +32,54 @@ final class Registry
     }
 
     /**
-     * Gets the Lazy loader factory.
-     *
-     * @return LazyLoaderFactoryInterface
+     * {@inheritdoc}
      */
-    public function getLazyLoaderFactory()
+    public function offsetExists($key)
     {
-        return $this->lazyLoaderFactory;
+        return array_key_exists($key, $this->registry);
     }
 
     /**
-     * Sets the Lazy loader factory.
-     *
-     * @param LazyLoaderFactoryInterface $lazyLoaderFactory the lazy loader factory
-     *
-     * @return self
+     * {@inheritdoc}
      */
-    public function setLazyLoaderFactory(LazyLoaderFactoryInterface $lazyLoaderFactory)
+    public function offsetGet($key)
     {
-        $this->lazyLoaderFactory = $lazyLoaderFactory;
+        if ($this->offsetExists($key)) {
+            return $this->registry[$key];
+        }
 
-        return $this;
+        throw new RuntimeException(sprintf('No data registered on key "%s" in the registry.', $key));
     }
 
     /**
-     * Gets the Logger.
-     *
-     * @return LoggerInterface
+     * {@inheritdoc}
      */
-    public function getLogger()
+    public function offsetSet($offset, $value)
     {
-        return $this->logger;
+        if (is_null($offset)) {
+            throw new RuntimeException(sprintf('You should specify an index "%s" where to save in the registry.', $offset));
+        }
+
+        if ($this->offsetExists($offset)) {
+            throw new RuntimeException(sprintf('The key "%s" cannot be overriden in the registry.', $offset));
+        }
+
+        $this->registry[$offset] = $value;
     }
 
     /**
-     * Sets the Logger.
-     *
-     * @param LoggerInterface $logger the logger
-     *
-     * @return self
+     * {@inheritdoc}
      */
-    public function setLogger(LoggerInterface $logger)
+    public function offsetUnset($key)
     {
-        $this->logger = $logger;
+        unset($this->registry[$key]);
+    }
 
-        return $this;
+    /**
+     * {@inheritdoc}
+     */
+    public function getIterator() {
+        return new \ArrayIterator($this->registry);
     }
 
     private function __construct() {}

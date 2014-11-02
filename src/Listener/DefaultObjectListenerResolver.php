@@ -6,7 +6,6 @@ use Kassko\ClassResolver\DefaultClassResolver;
 use Kassko\DataAccess\Listener\EventManagerAwareTrait;
 use Kassko\DataAccess\Listener\QueryEvent;
 use Symfony\Component\DependencyInjection as DI;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * This object listener resolver is used in a chain as fallback
