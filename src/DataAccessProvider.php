@@ -5,10 +5,9 @@ namespace Kassko\DataAccess;
 use Closure;
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Cache\ArrayCache;
-use Symfony\Component\EventDispatcher;
+use Kassko\SymfonyBridge\Adapter\DoctrineCacheAdapter;
 use Kassko\ClassResolver\ClosureClassResolver;
 use Kassko\ClassResolver\FactoryClassResolver;
-use Kassko\Common\Bridge\BridgeInterface;
 use Kassko\DataAccess\ClassMetadataLoader\AnnotationLoader;
 use Kassko\DataAccess\ClassMetadataLoader\DelegatingLoader;
 use Kassko\DataAccess\ClassMetadataLoader\LoaderResolver;
@@ -19,6 +18,7 @@ use Kassko\DataAccess\Configuration\Configuration;
 use Kassko\DataAccess\Listener\ObjectListenerResolverChain;
 use Kassko\DataAccess\Registry\Registry;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\EventDispatcher;
 
 /**
 * Construct and provide main objects of DataAccess with a default configuration.
@@ -28,7 +28,6 @@ use Psr\Log\LoggerInterface;
 */
 class DataAccessProvider
 {
-    private $bridge;
     private $classResolver;
     private $objectListenerResolver;
     private $logger;
@@ -67,12 +66,6 @@ class DataAccessProvider
         );
     }
 
-    public function setBridge(BridgeInterface $bridge)
-    {
-        $this->bridge = $bridge;
-        return $this;
-    }
-
     public function setClassResolver(Closure $classResolver)
     {
         $this->classResolver = $classResolver;
@@ -99,8 +92,8 @@ class DataAccessProvider
 
                 //Configuration
                 $configuration = (new Configuration)
-                    ->setClassMetadataCacheConfig(new CacheConfiguration($this->bridge->adaptCache(new ArrayCache)))
-                    ->setResultCacheConfig(new CacheConfiguration($this->bridge->adaptCache(new ArrayCache)))
+                    ->setClassMetadataCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
+                    ->setResultCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
                 ;
 
                 //ClassMetadataFactory

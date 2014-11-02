@@ -81,6 +81,18 @@ class Watch
 
 A property without "Column" annotation is not managed (no hydrated and no extracted).
 
+And you get a ResultBuilderFactory instance:
+
+```php
+use Kassko\DataAccess\DataAccessProvider;
+
+$provider = DataAccessProvider::getInstance();
+$resultBuilderFactory = $provider->getResultBuilderFactory();
+```
+
+If you work with a framework, normally, you can get a ResultBuilderFactory instance from a container.
+For example, with Symfony framework, we can use the DataAccessBundle witch provides to the container a ResultBuilderFactory service.
+
 And you hydrate your object:
 ```php
 use Kassko\DataAccess\DataAccessProvider;
@@ -90,30 +102,12 @@ $data = [
     'COLOR' => 'blue'
 ];
 
+$provider = DataAccessProvider::getInstance();
+$resultBuilderFactory = $provider->getResultBuilderFactory();
 $resultBuilder = $resultBuilderFactory->createResultBuilder('Watch', $data);
 $result = $resultBuilder->getResult();
 var_dump($result);
 ```
-
-How to get a ResultBuilderFactory instance ?
-
-If you work with a framework, normally, you can get a ResultBuilderFactory instance from a container.
-For example, with Symfony framework, we can use the DataAccessBundle witch provides to the container a ResultBuilderFactory service.
-
-If you don't work with a framework, be aware that DataAccess has no implementations for all components it uses. It needs a Bridge.
-A bridge allow to configure DataAccess with behaviours and implementations of standard components from a framework.
-You can use the SymfonyBridge or another bridge.
-
-```php
-use Kassko\DataAccess\DataAccessProvider;
-use Kassko\SymfonyBridge\SymfonyBridge;
-
-$provider = DataAccessProvider::getInstance();
-$provider->setBridge(SymfonyBridge::getInstance());
-$resultBuilderFactory = $provider->getResultBuilderFactory();
-```
-
-You also can create your one bridge. This will be shown later.
 
 The code above will display:
 ```php
