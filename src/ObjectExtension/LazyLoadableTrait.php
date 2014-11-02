@@ -37,6 +37,6 @@ trait LazyLoadableTrait
     private function getLazyLoader()
     {
         static $lazyLoader;
-        return $lazyLoader = $lazyLoader ?: Registry::getInstance()->getLazyLoaderFactory()->getInstance(get_called_class());
+        return $lazyLoader = $lazyLoader ?: Registry::getInstance()[Registry::KEY_LAZY_LOADER_FACTORY]->getInstance(get_called_class());
     }
 }

@@ -202,6 +202,16 @@ class ResultBuilder
         return $rh->extract($this->objectClass, $this->data);
     }
 
+    /**
+     * Create an object completely managed by ObjectManager.
+     *
+     * @return mixed
+     */
+    public function createObject()
+    {
+        return new $this->objectClass;
+    }
+
     private function doGetResult($indexOfBy)
     {
         $rh = new ResultHydrator($this->objectManager);

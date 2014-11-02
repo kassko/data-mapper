@@ -2,7 +2,7 @@
 
 namespace Kassko\DataAccess\ClassMetadata;
 
-use Kassko\DataAccess\Cache\CacheInterface;
+use Kassko\Common\Cache\CacheInterface;
 
 /**
 * Abstraction for initialize ClassMetadataFactory from configuration

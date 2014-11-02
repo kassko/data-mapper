@@ -14,7 +14,6 @@ use Kassko\DataAccess\Listener\Events;
 use Kassko\DataAccess\Listener\ObjectListenerResolverInterface;
 use Kassko\DataAccess\Query\CacheConfig;
 use Kassko\DataAccess\Query\ResultManager;
-use Kassko\DataAccess\Registry\Registry;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -264,16 +263,16 @@ class ObjectManager
         return $this;
     }
 
-    public function setLazyLoaderFactory(LazyLoaderFactoryInterface $lazyLoaderFactory)
+    public function executeCommand(Callable $command)
     {
-        Registry::getInstance()->setLazyLoaderFactory($this->lazyLoaderFactory = $lazyLoaderFactory);
+        $command();
 
         return $this;
     }
 
     public function setLogger(LoggerInterface $logger = null)
     {
-        Registry::getInstance()->setLogger($this->logger = $logger);
+        $this->logger = $logger;
 
         return $this;
     }
