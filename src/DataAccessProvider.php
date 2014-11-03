@@ -5,7 +5,7 @@ namespace Kassko\DataAccess;
 use Closure;
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Cache\ArrayCache;
-use Kassko\SymfonyBridge\Adapter\DoctrineCacheAdapter;
+use Kassko\DataAccess\Adapter\DoctrineCacheAdapter;
 use Kassko\ClassResolver\ClosureClassResolver;
 use Kassko\ClassResolver\FactoryClassResolver;
 use Kassko\DataAccess\ClassMetadataLoader\AnnotationLoader;
