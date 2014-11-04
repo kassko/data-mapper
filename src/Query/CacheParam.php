@@ -3,7 +3,7 @@
 namespace Kassko\DataAccess\Query;
 
 use Kassko\DataAccess\Configuration\Configuration;
-use Kassko\Common\Cache\CacheInterface;
+use Kassko\DataAccess\Cache\CacheInterface;
 
 /**
 * Hold user cache settings.

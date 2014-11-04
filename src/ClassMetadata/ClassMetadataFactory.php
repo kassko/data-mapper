@@ -6,7 +6,7 @@ use Kassko\DataAccess\Annotation as OM;
 use Kassko\DataAccess\Configuration\Configuration;
 use Kassko\DataAccess\MappingDriver\AnnotationDriver;
 use Kassko\DataAccess\ClassMetadataLoader\LoaderInterface as ClassMetadataLoaderInterface;
-use Kassko\Common\Cache\CacheInterface;
+use Kassko\DataAccess\Cache\CacheInterface;
 
 /**
 * Factory to create class metadata.

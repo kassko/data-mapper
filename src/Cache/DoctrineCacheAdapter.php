@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\Adapter;
+namespace Kassko\DataAccess\Cache;
 
-use Kassko\Common\Cache\CacheInterface as KasskoCacheInterface;
+use Kassko\DataAccess\Cache\CacheInterface as KasskoCacheInterface;
 use Doctrine\Common\Cache\Cache as DoctrineCacheInterface;
 
 /**

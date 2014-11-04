@@ -2,7 +2,7 @@
 
 namespace Kassko\DataAccess\Configuration;
 
-use Kassko\Common\Cache\CacheInterface;
+use Kassko\DataAccess\Cache\CacheInterface;
 
 /**
  * Hold cache configuration.
