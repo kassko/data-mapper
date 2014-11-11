@@ -2,7 +2,7 @@
 
 namespace Kassko\DataAccess\ClassMetadata;
 
-use Kassko\DataAccess\Configuration\Configuration;
+use Kassko\DataAccess\Configuration\ObjectKey;
 
 /**
 * Contract for class metadata factory.
@@ -11,5 +11,5 @@ use Kassko\DataAccess\Configuration\Configuration;
 */
 interface ClassMetadataFactoryInterface
 {
-	function loadMetadata($className, Configuration $config);
+	function loadMetadata(ObjectKey $objectKey, $resourceType, $resourceDir);
 }

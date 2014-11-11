@@ -26,7 +26,7 @@ class ClassMetadata
     private $toMapped = [];
     private $fieldsDataByKey = [];
     private $columnDataName = 'column';
-    private $valueObjectsByKey = [];
+    private $valueObjects = [];
     private $repositoryClass;
     private $objectReadDateFormat;
     private $objectWriteDateFormat;
@@ -37,8 +37,6 @@ class ClassMetadata
      */
     private $metadataExtensionClass;
 
-    private $valueObjectsClassNames = [];
-    private $valueObjectsMetadata = [];
     private $mappedManagedFieldNames = [];
     private $mappedTransientFieldNames = [];
     private $fieldsWithHydrationStrategy = [];
@@ -51,7 +49,7 @@ class ClassMetadata
      * Source (class and method) which hydrate a field.
      * @var array
      */
-    private $customHydrationSource = [];
+    private $providers = [];
     private $objectListenerClasses = [];
     private $idGetter;
     private $idSetter;
@@ -384,7 +382,6 @@ class ClassMetadata
      */
     public function getMetadataExtensionClassByMappedField($mappedFieldName)
     {
-        //$prefix = '\\';
         $prefix = '';
 
         if (null != $data = $this->getDataForField($mappedFieldName, $this->columnDataName)) {
@@ -426,42 +423,39 @@ class ClassMetadata
         return $this;
     }
 
+    /*
     public function isValueObject($mappedFieldName)
     {
-        return array_key_exists($mappedFieldName, $this->valueObjectsByKey);
+        return array_key_exists($mappedFieldName, $this->valueObjects);
+    }*/
+
+    public function getFieldsWithValueObjects()
+    {
+        return array_keys($this->valueObjects);
     }
 
-    public function getValueObjectsByKey()
+    public function setValueObjects(array $valueObjects)
     {
-        return $this->valueObjectsByKey;
-    }
-
-    public function setValueObjectsByKey(array $valueObjectsByKey)
-    {
-        $this->valueObjectsByKey = $valueObjectsByKey;
+        $this->valueObjects = $valueObjects;
         return $this;
     }
 
-    public function getValueObjectsClassNames()
+    public function getValueObjectInfo($mappedFieldName)
     {
-        return $this->valueObjectsClassNames;
-    }
+        $valueObjectInfo = $this->valueObjects[$mappedFieldName];
 
-    public function setValueObjectsClassNames(array $valueObjectsClassNames)
-    {
-        $this->valueObjectsClassNames = $valueObjectsClassNames;
-        return $this;
-    }
+        $mappingResourcePath = null;
+        if (isset($valueObjectInfo['mappingResourcePath'], $valueObjectInfo['mappingResourceName'])) {
+            $mappingResourcePath = $valueObjectInfo['mappingResourcePath'].'/'.$valueObjectInfo['mappingResourceName'];
+        } elseif (isset($valueObjectInfo['mappingResourceName'])) {
+            $mappingResourcePath = $valueObjectInfo['mappingResourceName'];
+        }
 
-    public function getValueObjectsMetadata()
-    {
-        return $this->valueObjectsMetadata;
-    }
-
-    public function setValueObjectsMetadata(array $valueObjectsMetadata)
-    {
-        $this->valueObjectsMetadata = $valueObjectsMetadata;
-        return $this;
+        return [
+            $valueObjectInfo['class'],
+            $mappingResourcePath,
+            isset($valueObjectInfo['mappingResourceType']) ? $valueObjectInfo['mappingResourceType'] : null,
+        ];
     }
 
     public function isTransient($mappedFieldName)
@@ -646,11 +640,6 @@ class ClassMetadata
         }
 
         return $this->toMapped[$originalFieldName];
-    }
-
-    public function mergeValueObjectMetadata($valueObjectClassName, ClassMetadata $valueObjectMetadata)
-    {
-        $this->valueObjectsMetadata[$valueObjectClassName] = $valueObjectMetadata;
     }
 
     public function isMappedDateField($mappedFieldName)
@@ -846,41 +835,41 @@ class ClassMetadata
      * @return array
      */
     /*
-    public function getCustomHydrationSources()
+    public function getProviders()
     {
-        return $this->customHydrationSource;
+        return $this->providers;
     }
     */
 
-    public function hasCustomHydrationSource($mappedFieldName)
+    public function hasProvider($mappedFieldName)
     {
-        return isset($this->customHydrationSource[$mappedFieldName]);
+        return isset($this->providers[$mappedFieldName]);
     }
 
-    public function getFieldsWithCustomHydrationSource()
+    public function getFieldsWithProviders()
     {
-        return array_keys($this->customHydrationSource);
+        return array_keys($this->providers);
     }
 
-    public function getCustomHydrationSourceInfo($mappedFieldName)
+    public function getProvidersInfo($mappedFieldName)
     {
         return [
-            $this->customHydrationSource[$mappedFieldName]['class'],
-            $this->customHydrationSource[$mappedFieldName]['method'],
-            $this->customHydrationSource[$mappedFieldName]['lazyLoading']
+            $this->providers[$mappedFieldName]['class'],
+            $this->providers[$mappedFieldName]['method'],
+            $this->providers[$mappedFieldName]['lazyLoading']
         ];
     }
 
     /**
      * Sets the Source (class and method) which hydrate a field.
      *
-     * @param array $customHydrationSource the hydration sources
+     * @param array $providers the hydration sources
      *
      * @return self
      */
-    public function setCustomHydrationSources(array $customHydrationSource)
+    public function setProviders(array $providers)
     {
-        $this->customHydrationSource = $customHydrationSource;
+        $this->providers = $providers;
 
         return $this;
     }
@@ -908,15 +897,15 @@ class ClassMetadata
      */
     public function getFieldsWithSameProvider($mappedFieldNameRef)
     {
-        if (! isset($this->customHydrationSource[$mappedFieldNameRef])) {
+        if (! isset($this->providers[$mappedFieldNameRef])) {
             throw new ObjectMappingException(sprintf('A "provider" metadata is expected for the field "%s".', $mappedFieldNameRef));
         }
 
-        $class = $this->customHydrationSource[$mappedFieldNameRef]['class'];
-        $method = $this->customHydrationSource[$mappedFieldNameRef]['method'];
+        $class = $this->providers[$mappedFieldNameRef]['class'];
+        $method = $this->providers[$mappedFieldNameRef]['method'];
 
         $propLoadedTogether = [];
-        foreach ($this->customHydrationSource as $mappedFieldName => $value) {
+        foreach ($this->providers as $mappedFieldName => $value) {
 
             if ($mappedFieldName !== $mappedFieldNameRef && $value['class'] === $class && $value['method'] === $method) {
                 $propLoadedTogether[] = $mappedFieldName;

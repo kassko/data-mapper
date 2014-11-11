@@ -2,8 +2,9 @@
 
 namespace Kassko\DataAccess\Hydrator;
 
-use Kassko\DataAccess\ObjectManager;
+use Kassko\DataAccess\Configuration\ObjectKey;
 use Kassko\DataAccess\Exception\ObjectMappingException;
+use Kassko\DataAccess\ObjectManager;
 
 
 /**
@@ -71,7 +72,7 @@ class EventHydrator extends HydratorWrapper
         return $object;
 	}
 
-	protected function doPrepare($object)
+	protected function doPrepare($object, ObjectKey $mrck = null)
     {
         $this->onBeforeExtract = $this->metadata->getOnBeforeExtract();
         $this->onBeforeHydrate = $this->metadata->getOnBeforeHydrate();

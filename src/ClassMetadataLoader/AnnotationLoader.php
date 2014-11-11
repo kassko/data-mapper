@@ -14,10 +14,8 @@ use Kassko\DataAccess\ClassMetadata\ClassMetadata;
 class AnnotationLoader implements LoaderInterface
 {
 	private $reader;
-    private $objectMetadata;
+    private $classMetadata;
     private $objectReflectionClass;
-    private $valueObjectMetadata;
-    private $valueObjectReflectionClass;
 
     private static $objectAnnotationName = OM\Entity::class;
     private static $columnAnnotationName = OM\Column::class;
@@ -29,7 +27,7 @@ class AnnotationLoader implements LoaderInterface
     private static $objectListenersAnnotationName = OM\EntityListeners::class;
     private static $toOneAnnotationName = OM\ToOne::class;
     private static $toManyAnnotationName = OM\ToMany::class;
-    private static $customHydrationSourceAnnotationName = OM\Provider::class;
+    private static $providerAnnotationName = OM\Provider::class;
     private static $getterAnnotationName = OM\Getter::class;
     private static $setterAnnotationName = OM\Setter::class;
 
@@ -43,14 +41,14 @@ class AnnotationLoader implements LoaderInterface
 		$this->reader = $reader;
 	}
 
-    public function loadObjectMetadata(ClassMetadata $objectMetadata, $ressource, $type = null)
+    public function loadClassMetadata(ClassMetadata $classMetadata, $ressource, $type = null)
     {
-        $this->objectMetadata = $objectMetadata;
-        $this->objectReflectionClass = $this->objectMetadata->getReflectionClass();
+        $this->classMetadata = $classMetadata;
+        $this->objectReflectionClass = $this->classMetadata->getReflectionClass();
 
     	$this->loadAnnotationsFromObject();
 
-    	return $this->objectMetadata;
+    	return $this->classMetadata;
     }
 
     public function supports($ressource, $type = null)
@@ -63,19 +61,7 @@ class AnnotationLoader implements LoaderInterface
         $this->loadClassAnnotationsFromObject();
         $this->loadMethodAnnotationsFromObject();
         $this->loadFieldAnnotationsFromObject();
-        //$this->objectMetadata->setColumnAnnotationName(self::$columnAnnotationName);
-    }
-
-    private function loadAnnotationsFromValueObject()
-    {
-        foreach ($this->valueObjectReflectionClass->getProperties() as $reflectionProperty) {
-
-            $mappedFieldName = $reflectionProperty->getName();
-            $annotations = $this->reader->getPropertyAnnotations($reflectionProperty);
-            foreach ($annotations as $annotation) {
-                yield $mappedFieldName => $annotation;
-            }
-        }
+        //$this->classMetadata->setColumnAnnotationName(self::$columnAnnotationName);
     }
 
     private function loadClassAnnotationsFromObject()
@@ -84,15 +70,15 @@ class AnnotationLoader implements LoaderInterface
         foreach ($annotations as $annotation) {
             switch (get_class($annotation)) {
                 case self::$objectAnnotationName:
-                    $this->objectMetadata->setRepositoryClass($annotation->repositoryClass);
-                    $this->objectMetadata->setObjectReadDateFormat($annotation->readDateFormat);
-                    $this->objectMetadata->setObjectWriteDateFormat($annotation->writeDateFormat);
-                    $this->objectMetadata->setPropertyAccessStrategyEnabled($annotation->propertyAccessStrategyEnabled);
-                    $this->objectMetadata->setMetadataExtensionClass($annotation->metadataExtensionClass);
+                    $this->classMetadata->setRepositoryClass($annotation->repositoryClass);
+                    $this->classMetadata->setObjectReadDateFormat($annotation->readDateFormat);
+                    $this->classMetadata->setObjectWriteDateFormat($annotation->writeDateFormat);
+                    $this->classMetadata->setPropertyAccessStrategyEnabled($annotation->propertyAccessStrategyEnabled);
+                    $this->classMetadata->setMetadataExtensionClass($annotation->metadataExtensionClass);
                     break;
 
                 case self::$objectListenersAnnotationName:
-                    $this->objectMetadata->setObjectListenerClasses($annotation->classList);
+                    $this->classMetadata->setObjectListenerClasses($annotation->classList);
                     break;
             }
         }
@@ -108,19 +94,19 @@ class AnnotationLoader implements LoaderInterface
 
                 switch (get_class($annotation)) {
                     case self::$preExtractAnnotationName:
-                        $this->objectMetadata->setOnBeforeExtract($methodName);
+                        $this->classMetadata->setOnBeforeExtract($methodName);
                         break;
 
                     case self::$postExtractAnnotationName:
-                        $this->objectMetadata->setOnAfterExtract($methodName);
+                        $this->classMetadata->setOnAfterExtract($methodName);
                         break;
 
                     case self::$preHydrateAnnotationName:
-                        $this->objectMetadata->setOnBeforeHydrate($methodName);
+                        $this->classMetadata->setOnBeforeHydrate($methodName);
                         break;
 
                     case self::$postHydrateAnnotationName:
-                        $this->objectMetadata->setOnAfterHydrate($methodName);
+                        $this->classMetadata->setOnAfterHydrate($methodName);
                         break;
                 }
             }
@@ -137,12 +123,11 @@ class AnnotationLoader implements LoaderInterface
         $toMapped = [];
         $toOneAssociations = [];
         $toManyAssociations = [];
-        $customHydrationSources = [];
+        $providers = [];
         $mappedIdFieldName = null;
         $mappedIdCompositePartFieldName = [];
         $mappedVersionFieldName = null;
-        $valueObjectsByKey = [];
-        $valueObjectsClassNames = [];
+        $valueObjects = [];
         $mappedTransientFieldNames = [];
         $mappedManagedFieldNames = [];
         $fieldsWithHydrationStrategy = [];
@@ -156,7 +141,6 @@ class AnnotationLoader implements LoaderInterface
             $annotations = $this->reader->getPropertyAnnotations($reflectionProperty);
 
             $existsColumnAnnotation = false;
-            $curseurValueObject = -1;
 
             foreach ($annotations as $annotation) {
                 $annotationName = get_class($annotation);
@@ -213,26 +197,18 @@ class AnnotationLoader implements LoaderInterface
                         }
                         break;
 
-                    case self::$customHydrationSourceAnnotationName:
+                    case self::$providerAnnotationName:
 
-                        $customHydrationSources[$mappedFieldName] = (array)$annotation;
+                        $providers[$mappedFieldName] = (array)$annotation;
                         break;
 
                     case self::$valueObjectAnnotationName:
 
-                        if (! isset($valueObjectsByKey[$mappedFieldName])) {
-                            $valueObjectsByKey[$mappedFieldName] = [];
-                        }
-
-                        //On gère le cas où l'annotation ValueObject occupe plusieurs lignes.
-                        if (isset($annotation->name)) {
-
-                            $valueObjectsByKey[$mappedFieldName][++$curseurValueObject] = (array)$annotation;
-                            $valueObjectsClassNames[] = $annotation->valueObjectClass;
-                        } else {
-
-                            $valueObjectsByKey[$mappedFieldName][$curseurValueObject]['fieldNames'] += (array)$annotation->fieldNames;
-                        }
+                        $valueObjects[$mappedFieldName] = [];
+                        $valueObjects[$mappedFieldName]['class'] = $annotation->class;
+                        $valueObjects[$mappedFieldName]['mappingResourceName'] = $annotation->mappingResourceName;
+                        $valueObjects[$mappedFieldName]['mappingResourcePath'] = $annotation->mappingResourcePath;
+                        $valueObjects[$mappedFieldName]['mappingResourceType'] = $annotation->mappingResourceType;
                         break;
 
                     case self::$idAnnotationName:
@@ -265,79 +241,75 @@ class AnnotationLoader implements LoaderInterface
         }
 
         if (count($fieldAnnotationsByKey)) {
-            $this->objectMetadata->setFieldsDataByKey($fieldAnnotationsByKey);
+            $this->classMetadata->setFieldsDataByKey($fieldAnnotationsByKey);
         }
 
         if (count($mappedFieldNames)) {
-            $this->objectMetadata->setMappedFieldNames($mappedFieldNames);
+            $this->classMetadata->setMappedFieldNames($mappedFieldNames);
         }
 
         if (count($originalFieldNames)) {
-            $this->objectMetadata->setOriginalFieldNames($originalFieldNames);
+            $this->classMetadata->setOriginalFieldNames($originalFieldNames);
         }
 
         if (count($toOriginal)) {
-            $this->objectMetadata->setToOriginal($toOriginal);
+            $this->classMetadata->setToOriginal($toOriginal);
         }
 
         if (count($toMapped)) {
-            $this->objectMetadata->setToMapped($toMapped);
+            $this->classMetadata->setToMapped($toMapped);
         }
 
         if (count($toOneAssociations)) {
-            $this->objectMetadata->setToOneAssociations($toOneAssociations);
+            $this->classMetadata->setToOneAssociations($toOneAssociations);
         }
 
         if (count($toManyAssociations)) {
-            $this->objectMetadata->setToManyAssociations($toManyAssociations);
+            $this->classMetadata->setToManyAssociations($toManyAssociations);
         }
 
-        if (count($customHydrationSources)) {
-            $this->objectMetadata->setCustomHydrationSources($customHydrationSources);
+        if (count($providers)) {
+            $this->classMetadata->setProviders($providers);
         }
 
         if (isset($mappedIdFieldName)) {
-            $this->objectMetadata->setMappedIdFieldName($mappedIdFieldName);
+            $this->classMetadata->setMappedIdFieldName($mappedIdFieldName);
         }
 
         if (count($mappedIdCompositePartFieldName)) {
-            $this->objectMetadata->setMappedIdCompositePartFieldName($mappedIdCompositePartFieldName);
+            $this->classMetadata->setMappedIdCompositePartFieldName($mappedIdCompositePartFieldName);
         }
 
         if (isset($mappedVersionFieldName)) {
-            $this->objectMetadata->setMappedVersionFieldName($mappedVersionFieldName);
+            $this->classMetadata->setMappedVersionFieldName($mappedVersionFieldName);
         }
 
         if (count($mappedDateFieldNames)) {
-            $this->objectMetadata->setMappedDateFieldNames($mappedDateFieldNames);
+            $this->classMetadata->setMappedDateFieldNames($mappedDateFieldNames);
         }
 
-        if (count($valueObjectsByKey)) {
-            $this->objectMetadata->setValueObjectsByKey($valueObjectsByKey);
-        }
-
-        if (count($valueObjectsClassNames)) {
-            $this->objectMetadata->setValueObjectsClassNames(array_unique($valueObjectsClassNames));
+        if (count($valueObjects)) {
+            $this->classMetadata->setValueObjects($valueObjects);
         }
 
         if (count($mappedTransientFieldNames)) {
-            $this->objectMetadata->setMappedTransientFieldNames($mappedTransientFieldNames);
+            $this->classMetadata->setMappedTransientFieldNames($mappedTransientFieldNames);
         }
 
         if (count($mappedManagedFieldNames)) {
-            $this->objectMetadata->setMappedManagedFieldNames($mappedManagedFieldNames);
+            $this->classMetadata->setMappedManagedFieldNames($mappedManagedFieldNames);
         }
 
         if (count($fieldsWithHydrationStrategy)) {
-            $this->objectMetadata->setFieldsWithHydrationStrategy($fieldsWithHydrationStrategy);
+            $this->classMetadata->setFieldsWithHydrationStrategy($fieldsWithHydrationStrategy);
         }
 
         if (count($getters)) {
-            $this->objectMetadata->setGetters($getters);
+            $this->classMetadata->setGetters($getters);
         }
 
         if (count($setters)) {
-            $this->objectMetadata->setSetters($setters);
+            $this->classMetadata->setSetters($setters);
         }
     }
 }

@@ -3,6 +3,7 @@
 namespace Kassko\DataAccess\Hydrator;
 
 use ArrayObject;
+use Kassko\DataAccess\Configuration\ObjectKey;
 use Kassko\DataAccess\Exception\NotImplementedMethodException;
 use Kassko\DataAccess\Hydrator\HydrationStrategy\HydrationStrategyInterface;
 use Kassko\DataAccess\ObjectManager;
@@ -219,16 +220,21 @@ abstract class AbstractHydrator
         return $value;
     }
 
-    protected function prepare($object)
+    protected function prepare($object, ObjectKey $objectKey = null)
     {
         if (isset($object)) {
-           $this->metadata = $this->objectManager->getMetadata(get_class($object));
+
+            if (null === $objectKey) {
+                $this->metadata = $this->objectManager->getMetadata(get_class($object));
+            } else {
+                $this->metadata = $this->objectManager->getMetadata($objectKey->getKey());
+            }
         }
 
         $this->doPrepare($object);
     }
 
-    protected function doPrepare($object)
+    protected function doPrepare($object, ObjectKey $objectKey = null)
     {
     }
 
