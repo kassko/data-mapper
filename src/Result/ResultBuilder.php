@@ -3,6 +3,7 @@
 namespace Kassko\DataAccess\Result;
 
 use BadMethodCallException;
+use Kassko\DataAccess\Configuration\Configuration;
 use Kassko\DataAccess\ObjectManager;
 use Kassko\DataAccess\Result\Exception\NoResultException;
 use Kassko\DataAccess\Result\Exception\NonUniqueResultException;
@@ -25,6 +26,13 @@ class ResultBuilder
         $this->objectManager = $objectManager;
         $this->objectClass = $objectClass;
         $this->data = $data;
+    }
+
+    public function setRuntimeConfiguration(Configuration $runtimeConfiguration)
+    {
+        $configuration = $this->objectManager->getConfiguration();
+        $configuration->resetConfiguration();
+        $configuration->pushRuntimeConfiguration($runtimeConfiguration);
     }
 
     /**

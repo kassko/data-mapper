@@ -5,6 +5,7 @@
             "name":"Kassko"
         }
     ],
+    "description":"An intelligent mapper witch can give an object representation of inconsistent data like data from some legacy database and manage object cache.",
     "keywords":[
         "orm", "hydration", "hydrate", "extract", "data", "access",
         "mapper", "dao", "entity", "repository"

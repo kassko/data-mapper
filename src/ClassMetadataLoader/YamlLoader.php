@@ -12,62 +12,65 @@ use Kassko\DataAccess\ClassMetadata\ClassMetadata;
  */
 class YamlLoader implements LoaderInterface
 {
-    public function loadObjectMetadata(ClassMetadata $objectMetadata, $ressource, $type = null)
-    {
-        $data = $this->getData($ressource);
+    private $objectMetadata;
 
-        $this->objectMetadata = $objectMetadata;
+    public function loadClassMetadata(ClassMetadata $classMetadata, $resource, $type = null)
+    {
+        $data = $this->getData($resource);
+        //echo "<pre>"; print_r($data); echo "</pre>";
+
+        $this->classMetadata = $classMetadata;
 
         $this->loadClassAnnotations($data);
         $this->loadMethodAnnotations($data);
         $this->loadFieldAnnotations($data);
 
-    	return $this->objectMetadata;
+    	return $this->classMetadata;
     }
 
     private function loadClassAnnotations(array $data)
     {
         if (isset($data['entity']['repositoryClass'])) {
-            $this->objectMetadata->setRepositoryClass($data['entity']['repositoryClass']);
+            $this->classMetadata->setRepositoryClass($data['entity']['repositoryClass']);
         }
 
         if (isset($data['entity']['readDateFormat'])) {
-            $this->objectMetadata->setObjectReadDateFormat($data['entity']['readDateFormat']);
+            $this->classMetadata->setObjectReadDateFormat($data['entity']['readDateFormat']);
         }
 
         if (isset($data['entity']['writeDateFormat'])) {
-            $this->objectMetadata->setObjectWriteDateFormat($data['entity']['writeDateFormat']);
+            $this->classMetadata->setObjectWriteDateFormat($data['entity']['writeDateFormat']);
         }
 
         if (isset($data['entity']['propertyAccessStrategyEnabled'])) {
-            $this->objectMetadata->setPropertyAccessStrategyEnabled($data['entity']['propertyAccessStrategyEnabled']);
+            $this->classMetadata->setPropertyAccessStrategyEnabled($data['entity']['propertyAccessStrategyEnabled']);
         }
 
         if (isset($data['entity']['metadataExtensionClass'])) {
-            $this->objectMetadata->setMetadataExtensionClass($data['entity']['metadataExtensionClass']);
+            $this->classMetadata->setMetadataExtensionClass($data['entity']['metadataExtensionClass']);
         }
 
         if (isset($data['entityListeners'])) {
-            $this->objectMetadata->setObjectListenerClasses($data['entityListeners']);
+            $this->classMetadata->setObjectListenerClasses($data['entityListeners']);
         }
     }
 
     private function loadMethodAnnotations(array $data)
     {
         if (isset($data['callbacks']['postExtract'])) {
-            $this->objectMetadata->setOnBeforeExtract($data['callbacks']['postExtract']);
+            $this->classMetadata->setOnBeforeExtract($data['callbacks']['postExtract']);
         }
 
         if (isset($data['callbacks']['postHydrate'])) {
-            $this->objectMetadata->setOnBeforeExtract($data['callbacks']['postHydrate']);
+            $this->classMetadata->setOnBeforeExtract($data['callbacks']['postHydrate']);
         }
 
         if (isset($data['callbacks']['preExtract'])) {
-            $this->objectMetadata->setOnBeforeExtract($data['callbacks']['preExtract']);
+            $this->classMetadata->setOnBeforeExtract($data['callbacks']['preExtract']);
         }
 
         if (isset($data['callbacks']['preHydrate'])) {
-            $this->objectMetadata->setOnBeforeExtract($data['callbacks']['preHydrate']);
+            $this->classMetadata->setOnBeforeExtract($data['callbacks']['preHydrate']);
         }
     }
 
@@ -85,11 +88,11 @@ class YamlLoader implements LoaderInterface
         $toMapped = [];
         $toOneAssociations = [];
         $toManyAssociations = [];
+        $providers = [];
+        $valueObjects = [];
         $mappedIdFieldName = null;
         $mappedIdCompositePartFieldName = [];
         $mappedVersionFieldName = null;
-        $valueObjectsByKey = [];
-        $valueObjectsClassNames = [];
         $mappedTransientFieldNames = [];
         $mappedManagedFieldNames = [];
         $fieldsWithHydrationStrategy = [];
@@ -131,9 +134,13 @@ class YamlLoader implements LoaderInterface
                 $toMapped[$fieldData['name']] = $mappedFieldName;
             }
 
+            if (! isset($fieldData['type'])) {
+                $fieldData['type'] = 'string';
+            }
+
             $fieldDataByKey['column'] = $fieldData;
 
-            if (isset($fieldData['type']) && 'date' === $fieldData['type']) {
+            if ('date' === $fieldData['type']) {
                $mappedDateFieldNames[] = $mappedFieldName;
             }
 
@@ -157,97 +164,128 @@ class YamlLoader implements LoaderInterface
 
         if (isset($data['toOne'])) {
 
-            foreach ($data['toOne'] as $associationName => $toOne) {
-                $toOneAssociations[$mappedFieldName] = ['name' => $associationName] + $data['toOne'];
+            foreach ($data['toOne'] as $associationName => $toOneData) {
+                $toOneAssociations[$mappedFieldName][] = ['name' => $associationName] + $toOneData;
             }
         }
 
         if (isset($data['toMany'])) {
 
-            foreach ($data['toMany'] as $associationName => $toMany) {
-                $toManyAssociations[$mappedFieldName] = ['name' => $associationName] + $data['toMany'];
+            foreach ($data['toMany'] as $associationName => $toManyData) {
+                $toManyAssociations[$mappedFieldName][] = ['name' => $associationName] + $toManyData;
             }
         }
 
+        if (isset($data['provider'])) {
+            $providers[$mappedFieldName] = $data['provider'];
+        }
+
         if (isset($data['valueObjects'])) {
-            $valueObjectsByKey[$mappedFieldName] = $data['valueObjects'];
+
+            foreach ($data['valueObjects'] as $valueObjectName => $valueObjectData) {
+                $valueObjects[$mappedFieldName] = $valueObjectData;
+            }
         }
 
         if (count($fieldsDataByKey)) {
-            $this->objectMetadata->setFieldsDataByKey($fieldsDataByKey);
+            $this->classMetadata->setFieldsDataByKey($fieldsDataByKey);
         }
 
         if (count($mappedFieldNames)) {
-            $this->objectMetadata->setMappedFieldNames($mappedFieldNames);
+            $this->classMetadata->setMappedFieldNames($mappedFieldNames);
         }
 
         if (count($originalFieldNames)) {
-            $this->objectMetadata->setOriginalFieldNames($originalFieldNames);
+            $this->classMetadata->setOriginalFieldNames($originalFieldNames);
         }
 
         if (count($toOriginal)) {
-            $this->objectMetadata->setToOriginal($toOriginal);
+            $this->classMetadata->setToOriginal($toOriginal);
         }
 
         if (count($toMapped)) {
-            $this->objectMetadata->setToMapped($toMapped);
+            $this->classMetadata->setToMapped($toMapped);
         }
 
         if (count($toOneAssociations)) {
-            $this->objectMetadata->setToOneAssociations($toOneAssociations);
+            $this->classMetadata->setToOneAssociations($toOneAssociations);
         }
 
         if (count($toManyAssociations)) {
-            $this->objectMetadata->setToManyAssociations($toManyAssociations);
+            $this->classMetadata->setToManyAssociations($toManyAssociations);
+        }
+
+        if (count($providers)) {
+            $this->classMetadata->setProviders($providers);
+        }
+
+        if (count($valueObjects)) {
+            $this->classMetadata->setValueObjects($valueObjects);
         }
 
         if (isset($mappedIdFieldName)) {
-            $this->objectMetadata->setMappedIdFieldName($mappedIdFieldName);
+            $this->classMetadata->setMappedIdFieldName($mappedIdFieldName);
         }
 
         if (count($mappedIdCompositePartFieldName)) {
-            $this->objectMetadata->setMappedIdCompositePartFieldName($mappedIdCompositePartFieldName);
+            $this->classMetadata->setMappedIdCompositePartFieldName($mappedIdCompositePartFieldName);
         }
 
         if (isset($mappedVersionFieldName)) {
-            $this->objectMetadata->setMappedVersionFieldName($mappedVersionFieldName);
+            $this->classMetadata->setMappedVersionFieldName($mappedVersionFieldName);
         }
 
         if (count($mappedDateFieldNames)) {
-            $this->objectMetadata->setMappedDateFieldNames($mappedDateFieldNames);
-        }
-
-        if (count($valueObjectsByKey)) {
-            $this->objectMetadata->setValueObjectsByKey($valueObjectsByKey);
-        }
-
-        if (count($valueObjectsClassNames)) {
-            $this->objectMetadata->setValueObjectsClassNames($valueObjectsClassNames);
+            $this->classMetadata->setMappedDateFieldNames($mappedDateFieldNames);
         }
 
         if (count($mappedTransientFieldNames)) {
-            $this->objectMetadata->setMappedTransientFieldNames($mappedTransientFieldNames);
+            $this->classMetadata->setMappedTransientFieldNames($mappedTransientFieldNames);
         }
 
         if (count($mappedManagedFieldNames)) {
-            $this->objectMetadata->setMappedManagedFieldNames($mappedManagedFieldNames);
+            $this->classMetadata->setMappedManagedFieldNames($mappedManagedFieldNames);
         }
 
         if (count($fieldsWithHydrationStrategy)) {
-            $this->objectMetadata->setFieldsWithHydrationStrategy($fieldsWithHydrationStrategy);
+            $this->classMetadata->setFieldsWithHydrationStrategy($fieldsWithHydrationStrategy);
         }
     }
 
-    public function supports($ressource, $type = null)
+    public function supports($resource, $type = null)
     {
-        return 'yml' === $type;
+        return 'yaml' === $type;
     }
 
-    private function getData($ressource)
+    private function getData($resource)
     {
         $parser = new Parser();
-        $content = file_get_contents($ressource);
+        return $this->doGetData($resource, $parser);
+    }
 
-        return $parser->parse($content);
+    private function doGetData($resource, Parser $parser)
+    {
+        $content = file_get_contents($resource);
+        $data = $parser->parse($content);
+
+        if (isset($data['imports'])) {
+            $resourceDir = dirname($resource);
+
+            foreach ($data['imports'] as $import) {
+
+                if (isset($import['resource'])) {
+
+                    $otherResource = $import['resource'];
+                    if ('.' === $otherResourceDir = dirname($otherResource)) {
+                        $otherResource = $resourceDir.'/'.$otherResource;
+                    }
+
+                    $othersData = $this->doGetData($otherResource, $parser);
+                    $data = array_merge_recursive($othersData, $data);
+                }
+            }
+        }
+
+        return $data;
     }
 }

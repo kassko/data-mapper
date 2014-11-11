@@ -82,9 +82,9 @@ class ObjectMappingException extends Exception
 		return new self(sprintf("Hydration strategy is already defined for field [%s]. Actual strategy [%s], and new one is [%s].", $mappedFieldName, $actualStrategyClassName, $newStrategyClassName));
 	}
 
-	public static function notFoundDriverException($ressource)
+	public static function notFoundDriverException($ressource, $type)
 	{
-		return new self(sprintf("Metadata loading driver not found for ressource %s.", $ressource));
+		return new self(sprintf('Metadata loading driver not found for ressource "%s" and resource type "%s".', $ressource, $type));
 	}
 
 	public static function notFoundAssociationTargetClass($fieldName, $objectClassName)

@@ -5,9 +5,7 @@ data-access
 [![Total Downloads](https://poser.pugx.org/kassko/data-access/downloads.png)](https://packagist.org/packages/kassko/data-access)
 [![Latest Unstable Version](https://poser.pugx.org/kassko/data-access/v/unstable.png)](https://packagist.org/packages/kassko/data-access)
 
-data-access
-* help you to represent some data like objects and work with objects.
-* simplify integration of multiple data sources (mssql, mysql, nosql databases, webservices ...)
+data-access is an intelligent mapper witch can give an object representation of inconsistent data like data from some legacy database and manage object cache.
 
 
 Installation
@@ -83,27 +81,18 @@ A property without "Column" annotation is not managed (no hydrated and no extrac
 
 And you get a ResultBuilderFactory instance:
 
-```php
-use Kassko\DataAccess\DataAccessProvider;
-
-$provider = DataAccessProvider::getInstance();
-$resultBuilderFactory = $provider->getResultBuilderFactory();
-```
-
 If you work with a framework, normally, you can get a ResultBuilderFactory instance from a container.
-For example, with Symfony framework, we can use the DataAccessBundle witch provides to the container a ResultBuilderFactory service.
+For example, with Symfony framework, we can use the [kassko/data-access-bundle](https://github.com/kassko/data-access-bundle) witch provides to the container a ResultBuilderFactory service.
+
+If you have no integration of data-access, you can use the [kassko/data-access-builder](https://github.com/kassko/data-access-builder). It will help you to get a ResultBuilderFactory instance.
 
 And you hydrate your object:
 ```php
-use Kassko\DataAccess\DataAccessProvider;
-
 $data = [
     'brand' => 'some brand',
     'COLOR' => 'blue'
 ];
 
-$provider = DataAccessProvider::getInstance();
-$resultBuilderFactory = $provider->getResultBuilderFactory();
 $resultBuilder = $resultBuilderFactory->createResultBuilder('Watch', $data);
 $result = $resultBuilder->getResult();
 var_dump($result);
@@ -122,15 +111,11 @@ array(1) {
 
 Inversely, you can extract values from your object:
 ```php
-use Kassko\DataAccess\DataAccessProvider;
-
 $keyBoard = (new Watch)
     ->setBrand('some brand')
     ->setColor('blue')
 ;
 
-$provider = DataAccessProvider::getInstance();
-$resultBuilderFactory = $provider->getResultBuilderFactory();
 $resultBuilder = $resultBuilderFactory->createResultBuilder('Watch');
 $result = $resultBuilder->getRawResult();
 var_dump($result);

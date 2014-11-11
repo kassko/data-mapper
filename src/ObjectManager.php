@@ -5,6 +5,7 @@ namespace Kassko\DataAccess;
 use Kassko\ClassResolver\ClassResolverInterface;
 use Kassko\DataAccess\ClassMetadata\ClassMetadataFactoryInterface;
 use Kassko\DataAccess\Configuration\Configuration;
+use Kassko\DataAccess\Configuration\ObjectKey;
 use Kassko\DataAccess\Exception\ObjectMappingException;
 use Kassko\DataAccess\Hydrator;
 use Kassko\DataAccess\Hydrator\HydrationStrategy\ClosureHydrationStrategy;
@@ -82,9 +83,9 @@ class ObjectManager
      *
      * @return AbstractHydrator
      */
-    public function createHydratorFor($objectClassName)
+    public function createHydratorFor($objectClass)
     {
-        $metadata = $this->getMetadata($objectClassName);
+        $metadata = $this->getMetadata($objectClass);
         $propertyAccessStrategy = $metadata->isPropertyAccessStrategyEnabled();
 
         $hydrator = new Hydrator\Hydrator($this, $propertyAccessStrategy);
@@ -123,12 +124,6 @@ class ObjectManager
 
                 $hydrator->addStrategy($mappedFieldName, $strategy);
             }
-        }
-
-        //------------------------------------------------------------------------------------------
-        $valueObjects = $metadata->getValueObjectsByKey();
-        if (count($valueObjects) > 0) {
-            $hydrator = new Hydrator\ValueObjectsHydrator($hydrator, $this, $propertyAccessStrategy);
         }
 
         //------------------------------------------------------------------------------------------
@@ -179,7 +174,7 @@ class ObjectManager
         return $repo->$findMethod();
     }
 
-    public function findFromCustomHydrationSource($customSourceClass, $customSourceMethod, $object)
+    public function findFromProviders($customSourceClass, $customSourceMethod, $object)
     {
         $customSource = $this->classResolver ? $this->classResolver->resolve($customSourceClass) : new $repositoryClass;
 
@@ -209,21 +204,19 @@ class ObjectManager
     *
     * @return \Kassko\DataAccess\ClassMetadata\ClassMetadata
     */
-    public function getMetadata($className)
+    public function getMetadata($objectClass)
     {
-        return $this->classMetadataFactory->loadMetadata($className, $this->configuration);
-    }
+        if (! $objectClass instanceof ObjectKey) {
+            $objectClass = new ObjectKey($objectClass);
+        }
 
-    /**
-    * Return the class metadata of a value object.
-    *
-    * @param string $className FQCN without a leading back slash as does get_class()
-    *
-    * @return \Kassko\DataAccess\ClassMetadata\ClassMetadata
-    */
-    public function getValueObjectMetadata($valueObjectClassName, $entityClassName)
-    {
-        return $this->classMetadataFactory->loadValueObjectMetadata($valueObjectClassName, $entityClassName, $this->configuration);
+        $key = $objectClass->getKey();
+
+        return $this->classMetadataFactory->loadMetadata(
+            $objectClass,
+            $this->configuration->getClassMetadataResource($key),
+            $this->configuration->getClassMetadataResourceType($key)
+        );
     }
 
     public function setClassMetadataFactory(ClassMetadataFactoryInterface $classMetadataFactory)
@@ -314,4 +307,3 @@ class ObjectManager
         }
     }
 }
-

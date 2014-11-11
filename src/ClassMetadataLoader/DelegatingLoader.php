@@ -19,13 +19,13 @@ class DelegatingLoader implements LoaderInterface
 		$this->resolver = $resolver;
 	}
 
-	public function loadObjectMetadata(ClassMetadata $objectMetadata, $ressource, $type = null)
+	public function loadClassMetadata(ClassMetadata $classMetadata, $ressource, $type = null)
     {
     	if (false === $loader = $this->resolver->resolveLoader($ressource, $type)) {
-        	throw ObjectMappingException::notFoundDriverException($ressource);
+        	throw ObjectMappingException::notFoundDriverException($ressource, $type);
         }
 
-        return $loader->loadObjectMetadata($objectMetadata, $ressource, $type);
+        return $loader->loadClassMetadata($classMetadata, $ressource, $type);
     }
 
     public function supports($ressource, $type = null)
