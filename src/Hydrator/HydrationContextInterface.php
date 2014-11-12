@@ -9,23 +9,23 @@ namespace Kassko\DataAccess\Hydrator;
  */
 interface HydrationContextInterface
 {
-	/**
-	 * Vérifie qu'une entrée est présente dans le jeu de données.
-	 */
-	function hasItem($key);
+    /**
+     * Vérifie qu'une entrée est présente dans le jeu de données.
+     */
+    function hasItem($key);
 
-	/**
-	 * Récupère une entrée du jeu de donnée.
-	 */
-	function getItem($key);
+    /**
+     * Récupère une entrée du jeu de donnée.
+     */
+    function getItem($key);
 
-	/**
-	 * Modifie une entrée du jeu de donnée ou ajoute une nouvelle entrée.
-	 */
-	function setItem($key, $value);
+    /**
+     * Modifie une entrée du jeu de donnée ou ajoute une nouvelle entrée.
+     */
+    function setItem($key, $value);
 
-	/**
-	 * Supprime une entrée du jeu de donnée
-	 */
-	function removeItem($key);
+    /**
+     * Supprime une entrée du jeu de donnée
+     */
+    function removeItem($key);
 }

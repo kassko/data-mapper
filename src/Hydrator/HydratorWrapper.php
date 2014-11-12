@@ -12,31 +12,31 @@ use Kassko\DataAccess\ObjectManager;
 */
 abstract class HydratorWrapper extends AbstractHydrator
 {
-	protected $wrappedHydrator;
+    protected $wrappedHydrator;
 
-	public function __construct(AbstractHydrator $wrappedHydrator, ObjectManager $objectManager)
-	{
-		parent::__construct($objectManager);
-
-		$this->wrappedHydrator = $wrappedHydrator;
-	}
-
-	public function extract($object)
+    public function __construct(AbstractHydrator $wrappedHydrator, ObjectManager $objectManager)
     {
-    	return $this->wrappedHydrator->extract($object);
+        parent::__construct($objectManager);
+
+        $this->wrappedHydrator = $wrappedHydrator;
+    }
+
+    public function extract($object)
+    {
+        return $this->wrappedHydrator->extract($object);
     }
 
     /**
-	 * Hydrate $object with the provided $data.
-	 *
-	 * @param array $data
-	 * @param object $object
-	 * @return object
-	 */
+     * Hydrate $object with the provided $data.
+     *
+     * @param array $data
+     * @param object $object
+     * @return object
+     */
     public function hydrate(array $data, $object)
     {
-    	return $this->wrappedHydrator->hydrate($data, $object);
-	}
+        return $this->wrappedHydrator->hydrate($data, $object);
+    }
 
     /**
      * @inheritdoc
@@ -45,5 +45,4 @@ abstract class HydratorWrapper extends AbstractHydrator
     {
         return $this->wrappedHydrator->getRelationFieldExtraction($relationfield);
     }
-
 }

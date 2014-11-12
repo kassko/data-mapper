@@ -14,17 +14,17 @@ use Kassko\DataAccess\Configuration\ObjectKey;
 */
 class ClassMetadataFactory implements ClassMetadataFactoryInterface, ClassMetadataFactoryOptionsAwareInterface
 {
-	private $cache;
-	private $metadataLoader;
-	private $loadedMetadata = [];
+    private $cache;
+    private $metadataLoader;
+    private $loadedMetadata = [];
 
-	public function loadMetadata(ObjectKey $objectKey, $resourceName, $resourceType)
-	{
+    public function loadMetadata(ObjectKey $objectKey, $resourceName, $resourceType)
+    {
         $cacheKey = $objectKey->getKey();
 
-		if (! isset($this->loadedMetadata[$cacheKey])) {
+        if (! isset($this->loadedMetadata[$cacheKey])) {
 
-			if ($this->cache->contains($cacheKey)) {
+            if ($this->cache->contains($cacheKey)) {
                 $this->loadedMetadata[$cacheKey] = $this->cache->fetch($cacheKey);
             } else {
                 $objectMetadata = new ClassMetadata($objectKey->getClass());
@@ -34,20 +34,20 @@ class ClassMetadataFactory implements ClassMetadataFactoryInterface, ClassMetada
                 $this->loadedMetadata[$cacheKey] = $objectMetadata;
                 $this->cache->save($cacheKey, $objectMetadata);
             }
-		}
+        }
 
-		return $this->loadedMetadata[$cacheKey];
-	}
+        return $this->loadedMetadata[$cacheKey];
+    }
 
-	public function setClassMetadataLoader(ClassMetadataLoaderInterface $metadataLoader)
-	{
-		$this->metadataLoader = $metadataLoader;
-		return $this;
-	}
+    public function setClassMetadataLoader(ClassMetadataLoaderInterface $metadataLoader)
+    {
+        $this->metadataLoader = $metadataLoader;
+        return $this;
+    }
 
-	public function setCache(CacheInterface $cache)
-	{
-		$this->cache = $cache;
-		return $this;
-	}
+    public function setCache(CacheInterface $cache)
+    {
+        $this->cache = $cache;
+        return $this;
+    }
 }

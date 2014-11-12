@@ -11,11 +11,11 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  */
 trait EventManagerAwareTrait
 {
-	protected $eventManager;
+    protected $eventManager;
 
-	public function setEventManager(EventDispatcherInterface $eventManager)
-	{
-		$this->eventManager = $eventManager;
-		return $this;
-	}
+    public function setEventManager(EventDispatcherInterface $eventManager)
+    {
+        $this->eventManager = $eventManager;
+        return $this;
+    }
 }

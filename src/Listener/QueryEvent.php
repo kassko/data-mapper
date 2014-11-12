@@ -11,20 +11,20 @@ use Symfony\Component\EventDispatcher\GenericEvent;
  */
 class QueryEvent extends GenericEvent
 {
-	/**
-	 * @var object Object or collection
-	 */
-	protected $result;
+    /**
+     * @var object Object or collection
+     */
+    protected $result;
 
-	public function __construct($result, $arguments)
-	{
-		parent::__construct($result, $arguments);
+    public function __construct($result, $arguments)
+    {
+        parent::__construct($result, $arguments);
 
-		$this->result = $result;
-	}
+        $this->result = $result;
+    }
 
-	public function getResult()
-	{
-		return $this->result;
-	}
+    public function getResult()
+    {
+        return $this->result;
+    }
 }

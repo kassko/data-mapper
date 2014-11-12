@@ -9,8 +9,8 @@ namespace Kassko\DataAccess\Result\Exception;
 */
 class NoResultException extends \Exception
 {
-	public function __construct($objectClass)
-	{
-		parent::__construct(sprintf('No result found. Object is "%s".', $objectClass));
-	}
+    public function __construct($objectClass)
+    {
+        parent::__construct(sprintf('No result found. Object is "%s".', $objectClass));
+    }
 }

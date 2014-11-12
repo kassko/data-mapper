@@ -5,6 +5,11 @@ namespace Kassko\DataAccess\Configuration;
 use SplStack;
 use RuntimeException;
 
+/**
+ * Configuration really used and which responds in the name of runtime's configurations and the original configuration.
+ *
+ * @author kko
+ */
 class ConfigurationChain extends Configuration
 {
     private $runtimeConfigurations;
@@ -16,7 +21,7 @@ class ConfigurationChain extends Configuration
 
     public function pushRuntimeConfiguration(RuntimeConfiguration $runtimeConfiguration)
     {
-        $runtimeConfiguration->setDefaultClassMetadataResourceType($this->defaultClassMetadataResourceDir);
+        $runtimeConfiguration->setDefaultClassMetadataResourceType($this->defaultClassMetadataResourceType);
         $runtimeConfiguration->setDefaultClassMetadataResourceDir($this->defaultClassMetadataResourceDir);
         $this->runtimeConfigurations->push($runtimeConfiguration);
 

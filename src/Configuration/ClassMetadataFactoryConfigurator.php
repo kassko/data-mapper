@@ -11,7 +11,7 @@ use Kassko\DataAccess\ClassMetadata\ClassMetadataFactoryOptionsAwareInterface;
  */
 class ClassMetadataFactoryConfigurator
 {
-	private $configuration;
+    private $configuration;
 
     public function __construct(Configuration $configuration)
     {

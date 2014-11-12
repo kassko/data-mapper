@@ -13,5 +13,5 @@ use Kassko\ClassResolver\ClassResolverInterface;
 interface ObjectListenerResolverInterface
 {
     function registerEvents($className, $eventToRegisterData);
-	function dispatchEvent($className, $eventName, QueryEvent $event);
+    function dispatchEvent($className, $eventName, QueryEvent $event);
 }

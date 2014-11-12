@@ -9,14 +9,14 @@ namespace Kassko\DataAccess\Result\Exception;
 */
 class DuplicatedIndexException extends \Exception
 {
-	public function __construct($index, $objectClass)
-	{
-		parent::__construct(
+    public function __construct($index, $objectClass)
+    {
+        parent::__construct(
             sprintf(
                 'Index "%s" of result set is already used. Object is "%s".',
                 $index,
                 $objectClass
             )
         );
-	}
+    }
 }

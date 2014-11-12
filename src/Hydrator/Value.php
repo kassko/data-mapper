@@ -9,10 +9,10 @@ namespace Kassko\DataAccess\Hydrator;
  */
 class Value
 {
-	public $value;
+    public $value;
 
-	public function __construct($value)
-	{
-		$this->value = $value;
-	}
+    public function __construct($value)
+    {
+        $this->value = $value;
+    }
 }

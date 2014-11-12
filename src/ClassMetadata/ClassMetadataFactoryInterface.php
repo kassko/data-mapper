@@ -11,5 +11,5 @@ use Kassko\DataAccess\Configuration\ObjectKey;
 */
 interface ClassMetadataFactoryInterface
 {
-	function loadMetadata(ObjectKey $objectKey, $resourceType, $resourceDir);
+    function loadMetadata(ObjectKey $objectKey, $resourceType, $resourceDir);
 }

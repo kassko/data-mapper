@@ -9,8 +9,8 @@ namespace Kassko\DataAccess\Listener\Exception;
  */
 class NotResolvedObjectListenerException extends \RuntimeException
 {
-	public function __construct($className)
-	{
-		parent::__construct(sprintf("Can't create listener from class name [%s].", $className));
-	}
+    public function __construct($className)
+    {
+        parent::__construct(sprintf("Can't create listener from class name [%s].", $className));
+    }
 }

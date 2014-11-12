@@ -12,100 +12,100 @@ use Kassko\DataAccess\Cache\CacheInterface;
 */
 class CacheParam
 {
-	private $cache;
+    private $cache;
 
-	/**
-	 * @var mixed For fluent tree interface
-	 */
-	private $parent;
-	private $enabled;
-	private $key;
-	private $lifeTime;
-	private $shared;
+    /**
+     * @var mixed For fluent tree interface
+     */
+    private $parent;
+    private $enabled;
+    private $key;
+    private $lifeTime;
+    private $shared;
 
-	public function __construct(Configuration $configuration, $parent)
-	{
-		$cacheConfig = $configuration->getResultCacheConfig();
+    public function __construct(Configuration $configuration, $parent)
+    {
+        $cacheConfig = $configuration->getResultCacheConfig();
 
-		$this->enabled = $cacheConfig->isEnabled();
-		$this->lifeTime = $cacheConfig->getLifeTime();
-		$this->cache = $cacheConfig->getCache();
-		$this->shared = $cacheConfig->isShared();
-		$this->parent = $parent;
-	}
+        $this->enabled = $cacheConfig->isEnabled();
+        $this->lifeTime = $cacheConfig->getLifeTime();
+        $this->cache = $cacheConfig->getCache();
+        $this->shared = $cacheConfig->isShared();
+        $this->parent = $parent;
+    }
 
-	public function end()
-	{
-		return $this->parent;
-	}
+    public function end()
+    {
+        return $this->parent;
+    }
 
-	public function setParam($key, $lifeTime = 0, $cache = null, $shared = null)
-	{
-		$this->key = $key;
+    public function setParam($key, $lifeTime = 0, $cache = null, $shared = null)
+    {
+        $this->key = $key;
 
-		if (0 !== $lifeTime) {
-			$this->lifeTime = $lifeTime;
-		}
+        if (0 !== $lifeTime) {
+            $this->lifeTime = $lifeTime;
+        }
 
-		if (null !== $shared) {
-			$this->shared = $shared;
-		}
+        if (null !== $shared) {
+            $this->shared = $shared;
+        }
 
-		if ($cache) {
-			$this->cache = $cache;
-		}
+        if ($cache) {
+            $this->cache = $cache;
+        }
 
-		$this->enabled = $use;
+        $this->enabled = $use;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	public function isEnabled()
-	{
-		return $this->enabled;
-	}
+    public function isEnabled()
+    {
+        return $this->enabled;
+    }
 
-	public function getKey()
-	{
-		return $this->key;
-	}
+    public function getKey()
+    {
+        return $this->key;
+    }
 
-	public function setKey($key)
-	{
-		$this->key = $key;
-		return $this;
-	}
+    public function setKey($key)
+    {
+        $this->key = $key;
+        return $this;
+    }
 
-	public function getLifeTime()
-	{
-		return $this->lifeTime;
-	}
+    public function getLifeTime()
+    {
+        return $this->lifeTime;
+    }
 
-	public function setLifeTime($lifeTime)
-	{
-		$this->lifeTime = $lifeTime;
-		return $this;
-	}
+    public function setLifeTime($lifeTime)
+    {
+        $this->lifeTime = $lifeTime;
+        return $this;
+    }
 
-	public function isShared()
-	{
-		return $this->shared;
-	}
+    public function isShared()
+    {
+        return $this->shared;
+    }
 
-	public function setShared($shared)
-	{
-		$this->shared = $shared;
-		return $this;
-	}
+    public function setShared($shared)
+    {
+        $this->shared = $shared;
+        return $this;
+    }
 
-	public function getCache()
-	{
-		return $this->cache;
-	}
+    public function getCache()
+    {
+        return $this->cache;
+    }
 
-	public function setCache(CacheInterface $cache)
-	{
-		$this->cache = $cache;
-		return $this;
-	}
+    public function setCache(CacheInterface $cache)
+    {
+        $this->cache = $cache;
+        return $this;
+    }
 }

@@ -237,5 +237,4 @@ abstract class AbstractHydrator
     protected function doPrepare($object, ObjectKey $objectKey = null)
     {
     }
-
 }

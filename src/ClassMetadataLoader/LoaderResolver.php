@@ -13,10 +13,10 @@ class LoaderResolver implements LoaderResolverInterface
 {
     private $loaders;
 
-	public function __construct(array $loaders = [])
-	{
-		$this->setLoaders($loaders);
-	}
+    public function __construct(array $loaders = [])
+    {
+        $this->setLoaders($loaders);
+    }
 
     public function resolveLoader($ressource, $type = null)
     {

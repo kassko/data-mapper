@@ -21,8 +21,8 @@ class Hydrator extends AbstractHydrator
     const SUFFIXE_EXTRACTION_RELATION = '_';//<= A revoir !
 
     /**
-	* @var bool
-	*/
+    * @var bool
+    */
     protected $isPropertyAccessStrategyOn = true;
 
     /**
@@ -37,11 +37,11 @@ class Hydrator extends AbstractHydrator
 
 
     /**
-	* Constructor
-	*
-	* @param ObjectManager $objectManager The ObjectManager to use
-	* @param bool $isPropertyAccessStrategyOn If set to false, hydrator will always use entity's public API
-	*/
+    * Constructor
+    *
+    * @param ObjectManager $objectManager The ObjectManager to use
+    * @param bool $isPropertyAccessStrategyOn If set to false, hydrator will always use entity's public API
+    */
     public function __construct(ObjectManager $objectManager, $isPropertyAccessStrategyOn)
     {
         parent::__construct($objectManager);
@@ -49,9 +49,9 @@ class Hydrator extends AbstractHydrator
         $this->isPropertyAccessStrategyOn = $isPropertyAccessStrategyOn;
     }
 
-	/**
-	* {@inheritdoc}
-	*/
+    /**
+    * {@inheritdoc}
+    */
     public function extract($object, ObjectKey $objectKey = null)
     {
         $this->prepare($object, $objectKey);
@@ -59,8 +59,8 @@ class Hydrator extends AbstractHydrator
     }
 
     /**
-	* {@inheritdoc}
-	*/
+    * {@inheritdoc}
+    */
     public function hydrate(array $data, $object, ObjectKey $objectKey = null)
     {
         $this->prepare($object, $objectKey);
@@ -76,12 +76,12 @@ class Hydrator extends AbstractHydrator
     }
 
     /**
-	* Extract data from an object.
-	*
-	* @param object $object
-	* @throws RuntimeException
-	* @return array
-	*/
+    * Extract data from an object.
+    *
+    * @param object $object
+    * @throws RuntimeException
+    * @return array
+    */
     protected function doExtract($object)
     {
         $originalFieldNames = $this->metadata->getOriginalFieldNames();
@@ -94,7 +94,7 @@ class Hydrator extends AbstractHydrator
 
         $data = [];
         foreach ($originalFieldNames as $originalFieldName) {
-        	$mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
+            $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
 
             if ($this->metadata->isNotManaged($mappedFieldName)) {
                 continue;
@@ -148,17 +148,17 @@ class Hydrator extends AbstractHydrator
     }
 
     /**
-	* Extract data from an object.
-	*
-	* @param array $data
-	* @param object $object
-	* @throws RuntimeException
-	* @return object
-	*/
+    * Extract data from an object.
+    *
+    * @param array $data
+    * @param object $object
+    * @throws RuntimeException
+    * @return object
+    */
     protected function doHydrate(array $data, $object)
     {
         foreach ($data as $originalFieldName => $value) {
-        	$mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
+            $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
 
             if (null === $mappedFieldName) {
 
@@ -427,19 +427,19 @@ class Hydrator extends AbstractHydrator
 
     protected function doPrepare($object, ObjectKey $objectKey = null)
     {
-    	if (isset($object)) {
+        if (isset($object)) {
 
             $this->memberAccessStrategy = $this->createMemberAccessStrategy($object);
         }
     }
 
     private function createMemberAccessStrategy($object)
-	{
-		$memberAccessStrategy = $this->isPropertyAccessStrategyOn ? new MemberAccessStrategy\PropertyAccessStrategy : new MemberAccessStrategy\GetterSetterAccessStrategy;
-		$memberAccessStrategy->prepare($object, $this->metadata);
+    {
+        $memberAccessStrategy = $this->isPropertyAccessStrategyOn ? new MemberAccessStrategy\PropertyAccessStrategy : new MemberAccessStrategy\GetterSetterAccessStrategy;
+        $memberAccessStrategy->prepare($object, $this->metadata);
 
-		return $memberAccessStrategy;
-	}
+        return $memberAccessStrategy;
+    }
 
     private function createPropertyAccessStrategy($object)
     {

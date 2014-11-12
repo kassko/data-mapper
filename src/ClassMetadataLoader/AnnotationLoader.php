@@ -13,13 +13,13 @@ use Kassko\DataAccess\ClassMetadata\ClassMetadata;
  */
 class AnnotationLoader implements LoaderInterface
 {
-	private $reader;
+    private $reader;
     private $classMetadata;
     private $objectReflectionClass;
 
     private static $objectAnnotationName = OM\Entity::class;
     private static $columnAnnotationName = OM\Column::class;
-	private static $idAnnotationName = OM\Id::class;
+    private static $idAnnotationName = OM\Id::class;
     private static $idCompositePartAnnotationName = OM\IdCompositePart::class;
     private static $versionAnnotationName = OM\Version::class;
     private static $transientAnnotationName = OM\Transient::class;
@@ -36,19 +36,19 @@ class AnnotationLoader implements LoaderInterface
     private static $preHydrateAnnotationName = OM\PreHydrate::class;
     private static $postHydrateAnnotationName = OM\PostHydrate::class;
 
-	public function __construct(ReaderInterface $reader)
-	{
-		$this->reader = $reader;
-	}
+    public function __construct(ReaderInterface $reader)
+    {
+        $this->reader = $reader;
+    }
 
     public function loadClassMetadata(ClassMetadata $classMetadata, $ressource, $type = null)
     {
         $this->classMetadata = $classMetadata;
         $this->objectReflectionClass = $this->classMetadata->getReflectionClass();
 
-    	$this->loadAnnotationsFromObject();
+        $this->loadAnnotationsFromObject();
 
-    	return $this->classMetadata;
+        return $this->classMetadata;
     }
 
     public function supports($ressource, $type = null)

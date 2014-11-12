@@ -12,65 +12,65 @@ use ReflectionClass;
 */
 class PropertyAccessStrategy implements MemberAccessStrategyInterface
 {
-	private $reflectionClass;
+    private $reflectionClass;
 
-	public function prepare($object, ClassMetadata $metadata)
-	{
-		$this->reflectionClass =  $metadata->getReflectionClass();//new ReflectionClass($object);
-	}
+    public function prepare($object, ClassMetadata $metadata)
+    {
+        $this->reflectionClass =  $metadata->getReflectionClass();//new ReflectionClass($object);
+    }
 
-	public function getValue($object, $fieldName)
-	{
-		$reflProperty = $this->reflectionClass->getProperty($fieldName);
+    public function getValue($object, $fieldName)
+    {
+        $reflProperty = $this->reflectionClass->getProperty($fieldName);
         $reflProperty->setAccessible(true);
 
-		return $reflProperty->getValue($object);
-	}
+        return $reflProperty->getValue($object);
+    }
 
-	public function setScalarValue($value, $object, $fieldName)
-	{
-		if (! isset($fieldName)) {
-			return;
-		}
+    public function setScalarValue($value, $object, $fieldName)
+    {
+        if (! isset($fieldName)) {
+            return;
+        }
 
-		$reflProperty = $this->reflectionClass->getProperty($fieldName);
+        $reflProperty = $this->reflectionClass->getProperty($fieldName);
         $reflProperty->setAccessible(true);
-		$reflProperty->setValue($object, $value);
-	}
+        $reflProperty->setValue($object, $value);
+    }
 
-	public function setObjectValue($subObjectClassName, $object, $fieldName)
-	{
-		if (! isset($fieldName)) {
-			return false;
-		}
+    public function setObjectValue($subObjectClassName, $object, $fieldName)
+    {
+        if (! isset($fieldName)) {
+            return false;
+        }
 
-		$reflProperty = $this->reflectionClass->getProperty($fieldName);
-		$reflProperty->setAccessible(true);
-		$reflProperty->setValue($object, $value = new $subObjectClassName);
+        $reflProperty = $this->reflectionClass->getProperty($fieldName);
+        $reflProperty->setAccessible(true);
+        $reflProperty->setValue($object, $value = new $subObjectClassName);
 
-		return $value;
-	}
+        return $value;
+    }
 
-	public function setSingleAssociation($subObject, $object, $fieldName)
-	{
-		return $this->setAssociation($subObject, $object, $fieldName);
-	}
+    public function setSingleAssociation($subObject, $object, $fieldName)
+    {
+        return $this->setAssociation($subObject, $object, $fieldName);
+    }
 
-	public function setCollectionAssociation(array $subObjects, $object, $fieldName, $adderPart)
-	{
-		return $this->setAssociation($subObjects, $object, $fieldName);
-	}
+    public function setCollectionAssociation(array $subObjects, $object, $fieldName, $adderPart)
+    {
+        return $this->setAssociation($subObjects, $object, $fieldName);
+    }
 
-	private function setAssociation($subObjectOrCollection, $object, $fieldName)
-	{
-		if (! isset($fieldName)) {
-			return false;
-		}
+    private function setAssociation($subObjectOrCollection, $object, $fieldName)
+    {
+        if (! isset($fieldName)) {
+            return false;
+        }
 
-		$reflProperty = $this->reflectionClass->getProperty($fieldName);
-		$reflProperty->setAccessible(true);
-		$reflProperty->setValue($object, $subObjectOrCollection);
+        $reflProperty = $this->reflectionClass->getProperty($fieldName);
+        $reflProperty->setAccessible(true);
+        $reflProperty->setValue($object, $subObjectOrCollection);
 
-		return true;
-	}
+        return true;
+    }
 }

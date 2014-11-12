@@ -12,5 +12,5 @@ use Kassko\DataAccess\Cache\CacheInterface;
 */
 interface ClassMetadataFactoryOptionsAwareInterface
 {
-	function setCache(CacheInterface $cache);
+    function setCache(CacheInterface $cache);
 }

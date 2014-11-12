@@ -5,8 +5,7 @@ namespace Kassko\DataAccess\Query;
 use Kassko\DataAccess\ObjectManager;
 
 /**
- * Transform raw results into object representation.
- * And inversely, transform an objet or an object collection into raw results.
+ * Factory for Query.
  *
  * @author kko
  */

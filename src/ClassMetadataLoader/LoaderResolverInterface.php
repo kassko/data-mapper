@@ -9,5 +9,5 @@ namespace Kassko\DataAccess\ClassMetadataLoader;
  */
 interface LoaderResolverInterface
 {
-	function resolveLoader($objectClassName, $ressource);
+    function resolveLoader($objectClassName, $ressource);
 }

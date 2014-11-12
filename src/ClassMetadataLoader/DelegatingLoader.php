@@ -12,17 +12,17 @@ use Kassko\DataAccess\ClassMetadata\ClassMetadata;
  */
 class DelegatingLoader implements LoaderInterface
 {
-	private $resolver;
+    private $resolver;
 
-	public function __construct(LoaderResolverInterface $resolver)
-	{
-		$this->resolver = $resolver;
-	}
-
-	public function loadClassMetadata(ClassMetadata $classMetadata, $ressource, $type = null)
+    public function __construct(LoaderResolverInterface $resolver)
     {
-    	if (false === $loader = $this->resolver->resolveLoader($ressource, $type)) {
-        	throw ObjectMappingException::notFoundDriverException($ressource, $type);
+        $this->resolver = $resolver;
+    }
+
+    public function loadClassMetadata(ClassMetadata $classMetadata, $ressource, $type = null)
+    {
+        if (false === $loader = $this->resolver->resolveLoader($ressource, $type)) {
+            throw ObjectMappingException::notFoundDriverException($ressource, $type);
         }
 
         return $loader->loadClassMetadata($classMetadata, $ressource, $type);
@@ -30,6 +30,6 @@ class DelegatingLoader implements LoaderInterface
 
     public function supports($ressource, $type = null)
     {
-    	return false !== $this->resolver->resolveLoader($ressource, $type);
+        return false !== $this->resolver->resolveLoader($ressource, $type);
     }
 }

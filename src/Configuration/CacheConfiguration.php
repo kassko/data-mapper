@@ -11,52 +11,52 @@ use Kassko\DataAccess\Cache\CacheInterface;
  */
 class CacheConfiguration
 {
-	private $enabled = false;
-	private $cache;
-	private $lifeTime = 0;
-	private $shared = false;
+    private $enabled = false;
+    private $cache;
+    private $lifeTime = 0;
+    private $shared = false;
 
-	public function isEnabled()
-	{
-		return $this->enabled;
-	}
+    public function isEnabled()
+    {
+        return $this->enabled;
+    }
 
-	public function setEnabled($enabled)
-	{
-		$this->enabled = $enabled;
-		return $this;
-	}
+    public function setEnabled($enabled)
+    {
+        $this->enabled = $enabled;
+        return $this;
+    }
 
-	public function getCache()
-	{
-		return $this->cache;
-	}
+    public function getCache()
+    {
+        return $this->cache;
+    }
 
-	public function setCache(CacheInterface $cache)
-	{
-		$this->cache = $cache;
-		return $this;
-	}
+    public function setCache(CacheInterface $cache)
+    {
+        $this->cache = $cache;
+        return $this;
+    }
 
-	public function getLifeTime()
-	{
-		return $this->lifeTime;
-	}
+    public function getLifeTime()
+    {
+        return $this->lifeTime;
+    }
 
-	public function setLifeTime($lifeTime)
-	{
-		$this->lifeTime = $lifeTime;
-		return $this;
-	}
+    public function setLifeTime($lifeTime)
+    {
+        $this->lifeTime = $lifeTime;
+        return $this;
+    }
 
-	public function isShared()
-	{
-		return $this->shared;
-	}
+    public function isShared()
+    {
+        return $this->shared;
+    }
 
-	public function setShared($shared)
-	{
-		$this->shared = $shared;
-		return $this;
-	}
+    public function setShared($shared)
+    {
+        $this->shared = $shared;
+        return $this;
+    }
 }

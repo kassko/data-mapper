@@ -9,13 +9,13 @@ namespace Kassko\DataAccess\Result\Exception;
 */
 class NonUniqueResultException extends \Exception
 {
-	public function __construct($objectClass)
-	{
-		parent::__construct(
+    public function __construct($objectClass)
+    {
+        parent::__construct(
             sprintf(
                 'Only one result was expected but several results obtained for object "%s".',
                 $objectClass
             )
         );
-	}
+    }
 }

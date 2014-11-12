@@ -2,6 +2,11 @@
 
 namespace Kassko\DataAccess\Configuration;
 
+/**
+ * A key for an object used to associate it to a configuration.
+ *
+ * @author kko
+ */
 class ObjectKey
 {
     private $class;

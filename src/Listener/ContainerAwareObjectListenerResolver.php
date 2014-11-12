@@ -14,35 +14,35 @@ use Symfony\Component\EventDispatcher\ContainerAwareEventDispatcher;
  */
 class ContainerAwareObjectListenerResolver extends ContainerAwareClassResolver implements ObjectListenerResolverInterface
 {
-	use EventManagerAwareTrait;
+    use EventManagerAwareTrait;
 
-	public function setContainerAwareEventManager(ContainerAwareEventDispatcher $eventManager)
-	{
-		return $this->setEventManager($eventManager);
-	}
+    public function setContainerAwareEventManager(ContainerAwareEventDispatcher $eventManager)
+    {
+        return $this->setEventManager($eventManager);
+    }
 
-	public function registerEvents($className, $eventToRegisterData)
-	{
-		$classMethods = get_class_methods($className);
+    public function registerEvents($className, $eventToRegisterData)
+    {
+        $classMethods = get_class_methods($className);
 
         $listenerId = $this->getServiceId($className);
-		foreach ($eventToRegisterData as $eventName => $callbackName) {
+        foreach ($eventToRegisterData as $eventName => $callbackName) {
             if (in_array($callbackName, $classMethods)) {
                 $this->registerEvent($listenerId, $eventName, $callbackName);
             }
         }
-	}
+    }
 
-	public function dispatchEvent($className, $eventName, QueryEvent $event)
-	{
-		$this->eventManager->dispatch($eventName, $event);
-	}
+    public function dispatchEvent($className, $eventName, QueryEvent $event)
+    {
+        $this->eventManager->dispatch($eventName, $event);
+    }
 
-	private function registerEvent($listenerId, $eventName, $callbackName)
-	{
-		$this->eventManager->addListenerService(
-			$eventName,
-			[$listenerId, $callbackName]
-		);
-	}
+    private function registerEvent($listenerId, $eventName, $callbackName)
+    {
+        $this->eventManager->addListenerService(
+            $eventName,
+            [$listenerId, $callbackName]
+        );
+    }
 }
