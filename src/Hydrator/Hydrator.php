@@ -4,6 +4,7 @@ namespace Kassko\DataAccess\Hydrator;
 
 use DateTime;
 use Exception;
+use Kassko\ClassResolver\ClassResolverInterface;
 use Kassko\DataAccess\Configuration\ObjectKey;
 use Kassko\DataAccess\Configuration\RuntimeConfiguration;
 use Kassko\DataAccess\Exception\ObjectMappingException;
@@ -35,6 +36,10 @@ class Hydrator extends AbstractHydrator
      */
     private $providerLoadingDone;
 
+    /**
+     * Retrieve an object instance from it's class name.
+     */
+    private $classResolver;
 
     /**
     * Constructor
@@ -47,6 +52,13 @@ class Hydrator extends AbstractHydrator
         parent::__construct($objectManager);
 
         $this->isPropertyAccessStrategyOn = $isPropertyAccessStrategyOn;
+    }
+
+    public function setClassResolver(ClassResolverInterface $classResolver)
+    {
+        $this->classResolver = $classResolver;
+
+        return $this;
     }
 
     /**
@@ -93,62 +105,83 @@ class Hydrator extends AbstractHydrator
         */
 
         $data = [];
-        foreach ($originalFieldNames as $originalFieldName) {
-            $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
+        if (! $this->metadata->hasCustomHydrator()) {
 
-            if ($this->metadata->isNotManaged($mappedFieldName)) {
-                continue;
-            }
+            foreach ($originalFieldNames as $originalFieldName) {
+                $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
 
-            /*if ($filter && !$filter->filter($mappedFieldName)) {
-                continue;
-            }*/
+                if ($this->metadata->isNotManaged($mappedFieldName)) {
+                    continue;
+                }
 
-            if ($this->metadata->isValueObject($mappedFieldName)) {
-
-                $valueObjectHydrator = $this->objectManager->createHydratorFor(new $voClassName);
-
-                $info = $this->metadata->getValueObjectInfo($mappedFieldName);
-                list($voClassName, $voResourceType, $voResource) = $info;
-                $objectKey = $this->createRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResourceType, $voResource);
-
-                return $valueObjectHydrator->extract($object, $objectKey);
-            } elseif ($this->metadata->hasAssociation($mappedFieldName)) {
-
-                $objectClass = $this->metadata->getAssociationTargetClass($mappedFieldName);
-
-                if ($this->metadata->isSingleValuedAssociation($mappedFieldName)) {
-
-                    $targetObject = $this->memberAccessStrategy->getValue($object, $mappedFieldName);
-                    $targetObjectMetadata = $this->objectManager->getMetadata($targetObjectClass = get_class($targetObject));
-
-                    if (null === $targetIdFieldName = $targetObjectMetadata->getIdFieldName()) {
-                        throw new ObjectMappingException(sprintf("Cannot work with associations with object [%s]. This object have not identity defined in its metadata.", $targetObjectClass));
-                    }
-
-                    $targetObjectHydrator = $this->objectManager->createHydratorFor(get_class($targetObject));
-                    $targetData = $targetObjectHydrator->extract($targetObject);
-
-                    $data[$originalFieldName] = $targetData[$targetIdFieldName];
-                    $data[$this->getRelationFieldNameExtraction($originalFieldName)] = $targetData;
-                } //elseif ($this->metadata->isCollectionValuedAssociation($mappedFieldName)) {
-
-                    //Kassko Todo actually only the use case of toOne association is handled !
-                //}
-            } else {
+                /*if ($filter && !$filter->filter($mappedFieldName)) {
+                    continue;
+                }*/
 
                 $value = $this->memberAccessStrategy->getValue($object, $mappedFieldName);
                 $value = $this->extractValue($mappedFieldName, $value, $object, $data);
 
                 $data[$originalFieldName] = $value;
             }
+        } else {
+
+            list($customHydratorClass, , $customExtractMethod) = $this->metadata->getCustomHydratorInfo();
+            $customHydrator = $this->classResolver ? $this->classResolver->resolve($customHydratorClass) : new $customHydratorClass;
+            $data = $customHydrator->$customExtractMethod($object);
+        }
+
+        //To one extraction.
+        $toOneAssociations = $this->metadata->getSingleValuedAssociations();
+        if (count($toOneAssociations) > 0) {
+
+            $id = $data[$this->metadata->getIdFieldName()];
+            foreach ($toOneAssociations as $mappedFieldName) {
+
+                if ($this->metadata->isNotManaged($mappedFieldName)) {
+                    continue;
+                }
+
+                $objectClass = $this->metadata->getAssociationTargetClass($mappedFieldName);
+                $targetObject = $this->memberAccessStrategy->getValue($object, $mappedFieldName);
+                $targetObjectMetadata = $this->objectManager->getMetadata($targetObjectClass = get_class($targetObject));
+
+                if (null === $targetIdFieldName = $targetObjectMetadata->getIdFieldName()) {
+                    throw new ObjectMappingException(sprintf("Cannot work with associations in object [%s]. This object have not identity defined in its metadata.", $targetObjectClass));
+                }
+
+                $targetObjectHydrator = $this->objectManager->createHydratorFor(get_class($targetObject));
+                $targetData = $targetObjectHydrator->extract($targetObject);
+
+                $data[$originalFieldName] = $targetData[$targetIdFieldName];
+                $data[$this->getRelationFieldNameExtraction($originalFieldName)] = $targetData;
+            }
+        }
+
+        //Value objects extraction.
+        foreach ($this->metadata->getFieldsWithValueObjects() as $mappedFieldName) {
+
+            if ($this->metadata->isNotManaged($mappedFieldName)) {
+                continue;
+            }
+
+            $info = $this->metadata->getValueObjectInfo($mappedFieldName);
+            list($voClassName, $voResource, $voResourceType) = $info;
+
+            $valueObjectHydrator = $this->objectManager->createHydratorFor($voClassName);
+            $objectKey = $this->pushRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResourceType, $voResource);
+
+            $valueObject = $this->memberAccessStrategy->getValue($object, $mappedFieldName);
+            $valueObjectData = $valueObjectHydrator->extract($valueObject, $objectKey);
+            $this->popRuntimeConfiguration();
+
+            $data = array_merge($data, $valueObjectData);
         }
 
         return $data;
     }
 
     /**
-    * Extract data from an object.
+    * Hydrate an object from data.
     *
     * @param array $data
     * @param object $object
@@ -157,28 +190,43 @@ class Hydrator extends AbstractHydrator
     */
     protected function doHydrate(array $data, $object)
     {
-        foreach ($data as $originalFieldName => $value) {
-            $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
+        if (! $this->metadata->hasCustomHydrator()) {
 
-            if (null === $mappedFieldName) {
+            foreach ($data as $originalFieldName => $value) {
+                $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
 
-                //It's possible that a raw field name don't mathh a field name
-                //beacause a raw field can be a value object part.
-                continue;
+                if (null === $mappedFieldName) {
+
+                    //It's possible that a raw field name don't mathh a field name
+                    //beacause a raw field can be a value object part.
+                    continue;
+                }
+
+                if (! $this->metadata->hasAssociation($mappedFieldName)) {
+
+                    //Classical hydration.
+                    $this->walkHydration($mappedFieldName, $object, $value, $data);
+                }
             }
+        } else {
 
-            if ($this->metadata->hasAssociation($mappedFieldName)) {
+            list($customHydratorClass, $customHydrateMethod) = $this->metadata->getCustomHydratorInfo();
+            $customHydrator = $this->classResolver ? $this->classResolver->resolve($customHydratorClass) : new $customHydratorClass;
+            $customHydrator->$customHydrateMethod($data, $object);
+        }
 
+        //To one hydration.
+        $toOneAssociations = $this->metadata->getSingleValuedAssociations();
+        if (count($toOneAssociations) > 0) {
+
+            $id = $data[$this->metadata->getIdFieldName()];
+            foreach ($toOneAssociations as $mappedFieldName) {
                 $this->walkToOneHydration(
                     $mappedFieldName,
                     $object,
                     $data[$this->metadata->getOriginalFieldName($mappedFieldName)],
                     false
                 );
-            } else {
-
-                //Classical hydration.
-                $this->walkHydration($mappedFieldName, $object, $value, $data);
             }
         }
 
@@ -344,16 +392,18 @@ class Hydrator extends AbstractHydrator
 
         list($voClassName, $voResourceName, $voResourceType) = $this->metadata->getValueObjectInfo($mappedFieldName);
 
-        $objectKey = $this->createRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResourceName, $voResourceType);
+        $objectKey = $this->pushRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResourceName, $voResourceType);
         $valueObjectHydrator = $this->objectManager->createHydratorFor($objectKey);
 
         $valueObject = new $voClassName;
         $this->memberAccessStrategy->setScalarValue($valueObject, $object, $mappedFieldName);
+        $result = $valueObjectHydrator->hydrate($data, $valueObject, $objectKey);
+        $this->popRuntimeConfiguration();
 
-        return $valueObjectHydrator->hydrate($data, $valueObject, $objectKey);
+        return $result;
     }
 
-    protected function createRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResource, $voResourceType)
+    protected function pushRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResource, $voResourceType)
     {
         if (null === $voResourceType) {
             return;
@@ -364,6 +414,11 @@ class Hydrator extends AbstractHydrator
         $this->objectManager->getConfiguration()->pushRuntimeConfiguration($runtimeConfiguration);
 
         return $objectKey;
+    }
+
+    protected function popRuntimeConfiguration()
+    {
+        $this->objectManager->getConfiguration()->popRuntimeConfiguration();
     }
 
     protected function hydrateToOne($objectClass, $id, $mappedFieldName, $object, $findMethod, $repositoryClass)

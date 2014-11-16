@@ -32,7 +32,7 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
 
         $getter = $this->classMetadata->getterise($fieldName);
 
-        return isset($getter) && in_array($setter, $this->classMethods) ? $object->$getter() : null;
+        return isset($getter) && in_array($getter, $this->classMethods) ? $object->$getter() : null;
     }
 
     public function setScalarValue($value, $object, $fieldName)

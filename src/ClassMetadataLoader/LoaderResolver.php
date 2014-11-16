@@ -18,11 +18,11 @@ class LoaderResolver implements LoaderResolverInterface
         $this->setLoaders($loaders);
     }
 
-    public function resolveLoader($ressource, $type = null)
+    public function resolveLoader(LoadingCriteriaInterface $loadingCriteria)
     {
         foreach ($this->loaders as $loader) {
 
-            if ($loader->supports($ressource, $type)) {
+            if ($loader->supports($loadingCriteria)) {
 
                 return $loader;
             }

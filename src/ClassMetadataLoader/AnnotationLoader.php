@@ -2,29 +2,31 @@
 
 namespace Kassko\DataAccess\ClassMetadataLoader;
 
-use Kassko\DataAccess\Annotation as OM;
 use Doctrine\Common\Annotations\Reader as ReaderInterface;
+use Kassko\DataAccess\Annotation as OM;
 use Kassko\DataAccess\ClassMetadata\ClassMetadata;
+use Kassko\DataAccess\Configuration\Configuration;
 
 /**
- * Class metadata loader for annotations.
+ * Class metadata loader for annotations format.
  *
  * @author kko
  */
-class AnnotationLoader implements LoaderInterface
+class AnnotationLoader extends AbstractLoader
 {
     private $reader;
     private $classMetadata;
     private $objectReflectionClass;
 
-    private static $objectAnnotationName = OM\Entity::class;
+    private static $objectAnnotationName = OM\Object::class;
     private static $columnAnnotationName = OM\Column::class;
     private static $idAnnotationName = OM\Id::class;
     private static $idCompositePartAnnotationName = OM\IdCompositePart::class;
     private static $versionAnnotationName = OM\Version::class;
     private static $transientAnnotationName = OM\Transient::class;
     private static $valueObjectAnnotationName = OM\ValueObject::class;
-    private static $objectListenersAnnotationName = OM\EntityListeners::class;
+    private static $customHydratorAnnotationName = OM\CustomHydrator::class;
+    private static $objectListenersAnnotationName = OM\ObjectListeners::class;
     private static $toOneAnnotationName = OM\ToOne::class;
     private static $toManyAnnotationName = OM\ToMany::class;
     private static $providerAnnotationName = OM\Provider::class;
@@ -41,8 +43,12 @@ class AnnotationLoader implements LoaderInterface
         $this->reader = $reader;
     }
 
-    public function loadClassMetadata(ClassMetadata $classMetadata, $ressource, $type = null)
-    {
+    public function loadClassMetadata(
+        ClassMetadata $classMetadata,
+        LoadingCriteriaInterface $loadingCriteria,
+        Configuration $configuration,
+        LoaderInterface $loader = null
+    ) {
         $this->classMetadata = $classMetadata;
         $this->objectReflectionClass = $this->classMetadata->getReflectionClass();
 
@@ -51,9 +57,9 @@ class AnnotationLoader implements LoaderInterface
         return $this->classMetadata;
     }
 
-    public function supports($ressource, $type = null)
+    public function supports(LoadingCriteriaInterface $loadingCriteria)
     {
-        return 'annotations' === $type;
+        return 'annotations' === $loadingCriteria->getResourceType();
     }
 
     private function loadAnnotationsFromObject()
@@ -61,13 +67,14 @@ class AnnotationLoader implements LoaderInterface
         $this->loadClassAnnotationsFromObject();
         $this->loadMethodAnnotationsFromObject();
         $this->loadFieldAnnotationsFromObject();
-        //$this->classMetadata->setColumnAnnotationName(self::$columnAnnotationName);
     }
 
     private function loadClassAnnotationsFromObject()
     {
         $annotations = $this->reader->getClassAnnotations($this->objectReflectionClass);
+
         foreach ($annotations as $annotation) {
+
             switch (get_class($annotation)) {
                 case self::$objectAnnotationName:
                     $this->classMetadata->setRepositoryClass($annotation->repositoryClass);
@@ -79,6 +86,10 @@ class AnnotationLoader implements LoaderInterface
 
                 case self::$objectListenersAnnotationName:
                     $this->classMetadata->setObjectListenerClasses($annotation->classList);
+                    break;
+
+                case self::$customHydratorAnnotationName:
+                    $this->classMetadata->setCustomHydrator((array)$annotation);
                     break;
             }
         }

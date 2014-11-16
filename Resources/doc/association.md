@@ -180,16 +180,6 @@ class Keyboard
      */
     private $color;
 
-    public function getId()
-    {
-        return $this->id;
-    }
-
-    public function setId($id)
-    {
-        $this->id = $id;
-    }
-
     /**
      * @OM\Column
      * @OM\ToMany(entityClass="Shop", findMethod="findByKeyboard")
@@ -199,6 +189,16 @@ class Keyboard
     public function __construct()
     {
         $this->shops = [];
+    }
+
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    public function setId($id)
+    {
+        $this->id = $id;
     }
 
     public function getColor()
