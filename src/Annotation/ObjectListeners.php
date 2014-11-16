@@ -8,7 +8,7 @@ namespace Kassko\DataAccess\Annotation;
 *
 * @author kko
 */
-final class EntityListeners
+final class ObjectListeners
 {
 	/**
 	* @var array

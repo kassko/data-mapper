@@ -3,22 +3,20 @@
 namespace Kassko\DataAccess\ClassMetadataLoader;
 
 use Kassko\DataAccess\ClassMetadata\ClassMetadata;
-use Kassko\DataAccess\Configuration\Configuration;
-use Symfony\Component\Yaml\Parser;
 
 /**
- * Class metadata loader for yaml format.
+ * Class metadata loader for php format.
  *
  * @author kko
  */
-class YamlLoader extends AbstractLoader
+class PhpLoader extends AbstractLoader
 {
     private $classMetadata;
 
     public function supports(LoadingCriteriaInterface $loadingCriteria)
     {
         return
-            'yaml' === $loadingCriteria->getResourceType()
+            'php' === $loadingCriteria->getResourceType()
             &&
             method_exists($loadingCriteria->getResourceClass(), $loadingCriteria->getResourceMethod())
         ;
@@ -27,7 +25,7 @@ class YamlLoader extends AbstractLoader
     protected function doGetData(LoadingCriteriaInterface $loadingCriteria)
     {
         $callable = [$loadingCriteria->getResourceClass(), $loadingCriteria->getResourceMethod()];
-        return $this->parseContent($callable());
+        return $callable();
     }
 
     protected function doLoadClassMetadata(ClassMetadata $classMetadata, array $data)
@@ -132,6 +130,10 @@ class YamlLoader extends AbstractLoader
 
         $dataName = 'fields';
         foreach ($data[$dataName] as $mappedFieldName => $fieldData) {
+
+            if (is_numeric($mappedFieldName)) {//if $mappedFieldName is a numeric index, $fieldData contains the field.
+                $fieldData = ['name' => $fieldData];
+            }
 
             $mappedManagedFieldNames[] = $mappedFieldName;
 
@@ -264,10 +266,5 @@ class YamlLoader extends AbstractLoader
         if (count($fieldsWithHydrationStrategy)) {
             $this->classMetadata->setFieldsWithHydrationStrategy($fieldsWithHydrationStrategy);
         }
-    }
-
-    protected function parseContent($content)
-    {
-        return (new Parser())->parse($content);
     }
 }

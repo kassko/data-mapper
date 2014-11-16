@@ -3,6 +3,7 @@
 namespace Kassko\DataAccess;
 
 use Kassko\ClassResolver\ClassResolverInterface;
+use Kassko\DataAccess\ClassMetadataLoader\LoadingCriteria;
 use Kassko\DataAccess\ClassMetadata\ClassMetadataFactoryInterface;
 use Kassko\DataAccess\Configuration\Configuration;
 use Kassko\DataAccess\Configuration\ObjectKey;
@@ -89,6 +90,8 @@ class ObjectManager
         $propertyAccessStrategy = $metadata->isPropertyAccessStrategyEnabled();
 
         $hydrator = new Hydrator\Hydrator($this, $propertyAccessStrategy);
+        $hydrator->setClassResolver($this->classResolver);
+
         $fieldsWithHydrationStrategy = $metadata->computeFieldsWithHydrationStrategy();
 
         $mappedFieldNames = $metadata->getMappedFieldNames();
@@ -214,8 +217,8 @@ class ObjectManager
 
         return $this->classMetadataFactory->loadMetadata(
             $objectClass,
-            $this->configuration->getClassMetadataResource($key),
-            $this->configuration->getClassMetadataResourceType($key)
+            LoadingCriteria::createFromConfiguration($this->configuration, $objectClass),
+            $this->configuration
         );
     }
 

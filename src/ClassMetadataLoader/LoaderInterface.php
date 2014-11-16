@@ -3,6 +3,7 @@
 namespace Kassko\DataAccess\ClassMetadataLoader;
 
 use Kassko\DataAccess\ClassMetadata\ClassMetadata;
+use Kassko\DataAccess\Configuration\Configuration;
 
 /**
  * Contract for class metadata loaders.
@@ -11,6 +12,12 @@ use Kassko\DataAccess\ClassMetadata\ClassMetadata;
  */
 interface LoaderInterface
 {
-    function loadClassMetadata(ClassMetadata $metadata, $ressource, $type = null);
-    function supports($ressource, $type = null);
+    function loadClassMetadata(
+        ClassMetadata $classMetadata,
+        LoadingCriteriaInterface $loadingCriteria,
+        Configuration $configuration,
+        LoaderInterface $loader = null
+    );
+    function supports(LoadingCriteriaInterface $loadingCriteria);
+    function getData(LoadingCriteriaInterface $loadingCriteria, Configuration $configuration, LoaderInterface $loader);
 }

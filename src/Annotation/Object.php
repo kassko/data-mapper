@@ -8,7 +8,7 @@ namespace Kassko\DataAccess\Annotation;
 *
 * @author kko
 */
-final class Entity
+final class Object
 {
 	use ColumnCommonTrait;
 

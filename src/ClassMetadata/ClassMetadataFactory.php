@@ -5,6 +5,8 @@ namespace Kassko\DataAccess\ClassMetadata;
 use Kassko\DataAccess\Annotation as OM;
 use Kassko\DataAccess\Cache\CacheInterface;
 use Kassko\DataAccess\ClassMetadataLoader\LoaderInterface as ClassMetadataLoaderInterface;
+use Kassko\DataAccess\ClassMetadataLoader\LoadingCriteriaInterface;
+use Kassko\DataAccess\Configuration\Configuration;
 use Kassko\DataAccess\Configuration\ObjectKey;
 
 /**
@@ -18,7 +20,7 @@ class ClassMetadataFactory implements ClassMetadataFactoryInterface, ClassMetada
     private $metadataLoader;
     private $loadedMetadata = [];
 
-    public function loadMetadata(ObjectKey $objectKey, $resourceName, $resourceType)
+    public function loadMetadata(ObjectKey $objectKey, LoadingCriteriaInterface $loadingCriteria, Configuration $configuration)
     {
         $cacheKey = $objectKey->getKey();
 
@@ -28,7 +30,7 @@ class ClassMetadataFactory implements ClassMetadataFactoryInterface, ClassMetada
                 $this->loadedMetadata[$cacheKey] = $this->cache->fetch($cacheKey);
             } else {
                 $objectMetadata = new ClassMetadata($objectKey->getClass());
-                $this->metadataLoader->loadClassMetadata($objectMetadata, $resourceName, $resourceType);
+                $this->metadataLoader->loadClassMetadata($objectMetadata, $loadingCriteria, $configuration);
                 $objectMetadata->compile();
 
                 $this->loadedMetadata[$cacheKey] = $objectMetadata;

@@ -12,15 +12,32 @@ use RuntimeException;
 abstract class AbstractConfiguration
 {
     /**
-     * @var Default resource type to store class metadata
+     * @var string Default resource type to store class metadata
      */
     protected $defaultClassMetadataResourceType;
     /**
-     * @var Default resource dir in witch store class metadata
+     * @var string Default resource dir in witch store class metadata
      */
     protected $defaultClassMetadataResourceDir;
+    /**
+     * @var string  Default provider method witch provides class metadata
+     */
+    protected $defaultClassMetadataProviderMethod;
+    /**
+     * @var string[] Class metadata resource type by object classes.
+     */
     protected $entitiesClassMetadataResourceType = [];
+    /**
+     * @var string[] Class metadata resource by object classes.
+     */
     protected $entitiesClassMetadataResource = [];
+    /**
+     * @var string[] Provider method by object classes.
+     */
+    protected $entitiesClassMetadataProviderMethod = [];
+    /**
+     * @var string[] Class metadata directory by object classes.
+     */
     protected $entitiesClassMetadataDir = [];
 
 
@@ -50,6 +67,12 @@ abstract class AbstractConfiguration
         return $this;
     }
 
+    public function setDefaultClassMetadataProviderMethod()
+    {
+        $this->defaultClassMetadataProviderMethod = $defaultClassMetadataProviderMethod;
+        return $this;
+    }
+
     public function addClassMetadataResourceType($objectName, $entityClassMetadataResourceType)
     {
         $this->entitiesClassMetadataResourceType[$objectName] = $entityClassMetadataResourceType;
@@ -63,8 +86,8 @@ abstract class AbstractConfiguration
 
         /*
         $realPath = null;
-        $info = pathinfo($entityClassMetadataResource);
-        if ('.' !== $info['dirname']) {
+        $dir = dirname($entityClassMetadataResource);
+        if ('.' !== $dir) {
             $realPath = $entityClassMetadataResource;
         } else {
             $realPath = $this->defaultClassMetadataResourceDir.'/'.$entityClassMetadataResource;
@@ -78,9 +101,10 @@ abstract class AbstractConfiguration
         */
     }
 
-    public function getClassMetadataDir($objectName)
+    public function addClassMetadataProviderMethod($objectName, $entityClassMetadataResource)
     {
-        return isset($this->entitiesClassMetadataDir[$objectName]) ? $this->entitiesClassMetadataDir[$objectName] : null;
+        $this->entitiesClassMetadataProviderMethod[$objectName] = $entityClassMetadataResource;
+        return $this;
     }
 
     public function addClassMetadataDir($objectName, $entityClassMetadataDir)
@@ -113,13 +137,23 @@ abstract class AbstractConfiguration
         return $this;
     }
 
+    public function getDefaultClassMetadataResourceDir()
+    {
+        return $this->defaultClassMetadataResourceDir;
+    }
+
+    public function getClassMetadataDir($objectName)
+    {
+        return isset($this->entitiesClassMetadataDir[$objectName]) ? $this->entitiesClassMetadataDir[$objectName] : null;
+    }
+
     public function getClassMetadataResource($objectName)
     {
         if (isset($this->entitiesClassMetadataResource[$objectName])) {
 
             $realPath = null;
-            $info = pathinfo($this->entitiesClassMetadataResource[$objectName]);
-            if ('.' !== $info['dirname']) {
+            $dir = dirname($this->entitiesClassMetadataResource[$objectName]);
+            if ('.' !== $dir) {
                 $realPath = $this->entitiesClassMetadataResource[$objectName];
             } else {
                 $realPath = $this->defaultClassMetadataResourceDir.'/'.$this->entitiesClassMetadataResource[$objectName];
@@ -141,5 +175,10 @@ abstract class AbstractConfiguration
     public function getClassMetadataResourceType($objectName)
     {
         return isset($this->entitiesClassMetadataResourceType[$objectName]) ? $this->entitiesClassMetadataResourceType[$objectName] : $this->defaultClassMetadataResourceType;
+    }
+
+    public function getClassMetadataProviderMethod($objectName)
+    {
+        return isset($this->entitiesClassMetadataProviderMethod[$objectName]) ? $this->entitiesClassMetadataProviderMethod[$objectName] : $this->defaultClassMetadataProviderMethod;
     }
 }

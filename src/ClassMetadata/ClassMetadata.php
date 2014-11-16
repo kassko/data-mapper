@@ -28,6 +28,7 @@ class ClassMetadata
     private $columnDataName = 'column';
     private $valueObjects = [];
     private $repositoryClass;
+    private $customHydrator;
     private $objectReadDateFormat;
     private $objectWriteDateFormat;
     private $propertyAccessStrategyEnabled;
@@ -228,6 +229,11 @@ class ClassMetadata
     public function isCollectionValuedAssociation($mappedFieldName)
     {
         return array_key_exists($mappedFieldName, $this->toManyAssociations);
+    }
+
+    public function getSingleValuedAssociations()
+    {
+        return array_keys($this->toOneAssociations);
     }
 
     public function getCollectionValuedAssociations()
@@ -918,5 +924,24 @@ class ClassMetadata
     public function existsMappedFieldName($mappedFieldName)
     {
         return in_array($mappedFieldName, $this->mappedFieldNames);
+    }
+
+    public function hasCustomHydrator()
+    {
+        return isset($this->customHydrator);
+    }
+
+    public function setCustomHydrator(array $customHydrator)
+    {
+        $this->customHydrator = $customHydrator;
+    }
+
+    public function getCustomHydratorInfo()
+    {
+        return [
+            $this->customHydrator['class'],
+            $this->customHydrator['hydrateMethod'],
+            $this->customHydrator['extractMethod'],
+        ];
     }
 }

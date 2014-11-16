@@ -2,15 +2,16 @@
 
 namespace Kassko\DataAccess\ClassMetadataLoader;
 
-use Kassko\DataAccess\Exception\ObjectMappingException;
+use Kassko\DataAccess\ClassMetadataLoader\Exception\NotFoundLoaderException;
 use Kassko\DataAccess\ClassMetadata\ClassMetadata;
+use Kassko\DataAccess\Configuration\Configuration;
 
 /**
  * Find the good class metadata loader and delegate to it class metadata loading.
  *
  * @author kko
  */
-class DelegatingLoader implements LoaderInterface
+class DelegatingLoader extends AbstractLoader
 {
     private $resolver;
 
@@ -19,17 +20,33 @@ class DelegatingLoader implements LoaderInterface
         $this->resolver = $resolver;
     }
 
-    public function loadClassMetadata(ClassMetadata $classMetadata, $ressource, $type = null)
-    {
-        if (false === $loader = $this->resolver->resolveLoader($ressource, $type)) {
-            throw ObjectMappingException::notFoundDriverException($ressource, $type);
+    public function loadClassMetadata(
+        ClassMetadata $classMetadata,
+        LoadingCriteriaInterface $loadingCriteria,
+        Configuration $configuration,
+        LoaderInterface $loader = null
+    ) {
+        if (false === $loader = $this->resolver->resolveLoader($loadingCriteria)) {
+            throw new NotFoundLoaderException($loadingCriteria);
         }
 
-        return $loader->loadClassMetadata($classMetadata, $ressource, $type);
+        return $loader->loadClassMetadata($classMetadata, $loadingCriteria, $configuration, $this);
     }
 
-    public function supports($ressource, $type = null)
+    public function supports(LoadingCriteriaInterface $loadingCriteria)
     {
-        return false !== $this->resolver->resolveLoader($ressource, $type);
+        return false !== $this->resolver->resolveLoader($loadingCriteria);
+    }
+
+    public function getData(
+        LoadingCriteriaInterface $loadingCriteria,
+        Configuration $configuration,
+        LoaderInterface $loader
+    ) {
+        if (false === $loader = $this->resolver->resolveLoader($loadingCriteria)) {
+            throw new NotFoundLoaderException($loadingCriteria);
+        }
+
+        return $loader->getData($loadingCriteria, $configuration, $loader);
     }
 }
