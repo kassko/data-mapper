@@ -135,7 +135,7 @@ array(2) {
 As you can see, the getResult() method return the object in an array. Maybe you would prefer to get the object instead of an array containing this object. There are severals ways to get results:
 
 ```php
-    /**
+    /*
     Return an array of objects.
     So return an array with only one object, if only one fullfill the request.
     */
@@ -143,7 +143,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
 ```
 
 ```php
-    /**
+    /*
     Return one object or null if no result found.
 
     If severals results are found, throw an exception
@@ -153,7 +153,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
 ```
 
 ```php
-    /**
+    /*
     Return the object found or a default result (like a Watch instance).
 
     If more than one result are found, throw an exception
@@ -163,7 +163,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
 ```
 
 ```php
-    /**
+    /*
     Return the object found.
 
     If more than one result are found, throw an exception
@@ -181,7 +181,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
 ```
 
 ```php
-    /**
+    /*
     Return the first object found or a default result (like a Watch instance).
 
     If no result found, throw an exception
@@ -191,7 +191,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
 ```
 
 ```php
-    /**
+    /*
     Return an array indexed by a property value (like "brand" value).
 
     If the index does not exists, throw an exception Kassko\DataAccess\Result\Exception\NotFoundIndexException.
@@ -205,7 +205,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
 ```
 
 ```php
-    /**
+    /*
     Return an iterator.
 
     Result will not be hydrated immediately but only when you will iterate the results (with "foreach" for example).
@@ -222,7 +222,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
 ```
 
 ```php
-    /**
+    /*
     Return an iterator indexed by a property value (like "brand" value).
 
     If the index does not exists, throw an exception Kassko\DataAccess\Result\Exception\NotFoundIndexException.
