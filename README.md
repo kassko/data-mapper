@@ -46,12 +46,12 @@ use Kassko\DataAccess\Annotation as OM;
 class Watch
 {
     /**
-     * @OM\Column
+     * @OM\Field
      */
     private $brand;
 
     /**
-     * @OM\Column(name="COLOR")
+     * @OM\Field(name="COLOR")
      */
     private $color;//Here, storage field name is different of object field name.
 
@@ -77,7 +77,7 @@ class Watch
 }
 ```
 
-A property without "Column" annotation is not managed (no hydrated and no extracted).
+A property without "Field" annotation is not managed (no hydrated and no extracted).
 
 And you get a ResultBuilderFactory instance:
 
@@ -248,34 +248,34 @@ class Watch
     private static $brandLabelToCodeMap = ['Brand A' => 1, 'Brand B' => 2];
 
     /**
-     * @OM\Column(readStrategy="readBrand", writeStrategy="writeBrand")
+     * @OM\Field(readStrategy="readBrand", writeStrategy="writeBrand")
      */
     private $brand;
 
     /**
-     * @OM\Column
+     * @OM\Field
      */
     private $color;
 
     /**
-     * @OM\Column(name="created_date", type="date", readDateFormat="Y-m-d H:i:s", writeDateFormat="Y-m-d H:i:s")
+     * @OM\Field(name="created_date", type="date", readDateFormat="Y-m-d H:i:s", writeDateFormat="Y-m-d H:i:s")
      */
     private $createdDate;
 
     private $sealDate;
 
     /**
-     * @OM\Column(readStrategy="hydrateBool", writeStrategy="extractBool")
+     * @OM\Field(readStrategy="hydrateBool", writeStrategy="extractBool")
      */
     private $waterProof;
 
     /**
-     * @OM\Column(readStrategy="hydrateBoolFromSymbol", writeStrategy="extractBoolToSymbol")
+     * @OM\Field(readStrategy="hydrateBoolFromSymbol", writeStrategy="extractBoolToSymbol")
      */
     private $stopWatch;
 
     /**
-     * @OM\Column(readStrategy="hydrateBool", writeStrategy="extractBool")
+     * @OM\Field(readStrategy="hydrateBool", writeStrategy="extractBool")
      * @OM\Getter(name="canBeCustomized")
      */
     private $customizable;//Naturally, we also can customize setters with "Setter" annotation.

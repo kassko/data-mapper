@@ -3,7 +3,7 @@
 namespace Kassko\DataAccess\Hydrator;
 
 /**
- * Hold a value to hydrate or to extract with an hydration strategy.
+ * Contains a value to hydrate or to extract with an hydration strategy.
  *
  * @author kko
  */

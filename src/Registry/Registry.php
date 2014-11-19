@@ -15,7 +15,7 @@ final class Registry implements \ArrayAccess, \IteratorAggregate
     const KEY_LOGGER = 'logger';
 
     /**
-     * Hold data
+     * Contains data
      * @var array
      */
     private $registry = [];

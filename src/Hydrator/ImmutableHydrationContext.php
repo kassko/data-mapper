@@ -5,7 +5,7 @@ namespace Kassko\DataAccess\Hydrator;
 use LogicException;
 
 /**
- * Hold the hydration context and lock it.
+ * Contains the hydration context and lock it.
  * This implementation should be used only internally.
  *
  * @author kko
@@ -32,6 +32,6 @@ class ImmutableHydrationContext extends HydrationContext
 
     private function createReadOnlyContextException()
     {
-        return new LogicException("Le contexte a déjà été utilisé pour hydrater l'objet. Toute modification de celui-ci est donc inopérante.");
+        return new LogicException('The context was already used to hydrate your object. Changes on it will be ignored.');
     }
 }

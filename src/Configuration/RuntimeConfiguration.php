@@ -3,7 +3,7 @@
 namespace Kassko\DataAccess\Configuration;
 
 /**
- * Hold a configuration created on the runtime.
+ * Contains a configuration created on the runtime.
  *
  * @author kko
  */

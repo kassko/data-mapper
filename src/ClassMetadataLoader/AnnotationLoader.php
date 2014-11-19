@@ -19,7 +19,7 @@ class AnnotationLoader extends AbstractLoader
     private $objectReflectionClass;
 
     private static $objectAnnotationName = OM\Object::class;
-    private static $columnAnnotationName = OM\Column::class;
+    private static $fieldAnnotationName = OM\Field::class;
     private static $idAnnotationName = OM\Id::class;
     private static $idCompositePartAnnotationName = OM\IdCompositePart::class;
     private static $versionAnnotationName = OM\Version::class;
@@ -151,13 +151,13 @@ class AnnotationLoader extends AbstractLoader
             $annotationsByKey = [];
             $annotations = $this->reader->getPropertyAnnotations($reflectionProperty);
 
-            $existsColumnAnnotation = false;
+            $existsFieldAnnotation = false;
 
             foreach ($annotations as $annotation) {
                 $annotationName = get_class($annotation);
 
                 switch ($annotationName) {
-                    case self::$columnAnnotationName:
+                    case self::$fieldAnnotationName:
 
                         $mappedManagedFieldNames[$mappedFieldName] = $mappedFieldName;
 
@@ -192,7 +192,7 @@ class AnnotationLoader extends AbstractLoader
                             $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $annotation->readStrategy;
                         }
 
-                        $annotationsByKey['column'] = (array)$annotation;
+                        $annotationsByKey['field'] = (array)$annotation;
                         break;
 
                     case self::$toOneAnnotationName:

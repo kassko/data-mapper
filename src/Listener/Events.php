@@ -17,7 +17,7 @@ class Events
     const OBJECT_POST_UPDATE = 'object.post.update';
     const OBJECT_POST_DELETE = 'object.post.delete';
     const OBJECT_POST_LOAD = 'object.post.load';
-    const OBJECT_POST_LOAD_LIST = 'object.post.load.list';
+    const OBJECT_POST_LOAD_LIST = 'object.post.load_list';
 
     private function __construct() {}
     private function __clone() {}

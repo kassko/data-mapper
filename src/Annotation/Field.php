@@ -8,9 +8,9 @@ namespace Kassko\DataAccess\Annotation;
 *
 * @author kko
 */
-final class Column
+final class Field
 {
-    use ColumnCommonTrait;
+    use FieldCommonTrait;
 
     /**
     * @var string

@@ -10,7 +10,7 @@ namespace Kassko\DataAccess\Annotation;
 */
 final class Object
 {
-	use ColumnCommonTrait;
+	use FieldCommonTrait;
 
     /**
 	* @var string

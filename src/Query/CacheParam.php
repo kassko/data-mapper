@@ -6,7 +6,7 @@ use Kassko\DataAccess\Configuration\Configuration;
 use Kassko\DataAccess\Cache\CacheInterface;
 
 /**
-* Hold user cache settings.
+* Contains user cache settings.
 *
 * @author kko
 */

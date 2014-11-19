@@ -16,7 +16,7 @@ class QueryEvent extends GenericEvent
      */
     protected $result;
 
-    public function __construct($result, $arguments)
+    public function __construct($result, array $arguments = [])
     {
         parent::__construct($result, $arguments);
 

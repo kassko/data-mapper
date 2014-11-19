@@ -11,7 +11,7 @@ namespace Kassko\DataAccess\Annotation;
 *
 * @author kko
 */
-trait ColumnCommonTrait
+trait FieldCommonTrait
 {
 	/**
     * @var string

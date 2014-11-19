@@ -6,7 +6,7 @@ use Kassko\DataAccess\Exception\ObjectMappingException;
 use Kassko\DataAccess\Hydrator\Hydrator;
 
 /**
-* Hold class metadata.
+* Contains class metadata.
 *
 * @author kko
 */
@@ -25,7 +25,7 @@ class ClassMetadata
     private $toOriginal = [];
     private $toMapped = [];
     private $fieldsDataByKey = [];
-    private $columnDataName = 'column';
+    private $columnDataName = 'field';
     private $valueObjects = [];
     private $repositoryClass;
     private $customHydrator;
@@ -101,14 +101,14 @@ class ClassMetadata
 
             foreach ($this->fieldsDataByKey as $fieldName => &$fieldDataByKey) {
 
-                if (isset($fieldDataByKey['column']['type']) && 'date' == $fieldDataByKey['column']['type']) {
+                if (isset($fieldDataByKey['field']['type']) && 'date' == $fieldDataByKey['field']['type']) {
 
                     if (isset($this->objectReadDateFormat)) {
-                        $fieldDataByKey['column']['readDateFormat'] = $this->objectReadDateFormat;
+                        $fieldDataByKey['field']['readDateFormat'] = $this->objectReadDateFormat;
                     }
 
                     if (isset($this->objectWriteDateFormat)) {
-                        $fieldDataByKey['column']['writeDateFormat'] = $this->objectWriteDateFormat;
+                        $fieldDataByKey['field']['writeDateFormat'] = $this->objectWriteDateFormat;
                     }
                 }
             }

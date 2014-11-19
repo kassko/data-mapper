@@ -8,6 +8,7 @@ use Kassko\DataAccess\ClassMetadataLoader\LoaderInterface as ClassMetadataLoader
 use Kassko\DataAccess\ClassMetadataLoader\LoadingCriteriaInterface;
 use Kassko\DataAccess\Configuration\Configuration;
 use Kassko\DataAccess\Configuration\ObjectKey;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
 * Factory to create class metadata.
@@ -19,6 +20,7 @@ class ClassMetadataFactory implements ClassMetadataFactoryInterface, ClassMetada
     private $cache;
     private $metadataLoader;
     private $loadedMetadata = [];
+    private $eventManager;
 
     public function loadMetadata(ObjectKey $objectKey, LoadingCriteriaInterface $loadingCriteria, Configuration $configuration)
     {
@@ -29,12 +31,16 @@ class ClassMetadataFactory implements ClassMetadataFactoryInterface, ClassMetada
             if ($this->cache->contains($cacheKey)) {
                 $this->loadedMetadata[$cacheKey] = $this->cache->fetch($cacheKey);
             } else {
-                $objectMetadata = new ClassMetadata($objectKey->getClass());
-                $this->metadataLoader->loadClassMetadata($objectMetadata, $loadingCriteria, $configuration);
-                $objectMetadata->compile();
+                $classMetadata = new ClassMetadata($objectKey->getClass());
+                $this->metadataLoader->loadClassMetadata($classMetadata, $loadingCriteria, $configuration);
+                $classMetadata->compile();
 
-                $this->loadedMetadata[$cacheKey] = $objectMetadata;
-                $this->cache->save($cacheKey, $objectMetadata);
+                $this->loadedMetadata[$cacheKey] = $classMetadata;
+                $this->cache->save($cacheKey, $classMetadata);
+
+                if ($this->eventManager) {
+                    $this->eventManager->dispatch(Events::POST_LOAD_METADATA, new ClassMetadataEvent(new ClassMetadataBuilder($classMetadata)));
+                }
             }
         }
 
@@ -45,6 +51,11 @@ class ClassMetadataFactory implements ClassMetadataFactoryInterface, ClassMetada
     {
         $this->metadataLoader = $metadataLoader;
         return $this;
+    }
+
+    public function setEventManager(EventDispatcherInterface $eventManager)
+    {
+        $this->eventManager = $eventManager;
     }
 
     public function setCache(CacheInterface $cache)

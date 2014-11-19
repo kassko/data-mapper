@@ -157,7 +157,7 @@ class PhpLoader extends AbstractLoader
                 $fieldData['type'] = 'string';
             }
 
-            $fieldDataByKey['column'] = $fieldData;
+            $fieldDataByKey['field'] = $fieldData;
 
             if ('date' === $fieldData['type']) {
                $mappedDateFieldNames[] = $mappedFieldName;

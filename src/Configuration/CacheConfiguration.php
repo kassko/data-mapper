@@ -5,7 +5,7 @@ namespace Kassko\DataAccess\Configuration;
 use Kassko\DataAccess\Cache\CacheInterface;
 
 /**
- * Hold cache configuration.
+ * Contains cache configuration.
  *
  * @author kko
  */

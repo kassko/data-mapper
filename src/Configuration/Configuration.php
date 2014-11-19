@@ -6,7 +6,7 @@ use Kassko\DataAccess\ClassMetadata\ClassMetadataFactoryOptionsAwareInterface;
 use RuntimeException;
 
 /**
- * Hold configuration.
+ * Contains configuration.
  *
  * @author kko
  */

@@ -8,13 +8,13 @@ use Kassko\DataAccess\Annotation as OM;
 class Keyboard
 {
     /**
-     * @OM\Column
+     * @OM\Field
      * @OM\Id
      */
     private $id;
 
     /**
-     * @OM\Column
+     * @OM\Field
      */
     private $color;
 
@@ -30,7 +30,7 @@ class Keyboard
 
     /**
      * @OM\ToOne(entityClass="Manufacturer", findMethod="find")
-     * @OM\Column(name="manufacturer_id")
+     * @OM\Field(name="manufacturer_id")
      */
     private $manufacturer;
 
@@ -65,13 +65,13 @@ As you can guess, the "find" method is that of the repository of the entity "Man
 class Manufacturer
 {
     /**
-     * @OM\Column
+     * @OM\Field
      * @OM\Id
      */
     private $id;
 
     /**
-     * @OM\Column
+     * @OM\Field
      */
     private $name;
 
@@ -151,7 +151,7 @@ class Keyboard
 {
     /**
      * @OM\ToOne(entityClass="Manufacturer", repositoryClass="UnconventionnalManager" findMethod="find")
-     * @OM\Column
+     * @OM\Field
      */
     private $manufacturer;
 }
@@ -170,18 +170,18 @@ use Kassko\DataAccess\Annotation as OM;
 class Keyboard
 {
     /**
-     * @OM\Column
+     * @OM\Field
      * @OM\Id
      */
     private $id;
 
     /**
-     * @OM\Column
+     * @OM\Field
      */
     private $color;
 
     /**
-     * @OM\Column
+     * @OM\Field
      * @OM\ToMany(entityClass="Shop", findMethod="findByKeyboard")
      */
     private $shops;
@@ -246,12 +246,12 @@ class Shop
 {
     /**
      * @OM\Id
-     * @OM\Column
+     * @OM\Field
      */
     private $id;
 
     /**
-     * @OM\Column
+     * @OM\Field
      */
     private $name;
 
@@ -290,7 +290,7 @@ class Keyboard
 {
     /**
      * @OM\ToMany(name="insertShop", entityClass="Shop", findMethod="find")
-     * @OM\Column
+     * @OM\Field
      */
     private $shops;
 

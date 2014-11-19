@@ -5,7 +5,7 @@ namespace Kassko\DataAccess\Hydrator;
 use InvalidArgumentException;
 
 /**
- * Hold hydration context.
+ * Contains hydration context.
  *
  * @author kko
  */
