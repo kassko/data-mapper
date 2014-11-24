@@ -259,15 +259,16 @@ class Hydrator extends AbstractHydrator
 
     public function loadProperty($object, $mappedFieldName)
     {
-        if ($this->metadata->hasProvider($mappedFieldName)) {
-
-            $this->walkHydrationByProvider($mappedFieldName, $object, true);
-        } elseif ($this->metadata->isSingleValuedAssociation($mappedFieldName)) {
+        if ($this->metadata->isSingleValuedAssociation($mappedFieldName)) {
 
             $this->walkToOneHydration($mappedFieldName, $object, $this->memberAccessStrategy->getValue($object, $mappedFieldName), true);
         } elseif ($this->metadata->isCollectionValuedAssociation($mappedFieldName)) {
 
-            $this->walkToManyHydration($mappedFieldName, $object, true);
+            $id = $data[$this->metadata->getIdFieldName()];
+            $this->walkToManyHydration($mappedFieldName, $object, $id, true);
+        } elseif ($this->metadata->hasProvider($mappedFieldName)) {
+
+            $this->walkHydrationByProvider($mappedFieldName, $object, true);
         } else {
 
             throw ObjectMappingException::notFoundAssociation($mappedFieldName, $this->metadata->getName());
@@ -359,7 +360,7 @@ class Hydrator extends AbstractHydrator
 
         if (false === $enforceLoading && true === $lazyLoading) {
 
-            $this->setTemporaryValueForPropertyToLazyLoad($id, $object, $mappedFieldName);
+            $this->setTemporaryValueForPropertyToLazyLoad($value, $object, $mappedFieldName);
             return false;
         }
 

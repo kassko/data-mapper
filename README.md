@@ -5,7 +5,14 @@ data-access
 [![Total Downloads](https://poser.pugx.org/kassko/data-access/downloads.png)](https://packagist.org/packages/kassko/data-access)
 [![Latest Unstable Version](https://poser.pugx.org/kassko/data-access/v/unstable.png)](https://packagist.org/packages/kassko/data-access)
 
-data-access is an intelligent mapper witch can give an object representation of inconsistent data like data from some legacy database and manage object cache.
+data-access component is a mapper which gives a lot of flexibility to representate some raw data like objects. Use it if you need:
+
+* to keep your objects agnostic and preserve their base class (data-access implements Data Mapper pattern and not Active Record)
+* to transform raw data before hydrating an object
+* to create representations with nested objects and several nesting levels (Person => Address => Street)
+* to map value objects (Address, Street) and reuse them with other mapping rules
+* to reuse and inherit the mapping configurations
+* to choose your mapping configuration format or to use various formats in the same application
 
 
 Installation
@@ -37,7 +44,7 @@ object(Watch) (2)
 }
 ```
 
-And inversely, you extract your object properties to have a raw result set.
+And inversely, you extract your object properties to have raw result.
 
 To do that, you annotate your entity:
 ```php
@@ -82,7 +89,7 @@ A property without "Field" annotation is not managed (no hydrated and no extract
 And you get a ResultBuilderFactory instance:
 
 If you work with a framework, normally, you can get a ResultBuilderFactory instance from a container.
-For example, with Symfony framework, we can use the [kassko/data-access-bundle](https://github.com/kassko/data-access-bundle) witch provides to the container a ResultBuilderFactory service.
+For example, with Symfony framework, we can use the [kassko/data-access-bundle](https://github.com/kassko/data-access-bundle) which provides to the container a ResultBuilderFactory service.
 
 If you have no integration of data-access, you can use the [kassko/data-access-builder](https://github.com/kassko/data-access-builder). It will help you to get a ResultBuilderFactory instance.
 
@@ -93,7 +100,7 @@ $data = [
     'COLOR' => 'blue'
 ];
 
-$resultBuilder = $resultBuilderFactory->createResultBuilder('Watch', $data);
+$resultBuilder = $resultBuilderFactory->create('Watch', $data);
 $result = $resultBuilder->getResult();
 var_dump($result);
 ```
@@ -116,7 +123,7 @@ $keyBoard = (new Watch)
     ->setColor('blue')
 ;
 
-$resultBuilder = $resultBuilderFactory->createResultBuilder('Watch');
+$resultBuilder = $resultBuilderFactory->create('Watch');
 $result = $resultBuilder->getRawResult();
 var_dump($result);
 ```
@@ -454,7 +461,7 @@ There is a lot of others features.
 [see more in relation reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/association.md).
 
 * You can build an object from several sources.
-Imagine an object witch requires multiple sources fetching to represent it (SqlServer, Elastic search, Web Service, MongoDb).
+Imagine an object which requires multiple sources fetching to represent it (SqlServer, Elastic search, Web Service, MongoDb).
 [see more in provider reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/provider.md).
 
 * You can lazy load properties.

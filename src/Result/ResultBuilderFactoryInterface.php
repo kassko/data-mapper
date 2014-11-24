@@ -16,5 +16,5 @@ interface ResultBuilderFactoryInterface
      *
      * @return ResultBuilder
      */
-    public function createResultBuilder($objectClass, $data = null);
+    public function create($objectClass, $data = null);
 }

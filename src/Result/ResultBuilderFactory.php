@@ -21,7 +21,7 @@ class ResultBuilderFactory implements ResultBuilderFactoryInterface
     /**
      * {@inheritdoc}
      */
-    public function createResultBuilder($objectClass, $data = null)
+    public function create($objectClass, $data = null)
     {
         return new ResultBuilder($this->objectManager, $objectClass, $data);
     }

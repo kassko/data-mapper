@@ -13,7 +13,6 @@ class LazyLoader
 {
     private $objectManager;
     private $objectClass;
-    private $instances = [];
 
     public function __construct(ObjectManager $objectManager, $objectClass)
     {

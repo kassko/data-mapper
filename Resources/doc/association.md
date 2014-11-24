@@ -3,18 +3,18 @@
 * ToOneAssociation
 
 ```php
-use Kassko\DataAccess\Annotation as OM;
+use Kassko\DataAccess\Annotation as DA;
 
 class Keyboard
 {
     /**
-     * @OM\Field
-     * @OM\Id
+     * @DA\Field
+     * @DA\Id
      */
     private $id;
 
     /**
-     * @OM\Field
+     * @DA\Field
      */
     private $color;
 
@@ -29,8 +29,8 @@ class Keyboard
     }
 
     /**
-     * @OM\ToOne(entityClass="Manufacturer", findMethod="find")
-     * @OM\Field(name="manufacturer_id")
+     * @DA\ToOne(entityClass="Manufacturer", findMethod="find")
+     * @DA\Field(name="manufacturer_id")
      */
     private $manufacturer;
 
@@ -60,18 +60,18 @@ As you can guess, the "find" method is that of the repository of the entity "Man
 
 ```php
 /**
- * @OM\Entity(repositoryClass="ManufacturerManager")
+ * @DA\Entity(repositoryClass="ManufacturerManager")
  */
 class Manufacturer
 {
     /**
-     * @OM\Field
-     * @OM\Id
+     * @DA\Field
+     * @DA\Id
      */
     private $id;
 
     /**
-     * @OM\Field
+     * @DA\Field
      */
     private $name;
 
@@ -125,7 +125,7 @@ $data = [
 
 $provider = new DataAccessProvider;
 $resultBuilderFactory = $provider->getResultBuilderFactory();
-$resultBuilder = $resultBuilderFactory->createResultBuilder('Keyboard', $data);
+$resultBuilder = $resultBuilderFactory->create('Keyboard', $data);
 var_dump($resultBuilder->getSingleResult());
 ```
 
@@ -145,13 +145,13 @@ object(Keyboard)#283 (8) {
 If the repository class wherin we wants to fetch is not that of the entity, we can override it:
 
 ```php
-use Kassko\DataAccess\Annotation as OM;
+use Kassko\DataAccess\Annotation as DA;
 
 class Keyboard
 {
     /**
-     * @OM\ToOne(entityClass="Manufacturer", repositoryClass="UnconventionnalManager" findMethod="find")
-     * @OM\Field
+     * @DA\ToOne(entityClass="Manufacturer", repositoryClass="UnconventionnalManager" findMethod="find")
+     * @DA\Field
      */
     private $manufacturer;
 }
@@ -165,24 +165,24 @@ For performance reasons, we can load the association "$manufacturer" only when w
 An association "to many" is used similarly.
 
 ```php
-use Kassko\DataAccess\Annotation as OM;
+use Kassko\DataAccess\Annotation as DA;
 
 class Keyboard
 {
     /**
-     * @OM\Field
-     * @OM\Id
+     * @DA\Field
+     * @DA\Id
      */
     private $id;
 
     /**
-     * @OM\Field
+     * @DA\Field
      */
     private $color;
 
     /**
-     * @OM\Field
-     * @OM\ToMany(entityClass="Shop", findMethod="findByKeyboard")
+     * @DA\Field
+     * @DA\ToMany(entityClass="Shop", findMethod="findByKeyboard")
      */
     private $shops;
 
@@ -240,18 +240,18 @@ class ShopManager
 ```
 ```php
 /**
- * @OM\Entity(repositoryClass="ShopManager")
+ * @DA\Entity(repositoryClass="ShopManager")
  */
 class Shop
 {
     /**
-     * @OM\Id
-     * @OM\Field
+     * @DA\Id
+     * @DA\Field
      */
     private $id;
 
     /**
-     * @OM\Field
+     * @DA\Field
      */
     private $name;
 
@@ -284,13 +284,13 @@ If the "Shop" FQCN (full qualified class name) is "Kassko\Sample\Shop", the asso
 
 You can override this association name:
 ```php
-use Kassko\DataAccess\Annotation as OM;
+use Kassko\DataAccess\Annotation as DA;
 
 class Keyboard
 {
     /**
-     * @OM\ToMany(name="insertShop", entityClass="Shop", findMethod="find")
-     * @OM\Field
+     * @DA\ToMany(name="insertShop", entityClass="Shop", findMethod="find")
+     * @DA\Field
      */
     private $shops;
 
@@ -314,7 +314,7 @@ $data = [
 ];
 
 //=====> Here some stuff to create $resultBuilderFactory <=====
-$resultBuilder = $resultBuilderFactory->createResultBuilder($data, 'Keyboard');
+$resultBuilder = $resultBuilderFactory->create($data, 'Keyboard');
 var_dump($resultBuilder->getSingleResult());
 ```
 
