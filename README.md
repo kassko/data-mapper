@@ -21,7 +21,7 @@ Installation
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-access": "dev-master"
+    "kassko/data-access": "~0.3.0@alpha"
 }
 ```
 
