@@ -22,7 +22,7 @@ data-access component is a mapper which gives a lot of flexibility to representa
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-access": "~0.3.0@alpha"
+    "kassko/data-access": "~0.4.0@alpha"
 }
 ```
 
