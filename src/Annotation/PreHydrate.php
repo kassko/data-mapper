@@ -4,10 +4,11 @@ namespace Kassko\DataAccess\Annotation;
 
 /**
  * @Annotation
- * @Target("METHOD")
+ * @Target("CLASS")
  *
  * @author kko
  */
 final class PreHydrate
 {
+    use EventCommonTrait;
 }

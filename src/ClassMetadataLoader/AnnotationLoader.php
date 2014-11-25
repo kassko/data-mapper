@@ -65,7 +65,6 @@ class AnnotationLoader extends AbstractLoader
     private function loadAnnotationsFromObject()
     {
         $this->loadClassAnnotationsFromObject();
-        $this->loadMethodAnnotationsFromObject();
         $this->loadFieldAnnotationsFromObject();
     }
 
@@ -80,8 +79,9 @@ class AnnotationLoader extends AbstractLoader
                     $this->classMetadata->setRepositoryClass($annotation->repositoryClass);
                     $this->classMetadata->setObjectReadDateFormat($annotation->readDateFormat);
                     $this->classMetadata->setObjectWriteDateFormat($annotation->writeDateFormat);
-                    $this->classMetadata->setPropertyAccessStrategyEnabled($annotation->propertyAccessStrategyEnabled);
-                    $this->classMetadata->setMetadataExtensionClass($annotation->metadataExtensionClass);
+                    $this->classMetadata->setPropertyAccessStrategyEnabled($annotation->propertyAccessStrategy);
+                    $this->classMetadata->setPropertyMetadataExtensionClass($annotation->mappingExtensionClass);
+                    $this->classMetadata->setClassMetadataExtensionClass($annotation->classMappingExtensionClass);
                     break;
 
                 case self::$objectListenersAnnotationName:
@@ -91,35 +91,22 @@ class AnnotationLoader extends AbstractLoader
                 case self::$customHydratorAnnotationName:
                     $this->classMetadata->setCustomHydrator((array)$annotation);
                     break;
-            }
-        }
-    }
 
-    private function loadMethodAnnotationsFromObject()
-    {
-        foreach ($this->objectReflectionClass->getMethods() as $reflectionMethod) {
-            $methodName = $reflectionMethod->getName();
-
-            $annotations = $this->reader->getMethodAnnotations($reflectionMethod);
-            foreach ($annotations as $annotation) {
-
-                switch (get_class($annotation)) {
-                    case self::$preExtractAnnotationName:
-                        $this->classMetadata->setOnBeforeExtract($methodName);
+                case self::$preExtractAnnotationName:
+                        $this->classMetadata->setOnBeforeExtract($annotation->method);
                         break;
 
-                    case self::$postExtractAnnotationName:
-                        $this->classMetadata->setOnAfterExtract($methodName);
-                        break;
+                case self::$postExtractAnnotationName:
+                    $this->classMetadata->setOnAfterExtract($annotation->method);
+                    break;
 
-                    case self::$preHydrateAnnotationName:
-                        $this->classMetadata->setOnBeforeHydrate($methodName);
-                        break;
+                case self::$preHydrateAnnotationName:
+                    $this->classMetadata->setOnBeforeHydrate($annotation->method);
+                    break;
 
-                    case self::$postHydrateAnnotationName:
-                        $this->classMetadata->setOnAfterHydrate($methodName);
-                        break;
-                }
+                case self::$postHydrateAnnotationName:
+                    $this->classMetadata->setOnAfterHydrate($annotation->method);
+                    break;
             }
         }
     }
@@ -182,6 +169,7 @@ class AnnotationLoader extends AbstractLoader
                             $fieldsWithHydrationStrategy[$mappedFieldName] = [];
                             $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = null;
                             $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = null;
+                            $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = null;
                         }
 
                         if (isset($annotation->writeStrategy)) {
@@ -190,6 +178,10 @@ class AnnotationLoader extends AbstractLoader
 
                         if (isset($annotation->readStrategy)) {
                             $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $annotation->readStrategy;
+                        }
+
+                        if (isset($annotation->mappingExtensionClass)) {
+                            $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = $annotation->mappingExtensionClass;
                         }
 
                         $annotationsByKey['field'] = (array)$annotation;

@@ -48,13 +48,7 @@ class ClosureHydrationStrategy implements HydrationStrategyInterface
     */
     public function extract($value, $object = null, $data = null)
     {
-        $func = $this->extractFunc;
-        if (isset($object)) {
-
-            $func = $func->bindTo($object, $object);
-        }
-
-        $func($objValue = new Value($value), new ImmutableHydrationContext($data));
+        $this->extractFunc->__invoke($objValue = new Value($value), new ImmutableHydrationContext($data));
 
         return $objValue->value;
     }
@@ -64,13 +58,7 @@ class ClosureHydrationStrategy implements HydrationStrategyInterface
     */
     public function hydrate($value, $data = null, $object = null)
     {
-        $func = $this->hydrateFunc;
-        if (isset($object)) {
-
-            $func = $func->bindTo($object, $object);
-        }
-
-        $func($objValue = new Value($value), new ImmutableHydrationContext($data));
+        $this->hydrateFunc->__invoke($objValue = new Value($value), new ImmutableHydrationContext($data));
 
         return $objValue->value;
     }

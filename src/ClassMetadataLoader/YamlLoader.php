@@ -55,12 +55,16 @@ class YamlLoader extends AbstractLoader
             $this->classMetadata->setObjectWriteDateFormat($data['object']['writeDateFormat']);
         }
 
-        if (isset($data['object']['propertyAccessStrategyEnabled'])) {
-            $this->classMetadata->setPropertyAccessStrategyEnabled($data['object']['propertyAccessStrategyEnabled']);
+        if (isset($data['object']['propertyAccessStrategy'])) {
+            $this->classMetadata->setPropertyAccessStrategyEnabled($data['object']['propertyAccessStrategy']);
         }
 
         if (isset($data['object']['metadataExtensionClass'])) {
-            $this->classMetadata->setMetadataExtensionClass($data['object']['metadataExtensionClass']);
+            $this->classMetadata->setPropertyMetadataExtensionClass($data['object']['metadataExtensionClass']);
+        }
+
+        if (isset($data['object']['classMetadataExtensionClass'])) {
+            $this->classMetadata->setClassMetadataExtensionClass($data['object']['classMetadataExtensionClass']);
         }
 
         if (isset($data['object']['customHydrator'])) {
@@ -75,11 +79,11 @@ class YamlLoader extends AbstractLoader
     private function loadMethodAnnotations(array $data)
     {
         if (isset($data['callbacks']['postExtract'])) {
-            $this->classMetadata->setOnBeforeExtract($data['callbacks']['postExtract']);
+            $this->classMetadata->setOnAfterExtract($data['callbacks']['postExtract']);
         }
 
         if (isset($data['callbacks']['postHydrate'])) {
-            $this->classMetadata->setOnBeforeExtract($data['callbacks']['postHydrate']);
+            $this->classMetadata->setOnAfterHydrate($data['callbacks']['postHydrate']);
         }
 
         if (isset($data['callbacks']['preExtract'])) {
@@ -87,7 +91,7 @@ class YamlLoader extends AbstractLoader
         }
 
         if (isset($data['callbacks']['preHydrate'])) {
-            $this->classMetadata->setOnBeforeExtract($data['callbacks']['preHydrate']);
+            $this->classMetadata->setOnBeforeHydrate($data['callbacks']['preHydrate']);
         }
     }
 
@@ -166,6 +170,7 @@ class YamlLoader extends AbstractLoader
                 $fieldsWithHydrationStrategy[$mappedFieldName] = [];
                 $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = null;
                 $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = null;
+                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = null;
             }
 
             if (isset($fieldData['writeStrategy'])) {
@@ -174,6 +179,10 @@ class YamlLoader extends AbstractLoader
 
             if (isset($fieldData['readStrategy'])) {
                 $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $fieldData['readStrategy'];
+            }
+
+            if (isset($fieldData['mappingExtensionClass'])) {
+                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = $fieldData['mappingExtensionClass'];
             }
 
             $fieldsDataByKey[$mappedFieldName] = $fieldDataByKey;

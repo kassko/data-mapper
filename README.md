@@ -5,6 +5,8 @@ data-access
 [![Total Downloads](https://poser.pugx.org/kassko/data-access/downloads.png)](https://packagist.org/packages/kassko/data-access)
 [![Latest Unstable Version](https://poser.pugx.org/kassko/data-access/v/unstable.png)](https://packagist.org/packages/kassko/data-access)
 
+## Presentation ##
+
 data-access component is a mapper which gives a lot of flexibility to representate some raw data like objects. Use it if you need:
 
 * to keep your objects agnostic and preserve their base class (data-access implements Data Mapper pattern and not Active Record)
@@ -15,8 +17,7 @@ data-access component is a mapper which gives a lot of flexibility to representa
 * to choose your mapping configuration format or to use various formats in the same application
 
 
-Installation
----------------
+## Installation ##
 
 Add to your composer.json:
 ```json
@@ -25,42 +26,63 @@ Add to your composer.json:
 }
 ```
 
-Presentation
----------------
+## Utilisation ##
 
-You have a result set:
+### Mapping configuration ###
+
+You create a mapping configuration (with annotations, yaml or php):
+
+#### Annotations format ####
 ```php
-[
-    'brand' => 'some brand',
-    'COLOR' => 'blue'
-]
-```
 
-You hydrate an object from this result set:
-```php
-object(Watch) (2)
-{
-    ["brand":"Watch":private]=> string(10) "some brand" ["color":"Watch":private]=> string(4) "blue"
-}
-```
+use Kassko\DataAccess\Annotation as DA;
+use Kassko\DataAccess\Hydrator\HydrationContextInterface;
+use Kassko\DataAccess\Hydrator\Value;
+use \DateTime;
 
-And inversely, you extract your object properties to have raw result.
-
-To do that, you annotate your entity:
-```php
-use Kassko\DataAccess\Annotation as OM;
-
+/**
+ * @DA\PostHydrate(method="onAfterHydrate")
+ * @DA\PostExtract(method="onAfterExtract")
+ */
 class Watch
 {
+    private static $brandCodeToLabelMap = [1 => 'Brand A', 2 => 'Brand B'];
+    private static $brandLabelToCodeMap = ['Brand A' => 1, 'Brand B' => 2];
+
     /**
-     * @OM\Field
+     * @DA\Field(readStrategy="readBrand", writeStrategy="writeBrand")
      */
     private $brand;
 
     /**
-     * @OM\Field(name="COLOR")
+     * @DA\Field
      */
-    private $color;//Here, storage field name is different of object field name.
+    private $color;
+
+    /**
+     * @DA\Field(name="created_date", type="date", readDateFormat="Y-m-d H:i:s", writeDateFormat="Y-m-d H:i:s")
+     */
+    private $createdDate;
+
+    private $sealDate;
+
+    /**
+     * @DA\Field(readStrategy="hydrateBool", writeStrategy="extractBool")
+     */
+    private $waterProof;
+
+    /**
+     * @DA\Field(readStrategy="hydrateBoolFromSymbol", writeStrategy="extractBoolToSymbol", mappingExtensionClass="WatchCallbacks")
+     */
+    private $stopWatch;
+
+    /**
+     * @DA\Field(readStrategy="hydrateBool", writeStrategy="extractBool")
+     * @DA\Getter(name="canBeCustomized")
+     */
+    private $customizable;//Naturally, we also can customize setters with "Setter" annotation.
+
+    private $noSealDate = false;
 
     public function getBrand()
     {
@@ -81,23 +103,151 @@ class Watch
     {
         $this->color = $color;
     }
+
+    public function getCreatedDate()
+    {
+        return $this->createdDate;
+    }
+
+    public function setCreatedDate(DateTime $createdDate)
+    {
+        $this->createdDate = $createdDate;
+    }
+
+    public function isWaterProof()
+    {
+        return $this->waterProof;
+    }
+
+    public function setWaterProof($waterProof)
+    {
+        $this->waterProof = $waterProof;
+    }
+
+    public function hasStopWatch()
+    {
+        return $this->stopWatch;
+    }
+
+    public function setStopWatch($stopWatch)
+    {
+        $this->stopWatch = $stopWatch;
+    }
+
+    public function canBeCustomized()
+    {
+        return $this->customizable;
+    }
+
+    public function setCustomizable($customizable)
+    {
+        $this->customizable = $customizable;
+    }
+
+    public function getSealDate()
+    {
+        return $this->sealDate;
+    }
+
+    public function setSealDate(DateTime $sealDate)
+    {
+        $this->sealDate = $sealDate;
+    }
+
+    public static function readBrand(Value $value, HydrationContextInterface $context)
+    {
+        if (isset(self::$brandCodeToLabelMap[$value->value])) {
+            $value->value = self::$brandCodeToLabelMap[$value->value];
+        }
+    }
+
+    public static function writeBrand(Value $value, HydrationContextInterface $context)
+    {
+        if (isset(self::$brandLabelToCodeMap[$value->value])) {
+            $value->value = self::$brandLabelToCodeMap[$value->value];
+        }
+    }
+
+    public static function hydrateBool(Value $value, HydrationContextInterface $context)
+    {
+        $value->value = $value->value == '1';
+    }
+
+    public static function extractBool(Value $value, HydrationContextInterface $context)
+    {
+        $value->value = $value->value ? '1' : '0';
+    }
+
+    public function onAfterHydrate(HydrationContextInterface $context)
+    {
+        if ('' === $context->getItem('seal_date')) {
+            $value = $context->getItem('created_date');
+            $this->noSealDate = true;
+        } else {
+            $value = $context->getItem('seal_date');
+        }
+
+        $this->sealDate = DateTime::createFromFormat('Y-m-d H:i:s', $value);
+    }
+
+    public function onAfterExtract(HydrationContextInterface $context)
+    {
+        if ($this->noSealDate) {
+            $context->setItem('seal_date', '');
+        } else {
+            $context->setItem('seal_date', $this->sealDate->format('Y-m-d H:i:s'));
+        }
+    }
 }
 ```
 
-A property without "Field" annotation is not managed (no hydrated and no extracted).
+```php
+class WatchCallbacks
+{
+    public static function hydrateBoolFromSymbol(Value $value)
+    {
+        $value->value = $value->value == 'X';
+    }
 
-And you get a ResultBuilderFactory instance:
+    public static function extractBoolToSymbol(Value $value)
+    {
+        $value->value = $value->value ? 'X' : ' ';
+    }
+}
+```
 
-If you work with a framework, normally, you can get a ResultBuilderFactory instance from a container.
-For example, with Symfony framework, we can use the [kassko/data-access-bundle](https://github.com/kassko/data-access-bundle) which provides to the container a ResultBuilderFactory service.
+#### Yaml format ####
+[see more Yaml mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_mapping.md).
 
-If you have no integration of data-access, you can use the [kassko/data-access-builder](https://github.com/kassko/data-access-builder). It will help you to get a ResultBuilderFactory instance.
+#### Yaml file format ####
+[see more Yaml file mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_file_mapping.md).
 
-And you hydrate your object:
+#### Php format ####
+[see more Php mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_mapping.md).
+
+#### Php file format ####
+[see more Php file mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_file_mapping.md).
+
+As you can see,
+* A property without "Field" annotation is not managed (no hydrated and no extracted).
+* You can transform raw data before hydration or object values before extraction.
+* You can isolate transformation methods in a separated class.
+* You can convert a date before hydrating or extracting it.
+* Isser (see isWaterProof()) and has methods (see hasStopWatch()) are managed.
+* But you can specify custom getter/setter (see canBeCustomized()).
+
+### API Usage ###
+
+To do hydration and extraction operations, you get a ResultBuilderFactory instance and you hydrate your object:
 ```php
 $data = [
     'brand' => 'some brand',
-    'COLOR' => 'blue'
+    'color' => 'blue',
+    'created_date' => '2014 09 14 12:36:52',
+    'waterProof' => '1',
+    'stopWatch' => 'X',
+    'customizable' => '0',
+    'seal_date' => '',
 ];
 
 $resultBuilder = $resultBuilderFactory->create('Watch', $data);
@@ -107,39 +257,28 @@ var_dump($result);
 
 The code above will display:
 ```php
-array(1) {
-    [0]=>
-    object(Watch)#283 (8) {
-        ["brand":"Watch":private]=> string(10) "some brand"
-        ["color":"Watch":private]=> string(4) "blue"
-    }
+object(Watch)#283 (8) {
+    ["brand":"Watch":private]=> string(10) "some brand"
+    ["color":"Watch":private]=> string(4) "blue"
+    ["createdDate":"Watch":private]=>
+        object(DateTime)#320 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
+    ["sealDate":"Watch":private]=>
+        object(DateTime)#319 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
+    ["waterProof":"Watch":private]=> bool(true) ["stopWatch":"Watch":private]=> bool(true)
+    ["customizable":"Watch":private]=> bool(false) ["noSealDate":"Watch":private]=> bool(true)
 }
 ```
 
-Inversely, you can extract values from your object:
+Inversely, you can extract values from your object to have raw result:
 ```php
-$keyBoard = (new Watch)
-    ->setBrand('some brand')
-    ->setColor('blue')
-;
-
 $resultBuilder = $resultBuilderFactory->create('Watch');
-$result = $resultBuilder->getRawResult();
+$result = $resultBuilder->getRawResult($object);
 var_dump($result);
 ```
 
-The code above will display:
-```php
-array(2) {
-  ['brand']=>
-  'some brand'
-  ['COLOR']=>
-  'blue'
-  }
-}
-```
+As you can see, the getResult() method return the object in an array. Maybe you would prefer to get the object instead of an array containing this object. Note that there are several ways to get results:
 
-As you can see, the getResult() method return the object in an array. Maybe you would prefer to get the object instead of an array containing this object. There are severals ways to get results:
+### Ways to get results ###
 
 ```php
     /*
@@ -241,219 +380,13 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     $resultBuilder->getIterableResultIndexedByColor();
 ```
 
-You can do more advanced mapping:
-```php
+### How to get the ResultBuilderFactory instance ###
 
-use Kassko\DataAccess\Annotation as OM;
-use Kassko\DataAccess\Hydrator\HydrationContextInterface;
-use Kassko\DataAccess\Hydrator\Value;
-use \DateTime;
+If you work with a framework, normally, you can get a ResultBuilderFactory instance from a container.
+For example, with Symfony framework, we can use the [kassko/data-access-bundle](https://github.com/kassko/data-access-bundle) which provides to the container a ResultBuilderFactory service.
 
-class Watch
-{
-    private static $brandCodeToLabelMap = [1 => 'Brand A', 2 => 'Brand B'];
-    private static $brandLabelToCodeMap = ['Brand A' => 1, 'Brand B' => 2];
+If you have no integration of data-access, you can use the [kassko/data-access-builder](https://github.com/kassko/data-access-builder). It will help you to get a ResultBuilderFactory instance.
 
-    /**
-     * @OM\Field(readStrategy="readBrand", writeStrategy="writeBrand")
-     */
-    private $brand;
-
-    /**
-     * @OM\Field
-     */
-    private $color;
-
-    /**
-     * @OM\Field(name="created_date", type="date", readDateFormat="Y-m-d H:i:s", writeDateFormat="Y-m-d H:i:s")
-     */
-    private $createdDate;
-
-    private $sealDate;
-
-    /**
-     * @OM\Field(readStrategy="hydrateBool", writeStrategy="extractBool")
-     */
-    private $waterProof;
-
-    /**
-     * @OM\Field(readStrategy="hydrateBoolFromSymbol", writeStrategy="extractBoolToSymbol")
-     */
-    private $stopWatch;
-
-    /**
-     * @OM\Field(readStrategy="hydrateBool", writeStrategy="extractBool")
-     * @OM\Getter(name="canBeCustomized")
-     */
-    private $customizable;//Naturally, we also can customize setters with "Setter" annotation.
-
-    private $noSealDate = false;
-
-    public function getBrand()
-    {
-        return $this->brand;
-    }
-
-    public function setBrand($brand)
-    {
-        $this->brand = $brand;
-    }
-
-    public function getColor()
-    {
-        return $this->color;
-    }
-
-    public function setColor($color)
-    {
-        $this->color = $color;
-    }
-
-    public function getCreatedDate()
-    {
-        return $this->createdDate;
-    }
-
-    public function setCreatedDate(DateTime $createdDate)
-    {
-        $this->createdDate = $createdDate;
-    }
-
-    public function isWaterProof()
-    {
-        return $this->waterProof;
-    }
-
-    public function setWaterProof($waterProof)
-    {
-        $this->waterProof = $waterProof;
-    }
-
-    public function hasStopWatch()
-    {
-        return $this->stopWatch;
-    }
-
-    public function setStopWatch($stopWatch)
-    {
-        $this->stopWatch = $stopWatch;
-    }
-
-    public function canBeCustomized()
-    {
-        return $this->customizable;
-    }
-
-    public function setCustomizable($customizable)
-    {
-        $this->customizable = $customizable;
-    }
-
-    public function getSealDate()
-    {
-        return $this->sealDate;
-    }
-
-    public function setSealDate(DateTime $sealDate)
-    {
-        $this->sealDate = $sealDate;
-    }
-
-    public function readBrand(Value $value, HydrationContextInterface $context)
-    {
-        if (isset(self::$brandCodeToLabelMap[$value->value])) {
-            $value->value = self::$brandCodeToLabelMap[$value->value];
-        }
-    }
-
-    public function writeBrand(Value $value, HydrationContextInterface $context)
-    {
-        if (isset(self::$brandLabelToCodeMap[$value->value])) {
-            $value->value = self::$brandLabelToCodeMap[$value->value];
-        }
-    }
-
-    public function hydrateBool(Value $value, HydrationContextInterface $context)
-    {
-        $value->value = $value->value == '1';
-    }
-
-    public function extractBool(Value $value, HydrationContextInterface $context)
-    {
-        $value->value = $value->value ? '1' : '0';
-    }
-
-    public function hydrateBoolFromSymbol(Value $value)
-    {
-        $value->value = $value->value == 'X';
-    }
-
-    public function extractBoolToSymbol(Value $value)
-    {
-        $value->value = $value->value ? 'X' : ' ';
-    }
-
-    /**
-     * @OM\PostHydrate
-     */
-    public function onAfterHydrate(HydrationContextInterface $context)
-    {
-        if ('' === $context->getItem('seal_date')) {
-            $value = $context->getItem('created_date');
-            $this->noSealDate = true;
-        } else {
-            $value = $context->getItem('seal_date');
-        }
-
-        $this->sealDate = DateTime::createFromFormat('Y-m-d H:i:s', $value);
-    }
-
-    /**
-     * @OM\PostExtract
-     */
-    public function onAfterExtract(HydrationContextInterface $context)
-    {
-        if ($this->noSealDate) {
-            $context->setItem('seal_date', '');
-        } else {
-            $context->setItem('seal_date', $this->sealDate->format('Y-m-d H:i:s'));
-        }
-    }
-}
-```
-
-This result set:
-```php
-[
-    'brand' => 'some brand',
-    'color' => 'blue',
-    'created_date' => '2014 09 14 12:36:52',
-    'waterProof' => '1',
-    'stopWatch' => 'X',
-    'customizable' => '0',
-    'seal_date' => ''
-]
-```
-
-Will be transform like that:
-```php
-object(Watch)#283 (8) {
-    ["brand":"Watch":private]=> string(10) "some brand"
-    ["color":"Watch":private]=> string(4) "blue"
-    ["createdDate":"Watch":private]=>
-        object(DateTime)#320 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
-    ["sealDate":"Watch":private]=>
-        object(DateTime)#319 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
-    ["waterProof":"Watch":private]=> bool(true) ["stopWatch":"Watch":private]=> bool(true)
-    ["customizable":"Watch":private]=> bool(false) ["noSealDate":"Watch":private]=> bool(true)
-}
-```
-
-As you can see,
-* You can customize property hydration or property extraction.
-* You can convert a date before hydrating or extracting it.
-* Isser (isWaterProof()) and has methods (hasStopWatch()) are handled.
-* But you can specify custom getter/setter (canBeCustomized()).
 
 There is a lot of others features.
 
@@ -489,8 +422,3 @@ Imagine an object which requires multiple sources fetching to represent it (SqlS
 [see more in log reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/log.md).
 
 These features will be explained and detailled later.
-
-Api usage
----------------
-
-This section will be written later.

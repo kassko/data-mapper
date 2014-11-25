@@ -14,7 +14,8 @@ class ClassMetadata
 {
     const INDEX_EXTRACTION_STRATEGY = 0;
     const INDEX_HYDRATION_STRATEGY = 1;
-    const INDEX_METADATA_EXTENSION_CLASS = 2;
+    const INDEX_EXTENSION_CLASS = 2;
+    const INDEX_METADATA_EXTENSION_CLASS = 3;
 
     private $originalFieldNames = [];
     private $mappedFieldNames = [];
@@ -34,9 +35,14 @@ class ClassMetadata
     private $propertyAccessStrategyEnabled;
 
     /**
-     * @var string Fqcn de la classes contenant les métadonnées de type "callback"
+     * @var string Fqcn of class which contains some property metadata as "callback"
      */
-    private $metadataExtensionClass;
+    private $propertyMetadataExtensionClass;
+
+    /**
+     * @var string Fqcn of class which contains some class metadata as "callback"
+     */
+    private $classMetadataExtensionClass;
 
     private $mappedManagedFieldNames = [];
     private $mappedTransientFieldNames = [];
@@ -397,8 +403,8 @@ class ClassMetadata
                 case isset($data['metadataExtensionClass']):
                     return $prefix.$data['metadataExtensionClass'];
 
-                case isset($this->metadataExtensionClass):
-                    return $prefix.$this->metadataExtensionClass;
+                case isset($this->propertyMetadataExtensionClass):
+                    return $prefix.$this->propertyMetadataExtensionClass;
             }
         }
 
@@ -406,25 +412,49 @@ class ClassMetadata
     }
 
     /**
-     * Gets the value of metadataExtensionClass.
+     * Gets the value of propertyMetadataExtensionClass.
      *
-     * @return string Fqcn de la classes contenant les métadonnées de type "callback"
+     * @return string Fqcn of class wich contains some property metadata as "callback"
      */
-    public function getMetadataExtensionClass()
+    public function getPropertyMetadataExtensionClass()
     {
-        return $this->metadataExtensionClass;
+        return $this->propertyMetadataExtensionClass;
     }
 
     /**
-     * Sets the value of metadataExtensionClass.
+     * Sets the value of propertyMetadataExtensionClass.
      *
-     * @param string Fqcn de la classes contenant les métadonnées de type "callback" $metadataExtensionClass the metadata extension class
+     * @param string $propertyMetadataExtensionClass Fqcn of class wich contains some property metadata as "callback"
      *
      * @return self
      */
-    public function setMetadataExtensionClass($metadataExtensionClass)
+    public function setPropertyMetadataExtensionClass($propertyMetadataExtensionClass)
     {
-        $this->metadataExtensionClass = $metadataExtensionClass;
+        $this->propertyMetadataExtensionClass = $propertyMetadataExtensionClass;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of classMetadataExtensionClass.
+     *
+     * @return string Fqcn of class wich contains some property metadata as "callback"
+     */
+    public function getClassMetadataExtensionClass()
+    {
+        return $this->classMetadataExtensionClass;
+    }
+
+    /**
+     * Sets the value of classMetadataExtensionClass.
+     *
+     * @param string $classMetadataExtensionClass Fqcn de la classes wich contains some class metadata as "callback"
+     *
+     * @return self
+     */
+    public function setClassMetadataExtensionClass($classMetadataExtensionClass)
+    {
+        $this->classMetadataExtensionClass = $classMetadataExtensionClass;
 
         return $this;
     }
@@ -548,56 +578,27 @@ class ClassMetadata
 
         foreach ($this->fieldsWithHydrationStrategy as $mappedFieldName => $fieldStrategy) {
 
-            $objectExtension = null;
-            $objectExtensionClass = $this->getMetadataExtensionClassByMappedField($mappedFieldName);
-            if (null !== $objectExtensionClass) {
+            $class = $fieldStrategy[self::INDEX_EXTENSION_CLASS];
+            if (is_null($class)) {
+                $class = $this->propertyMetadataExtensionClass;
+            }
 
-                $refl = new \ReflectionClass($objectExtensionClass);
-                $objectExtension = $refl->newInstanceArgs();
+            if (is_null($class)) {
+                $class = $this->getName();
             }
 
             $index = self::INDEX_HYDRATION_STRATEGY;
             $strategy = $fieldStrategy[$index];
-
-            if (null === $objectExtensionClass) {
-
-                $fieldStrategy[$index] = function ($valueContext, $context) use ($strategy) {
-
-                    return $this->$strategy($valueContext, $context);
-                };
-            } else {
-
-                $reflection = new \ReflectionClass($objectExtensionClass);
-                $closure = $reflection->getMethod($strategy)->getClosure(new $objectExtensionClass);
-
-                $fieldStrategy[$index] = function ($valueContext, $context) use ($strategy, $closure) {
-
-                    return $closure($valueContext, $context);
-                };
-            }
+            $fieldStrategy[$index] = function ($valueContext, $context) use ($class, $strategy) {
+                return $class::$strategy($valueContext, $context);
+            };
 
 
             $index = self::INDEX_EXTRACTION_STRATEGY;
             $strategy = $fieldStrategy[$index];
-
-            if (null === $objectExtensionClass) {
-
-                $fieldStrategy[$index] = function ($valueContext, $context) use ($strategy) {
-
-                    return $this->$strategy($valueContext, $context);
-                };
-            } else {
-
-                $reflection = new \ReflectionClass($objectExtensionClass);
-                $closure = $reflection->getMethod($strategy)->getClosure(new $objectExtensionClass);
-
-                $strategy = $fieldStrategy[$index];
-                $fieldStrategy[$index] = function ($valueContext, $context) use ($strategy, $closure) {
-
-                    return $closure($valueContext, $context);
-                };
-
-            }
+            $fieldStrategy[$index] = function ($valueContext, $context) use ($class, $strategy) {
+                return $class::$strategy($valueContext, $context);
+            };
 
             $fieldsWithHydrationStrategy[$mappedFieldName] = $fieldStrategy;
         }

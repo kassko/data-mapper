@@ -18,6 +18,7 @@ class EventHydrator extends HydratorWrapper
     private $onBeforeHydrate;
     private $onAfterExtract;
     private $onAfterHydrate;
+    private $metadataExtensionClass;
 
     public function __construct(AbstractHydrator $hydrator, ObjectManager $objectManager)
     {
@@ -34,15 +35,24 @@ class EventHydrator extends HydratorWrapper
     {
         $this->prepare($object);
 
-        /*if (isset($object, $this->onBeforeExtract)) {
-            call_user_func([$object, $this->onBeforeExtract]);
-        }*/
+        if (isset($object, $this->onBeforeExtract)) {
+
+            if (! isset($this->metadataExtensionClass)) {
+                call_user_func([$object, $this->onBeforeExtract]);
+            } else {
+                call_user_func_array([$this->metadataExtensionClass, $this->onBeforeExtract], [$object]);
+            }
+        }
 
         $data = parent::extract($object);
 
         if (isset($object, $this->onAfterExtract)) {
-            call_user_func_array([$object, $this->onAfterExtract], [new HydrationContext($data)]);
-            //$data = call_user_func_array([$object, $this->onAfterExtract], [new HydrationContext($data)]);
+
+            if (! isset($this->metadataExtensionClass)) {
+                call_user_func_array([$object, $this->onAfterExtract], [new HydrationContext($data)]);
+            } else {
+                call_user_func_array([$this->metadataExtensionClass, $this->onAfterExtract], [new HydrationContext($data), $object]);
+            }
         }
 
         return $data;
@@ -59,14 +69,25 @@ class EventHydrator extends HydratorWrapper
     {
         $this->prepare($object);
 
-        /*if (isset($this->onBeforeHydrate)) {
-            call_user_func_array([$object, $this->onBeforeHydrate], [&$data]);
-        }*/
+        if (isset($this->onBeforeHydrate)) {
+
+            if (! isset($this->metadataExtensionClass)) {
+                call_user_func_array([$object, $this->onBeforeHydrate], [new HydrationContext($data)]);
+            } else {
+                call_user_func_array([$this->metadataExtensionClass, $this->onBeforeHydrate], [new HydrationContext($data), $object]);
+            }
+        }
 
         $object = parent::hydrate($data, $object);
 
         if (isset($this->onAfterHydrate)) {
-            call_user_func_array([$object, $this->onAfterHydrate], [new ImmutableHydrationContext($data)]);
+
+            if (! isset($this->metadataExtensionClass)) {
+                call_user_func_array([$object, $this->onAfterHydrate], [new ImmutableHydrationContext($data)]);
+            } else {
+                call_user_func_array([$this->metadataExtensionClass, $this->onAfterHydrate], [new ImmutableHydrationContext($data), $object]);
+            }
+
         }
 
         return $object;
@@ -78,5 +99,6 @@ class EventHydrator extends HydratorWrapper
         $this->onBeforeHydrate = $this->metadata->getOnBeforeHydrate();
         $this->onAfterExtract = $this->metadata->getOnAfterExtract();
         $this->onAfterHydrate = $this->metadata->getOnAfterHydrate();
+        $this->metadataExtensionClass = $this->metadata->getClassMetadataExtensionClass();
     }
 }

@@ -20,7 +20,12 @@ final class Object
     /**
 	* @var boolean
 	*/
-    public $propertyAccessStrategyEnabled = false;
+    public $propertyAccessStrategy = false;
+
+    /**
+    * @var string
+    */
+    public $classMappingExtensionClass;
 
     /**
 	* @var boolean

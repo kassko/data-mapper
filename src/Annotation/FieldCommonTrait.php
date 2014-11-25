@@ -24,7 +24,7 @@ trait FieldCommonTrait
     public $writeDateFormat;
 
     /**
-	* @var string
-	*/
-    public $metadataExtensionClass;
+    * @var string
+    */
+    public $mappingExtensionClass;
 }
