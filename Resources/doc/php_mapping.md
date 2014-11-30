@@ -57,4 +57,4 @@ $configuration->setDefaultClassMetadataProviderMethod('myLoadMapping');//<= for 
 $configuration->addClassMetadataProviderMethod('Kassko\Sample\Keyboard', 'myLoadMapping');//<= only for Keyboard objects
 ```
 
-[see Php mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_mapping.md) for more details on Php mapping.
+[see Php mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_file_mapping.md) for more details on Php mapping.

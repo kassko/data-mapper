@@ -42,5 +42,3 @@ return [
 //Fields sealDate and noSealDate don't appear in the field section because we don't want the mapper manage them.
 
 ```
-
-[see Php mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_mapping.md) for more details on Php mapping.

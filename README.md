@@ -392,7 +392,7 @@ As you can guess, the "find" method is that of the repository of the entity "Man
 
 ```php
 /**
- * @DA\Entity(repositoryClass="ManufacturerManager")
+ * @DA\Object(repositoryClass="ManufacturerManager")
  */
 class Manufacturer
 {
@@ -539,7 +539,7 @@ class ShopManager
 ```
 ```php
 /**
- * @DA\Entity(repositoryClass="ShopManager")
+ * @DA\Object(repositoryClass="ShopManager")
  */
 class Shop
 {
@@ -694,17 +694,22 @@ class KeyboardManager
 We also can load the properties "bestShop" and "keyboard" only when we use it. For more details see the "Lazy loading" section.
 
 #### Lazy loading ####
+This section will be written later.
 
 #### Value object ####
+This section will be written later.
 
 #### Mapping inheritance ####
+This section will be written later.
 
 ##### Field mapping level and class mapping level #####
 If all fields use a same option, you can configure this option at "object" level.
 
 ##### Class mapping inheritance #####
+This section will be written later.
 
 ##### Resource mapping inheritance #####
+This section will be written later.
 
 #### Other features ####
 
