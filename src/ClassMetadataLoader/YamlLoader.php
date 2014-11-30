@@ -35,7 +35,6 @@ class YamlLoader extends AbstractLoader
         $this->classMetadata = $classMetadata;
 
         $this->loadClassAnnotations($data);
-        $this->loadMethodAnnotations($data);
         $this->loadFieldAnnotations($data);
 
         return $this->classMetadata;
@@ -59,12 +58,12 @@ class YamlLoader extends AbstractLoader
             $this->classMetadata->setPropertyAccessStrategyEnabled($data['object']['propertyAccessStrategy']);
         }
 
-        if (isset($data['object']['metadataExtensionClass'])) {
-            $this->classMetadata->setPropertyMetadataExtensionClass($data['object']['metadataExtensionClass']);
+        if (isset($data['object']['fieldMappingExtensionClass'])) {
+            $this->classMetadata->setPropertyMetadataExtensionClass($data['object']['fieldMappingExtensionClass']);
         }
 
-        if (isset($data['object']['classMetadataExtensionClass'])) {
-            $this->classMetadata->setClassMetadataExtensionClass($data['object']['classMetadataExtensionClass']);
+        if (isset($data['object']['classMappingExtensionClass'])) {
+            $this->classMetadata->setClassMetadataExtensionClass($data['object']['classMappingExtensionClass']);
         }
 
         if (isset($data['object']['customHydrator'])) {
@@ -74,24 +73,21 @@ class YamlLoader extends AbstractLoader
         if (isset($data['objectListeners'])) {
             $this->classMetadata->setObjectListenerClasses($data['objectListeners']);
         }
-    }
 
-    private function loadMethodAnnotations(array $data)
-    {
-        if (isset($data['callbacks']['postExtract'])) {
-            $this->classMetadata->setOnAfterExtract($data['callbacks']['postExtract']);
+        if (isset($data['interceptors']['postExtract'])) {
+            $this->classMetadata->setOnAfterExtract($data['interceptors']['postExtract']);
         }
 
-        if (isset($data['callbacks']['postHydrate'])) {
-            $this->classMetadata->setOnAfterHydrate($data['callbacks']['postHydrate']);
+        if (isset($data['interceptors']['postHydrate'])) {
+            $this->classMetadata->setOnAfterHydrate($data['interceptors']['postHydrate']);
         }
 
-        if (isset($data['callbacks']['preExtract'])) {
-            $this->classMetadata->setOnBeforeExtract($data['callbacks']['preExtract']);
+        if (isset($data['interceptors']['preExtract'])) {
+            $this->classMetadata->setOnBeforeExtract($data['interceptors']['preExtract']);
         }
 
-        if (isset($data['callbacks']['preHydrate'])) {
-            $this->classMetadata->setOnBeforeHydrate($data['callbacks']['preHydrate']);
+        if (isset($data['interceptors']['preHydrate'])) {
+            $this->classMetadata->setOnBeforeHydrate($data['interceptors']['preHydrate']);
         }
     }
 

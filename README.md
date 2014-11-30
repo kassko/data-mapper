@@ -22,7 +22,7 @@ data-access component is a mapper which gives a lot of flexibility to representa
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-access": "~0.4.0@alpha"
+    "kassko/data-access": "~0.5.0@alpha"
 }
 ```
 
@@ -84,75 +84,33 @@ class Watch
 
     private $noSealDate = false;
 
-    public function getBrand()
-    {
-        return $this->brand;
-    }
+    public function getBrand() { return $this->brand; }
 
-    public function setBrand($brand)
-    {
-        $this->brand = $brand;
-    }
+    public function setBrand($brand) { $this->brand = $brand; }
 
-    public function getColor()
-    {
-        return $this->color;
-    }
+    public function getColor() { return $this->color; }
 
-    public function setColor($color)
-    {
-        $this->color = $color;
-    }
+    public function setColor($color) { $this->color = $color; }
 
-    public function getCreatedDate()
-    {
-        return $this->createdDate;
-    }
+    public function getCreatedDate() { return $this->createdDate; }
 
-    public function setCreatedDate(DateTime $createdDate)
-    {
-        $this->createdDate = $createdDate;
-    }
+    public function setCreatedDate(DateTime $createdDate) { $this->createdDate = $createdDate; }
 
-    public function isWaterProof()
-    {
-        return $this->waterProof;
-    }
+    public function isWaterProof() { return $this->waterProof; }
 
-    public function setWaterProof($waterProof)
-    {
-        $this->waterProof = $waterProof;
-    }
+    public function setWaterProof($waterProof) { $this->waterProof = $waterProof; }
 
-    public function hasStopWatch()
-    {
-        return $this->stopWatch;
-    }
+    public function hasStopWatch() { return $this->stopWatch; }
 
-    public function setStopWatch($stopWatch)
-    {
-        $this->stopWatch = $stopWatch;
-    }
+    public function setStopWatch($stopWatch) { $this->stopWatch = $stopWatch; }
 
-    public function canBeCustomized()
-    {
-        return $this->customizable;
-    }
+    public function canBeCustomized() { return $this->customizable; }
 
-    public function setCustomizable($customizable)
-    {
-        $this->customizable = $customizable;
-    }
+    public function setCustomizable($customizable) { $this->customizable = $customizable; }
 
-    public function getSealDate()
-    {
-        return $this->sealDate;
-    }
+    public function getSealDate() { return $this->sealDate; }
 
-    public function setSealDate(DateTime $sealDate)
-    {
-        $this->sealDate = $sealDate;
-    }
+    public function setSealDate(DateTime $sealDate) { $this->sealDate = $sealDate; }
 
     public static function readBrand(Value $value, HydrationContextInterface $context)
     {
@@ -217,21 +175,21 @@ class WatchCallbacks
 ```
 
 #### Yaml format ####
-[see more Yaml mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_mapping.md).
+[see Yaml mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_mapping.md).
 
 #### Yaml file format ####
-[see more Yaml file mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_file_mapping.md).
+[see Yaml file mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_file_mapping.md).
 
 #### Php format ####
-[see more Php mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_mapping.md).
+[see Php mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_mapping.md).
 
 #### Php file format ####
-[see more Php file mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_file_mapping.md).
+[see Php file mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_file_mapping.md).
 
 As you can see,
-* A property without "Field" annotation is not managed (no hydrated and no extracted).
+* A property without "Field" annotation is not managed (not hydrated and not extracted).
 * You can transform raw data before hydration or object values before extraction.
-* You can isolate transformation methods in a separated class.
+* You can isolate transformation methods in a separated file (see the WatchCallbacks class) to keep your entity agnostic of the transformations.
 * You can convert a date before hydrating or extracting it.
 * Isser (see isWaterProof()) and has methods (see hasStopWatch()) are managed.
 * But you can specify custom getter/setter (see canBeCustomized()).
@@ -387,18 +345,368 @@ For example, with Symfony framework, we can use the [kassko/data-access-bundle](
 
 If you have no integration of data-access, you can use the [kassko/data-access-builder](https://github.com/kassko/data-access-builder). It will help you to get a ResultBuilderFactory instance.
 
+### Features ###
 
-There is a lot of others features.
+#### toOne associations ####
 
-* You can work with associations.
-[see more in relation reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/association.md).
+```php
+use Kassko\DataAccess\Annotation as DA;
 
-* You can build an object from several sources.
-Imagine an object which requires multiple sources fetching to represent it (SqlServer, Elastic search, Web Service, MongoDb).
-[see more in provider reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/provider.md).
+class Keyboard
+{
+    /**
+     * @DA\Field
+     * @DA\Id
+     */
+    private $id;
 
-* You can lazy load properties.
-[see more in lazy loading reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/lazy_loading.md).
+    /**
+     * @DA\Field
+     */
+    private $color;
+
+    /**
+     * @DA\ToOne(entityClass="Manufacturer", findMethod="find")
+     * @DA\Field(name="manufacturer_id")
+     */
+    private $manufacturer;
+
+    public function getId() { return $this->id; }
+
+    public function setId($id) { $this->id = $id; }
+
+    public function getColor() { return $this->color; }
+
+    public function setColor($color) { $this->color = $color; }
+
+    public function getManufacturer() { return $this->manufacturer; }
+
+    public function setManufacturer(Manufacturer $manufacturer)
+    {
+        $this->manufacturer = $manufacturer;
+    }
+}
+```
+
+As you can guess, the "find" method is that of the repository of the entity "Manufacturer" meanning "ManufacturerManager::find()".
+
+```php
+/**
+ * @DA\Entity(repositoryClass="ManufacturerManager")
+ */
+class Manufacturer
+{
+    /**
+     * @DA\Field
+     * @DA\Id
+     */
+    private $id;
+
+    /**
+     * @DA\Field
+     */
+    private $name;
+
+    public function getId() { return $this->id; }
+
+    public function setId($id) { $this->id = $id; }
+
+    public function getName() { return $this->name; }
+
+    public function setName($name) { $this->name = $name; }
+}
+```
+
+```php
+class ManufacturerManager
+{
+    /**
+     * Return a manufacturer object from its identity
+     * @param integer $id The identity of object to find
+     *
+     * @return Manufacturer
+     */
+    public function find($id)
+    {
+        //Some stuff to find the manufacturer.
+    }
+}
+```
+
+Usage:
+```php
+$data = [
+    'id' => 1,
+    'color' => 'blue',
+    'manufacturer_id' => 1
+];
+
+//Here some stuff to create $resultBuilderFactory
+
+$resultBuilder = $resultBuilderFactory->create('Keyboard', $data);
+var_dump($resultBuilder->getSingleResult());
+```
+
+Display result:
+```php
+object(Keyboard)#283 (8) {
+    ["id":"Keyboard":private]=> int(1)
+    ["color":"Keyboard":private]=> string(4) "blue"
+    ["manufacturer":"Manufacturer":private]=>
+    object(Manufacturer)#320 (3) {
+        ["id":"Manufacturer":private]=> int(1)
+        ["name":"Manufacturer":private]=> string(10) "Some brand"
+    }
+}
+```
+
+If the repository class wherin we wants to fetch is not that of the entity, we can override it:
+
+```php
+use Kassko\DataAccess\Annotation as DA;
+
+class Keyboard
+{
+    /**
+     * @DA\ToOne(entityClass="Manufacturer", repositoryClass="UnconventionnalManager" findMethod="find")
+     * @DA\Field
+     */
+    private $manufacturer;
+}
+```
+The find method will be "UnconventionnalManager::find()" instead of "ManufacturerManager::find()".
+
+Note that in an entity, if no property is specified as the identifier, the default identifier is a property named "$id". And if no property "$id" exists, an exception is thrown when the system attempt to know the entity identifier.
+
+Note also that for performance reasons, we can load the association "$manufacturer" only when we use it. For more details see the "Lazy loading" section.
+
+#### toMany associations ####
+
+An association "to many" is used similarly to "to one".
+
+```php
+use Kassko\DataAccess\Annotation as DA;
+
+class Keyboard
+{
+    /**
+     * @DA\Field
+     * @DA\Id
+     */
+    private $id;
+
+    /**
+     * @DA\Field
+     */
+    private $color;
+
+    /**
+     * @DA\Field
+     * @DA\ToMany(entityClass="Shop", findMethod="findByKeyboard")
+     */
+    private $shops;
+
+    public function __construct() { $this->shops = []; }
+
+    public function getId() { return $this->id; }
+
+    public function setId($id) { $this->id = $id; }
+
+    public function getColor() { return $this->color; }
+
+    public function setColor($color) { $this->color = $color; }
+
+    public function getShops() { return $this->shops; }
+
+    public function addShop(Shop $shop) { $this->shops[] = $shops; }
+}
+```
+
+```php
+class ShopManager
+{
+    /**
+     * Return shops witch sale a keyboard from a given identity
+     * @param integer $id Id of the keyboard
+     *
+     * @return Shops[]
+     */
+    public function findByKeyboard($id)
+    {
+        //Some stuff to find shops witch sale the keyboard with identity "$id".
+    }
+}
+```
+```php
+/**
+ * @DA\Entity(repositoryClass="ShopManager")
+ */
+class Shop
+{
+    /**
+     * @DA\Id
+     * @DA\Field
+     */
+    private $id;
+
+    /**
+     * @DA\Field
+     */
+    private $name;
+
+    public function getId() { return $this->id; }
+
+    public function setId($id) { $this->id = $id; }
+
+    public function getName() { return $this->name; }
+
+    public function setName($name) { $this->name = $name; }
+}
+```
+
+The association name is the entity class name not full qualified. So if "Shop" is the entity class name, then "Shop" is the association name and then in "Keyboard" entity the "adder" is "addShop()".
+
+If the "Shop" FQCN (full qualified class name) was "Kassko\Sample\Shop", the association name would had been "Shop" and the adder would had been "addShop()".
+
+But you can override this association name:
+```php
+use Kassko\DataAccess\Annotation as DA;
+
+class Keyboard
+{
+    /**
+     * @DA\ToMany(name="insertShop", entityClass="Shop", findMethod="find")
+     * @DA\Field
+     */
+    private $shops;
+
+    public function __construct() { $this->shops = []; }
+
+    public function insertShop(Shop $shop) { $this->shops[] = $shops; }
+}
+```
+
+Usage:
+```php
+$data = [
+    'id' => 1,
+    'color' => 'blue'
+];
+
+//Here some stuff to create $resultBuilderFactory
+
+$resultBuilder = $resultBuilderFactory->create($data, 'Keyboard');
+var_dump($resultBuilder->getSingleResult());
+```
+
+Possible display result:
+```php
+object(Keyboard)#283 (8) {
+    ["id":"Keyboard":private]=> int(1)
+    ["color":"Keyboard":private]=> string(4) "blue"
+    array(3) {
+        [0] =>
+        ["shops":"Shop":private]=>
+            object(Shop)#320 (3) {
+                ["id":"Shop":private]=> int(1)
+                ["name":"Shop":private]=> string(14) "Shop A"
+            }
+        }
+        [1] =>
+        ["shops":"Shop":private]=>
+            object(Shop)#320 (3) {
+                ["id":"Shop":private]=> int(2)
+                ["name":"Shop":private]=> string(14) "Shop B"
+            }
+        }
+    }
+}
+```
+
+Note that for performance reasons, we can load the association "$shop" only when we use it. For more details see the "Lazy loading" section.
+
+#### Providers ####
+A provider is usefull to create a super object. That is to say an object wich contains other objects or some collections but there is no relation with these objects.
+
+```php
+
+class Information
+{
+    /**
+     * @DA\Provider(class="Kassko\Samples\KeyboardManager", method="loadKeyboards")
+     * @DA\Field
+     */
+    private $keyboards = [];
+
+    /**
+     * @DA\Provider(class="Kassko\Samples\ShopManager", method="loadBestShop")
+     * @DA\Field
+     */
+    private $bestShop;
+
+    public function setBestShop(Shop $shop) { $this->bestShop = $bestShop; }
+    public function addShop(Keyboard $keyboard) { $this->keyboard[] = $keyboard; }
+}
+
+class Keyboard
+{
+    /**
+     * @DA\Field
+     */
+    private $brand;
+
+    /**
+     * @DA\Field
+     */
+    private $color;
+}
+
+class Shop
+{
+    /**
+     * @DA\Field
+     */
+    private $name;
+
+    /**
+     * @DA\Field
+     */
+    private $address;
+}
+
+class ShopManager
+{
+    public function loadBestShop(Information $info)
+    {
+        $info->setBestShop('shop 1');
+    }
+}
+
+class KeyboardManager
+{
+    public function loadKeyboards(Information $info)
+    {
+        $info->addKeyboard(['keyboard 1']);
+        $info->addKeyboard(['keyboard 2']);
+    }
+}
+```
+We also can load the properties "bestShop" and "keyboard" only when we use it. For more details see the "Lazy loading" section.
+
+#### Lazy loading ####
+
+#### Value object ####
+
+#### Mapping inheritance ####
+
+##### Field mapping level and class mapping level #####
+If all fields use a same option, you can configure this option at "object" level.
+
+##### Class mapping inheritance #####
+
+##### Resource mapping inheritance #####
+
+#### Other features ####
 
 * You can cache your object.
 [see more in cache reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/cache.md).
@@ -406,17 +714,8 @@ Imagine an object which requires multiple sources fetching to represent it (SqlS
 * You can attach listeners to an action.
 [see more in listener reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/listener.md).
 
-* If all columns use a same option, you configure this option in "entity" annotation. This annotation is placed at the object level.
-[see more in entity annotation documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/entity_annotation.md).
-
 * You can use public properties instead of getters/setters.
 [see more in public properties reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/public_property.md).
-
-* You can map value objects.
-[see more in value objets reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/value_object.md).
-
-* You can use Yaml format if you prefer this one rather than annotations.
-[see more in yaml reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml.md).
 
 * You can log in your object without injecting to it a logger dependency.
 [see more in log reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/log.md).

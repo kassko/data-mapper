@@ -400,8 +400,8 @@ class ClassMetadata
 
             switch (true) {
 
-                case isset($data['metadataExtensionClass']):
-                    return $prefix.$data['metadataExtensionClass'];
+                case isset($data['fieldMappingExtensionClass']):
+                    return $prefix.$data['fieldMappingExtensionClass'];
 
                 case isset($this->propertyMetadataExtensionClass):
                     return $prefix.$this->propertyMetadataExtensionClass;

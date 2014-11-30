@@ -80,7 +80,7 @@ class AnnotationLoader extends AbstractLoader
                     $this->classMetadata->setObjectReadDateFormat($annotation->readDateFormat);
                     $this->classMetadata->setObjectWriteDateFormat($annotation->writeDateFormat);
                     $this->classMetadata->setPropertyAccessStrategyEnabled($annotation->propertyAccessStrategy);
-                    $this->classMetadata->setPropertyMetadataExtensionClass($annotation->mappingExtensionClass);
+                    $this->classMetadata->setPropertyMetadataExtensionClass($annotation->fieldMappingExtensionClass);
                     $this->classMetadata->setClassMetadataExtensionClass($annotation->classMappingExtensionClass);
                     break;
 

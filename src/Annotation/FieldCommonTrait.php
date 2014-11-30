@@ -26,5 +26,5 @@ trait FieldCommonTrait
     /**
     * @var string
     */
-    public $mappingExtensionClass;
+    public $fieldMappingExtensionClass;
 }

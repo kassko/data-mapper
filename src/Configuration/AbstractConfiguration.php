@@ -101,9 +101,9 @@ abstract class AbstractConfiguration
         */
     }
 
-    public function addClassMetadataProviderMethod($objectName, $entityClassMetadataResource)
+    public function addClassMetadataProviderMethod($objectName, $entityProviderMethod)
     {
-        $this->entitiesClassMetadataProviderMethod[$objectName] = $entityClassMetadataResource;
+        $this->entitiesClassMetadataProviderMethod[$objectName] = $entityProviderMethod;
         return $this;
     }
 
