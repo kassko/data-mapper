@@ -85,31 +85,18 @@ class Watch
     private $noSealDate = false;
 
     public function getBrand() { return $this->brand; }
-
     public function setBrand($brand) { $this->brand = $brand; }
-
     public function getColor() { return $this->color; }
-
     public function setColor($color) { $this->color = $color; }
-
     public function getCreatedDate() { return $this->createdDate; }
-
     public function setCreatedDate(DateTime $createdDate) { $this->createdDate = $createdDate; }
-
     public function isWaterProof() { return $this->waterProof; }
-
     public function setWaterProof($waterProof) { $this->waterProof = $waterProof; }
-
     public function hasStopWatch() { return $this->stopWatch; }
-
     public function setStopWatch($stopWatch) { $this->stopWatch = $stopWatch; }
-
     public function canBeCustomized() { return $this->customizable; }
-
     public function setCustomizable($customizable) { $this->customizable = $customizable; }
-
     public function getSealDate() { return $this->sealDate; }
-
     public function setSealDate(DateTime $sealDate) { $this->sealDate = $sealDate; }
 
     public static function readBrand(Value $value, HydrationContextInterface $context)
@@ -376,15 +363,10 @@ class Keyboard
     private $manufacturer;
 
     public function getId() { return $this->id; }
-
     public function setId($id) { $this->id = $id; }
-
     public function getColor() { return $this->color; }
-
     public function setColor($color) { $this->color = $color; }
-
     public function getManufacturer() { return $this->manufacturer; }
-
     public function setManufacturer(Manufacturer $manufacturer)
     {
         $this->manufacturer = $manufacturer;
@@ -412,11 +394,8 @@ class Manufacturer
     private $name;
 
     public function getId() { return $this->id; }
-
     public function setId($id) { $this->id = $id; }
-
     public function getName() { return $this->name; }
-
     public function setName($name) { $this->name = $name; }
 }
 ```
@@ -513,15 +492,10 @@ class Keyboard
     public function __construct() { $this->shops = []; }
 
     public function getId() { return $this->id; }
-
     public function setId($id) { $this->id = $id; }
-
     public function getColor() { return $this->color; }
-
     public function setColor($color) { $this->color = $color; }
-
     public function getShops() { return $this->shops; }
-
     public function addShop(Shop $shop) { $this->shops[] = $shops; }
 }
 ```
@@ -559,11 +533,8 @@ class Shop
     private $name;
 
     public function getId() { return $this->id; }
-
     public function setId($id) { $this->id = $id; }
-
     public function getName() { return $this->name; }
-
     public function setName($name) { $this->name = $name; }
 }
 ```
@@ -688,7 +659,7 @@ class ShopManager
 {
     public function loadBestShop(Information $info)
     {
-        $info->setBestShop('shop 1');
+        $info->setBestShop((new Shop())->setName('The best')->setAddress('3 best street'));
     }
 }
 ```
@@ -698,8 +669,8 @@ class KeyboardManager
 {
     public function loadKeyboards(Information $info)
     {
-        $info->addKeyboard(['keyboard 1']);
-        $info->addKeyboard(['keyboard 2']);
+        $info->addKeyboard((new Keyboard())->setBrand('Some brand')->setColor('blue'));
+        $info->addKeyboard((new Keyboard())->setBrand('Another brand')->setColor('green'));
     }
 }
 ```
@@ -735,11 +706,8 @@ class Keyboard
     private $manufacturer;
 
     public function getId() { return $this->id; }
-
     public function setId($id) { $this->id = $id; }
-
     public function getColor() { return $this->color; }
-
     public function setColor($color) { $this->color = $color; }
 
     public function getManufacturer()
@@ -783,11 +751,8 @@ class Keyboard
     public function __construct() { $this->shops = []; }
 
     public function getId() { return $this->id; }
-
     public function setId($id) { $this->id = $id; }
-
     public function getColor() { return $this->color; }
-
     public function setColor($color) { $this->color = $color; }
 
     public function getShops()
@@ -1017,7 +982,6 @@ These features will be explained and detailled later.
 
 #### Create object manager ####
 ```php
-use Closure;
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Cache\ArrayCache;
 use Kassko\ClassResolver\ClosureClassResolver;
