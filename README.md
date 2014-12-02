@@ -651,7 +651,9 @@ class Information
     public function setBestShop(Shop $shop) { $this->bestShop = $bestShop; }
     public function addShop(Keyboard $keyboard) { $this->keyboard[] = $keyboard; }
 }
+```
 
+```php
 class Keyboard
 {
     /**
@@ -664,7 +666,9 @@ class Keyboard
      */
     private $color;
 }
+```
 
+```php
 class Shop
 {
     /**
@@ -677,7 +681,9 @@ class Shop
      */
     private $address;
 }
+```
 
+```php
 class ShopManager
 {
     public function loadBestShop(Information $info)
@@ -685,7 +691,9 @@ class ShopManager
         $info->setBestShop('shop 1');
     }
 }
+```
 
+```php
 class KeyboardManager
 {
     public function loadKeyboards(Information $info)
@@ -816,7 +824,7 @@ class Information
 
 #### Use the same model with various mapping configuration ####
 
-We can use the same model with various mapping configuration but we must work with mapping configuration files and not with mapping embedded in the object. So 'yaml_file' or 'php_file' are correct mapping format but 'annotations', 'php' or 'yaml' are bad format.
+You can use the same model with various mapping configuration but you must work with mapping configuration files and not with mapping embedded in the object. So 'yaml_file' or 'php_file' are correct mapping format but 'annotations', 'php' or 'yaml' are bad format.
 
 ```php
 class Color
