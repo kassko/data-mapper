@@ -50,11 +50,13 @@ class Keyboard
 
 "loadMapping" is the default provider method name but it can be changed:
 
+Api configuration usage:
 ```php
-$configuration = $objectManager->getConfiguration();
-$configuration->setDefaultClassMetadataProviderMethod('myLoadMapping');//<= for all domain objects
+$configuration->setDefaultClassMetadataProviderMethod('someMappingLoaderMethod');//<= for all domain objects
+
 //or
-$configuration->addClassMetadataProviderMethod('Kassko\Sample\Keyboard', 'myLoadMapping');//<= only for Keyboard objects
+
+$configuration->addClassMetadataProviderMethod('Kassko\Sample\Watch', 'myLoadMapping');//<= only for Watch objects
 ```
 
 [see Php mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_file_mapping.md) for more details on Php mapping.

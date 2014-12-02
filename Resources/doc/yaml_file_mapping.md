@@ -30,3 +30,15 @@ fields:
 
 # Fields sealDate and noSealDate don't appear in the field section because we don't want the mapper manage them
 ```
+
+Api configuration usage:
+```php
+$configuration->addClassMetadataResource('Kassko\Sample\Watch', 'some_yaml_file_path.yml');
+$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'yaml_file');
+
+//or
+
+$configuration->setDefaultClassMetadataResourceDir('yaml_file_dir');
+$configuration->addClassMetadataResource('Kassko\Sample\Watch', 'some_yaml_file_name.yml');
+$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'yaml_file');
+```

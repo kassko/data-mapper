@@ -42,3 +42,41 @@ return [
 //Fields sealDate and noSealDate don't appear in the field section because we don't want the mapper manage them.
 
 ```
+
+Api configuration usage:
+```php
+$configuration->addClassMetadataResource('Kassko\Sample\Watch', 'some_php_file_path.php');
+$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'php_file');
+
+//or
+
+$configuration->setDefaultClassMetadataResourceDir('some_php_file_dir');
+$configuration->addClassMetadataResource('Kassko\Sample\Watch', 'some_php_file_name.php');
+$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'php_file');
+```
+
+Here is an example with value objects:
+```php
+return [
+    'fields' => [
+        'brand', 'colorEn', 'colorFr', 'colorEs'
+    ],
+    'valueObjects' => [
+        'colorEn' => [
+            'class' => 'Kassko\Sample\Color',
+            'mappingResourceType' => 'yaml_file',
+            'mappingResourceName' => 'colorEn.yml',
+        ],
+        'colorFr' => [
+            'class' => 'Kassko\Sample\Color',
+            'mappingResourceType' => 'yaml_file',
+            'mappingResourceName' => 'colorFr.yml',
+        ],
+        'colorEs' => [
+            'class' => 'Kassko\Sample\Color',
+            'mappingResourceType' => 'yaml_file',
+            'mappingResourceName' => 'colorEs.yml',
+        ],
+    ],
+];
+```

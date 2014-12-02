@@ -42,10 +42,11 @@ EOF;
 "loadMapping" is the default provider method name but it can be changed:
 
 ```php
-$configuration = $objectManager->getConfiguration();
-$configuration->setDefaultClassMetadataProviderMethod('myLoadMapping');//<= for all domain objects
+$configuration->setDefaultClassMetadataProviderMethod('someMappingLoaderMethod');//<= for all domain objects
+
 //or
-$configuration->addClassMetadataProviderMethod('Kassko\Sample\Keyboard', 'myLoadMapping');//<= only for Keyboard objects
+
+$configuration->addClassMetadataProviderMethod('Kassko\Sample\Watch', 'someMappingLoaderMethod');//<= only for Watch objects
 ```
 
 [see Yaml mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_file_mapping.md) for more details on Yaml mapping.

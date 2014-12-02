@@ -174,6 +174,15 @@ class WatchCallbacks
 }
 ```
 
+Api configuration usage:
+```php
+$configuration->setDefaultClassMetadataResourceType('annotations');
+
+//or
+
+$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'annotations');
+```
+
 #### Yaml format ####
 [see Yaml mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_mapping.md).
 
@@ -338,12 +347,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     $resultBuilder->getIterableResultIndexedByColor();
 ```
 
-### How to get the ResultBuilderFactory instance ###
-
-If you work with a framework, normally, you can get a ResultBuilderFactory instance from a container.
-For example, with Symfony framework, we can use the [kassko/data-access-bundle](https://github.com/kassko/data-access-bundle) which provides to the container a ResultBuilderFactory service.
-
-If you have no integration of data-access, you can use the [kassko/data-access-builder](https://github.com/kassko/data-access-builder). It will help you to get a ResultBuilderFactory instance.
+See the section "Api details" to know how to get a ResultBuilderFactory instance.
 
 ### Features ###
 
@@ -694,10 +698,284 @@ class KeyboardManager
 We also can load the properties "bestShop" and "keyboard" only when we use it. For more details see the "Lazy loading" section.
 
 #### Lazy loading ####
-This section will be written later.
+
+You can lazy load associations ToOne:
+
+```php
+use Kassko\DataAccess\Annotation as DA;
+use Kassko\DataAccess\ObjectExtension\LazyLoadableTrait;
+
+class Keyboard
+{
+    use LazyLoadableTrait;
+
+    /**
+     * @DA\Field
+     * @DA\Id
+     */
+    private $id;
+
+    /**
+     * @DA\Field
+     */
+    private $color;
+
+    /**
+     * @DA\ToOne(entityClass="Manufacturer", findMethod="find", lazyLoading="true")
+     * @DA\Field(name="manufacturer_id")
+     */
+    private $manufacturer;
+
+    public function getId() { return $this->id; }
+
+    public function setId($id) { $this->id = $id; }
+
+    public function getColor() { return $this->color; }
+
+    public function setColor($color) { $this->color = $color; }
+
+    public function getManufacturer()
+    {
+        $this->loadProperty('manufacturer');//<= Load the manufacturer if not loaded.
+        return $this->manufacturer;
+    }
+
+    public function setManufacturer(Manufacturer $manufacturer)
+    {
+        $this->manufacturer = $manufacturer;
+    }
+}
+```
+
+And ToMany:
+
+```php
+use Kassko\DataAccess\Annotation as DA;
+use Kassko\DataAccess\ObjectExtension\LazyLoadableTrait;
+
+class Keyboard
+{
+    /**
+     * @DA\Field
+     * @DA\Id
+     */
+    private $id;
+
+    /**
+     * @DA\Field
+     */
+    private $color;
+
+    /**
+     * @DA\Field
+     * @DA\ToMany(entityClass="Shop", findMethod="findByKeyboard", lazyLoading="true")
+     */
+    private $shops;
+
+    public function __construct() { $this->shops = []; }
+
+    public function getId() { return $this->id; }
+
+    public function setId($id) { $this->id = $id; }
+
+    public function getColor() { return $this->color; }
+
+    public function setColor($color) { $this->color = $color; }
+
+    public function getShops()
+    {
+        $this->loadProperty('shops');//<= Load the manufacturer if not loaded.
+        return $this->shops;
+    }
+
+    public function addShop(Shop $shop) { $this->shops[] = $shops; }
+}
+```
+
+And you can "lazy provide":
+```php
+
+class Information
+{
+    /**
+     * @DA\Provider(class="Kassko\Samples\KeyboardManager", method="loadKeyboards", lazyLoading="true")
+     * @DA\Field
+     */
+    private $keyboards = [];
+
+    /**
+     * @DA\Provider(class="Kassko\Samples\ShopManager", method="loadBestShop", lazyLoading="true")
+     * @DA\Field
+     */
+    private $bestShop;
+
+    public function setBestShop(Shop $shop) { $this->bestShop = $bestShop; }
+    public function addShop(Keyboard $keyboard) { $this->keyboard[] = $keyboard; }
+}
+```
+
+#### Use the same model with various mapping configuration ####
+
+We can use the same model with various mapping configuration but we must work with mapping configuration files and not with mapping embedded in the object. So 'yaml_file' or 'php_file' are correct mapping format but 'annotations', 'php' or 'yaml' are bad format.
+
+```php
+class Color
+{
+    private $red;
+    private $green;
+    private $blue;
+
+    public function getRed() { return $this->red; }
+    public function setRed($red) { $this->red = $red; }
+    public function getGreen() { return $this->green; }
+    public function setGreen($green) { $this->green = $green; }
+    public function getBlue() { return $this->blue; }
+    public function setBlue($blue) { $this->blue = $blue; }
+}
+```
+
+```yaml
+# colorEn.yml
+
+fields:
+    red: ~
+    green: ~
+    blue: ~
+```
+
+```yaml
+# colorFr.yml
+
+fields:
+    red:
+        name: rouge
+    green:
+        name: vert
+    blue:
+        name: bleu
+```
+
+```php
+use DataAccess\Configuration\RuntimeConfiguration;
+
+$data = [
+    'red' => '255',
+    'green' => '0',
+    'blue' => '127',
+];
+
+$resultBuilder = $resultBuilderFactory->create('Color', $data);
+$resultBuilder->setRuntimeConfiguration(
+    (new RuntimeConfiguration)
+    ->addClassMetadataDir('Color', 'some_resource_dir')//Optional, if not specified Configuration::defaultClassMetadataResourceDir is used.
+    ->addMappingResourceInfo('Color', 'colorEn.yml', 'yaml')
+);
+
+$resultBuilder->getSingleResult();
+```
+
+```php
+use DataAccess\Configuration\RuntimeConfiguration;
+
+$data = [
+    'rouge' => '255',
+    'vert' => '0',
+    'bleu' => '127',
+];
+
+$resultBuilder = $resultBuilderFactory->create('Color', $data);
+$resultBuilder->setRuntimeConfiguration(
+    (new RuntimeConfiguration)
+    ->addClassMetadataDir('Color', 'some_resource_dir')
+    ->addMappingResourceInfo('Color', 'colorFr.yml', 'yaml')
+);
+
+$resultBuilder->getSingleResult();
+```
 
 #### Value object ####
-This section will be written later.
+
+```php
+use Kassko\DataAccess\Annotation as DA;
+
+class Customer
+{
+    /**
+     * @DA\Field
+     * @DA\Id
+     */
+    private $id;
+
+    /**
+     * @DA\Field
+     * @DA\ValueObject(class="Kassko\Samples\Address", mappingResourceType="yaml_file", mappingResourceName="billing_address.yml")
+     */
+    private $billingAddress;//$billingAddress is a value object.
+
+    /**
+     * @DA\Field
+     * @DA\ValueObject(class="Kassko\Samples\Address", mappingResourceType="yaml_file", mappingResourceName="shipping_address.yml")
+     */
+    private $shippingAddress;//$shippingAddress is a value object too.
+}
+```
+
+```php
+class Address
+{
+    private $street;
+    private $town;
+    private $postalCode;
+    private $country;
+}
+```
+
+```yaml
+# billing_address.yml
+
+fields:
+    street:
+        name: billing_street
+    town:
+        name: billing_town
+    postalCode:
+        name: billing_postal_code
+    country:
+        name: billing_country
+```
+
+```yaml
+# shipping_address.yml
+
+fields:
+    street:
+        name: shipping_street
+    town:
+        name: shipping_town
+    postalCode:
+        name: shipping_postal_code
+    country:
+        name: shipping_country
+```
+
+```php
+
+$data = [
+    'id' => 1,
+    'billing_street' => '12 smarties street',
+    'billing_town' => 'Nuts',
+    'billing_postal_code' => '654321'
+    'billing_country' => 'England',
+    'billing_street' => '23 smarties street',
+    'billing_town' => 'Mars',
+    'billing_postal_code' => '987654'
+    'billing_country' => 'England',
+];
+
+$resultBuilder = $resultBuilderFactory->create('Customer', $data);
+$resultBuilder->getSingleResult();
+```
+Note that you can have value objects wich contains value objects and so on. And each value object can use it's own mapping configuration format.
 
 #### Mapping inheritance ####
 This section will be written later.
@@ -726,3 +1004,104 @@ This section will be written later.
 [see more in log reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/log.md).
 
 These features will be explained and detailled later.
+
+### Api details ###
+
+#### Create object manager ####
+```php
+use Closure;
+use Doctrine\Common\Annotations\Reader;
+use Doctrine\Common\Cache\ArrayCache;
+use Kassko\ClassResolver\ClosureClassResolver;
+use Kassko\DataAccessBuilder\Adapter\Cache\DoctrineCacheAdapter;
+use Kassko\DataAccess\ClassMetadataLoader\AnnotationLoader;
+use Kassko\DataAccess\ClassMetadataLoader\DelegatingLoader;
+use Kassko\DataAccess\ClassMetadataLoader\LoaderResolver;
+use Kassko\DataAccess\ClassMetadata\ClassMetadataFactory;
+use Kassko\DataAccess\Configuration\CacheConfiguration;
+use Kassko\DataAccess\Configuration\ClassMetadataFactoryConfigurator;
+use Kassko\DataAccess\Configuration\ConfigurationChain;
+use Kassko\DataAccess\ObjectManager;
+use Kassko\DataAccess\Registry\Registry;
+use Symfony\Component\EventDispatcher;
+
+//Configuration
+$configuration = (new ConfigurationChain)
+    ->setClassMetadataCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
+    ->setResultCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
+;
+
+//ClassMetadataFactory
+$delegatingLoader = new DelegatingLoader(
+    new LoaderResolver(
+        new AnnotationLoader(
+            new Reader
+        )
+    )
+);
+$cmFactory = (new ClassMetadataFactory)->setClassMetadataLoader($delegatingLoader);
+$cmConfigurator = new ClassMetadataFactoryConfigurator($configuration);
+$cmConfigurator->configure($cmFactory);
+
+//ClassResolver, if you have one
+if (isset($closureClassResolver)) {//Here $closureClassResolver is a closure wich return an object after resolving it from a given parameter (wich is usually the object Fqcn).
+    $classResolver = new ClosureClassResolver($closureClassResolver);
+
+    //You can use other implementation of ClassResolverInterface like FactoryClassResolver or ContainerAwareClassResolver or combine them with the ClassResolverChain.
+}
+
+//ObjectListenerResolver, if you have one
+if (isset($closureObjectListenerResolver)) {//Here $closureObjectListenerResolver is a closure wich return a listener instance after resolving it from a given parameter (wich is usually the listener Fqcn)
+    $olr =
+        (new ClosureObjectListenerResolver($closureObjectListenerResolver))
+        ->setEventManager(new Symfony\Component\EventDispatcher\EventDispatcher)
+    ;
+
+    //You can use other implementation of ObjectListenerResolverInterface like FactoryObjectListenerResolver or ContainerAwareObjectListenerResolver or combine them with the ObjectListenerResolverChain.
+}
+
+//ObjectManager
+$objectManager = (new ObjectManager())
+    ->setConfiguration($configuration)
+    ->setClassMetadataFactory($cmFactory)
+    ->setObjectListenerResolver($olr)
+    ->setClassResolver($classResolver)
+;
+```
+
+#### Create a ClassResolver instance ####
+To know more about ClassResolver, see [the class-resolver documentation](https://github.com/kassko/class-resolver/blob/master/README.md)
+
+#### Create an ObjectListenerResolver instance ####
+This section will be written later.
+
+#### Create a ResultBuilderFactory instance ####
+```php
+use Kassko\DataAccess\Result\ResultBuilderFactory;
+
+$resultBuilderFactory = new ResultBuilderFactory($objectManager);
+```
+
+If you work with a framework, normally, you can get a ResultBuilderFactory instance from a container.
+For example, with Symfony framework, we can use the [kassko/data-access-bundle](https://github.com/kassko/data-access-bundle) which provides to the container a ResultBuilderFactory service.
+
+#### Create LazyLoader and register it before adding the lazy loading behaviour to your objects ####
+```php
+use Kassko\DataAccess\LazyLoader\LazyLoaderFactory;
+use Kassko\DataAccess\Registry\Registry;
+
+//LazyLoaderFactory
+$lazyLoaderFactory = new LazyLoaderFactory($objectManager);
+Registry::getInstance()[Registry::KEY_LAZY_LOADER_FACTORY] = $lazyLoaderFactory;
+
+//You need to do it to use the Kassko\DataAccess\ObjectExtension\LazyLoadableTrait in your objects.
+```
+
+#### Create LazyLoader and register it before adding the logging behaviour to your objects ####
+```php
+use Kassko\DataAccess\Registry\Registry;
+
+Registry::getInstance()[Registry::KEY_LOGGER] = $logger;
+
+//You need to do it to use the Kassko\DataAccess\ObjectExtension\LoggableTrait in your objects.
+```
