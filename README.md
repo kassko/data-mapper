@@ -147,6 +147,8 @@ class Watch
 ```
 
 ```php
+//The mapping extension class.
+
 class WatchCallbacks
 {
     public static function hydrateBoolFromSymbol(Value $value)
@@ -185,7 +187,7 @@ $configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'annotations
 As you can see,
 * A property without "Field" annotation is not managed (not hydrated and not extracted).
 * You can transform raw data before hydration or object values before extraction.
-* You can isolate transformation methods in a separated file (see the WatchCallbacks class) to keep your entity agnostic of the transformations.
+* You can isolate transformation methods in a separated file (see the mapping extension class WatchCallbacks). So to keep your entity agnostic of mapping use yaml_file or php_file format and put your transformations in a mapping extension class.
 * You can convert a date before hydrating or extracting it.
 * Isser (see isWaterProof()) and has methods (see hasStopWatch()) are managed.
 * But you can specify custom getter/setter (see canBeCustomized()).
@@ -807,8 +809,9 @@ class Color
 }
 ```
 
+A english data source with the mapping in yaml_file:
 ```yaml
-# colorEn.yml
+# color_en.yml
 
 fields:
     red: ~
@@ -816,8 +819,9 @@ fields:
     blue: ~
 ```
 
+A french data source with the mapping in yaml_file:
 ```yaml
-# colorFr.yml
+# color_fr.yml
 
 fields:
     red:
@@ -826,6 +830,19 @@ fields:
         name: vert
     blue:
         name: bleu
+```
+
+And imagine we've got a spanish data source with the mapping in a php_file format.
+```php
+//color_es.php
+
+return [
+    'fields' => [
+        'red' => 'rojo',
+        'green' => 'verde',
+        'blue' => 'azul',
+    ],
+];
 ```
 
 ```php
@@ -841,7 +858,7 @@ $resultBuilder = $resultBuilderFactory->create('Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')//Optional, if not specified Configuration::defaultClassMetadataResourceDir is used.
-    ->addMappingResourceInfo('Color', 'colorEn.yml', 'yaml')
+    ->addMappingResourceInfo('Color', 'color_en.yml', 'yaml')
 );
 
 $resultBuilder->getSingleResult();
@@ -860,7 +877,26 @@ $resultBuilder = $resultBuilderFactory->create('Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')
-    ->addMappingResourceInfo('Color', 'colorFr.yml', 'yaml')
+    ->addMappingResourceInfo('Color', 'color_fr.yml', 'yaml')
+);
+
+$resultBuilder->getSingleResult();
+```
+
+```php
+use DataAccess\Configuration\RuntimeConfiguration;
+
+$data = [
+    'rojo' => '255',
+    'verde' => '0',
+    'azul' => '127',
+];
+
+$resultBuilder = $resultBuilderFactory->create('Color', $data);
+$resultBuilder->setRuntimeConfiguration(
+    (new RuntimeConfiguration)
+    ->addClassMetadataDir('Color', 'some_resource_dir')
+    ->addMappingResourceInfo('Color', 'color_es.php', 'php')
 );
 
 $resultBuilder->getSingleResult();
@@ -980,7 +1016,19 @@ These features will be explained and detailled later.
 
 ### Api details ###
 
-#### Create object manager ####
+Normally, if you work with a framework wich integrates the component data-access, you can get a ResultBuilderFactory instance from a container.
+For example, with Symfony framework, we can use the [kassko/data-access-bundle](https://github.com/kassko/data-access-bundle) which provides to the container a ResultBuilderFactory service.
+
+Otherwise you need to create it yourself.
+
+#### Create the ResultBuilderFactory ####
+```php
+use Kassko\DataAccess\Result\ResultBuilderFactory;
+
+$resultBuilderFactory = new ResultBuilderFactory($objectManager);
+```
+
+#### Create the ObjectManager ####
 ```php
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Cache\ArrayCache;
@@ -1002,6 +1050,14 @@ $configuration = (new ConfigurationChain)
     ->setClassMetadataCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
     ->setResultCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
 ;
+
+
+/*
+The code above provide a cache adapter to use the Kassko cache interface with a Doctrine cache implementation. But you can choose another cache implementation (a ** Winzou ** one for example).
+At the present time, there is no standard cache interface like the PSR-3 PSR\Logger\LoggerInterface.
+PSR-6 should provide one ?
+Then the mapper has it's own cache interface and you should provide an adapter for it. See the next section to know how to create the cache adapter DoctrineCacheAdapter.
+*/
 
 //ClassMetadataFactory
 $delegatingLoader = new DelegatingLoader(
@@ -1041,23 +1097,61 @@ $objectManager = (new ObjectManager())
 ;
 ```
 
+#### Create an adapter for the cache ####
+```php
+use Kassko\DataAccess\Cache\CacheInterface as KasskoCacheInterface;
+use Doctrine\Common\Cache\Cache as DoctrineCacheInterface;
+
+/**
+ * A cache adapter to use the Kassko cache interface with a Doctrine cache implementation.
+ */
+class DoctrineCacheAdapter implements KasskoCacheInterface
+{
+    private $doctrineCache;
+
+    public function __construct(DoctrineCacheInterface $doctrineCache)
+    {
+        $this->doctrineCache = $doctrineCache;
+    }
+
+    public function fetch($id)
+    {
+        return $this->doctrineCache->fetch($id);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function contains($id)
+    {
+        return $this->doctrineCache->contains($id);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function save($id, $data, $lifeTime = 0)
+    {
+        return $this->doctrineCache->save($id, $data, $lifeTime);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function delete($id)
+    {
+        return $this->doctrineCache->delete($id);
+    }
+}
+```
+
 #### Create a ClassResolver instance ####
 To know more about ClassResolver, see [the class-resolver documentation](https://github.com/kassko/class-resolver/blob/master/README.md)
 
 #### Create an ObjectListenerResolver instance ####
 This section will be written later.
 
-#### Create a ResultBuilderFactory instance ####
-```php
-use Kassko\DataAccess\Result\ResultBuilderFactory;
-
-$resultBuilderFactory = new ResultBuilderFactory($objectManager);
-```
-
-If you work with a framework, normally, you can get a ResultBuilderFactory instance from a container.
-For example, with Symfony framework, we can use the [kassko/data-access-bundle](https://github.com/kassko/data-access-bundle) which provides to the container a ResultBuilderFactory service.
-
-#### Create LazyLoader and register it before adding the lazy loading behaviour to your objects ####
+#### Register LazyLoader before adding the lazy loading behaviour to your objects ####
 ```php
 use Kassko\DataAccess\LazyLoader\LazyLoaderFactory;
 use Kassko\DataAccess\Registry\Registry;
@@ -1069,7 +1163,7 @@ Registry::getInstance()[Registry::KEY_LAZY_LOADER_FACTORY] = $lazyLoaderFactory;
 //You need to do it to use the Kassko\DataAccess\ObjectExtension\LazyLoadableTrait in your objects.
 ```
 
-#### Create LazyLoader and register it before adding the logging behaviour to your objects ####
+#### Register logger before adding the logging behaviour to your objects ####
 ```php
 use Kassko\DataAccess\Registry\Registry;
 
