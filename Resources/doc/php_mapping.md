@@ -59,4 +59,4 @@ $configuration->setDefaultClassMetadataProviderMethod('someMappingLoaderMethod')
 $configuration->addClassMetadataProviderMethod('Kassko\Sample\Watch', 'myLoadMapping');//<= only for Watch objects
 ```
 
-[see Php mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_file_mapping.md) for more details on Php mapping.
+[see Php mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/php_file_mapping.md) for more details on Php mapping.

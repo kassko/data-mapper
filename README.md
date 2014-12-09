@@ -1,16 +1,16 @@
-data-access
+data-mapper
 ==================
 
-[![Latest Stable Version](https://poser.pugx.org/kassko/data-access/v/stable.png)](https://packagist.org/packages/kassko/data-access)
-[![Total Downloads](https://poser.pugx.org/kassko/data-access/downloads.png)](https://packagist.org/packages/kassko/data-access)
-[![Latest Unstable Version](https://poser.pugx.org/kassko/data-access/v/unstable.png)](https://packagist.org/packages/kassko/data-access)
+[![Latest Stable Version](https://poser.pugx.org/kassko/data-mapper/v/stable.png)](https://packagist.org/packages/kassko/data-mapper)
+[![Total Downloads](https://poser.pugx.org/kassko/data-mapper/downloads.png)](https://packagist.org/packages/kassko/data-mapper)
+[![Latest Unstable Version](https://poser.pugx.org/kassko/data-mapper/v/unstable.png)](https://packagist.org/packages/kassko/data-mapper)
 
 ## Presentation ##
 
-data-access component is a mapper which gives a lot of flexibility to representate some raw data like objects. It do not manage data persistence. Use it if you need:
+data-mapper component is a mapper which gives a lot of flexibility to representate some raw data like objects. It do not manage data persistence. Use it if you need:
 
 * only a mapper and not a persister
-* to keep your objects agnostic and preserve their base class (data-access implements Data Mapper pattern and not Active Record)
+* to keep your objects agnostic and preserve their base class (data-mapper implements Data Mapper pattern and not Active Record)
 * to transform raw data before hydrating an object
 * to create representations with nested objects and several nesting levels (Person => Address => Street)
 * to map value objects (Address, Street) and reuse them with other mapping rules
@@ -174,16 +174,16 @@ $configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'annotations
 ```
 
 #### Yaml format ####
-[see Yaml mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_mapping.md).
+[see Yaml mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/yaml_mapping.md).
 
 #### Yaml file format ####
-[see Yaml file mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_file_mapping.md).
+[see Yaml file mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/yaml_file_mapping.md).
 
 #### Php format ####
-[see Php mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_mapping.md).
+[see Php mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/php_mapping.md).
 
 #### Php file format ####
-[see Php file mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/php_file_mapping.md).
+[see Php file mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/php_file_mapping.md).
 
 As you can see,
 * A property without "Field" annotation is not managed (not hydrated and not extracted).
@@ -1002,23 +1002,23 @@ This section will be written later.
 #### Other features ####
 
 * You can cache your object.
-[see more in cache reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/cache.md).
+[see more in cache reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/cache.md).
 
 * You can attach listeners to an action.
-[see more in listener reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/listener.md).
+[see more in listener reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/listener.md).
 
 * You can use public properties instead of getters/setters.
-[see more in public properties reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/public_property.md).
+[see more in public properties reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/public_property.md).
 
 * You can log in your object without injecting to it a logger dependency.
-[see more in log reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/log.md).
+[see more in log reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/log.md).
 
 These features will be explained and detailled later.
 
 ### Api details ###
 
-Normally, if you work with a framework wich integrates the component data-access, you can get a ResultBuilderFactory instance from a container.
-For example, with Symfony framework, we can use the [kassko/data-access-bundle](https://github.com/kassko/data-access-bundle) which provides to the container a ResultBuilderFactory service.
+Normally, if you work with a framework wich integrates the component data-mapper, you can get a ResultBuilderFactory instance from a container.
+For example, with Symfony framework, we can use the [kassko/data-mapper-bundle](https://github.com/kassko/data-mapper-bundle) which provides to the container a ResultBuilderFactory service.
 
 Otherwise you need to create it yourself.
 

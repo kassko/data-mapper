@@ -20,5 +20,10 @@
         "psr-4":{
             "Kassko\\DataMapper\\": "src"
         }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.6.0.x-dev"
+        }
     }
 }

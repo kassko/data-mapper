@@ -49,4 +49,4 @@ $configuration->setDefaultClassMetadataProviderMethod('someMappingLoaderMethod')
 $configuration->addClassMetadataProviderMethod('Kassko\Sample\Watch', 'someMappingLoaderMethod');//<= only for Watch objects
 ```
 
-[see Yaml mapping reference documentation](https://github.com/kassko/data-access/blob/master/Resources/doc/yaml_file_mapping.md) for more details on Yaml mapping.
+[see Yaml mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/yaml_file_mapping.md) for more details on Yaml mapping.
