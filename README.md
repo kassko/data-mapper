@@ -23,7 +23,7 @@ data-mapper component is a mapper which gives a lot of flexibility to representa
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-mapper": "~0.6.0@alpha"
+    "kassko/data-mapper": "dev-master"
 }
 ```
 
