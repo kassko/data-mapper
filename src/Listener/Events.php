@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Listener;
+namespace Kassko\DataMapper\Listener;
 
 /**
  * Broadcast events during data access.

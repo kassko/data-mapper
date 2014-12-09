@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Result\Exception;
+namespace Kassko\DataMapper\Result\Exception;
 
 /**
  * Exception thrown when an index does not exist in an array of result.

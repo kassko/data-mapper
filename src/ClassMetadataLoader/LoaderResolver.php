@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadataLoader;
+namespace Kassko\DataMapper\ClassMetadataLoader;
 
-use Kassko\DataAccess\ClassMetadata\ClassMetadata;
+use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 
 /**
  * Find the good clas metadata loader.

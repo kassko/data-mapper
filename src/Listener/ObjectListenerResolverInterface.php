@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\Listener;
+namespace Kassko\DataMapper\Listener;
 
-use Kassko\DataAccess\Listener\QueryEvent;
+use Kassko\DataMapper\Listener\QueryEvent;
 use Kassko\ClassResolver\ClassResolverInterface;
 
 /**

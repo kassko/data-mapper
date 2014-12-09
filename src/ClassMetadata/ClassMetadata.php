@@ -1,9 +1,9 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadata;
+namespace Kassko\DataMapper\ClassMetadata;
 
-use Kassko\DataAccess\Exception\ObjectMappingException;
-use Kassko\DataAccess\Hydrator\Hydrator;
+use Kassko\DataMapper\Exception\ObjectMappingException;
+use Kassko\DataMapper\Hydrator\Hydrator;
 
 /**
 * Contains class metadata.

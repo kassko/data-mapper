@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Listener\Exception;
+namespace Kassko\DataMapper\Listener\Exception;
 
 /**
  * Exception thrown when a listener can't be create from class name.

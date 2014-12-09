@@ -1,9 +1,9 @@
 <?php
 
-namespace Kassko\DataAccess\Result;
+namespace Kassko\DataMapper\Result;
 
-use Kassko\DataAccess\Hydrator\AbstractHydrator;
-use Kassko\DataAccess\ObjectManager;
+use Kassko\DataMapper\Hydrator\AbstractHydrator;
+use Kassko\DataMapper\ObjectManager;
 
 /**
  * Base for results hydration.

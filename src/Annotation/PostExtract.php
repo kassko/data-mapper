@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Annotation;
+namespace Kassko\DataMapper\Annotation;
 
 /**
  * @Annotation

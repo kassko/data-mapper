@@ -1,13 +1,13 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadata;
+namespace Kassko\DataMapper\ClassMetadata;
 
-use Kassko\DataAccess\Annotation as OM;
-use Kassko\DataAccess\Cache\CacheInterface;
-use Kassko\DataAccess\ClassMetadataLoader\LoaderInterface as ClassMetadataLoaderInterface;
-use Kassko\DataAccess\ClassMetadataLoader\LoadingCriteriaInterface;
-use Kassko\DataAccess\Configuration\Configuration;
-use Kassko\DataAccess\Configuration\ObjectKey;
+use Kassko\DataMapper\Annotation as OM;
+use Kassko\DataMapper\Cache\CacheInterface;
+use Kassko\DataMapper\ClassMetadataLoader\LoaderInterface as ClassMetadataLoaderInterface;
+use Kassko\DataMapper\ClassMetadataLoader\LoadingCriteriaInterface;
+use Kassko\DataMapper\Configuration\Configuration;
+use Kassko\DataMapper\Configuration\ObjectKey;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**

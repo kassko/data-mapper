@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Cache;
+namespace Kassko\DataMapper\Cache;
 
 /**
  * An interface for caches implementations used in DataAccess component.

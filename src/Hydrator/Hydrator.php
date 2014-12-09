@@ -1,15 +1,15 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator;
+namespace Kassko\DataMapper\Hydrator;
 
 use DateTime;
 use Exception;
 use Kassko\ClassResolver\ClassResolverInterface;
-use Kassko\DataAccess\Configuration\ObjectKey;
-use Kassko\DataAccess\Configuration\RuntimeConfiguration;
-use Kassko\DataAccess\Exception\ObjectMappingException;
-use Kassko\DataAccess\Hydrator\MemberAccessStrategy;
-use Kassko\DataAccess\ObjectManager;
+use Kassko\DataMapper\Configuration\ObjectKey;
+use Kassko\DataMapper\Configuration\RuntimeConfiguration;
+use Kassko\DataMapper\Exception\ObjectMappingException;
+use Kassko\DataMapper\Hydrator\MemberAccessStrategy;
+use Kassko\DataMapper\ObjectManager;
 use Zend\Stdlib\Hydrator\Filter\FilterProviderInterface;
 
 /**
@@ -27,7 +27,7 @@ class Hydrator extends AbstractHydrator
     protected $isPropertyAccessStrategyOn = true;
 
     /**
-    * @var \Kassko\DataAccess\Hydrator\MemberAccessStrategy\MemberAccessStrategyInterface
+    * @var \Kassko\DataMapper\Hydrator\MemberAccessStrategy\MemberAccessStrategyInterface
     */
     protected $memberAccessStrategy;
 

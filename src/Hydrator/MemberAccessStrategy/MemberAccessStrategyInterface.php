@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator\MemberAccessStrategy;
+namespace Kassko\DataMapper\Hydrator\MemberAccessStrategy;
 
-use Kassko\DataAccess\ClassMetadata\ClassMetadata;
+use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 
 /**
 * Contract for member access strategies.

@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Exception;
+namespace Kassko\DataMapper\Exception;
 
 use Exception;
 

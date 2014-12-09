@@ -7,8 +7,9 @@ data-access
 
 ## Presentation ##
 
-data-access component is a mapper which gives a lot of flexibility to representate some raw data like objects. Use it if you need:
+data-access component is a mapper which gives a lot of flexibility to representate some raw data like objects. It do not manage data persistence. Use it if you need:
 
+* only a mapper and not a persister
 * to keep your objects agnostic and preserve their base class (data-access implements Data Mapper pattern and not Active Record)
 * to transform raw data before hydrating an object
 * to create representations with nested objects and several nesting levels (Person => Address => Street)
@@ -22,7 +23,7 @@ data-access component is a mapper which gives a lot of flexibility to representa
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-access": "~0.5.0@alpha"
+    "kassko/data-mapper": "~0.6.0@alpha"
 }
 ```
 
@@ -35,9 +36,9 @@ You create a mapping configuration (with annotations, yaml or php):
 #### Annotations format ####
 ```php
 
-use Kassko\DataAccess\Annotation as DA;
-use Kassko\DataAccess\Hydrator\HydrationContextInterface;
-use Kassko\DataAccess\Hydrator\Value;
+use Kassko\DataMapper\Annotation as DA;
+use Kassko\DataMapper\Hydrator\HydrationContextInterface;
+use Kassko\DataMapper\Hydrator\Value;
 use \DateTime;
 
 /**
@@ -249,7 +250,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     Return one object or null if no result found.
 
     If severals results are found, throw an exception
-    Kassko\DataAccess\Result\Exception\NonUniqueResultException.
+    Kassko\DataMapper\Result\Exception\NonUniqueResultException.
     */
     $resultBuilder->getOneOrNullResult();
 ```
@@ -259,7 +260,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     Return the object found or a default result (like a Watch instance).
 
     If more than one result are found, throw an exception
-    Kassko\DataAccess\Result\Exception\NonUniqueResultException.
+    Kassko\DataMapper\Result\Exception\NonUniqueResultException.
     */
     $resultBuilder->getOneOrDefaultResult(new Watch);
 ```
@@ -269,10 +270,10 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     Return the object found.
 
     If more than one result are found, throw an exception
-    Kassko\DataAccess\Result\Exception\NonUniqueResultException.
+    Kassko\DataMapper\Result\Exception\NonUniqueResultException.
 
     If no result found, throw an exception
-    Kassko\DataAccess\Result\Exception\NoResultException.
+    Kassko\DataMapper\Result\Exception\NoResultException.
     */
     $resultBuilder->getSingleResult();
 ```
@@ -287,7 +288,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     Return the first object found or a default result (like a Watch instance).
 
     If no result found, throw an exception
-    Kassko\DataAccess\Result\Exception\NoResultException.
+    Kassko\DataMapper\Result\Exception\NoResultException.
     */
     $resultBuilder->getFirstOrDefaultResult(new Watch);
 ```
@@ -296,10 +297,10 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     /*
     Return an array indexed by a property value (like "brand" value).
 
-    If the index does not exists, throw an exception Kassko\DataAccess\Result\Exception\NotFoundIndexException.
+    If the index does not exists, throw an exception Kassko\DataMapper\Result\Exception\NotFoundIndexException.
 
     If the same index is found twice, throw an exception
-    Kassko\DataAccess\Result\Exception\DuplicatedIndexException.
+    Kassko\DataMapper\Result\Exception\DuplicatedIndexException.
     */
     $resultBuilder->getResultIndexedByBrand();//Indexed by brand value
     //or
@@ -327,9 +328,9 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     /*
     Return an iterator indexed by a property value (like "brand" value).
 
-    If the index does not exists, throw an exception Kassko\DataAccess\Result\Exception\NotFoundIndexException.
+    If the index does not exists, throw an exception Kassko\DataMapper\Result\Exception\NotFoundIndexException.
 
-    If the same index is found twice, throw an exception Kassko\DataAccess\Result\Exception\DuplicatedIndexException.
+    If the same index is found twice, throw an exception Kassko\DataMapper\Result\Exception\DuplicatedIndexException.
     */
     $resultBuilder->getIterableResultIndexedByBrand();
     //or
@@ -343,7 +344,7 @@ See the section "Api details" to know how to get a ResultBuilderFactory instance
 #### toOne associations ####
 
 ```php
-use Kassko\DataAccess\Annotation as DA;
+use Kassko\DataMapper\Annotation as DA;
 
 class Keyboard
 {
@@ -448,7 +449,7 @@ object(Keyboard)#283 (8) {
 If the repository class wherin we wants to fetch is not that of the entity, we can override it:
 
 ```php
-use Kassko\DataAccess\Annotation as DA;
+use Kassko\DataMapper\Annotation as DA;
 
 class Keyboard
 {
@@ -470,7 +471,7 @@ Note also that for performance reasons, we can load the association "$manufactur
 An association "to many" is used similarly to "to one".
 
 ```php
-use Kassko\DataAccess\Annotation as DA;
+use Kassko\DataMapper\Annotation as DA;
 
 class Keyboard
 {
@@ -547,7 +548,7 @@ If the "Shop" FQCN (full qualified class name) was "Kassko\Sample\Shop", the ass
 
 But you can override this association name:
 ```php
-use Kassko\DataAccess\Annotation as DA;
+use Kassko\DataMapper\Annotation as DA;
 
 class Keyboard
 {
@@ -683,8 +684,8 @@ We also can load the properties "bestShop" and "keyboard" only when we use it. F
 You can lazy load associations ToOne:
 
 ```php
-use Kassko\DataAccess\Annotation as DA;
-use Kassko\DataAccess\ObjectExtension\LazyLoadableTrait;
+use Kassko\DataMapper\Annotation as DA;
+use Kassko\DataMapper\ObjectExtension\LazyLoadableTrait;
 
 class Keyboard
 {
@@ -728,8 +729,8 @@ class Keyboard
 And ToMany:
 
 ```php
-use Kassko\DataAccess\Annotation as DA;
-use Kassko\DataAccess\ObjectExtension\LazyLoadableTrait;
+use Kassko\DataMapper\Annotation as DA;
+use Kassko\DataMapper\ObjectExtension\LazyLoadableTrait;
 
 class Keyboard
 {
@@ -905,7 +906,7 @@ $resultBuilder->getSingleResult();
 #### Value object ####
 
 ```php
-use Kassko\DataAccess\Annotation as DA;
+use Kassko\DataMapper\Annotation as DA;
 
 class Customer
 {
@@ -1023,7 +1024,7 @@ Otherwise you need to create it yourself.
 
 #### Create the ResultBuilderFactory ####
 ```php
-use Kassko\DataAccess\Result\ResultBuilderFactory;
+use Kassko\DataMapper\Result\ResultBuilderFactory;
 
 $resultBuilderFactory = new ResultBuilderFactory($objectManager);
 ```
@@ -1033,16 +1034,16 @@ $resultBuilderFactory = new ResultBuilderFactory($objectManager);
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Cache\ArrayCache;
 use Kassko\ClassResolver\ClosureClassResolver;
-use Kassko\DataAccessBuilder\Adapter\Cache\DoctrineCacheAdapter;
-use Kassko\DataAccess\ClassMetadataLoader\AnnotationLoader;
-use Kassko\DataAccess\ClassMetadataLoader\DelegatingLoader;
-use Kassko\DataAccess\ClassMetadataLoader\LoaderResolver;
-use Kassko\DataAccess\ClassMetadata\ClassMetadataFactory;
-use Kassko\DataAccess\Configuration\CacheConfiguration;
-use Kassko\DataAccess\Configuration\ClassMetadataFactoryConfigurator;
-use Kassko\DataAccess\Configuration\ConfigurationChain;
-use Kassko\DataAccess\ObjectManager;
-use Kassko\DataAccess\Registry\Registry;
+use Kassko\DataMapperBuilder\Adapter\Cache\DoctrineCacheAdapter;
+use Kassko\DataMapper\ClassMetadataLoader\AnnotationLoader;
+use Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader;
+use Kassko\DataMapper\ClassMetadataLoader\LoaderResolver;
+use Kassko\DataMapper\ClassMetadata\ClassMetadataFactory;
+use Kassko\DataMapper\Configuration\CacheConfiguration;
+use Kassko\DataMapper\Configuration\ClassMetadataFactoryConfigurator;
+use Kassko\DataMapper\Configuration\ConfigurationChain;
+use Kassko\DataMapper\ObjectManager;
+use Kassko\DataMapper\Registry\Registry;
 use Symfony\Component\EventDispatcher;
 
 //Configuration
@@ -1099,7 +1100,7 @@ $objectManager = (new ObjectManager())
 
 #### Create an adapter for the cache ####
 ```php
-use Kassko\DataAccess\Cache\CacheInterface as KasskoCacheInterface;
+use Kassko\DataMapper\Cache\CacheInterface as KasskoCacheInterface;
 use Doctrine\Common\Cache\Cache as DoctrineCacheInterface;
 
 /**
@@ -1153,21 +1154,21 @@ This section will be written later.
 
 #### Register LazyLoader before adding the lazy loading behaviour to your objects ####
 ```php
-use Kassko\DataAccess\LazyLoader\LazyLoaderFactory;
-use Kassko\DataAccess\Registry\Registry;
+use Kassko\DataMapper\LazyLoader\LazyLoaderFactory;
+use Kassko\DataMapper\Registry\Registry;
 
 //LazyLoaderFactory
 $lazyLoaderFactory = new LazyLoaderFactory($objectManager);
 Registry::getInstance()[Registry::KEY_LAZY_LOADER_FACTORY] = $lazyLoaderFactory;
 
-//You need to do it to use the Kassko\DataAccess\ObjectExtension\LazyLoadableTrait in your objects.
+//You need to do it to use the Kassko\DataMapper\ObjectExtension\LazyLoadableTrait in your objects.
 ```
 
 #### Register logger before adding the logging behaviour to your objects ####
 ```php
-use Kassko\DataAccess\Registry\Registry;
+use Kassko\DataMapper\Registry\Registry;
 
 Registry::getInstance()[Registry::KEY_LOGGER] = $logger;
 
-//You need to do it to use the Kassko\DataAccess\ObjectExtension\LoggableTrait in your objects.
+//You need to do it to use the Kassko\DataMapper\ObjectExtension\LoggableTrait in your objects.
 ```

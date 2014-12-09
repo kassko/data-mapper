@@ -1,10 +1,10 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadata;
+namespace Kassko\DataMapper\ClassMetadata;
 
-use Kassko\DataAccess\ClassMetadataLoader\LoadingCriteriaInterface;
-use Kassko\DataAccess\Configuration\Configuration;
-use Kassko\DataAccess\Configuration\ObjectKey;
+use Kassko\DataMapper\ClassMetadataLoader\LoadingCriteriaInterface;
+use Kassko\DataMapper\Configuration\Configuration;
+use Kassko\DataMapper\Configuration\ObjectKey;
 
 /**
 * Contract for class metadata factory.

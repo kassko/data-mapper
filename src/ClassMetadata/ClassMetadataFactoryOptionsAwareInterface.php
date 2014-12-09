@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadata;
+namespace Kassko\DataMapper\ClassMetadata;
 
-use Kassko\DataAccess\Cache\CacheInterface;
+use Kassko\DataMapper\Cache\CacheInterface;
 
 /**
 * Abstraction for initialize ClassMetadataFactory from configuration

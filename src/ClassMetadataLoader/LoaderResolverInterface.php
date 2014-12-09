@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadataLoader;
+namespace Kassko\DataMapper\ClassMetadataLoader;
 
 /**
  * Contract to find the good clas metadata loader.

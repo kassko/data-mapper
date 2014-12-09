@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\Query;
+namespace Kassko\DataMapper\Query;
 
-use Kassko\DataAccess\ObjectManager;
+use Kassko\DataMapper\ObjectManager;
 
 /**
  * Factory for Query.

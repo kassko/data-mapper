@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\Result;
+namespace Kassko\DataMapper\Result;
 
-use Kassko\DataAccess\ObjectManager;
+use Kassko\DataMapper\ObjectManager;
 
 /**
  * Factory for ResultBuilder.

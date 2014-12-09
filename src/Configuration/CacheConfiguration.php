@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\Configuration;
+namespace Kassko\DataMapper\Configuration;
 
-use Kassko\DataAccess\Cache\CacheInterface;
+use Kassko\DataMapper\Cache\CacheInterface;
 
 /**
  * Contains cache configuration.

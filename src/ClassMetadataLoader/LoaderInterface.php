@@ -1,9 +1,9 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadataLoader;
+namespace Kassko\DataMapper\ClassMetadataLoader;
 
-use Kassko\DataAccess\ClassMetadata\ClassMetadata;
-use Kassko\DataAccess\Configuration\Configuration;
+use Kassko\DataMapper\ClassMetadata\ClassMetadata;
+use Kassko\DataMapper\Configuration\Configuration;
 
 /**
  * Contract for class metadata loaders.

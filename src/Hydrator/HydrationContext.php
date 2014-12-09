@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator;
+namespace Kassko\DataMapper\Hydrator;
 
 use InvalidArgumentException;
 

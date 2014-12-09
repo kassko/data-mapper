@@ -1,10 +1,10 @@
 <?php
 
-namespace Kassko\DataAccess\Query;
+namespace Kassko\DataMapper\Query;
 
-use Kassko\DataAccess\Listener\Events;
-use Kassko\DataAccess\Listener\QueryEvent;
-use Kassko\DataAccess\ObjectManager;
+use Kassko\DataMapper\Listener\Events;
+use Kassko\DataMapper\Listener\QueryEvent;
+use Kassko\DataMapper\ObjectManager;
 
 /**
  * Wrapp a query to do do related works.

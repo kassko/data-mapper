@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Listener;
+namespace Kassko\DataMapper\Listener;
 
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 

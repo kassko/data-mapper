@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadata;
+namespace Kassko\DataMapper\ClassMetadata;
 
 /**
  * Broadcast events during data access.

@@ -1,10 +1,10 @@
 <?php
 
-namespace Kassko\DataAccess\Listener;
+namespace Kassko\DataMapper\Listener;
 
 use Kassko\ClassResolver\DefaultClassResolver;
-use Kassko\DataAccess\Listener\EventManagerAwareTrait;
-use Kassko\DataAccess\Listener\QueryEvent;
+use Kassko\DataMapper\Listener\EventManagerAwareTrait;
+use Kassko\DataMapper\Listener\QueryEvent;
 use Symfony\Component\DependencyInjection as DI;
 
 /**

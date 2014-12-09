@@ -1,9 +1,9 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator;
+namespace Kassko\DataMapper\Hydrator;
 
-use Kassko\DataAccess\Hydrator\AbstractHydrator;
-use Kassko\DataAccess\ObjectManager;
+use Kassko\DataMapper\Hydrator\AbstractHydrator;
+use Kassko\DataMapper\ObjectManager;
 
 /**
 * Wrapper to simplify hydrator implementation witch decorates an other hydrator.

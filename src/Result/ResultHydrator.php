@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\Result;
+namespace Kassko\DataMapper\Result;
 
-use Kassko\DataAccess\Result\Exception\DuplicatedIndexException;
+use Kassko\DataMapper\Result\Exception\DuplicatedIndexException;
 
 /**
  * Hydrate results.

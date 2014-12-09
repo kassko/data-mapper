@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\ObjectExtension;
+namespace Kassko\DataMapper\ObjectExtension;
 
-use Kassko\DataAccess\Registry\Registry;
+use Kassko\DataMapper\Registry\Registry;
 
 /**
  * Add Lazy loading feature to an entity.

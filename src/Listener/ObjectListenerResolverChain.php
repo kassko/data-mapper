@@ -1,9 +1,9 @@
 <?php
 
-namespace Kassko\DataAccess\Listener;
+namespace Kassko\DataMapper\Listener;
 
 use Kassko\ClassResolver\ClassResolverChain;
-use Kassko\DataAccess\Listener\QueryEvent;
+use Kassko\DataMapper\Listener\QueryEvent;
 
 /**
  * Find the good object listener resolver and delegate to it the work.

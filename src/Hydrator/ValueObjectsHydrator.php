@@ -1,10 +1,10 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator;
+namespace Kassko\DataMapper\Hydrator;
 
-use Kassko\DataAccess\ObjectManager;
-use Kassko\DataAccess\Exception\ObjectMappingException;
-use Kassko\DataAccess\Hydrator\MemberAccessStrategy;
+use Kassko\DataMapper\ObjectManager;
+use Kassko\DataMapper\Exception\ObjectMappingException;
+use Kassko\DataMapper\Hydrator\MemberAccessStrategy;
 use DateTimeInterface;
 use DateTime;
 

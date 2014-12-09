@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Configuration;
+namespace Kassko\DataMapper\Configuration;
 
 use SplStack;
 use RuntimeException;

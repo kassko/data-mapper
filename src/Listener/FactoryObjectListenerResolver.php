@@ -1,10 +1,10 @@
 <?php
 
-namespace Kassko\DataAccess\Listener;
+namespace Kassko\DataMapper\Listener;
 
 use Kassko\ClassResolver\FactoryClassResolver;
-use Kassko\DataAccess\Listener\EventManagerAwareTrait;
-use Kassko\DataAccess\Listener\QueryEvent;
+use Kassko\DataMapper\Listener\EventManagerAwareTrait;
+use Kassko\DataMapper\Listener\QueryEvent;
 
 /**
  * Object listener resolver to work with a factory.

@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\LazyLoader;
+namespace Kassko\DataMapper\LazyLoader;
 
 /**
  * Abstraction for objet lazy loader factory.

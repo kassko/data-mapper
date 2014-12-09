@@ -1,10 +1,10 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadataLoader;
+namespace Kassko\DataMapper\ClassMetadataLoader;
 
-use Kassko\DataAccess\ClassMetadataLoader\Exception\NotFoundLoaderException;
-use Kassko\DataAccess\ClassMetadata\ClassMetadata;
-use Kassko\DataAccess\Configuration\Configuration;
+use Kassko\DataMapper\ClassMetadataLoader\Exception\NotFoundLoaderException;
+use Kassko\DataMapper\ClassMetadata\ClassMetadata;
+use Kassko\DataMapper\Configuration\Configuration;
 
 /**
  * Find the good class metadata loader and delegate to it class metadata loading.

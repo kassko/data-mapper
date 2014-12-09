@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Result\Exception;
+namespace Kassko\DataMapper\Result\Exception;
 
 /**
 * Exception thrown when one result is expected but a collection results is obtained.
