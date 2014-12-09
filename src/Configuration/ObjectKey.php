@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Configuration;
+namespace Kassko\DataMapper\Configuration;
 
 /**
  * A key for an object used to associate it to a configuration.

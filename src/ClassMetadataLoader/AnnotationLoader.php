@@ -1,11 +1,11 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadataLoader;
+namespace Kassko\DataMapper\ClassMetadataLoader;
 
 use Doctrine\Common\Annotations\Reader as ReaderInterface;
-use Kassko\DataAccess\Annotation as OM;
-use Kassko\DataAccess\ClassMetadata\ClassMetadata;
-use Kassko\DataAccess\Configuration\Configuration;
+use Kassko\DataMapper\Annotation as OM;
+use Kassko\DataMapper\ClassMetadata\ClassMetadata;
+use Kassko\DataMapper\Configuration\Configuration;
 
 /**
  * Class metadata loader for annotations format.

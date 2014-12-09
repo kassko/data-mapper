@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator;
+namespace Kassko\DataMapper\Hydrator;
 
 /**
  * Contains a value to hydrate or to extract with an hydration strategy.

@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Query;
+namespace Kassko\DataMapper\Query;
 
 /**
  * Interface for QueryFactory.

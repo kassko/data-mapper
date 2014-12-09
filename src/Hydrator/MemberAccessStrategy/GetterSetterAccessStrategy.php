@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator\MemberAccessStrategy;
+namespace Kassko\DataMapper\Hydrator\MemberAccessStrategy;
 
-use Kassko\DataAccess\ClassMetadata\ClassMetadata;
+use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 
 /**
 * Access logic by getters/issers/setters to object members to hydrate.

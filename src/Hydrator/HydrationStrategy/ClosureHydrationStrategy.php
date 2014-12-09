@@ -1,9 +1,9 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator\HydrationStrategy;
+namespace Kassko\DataMapper\Hydrator\HydrationStrategy;
 
-use Kassko\DataAccess\Hydrator\ImmutableHydrationContext;
-use Kassko\DataAccess\Hydrator\Value;
+use Kassko\DataMapper\Hydrator\ImmutableHydrationContext;
+use Kassko\DataMapper\Hydrator\Value;
 use InvalidArgumentException;
 
 /**

@@ -1,9 +1,9 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadataLoader;
+namespace Kassko\DataMapper\ClassMetadataLoader;
 
-use Kassko\DataAccess\Configuration\Configuration;
-use Kassko\DataAccess\Configuration\ObjectKey;
+use Kassko\DataMapper\Configuration\Configuration;
+use Kassko\DataMapper\Configuration\ObjectKey;
 
 /**
  * Contains criteria to retrieve metadata and their location.

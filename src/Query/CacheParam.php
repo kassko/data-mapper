@@ -1,9 +1,9 @@
 <?php
 
-namespace Kassko\DataAccess\Query;
+namespace Kassko\DataMapper\Query;
 
-use Kassko\DataAccess\Configuration\Configuration;
-use Kassko\DataAccess\Cache\CacheInterface;
+use Kassko\DataMapper\Configuration\Configuration;
+use Kassko\DataMapper\Cache\CacheInterface;
 
 /**
 * Contains user cache settings.

@@ -1,11 +1,11 @@
 {
-    "name":"kassko/data-access",
+    "name":"kassko/data-mapper",
     "authors": [
         {
             "name":"Kassko"
         }
     ],
-    "description":"An intelligent mapper witch can give an object representation of inconsistent data like data from some legacy database and manage object cache.",
+    "description":"A mapper which gives a lot of flexibility to representate some raw data like objects",
     "keywords":[
         "orm", "hydration", "hydrate", "extract", "data", "access",
         "mapper", "dao", "entity", "repository"
@@ -18,7 +18,7 @@
     },
     "autoload":{
         "psr-4":{
-            "Kassko\\DataAccess\\": "src"
+            "Kassko\\DataMapper\\": "src"
         }
     }
 }

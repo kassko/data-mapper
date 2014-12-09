@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadataLoader;
+namespace Kassko\DataMapper\ClassMetadataLoader;
 
 /**
  * Class metadata loader for files in yaml format.

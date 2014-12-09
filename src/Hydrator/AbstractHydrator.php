@@ -1,12 +1,12 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator;
+namespace Kassko\DataMapper\Hydrator;
 
 use ArrayObject;
-use Kassko\DataAccess\Configuration\ObjectKey;
-use Kassko\DataAccess\Exception\NotImplementedMethodException;
-use Kassko\DataAccess\Hydrator\HydrationStrategy\HydrationStrategyInterface;
-use Kassko\DataAccess\ObjectManager;
+use Kassko\DataMapper\Configuration\ObjectKey;
+use Kassko\DataMapper\Exception\NotImplementedMethodException;
+use Kassko\DataMapper\Hydrator\HydrationStrategy\HydrationStrategyInterface;
+use Kassko\DataMapper\ObjectManager;
 use Zend\Stdlib\Exception;
 use Zend\Stdlib\Hydrator\Filter\FilterComposite;
 

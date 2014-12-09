@@ -1,10 +1,10 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator;
+namespace Kassko\DataMapper\Hydrator;
 
-use Kassko\DataAccess\Configuration\ObjectKey;
-use Kassko\DataAccess\Exception\ObjectMappingException;
-use Kassko\DataAccess\ObjectManager;
+use Kassko\DataMapper\Configuration\ObjectKey;
+use Kassko\DataMapper\Exception\ObjectMappingException;
+use Kassko\DataMapper\ObjectManager;
 
 
 /**

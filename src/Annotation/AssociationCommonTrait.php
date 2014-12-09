@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Annotation;
+namespace Kassko\DataMapper\Annotation;
 
 /**
 * Property annotations to be used in ToOne annotations or ToMany annotations.

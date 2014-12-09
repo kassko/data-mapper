@@ -1,10 +1,10 @@
 <?php
 
-namespace Kassko\DataAccess\Query;
+namespace Kassko\DataMapper\Query;
 
-use Kassko\DataAccess\ObjectManager;
-use Kassko\DataAccess\Query\CacheParam;
-use Kassko\DataAccess\Query\Exception\OptimisticLockException;
+use Kassko\DataMapper\ObjectManager;
+use Kassko\DataMapper\Query\CacheParam;
+use Kassko\DataMapper\Query\Exception\OptimisticLockException;
 
 /**
 * Stores results.

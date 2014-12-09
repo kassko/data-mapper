@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator\HydrationStrategy;
+namespace Kassko\DataMapper\Hydrator\HydrationStrategy;
 
-use Kassko\DataAccess\Exception\ObjectMappingException;
+use Kassko\DataMapper\Exception\ObjectMappingException;
 use DateTimeInterface;
 use DateTime;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Hydrator\HydrationStrategy;
+namespace Kassko\DataMapper\Hydrator\HydrationStrategy;
 
 /**
 * Contract for field hydration strategy.

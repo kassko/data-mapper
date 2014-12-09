@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Registry;
+namespace Kassko\DataMapper\Registry;
 
 use RuntimeException;
 

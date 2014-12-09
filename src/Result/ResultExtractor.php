@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\Result;
+namespace Kassko\DataMapper\Result;
 
-use Kassko\DataAccess\ObjectManager;
+use Kassko\DataMapper\ObjectManager;
 
 /**
  * Extract results from an object representation (object or collection).

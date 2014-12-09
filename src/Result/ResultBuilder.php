@@ -1,13 +1,13 @@
 <?php
 
-namespace Kassko\DataAccess\Result;
+namespace Kassko\DataMapper\Result;
 
 use BadMethodCallException;
-use Kassko\DataAccess\Configuration\Configuration;
-use Kassko\DataAccess\ObjectManager;
-use Kassko\DataAccess\Result\Exception\NoResultException;
-use Kassko\DataAccess\Result\Exception\NonUniqueResultException;
-use Kassko\DataAccess\Result\Exception\NotFoundIndexException;
+use Kassko\DataMapper\Configuration\Configuration;
+use Kassko\DataMapper\ObjectManager;
+use Kassko\DataMapper\Result\Exception\NoResultException;
+use Kassko\DataMapper\Result\Exception\NonUniqueResultException;
+use Kassko\DataMapper\Result\Exception\NotFoundIndexException;
 
 /**
  * Transform raw results into object representation.

@@ -1,21 +1,21 @@
 <?php
 
-namespace Kassko\DataAccess;
+namespace Kassko\DataMapper;
 
 use Kassko\ClassResolver\ClassResolverInterface;
-use Kassko\DataAccess\ClassMetadataLoader\LoadingCriteria;
-use Kassko\DataAccess\ClassMetadata\ClassMetadataFactoryInterface;
-use Kassko\DataAccess\Configuration\Configuration;
-use Kassko\DataAccess\Configuration\ObjectKey;
-use Kassko\DataAccess\Exception\ObjectMappingException;
-use Kassko\DataAccess\Hydrator;
-use Kassko\DataAccess\Hydrator\HydrationStrategy\ClosureHydrationStrategy;
-use Kassko\DataAccess\Hydrator\HydrationStrategy\DateHydrationStrategy;
-use Kassko\DataAccess\LazyLoader\LazyLoaderFactoryInterface;
-use Kassko\DataAccess\Listener\Events;
-use Kassko\DataAccess\Listener\ObjectListenerResolverInterface;
-use Kassko\DataAccess\Query\CacheConfig;
-use Kassko\DataAccess\Query\ResultManager;
+use Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria;
+use Kassko\DataMapper\ClassMetadata\ClassMetadataFactoryInterface;
+use Kassko\DataMapper\Configuration\Configuration;
+use Kassko\DataMapper\Configuration\ObjectKey;
+use Kassko\DataMapper\Exception\ObjectMappingException;
+use Kassko\DataMapper\Hydrator;
+use Kassko\DataMapper\Hydrator\HydrationStrategy\ClosureHydrationStrategy;
+use Kassko\DataMapper\Hydrator\HydrationStrategy\DateHydrationStrategy;
+use Kassko\DataMapper\LazyLoader\LazyLoaderFactoryInterface;
+use Kassko\DataMapper\Listener\Events;
+use Kassko\DataMapper\Listener\ObjectListenerResolverInterface;
+use Kassko\DataMapper\Query\CacheConfig;
+use Kassko\DataMapper\Query\ResultManager;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -205,7 +205,7 @@ class ObjectManager
     *
     * @param string $className FQCN without a leading back slash as does get_class()
     *
-    * @return \Kassko\DataAccess\ClassMetadata\ClassMetadata
+    * @return \Kassko\DataMapper\ClassMetadata\ClassMetadata
     */
     public function getMetadata($objectClass)
     {

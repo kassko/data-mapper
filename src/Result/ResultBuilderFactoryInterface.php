@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataAccess\Result;
+namespace Kassko\DataMapper\Result;
 
 /**
  * Abstraction for ResultBuilder factory.

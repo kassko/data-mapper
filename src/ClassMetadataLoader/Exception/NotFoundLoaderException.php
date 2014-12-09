@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\ClassMetadataLoader\Exception;
+namespace Kassko\DataMapper\ClassMetadataLoader\Exception;
 
-use Kassko\DataAccess\ClassMetadataLoader\LoadingCriteriaInterface;
+use Kassko\DataMapper\ClassMetadataLoader\LoadingCriteriaInterface;
 
 class NotFoundLoaderException extends \RuntimeException
 {

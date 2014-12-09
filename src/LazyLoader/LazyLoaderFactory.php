@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\LazyLoader;
+namespace Kassko\DataMapper\LazyLoader;
 
-use Kassko\DataAccess\ObjectManager;
+use Kassko\DataMapper\ObjectManager;
 
 /**
  * Factory for object lazy loader.

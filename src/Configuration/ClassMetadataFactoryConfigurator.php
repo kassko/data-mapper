@@ -1,8 +1,8 @@
 <?php
 
-namespace Kassko\DataAccess\Configuration;
+namespace Kassko\DataMapper\Configuration;
 
-use Kassko\DataAccess\ClassMetadata\ClassMetadataFactoryOptionsAwareInterface;
+use Kassko\DataMapper\ClassMetadata\ClassMetadataFactoryOptionsAwareInterface;
 
 /**
  * Configure class metadata factory dependencies.
