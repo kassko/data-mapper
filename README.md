@@ -7,11 +7,11 @@ data-mapper
 
 ## Presentation ##
 
-data-mapper component is a mapper which gives a lot of flexibility to representate some raw data like objects. It do not manage data persistence. Use it if you need:
+data-mapper component is a mapper which gives a lot of features to representate some raw data like objects. It do not manage data persistence (for example it doesn't generate SQL). Use it if you need:
 
 * only a mapper and not a persister
-* to keep your objects agnostic and preserve their base class (data-mapper implements Data Mapper pattern and not Active Record)
-* to transform raw data before hydrating an object
+* to keep your objects agnostic and preserve their base class
+* to prepare/transform raw data before hydrating an object
 * to create representations with nested objects and several nesting levels (Person => Address => Street)
 * to map value objects (Address, Street) and reuse them with other mapping rules
 * to reuse and inherit the mapping configurations
@@ -23,7 +23,7 @@ data-mapper component is a mapper which gives a lot of flexibility to representa
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-mapper": "dev-master"
+    "kassko/data-mapper": "alpha-master"
 }
 ```
 

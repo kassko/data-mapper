@@ -5,7 +5,7 @@
             "name":"Kassko"
         }
     ],
-    "description":"A mapper which gives a lot of flexibility to representate some raw data like objects",
+    "description":"A mapper which gives a lot of features to representate some raw data like objects",
     "keywords":[
         "orm", "hydration", "hydrate", "extract", "data", "access",
         "mapper", "dao", "entity", "repository"
@@ -23,7 +23,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "0.6.0.x-alpha"
+            "dev-master": "0.6.0.x-dev"
         }
     }
 }
