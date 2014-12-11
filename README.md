@@ -23,9 +23,15 @@ data-mapper component is a mapper which gives a lot of features to representate 
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-mapper": "dev-master"
+    "kassko/data-mapper": "~0.6.0"
 }
 ```
+
+Note that
+* the second version number is used when compatibility is broken
+* the third for new feature
+* the fourth for hotfix
+* the first for new API or to go from pre-release to release (from 0 to 1)
 
 ## Utilisation ##
 
