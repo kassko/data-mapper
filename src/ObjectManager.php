@@ -90,7 +90,9 @@ class ObjectManager
         $propertyAccessStrategy = $metadata->isPropertyAccessStrategyEnabled();
 
         $hydrator = new Hydrator\Hydrator($this, $propertyAccessStrategy);
-        $hydrator->setClassResolver($this->classResolver);
+        if ($this->classResolver) {
+            $hydrator->setClassResolver($this->classResolver);
+        }
 
         $fieldsWithHydrationStrategy = $metadata->computeFieldsWithHydrationStrategy();
 

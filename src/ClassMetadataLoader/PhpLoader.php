@@ -186,16 +186,16 @@ class PhpLoader extends AbstractLoader
             $fieldsDataByKey[$mappedFieldName] = $fieldDataByKey;
         }
 
-        if (isset($data['toOne'])) {
+        if (isset($data['toOneProvider'])) {
 
-            foreach ($data['toOne'] as $associationName => $toOneData) {
+            foreach ($data['toOneProvider'] as $associationName => $toOneData) {
                 $toOneAssociations[$mappedFieldName][] = ['name' => $associationName] + $toOneData;
             }
         }
 
-        if (isset($data['toMany'])) {
+        if (isset($data['toManyProvider'])) {
 
-            foreach ($data['toMany'] as $associationName => $toManyData) {
+            foreach ($data['toManyProvider'] as $associationName => $toManyData) {
                 $toManyAssociations[$mappedFieldName][] = ['name' => $associationName] + $toManyData;
             }
         }

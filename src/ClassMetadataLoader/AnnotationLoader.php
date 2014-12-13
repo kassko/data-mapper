@@ -27,8 +27,8 @@ class AnnotationLoader extends AbstractLoader
     private static $valueObjectAnnotationName = OM\ValueObject::class;
     private static $customHydratorAnnotationName = OM\CustomHydrator::class;
     private static $objectListenersAnnotationName = OM\ObjectListeners::class;
-    private static $toOneAnnotationName = OM\ToOne::class;
-    private static $toManyAnnotationName = OM\ToMany::class;
+    private static $toOneAnnotationName = OM\ToOneProvider::class;
+    private static $toManyAnnotationName = OM\ToManyProvider::class;
     private static $providerAnnotationName = OM\Provider::class;
     private static $getterAnnotationName = OM\Getter::class;
     private static $setterAnnotationName = OM\Setter::class;

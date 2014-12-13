@@ -3,7 +3,7 @@
 namespace Kassko\DataMapper\Annotation;
 
 /**
-* Property annotations to be used in ToOne annotations or ToMany annotations.
+* Property annotations to be used in ToOneProvider annotations or ToManyProvider annotations.
 *
 * @author kko
 */

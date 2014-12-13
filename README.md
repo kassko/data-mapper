@@ -366,7 +366,7 @@ class Keyboard
     private $color;
 
     /**
-     * @DA\ToOne(entityClass="Manufacturer", findMethod="find")
+     * @DA\ToOneProvider(entityClass="Manufacturer", findMethod="find")
      * @DA\Field(name="manufacturer_id")
      */
     private $manufacturer;
@@ -460,7 +460,7 @@ use Kassko\DataMapper\Annotation as DA;
 class Keyboard
 {
     /**
-     * @DA\ToOne(entityClass="Manufacturer", repositoryClass="UnconventionnalManager" findMethod="find")
+     * @DA\ToOneProvider(entityClass="Manufacturer", repositoryClass="UnconventionnalManager" findMethod="find")
      * @DA\Field
      */
     private $manufacturer;
@@ -494,7 +494,7 @@ class Keyboard
 
     /**
      * @DA\Field
-     * @DA\ToMany(entityClass="Shop", findMethod="findByKeyboard")
+     * @DA\ToManyProvider(entityClass="Shop", findMethod="findByKeyboard")
      */
     private $shops;
 
@@ -559,7 +559,7 @@ use Kassko\DataMapper\Annotation as DA;
 class Keyboard
 {
     /**
-     * @DA\ToMany(name="insertShop", entityClass="Shop", findMethod="find")
+     * @DA\ToManyProvider(name="insertShop", entityClass="Shop", findMethod="find")
      * @DA\Field
      */
     private $shops;
@@ -687,7 +687,7 @@ We also can load the properties "bestShop" and "keyboard" only when we use it. F
 
 #### Lazy loading ####
 
-You can lazy load associations ToOne:
+You can lazy load associations ToOneProvider:
 
 ```php
 use Kassko\DataMapper\Annotation as DA;
@@ -709,7 +709,7 @@ class Keyboard
     private $color;
 
     /**
-     * @DA\ToOne(entityClass="Manufacturer", findMethod="find", lazyLoading="true")
+     * @DA\ToOneProvider(entityClass="Manufacturer", findMethod="find", lazyLoading="true")
      * @DA\Field(name="manufacturer_id")
      */
     private $manufacturer;
@@ -732,7 +732,7 @@ class Keyboard
 }
 ```
 
-And ToMany:
+And ToManyProvider:
 
 ```php
 use Kassko\DataMapper\Annotation as DA;
@@ -753,7 +753,7 @@ class Keyboard
 
     /**
      * @DA\Field
-     * @DA\ToMany(entityClass="Shop", findMethod="findByKeyboard", lazyLoading="true")
+     * @DA\ToManyProvider(entityClass="Shop", findMethod="findByKeyboard", lazyLoading="true")
      */
     private $shops;
 

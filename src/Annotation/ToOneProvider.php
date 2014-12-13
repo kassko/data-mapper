@@ -6,12 +6,7 @@ namespace Kassko\DataMapper\Annotation;
 * @Annotation
 * @Target("PROPERTY")
 */
-final class ToMany
+final class ToOneProvider
 {
     use AssociationCommonTrait;
-
-    /**
-     * @var string
-     */
-    public $name;
 }
