@@ -350,15 +350,8 @@ namespace Kassko\Sample;
 
 use \DateTime;
 
-/**
- * @DA\PostHydrate(method="onAfterHydrate")
- * @DA\PostExtract(method="onAfterExtract")
- */
 class Watch
 {
-    private static $brandCodeToLabelMap = [1 => 'Brand A', 2 => 'Brand B'];
-    private static $brandLabelToCodeMap = ['Brand A' => 1, 'Brand B' => 2];
-
     private $brand;
     private $color;
     private $createdDate;
@@ -389,8 +382,8 @@ class Watch
 
 ```yaml
 object:
-    fieldMappingExtensionClass: "Kassko\\Sample\\WatchCallbacks"
-    classMappingExtensionClass: "Kassko\\Sample\\WatchCallbacks"
+    fieldMappingExtensionClass: "Kassko\\Sample\\WatchMappingExtension"
+    classMappingExtensionClass: "Kassko\\Sample\\WatchMappingExtension"
 interceptors:
     postExtract: onAfterExtract
     postHydrate: onAfterHydrate
@@ -425,8 +418,11 @@ use Kassko\DataMapper\Hydrator\HydrationContextInterface;
 use Kassko\DataMapper\Hydrator\Value;
 use DateTime;
 
-class WatchCallbacks
+class WatchMappingExtension
 {
+    private static $brandCodeToLabelMap = [1 => 'Brand A', 2 => 'Brand B'];
+    private static $brandLabelToCodeMap = ['Brand A' => 1, 'Brand B' => 2];
+
     public static function readBrand(Value $value, HydrationContextInterface $context)
     {
         if (isset(self::$brandCodeToLabelMap[$value->value])) {
