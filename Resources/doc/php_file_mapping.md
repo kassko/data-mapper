@@ -4,11 +4,9 @@ We return a Php array with the mapping.
 
 ```php
 return [
-    'object' => [
-        'interceptors' => [
-            'postExtract' => 'onAfterExtract',
-            'postHydrate' => 'onAfterHydrate',
-        ],
+    'interceptors' => [
+        'postExtract' => 'onAfterExtract',
+        'postHydrate' => 'onAfterHydrate',
     ],
     'fields' => [
         'brand' => [

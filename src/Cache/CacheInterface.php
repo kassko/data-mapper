@@ -3,7 +3,7 @@
 namespace Kassko\DataMapper\Cache;
 
 /**
- * An interface for caches implementations used in DataAccess component.
+ * An interface for caches implementations used in DataMapper component.
  * Because actually, there is not a standard interface for cache.
  *
  * @author kko

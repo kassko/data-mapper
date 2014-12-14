@@ -30,7 +30,7 @@ class LoadingCriteria implements LoadingCriteriaInterface
     /**
      *@var string the method provider
      */
-    private $resourceMethod = 'provideClassMetadata';
+    private $resourceMethod = 'provideMapping';
 
 
     private function __construct()

@@ -7,10 +7,9 @@ class Keyboard
     public static function loadMapping()
     {
         return <<<EOF
-object:
-    interceptors:
-        postExtract: onAfterExtract
-        postHydrate: onAfterHydrate
+interceptors:
+    postExtract: onAfterExtract
+    postHydrate: onAfterHydrate
 fields:
     brand:
         readStrategy: readBrand

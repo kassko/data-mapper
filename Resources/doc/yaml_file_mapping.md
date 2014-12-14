@@ -2,10 +2,9 @@
 
 #### First example ####
 ```yaml
-object:
-    interceptors:
-        postExtract: onAfterExtract
-        postHydrate: onAfterHydrate
+interceptors:
+    postExtract: onAfterExtract
+    postHydrate: onAfterHydrate
 fields:
     brand:
         readStrategy: readBrand

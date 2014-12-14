@@ -27,7 +27,7 @@ Add to your composer.json:
 }
 ```
 
-Note that
+Note that:
 * the second version number is used when compatibility is broken
 * the third for new feature
 * the fourth for hotfix
@@ -41,6 +41,180 @@ You create a mapping configuration (with annotations, yaml or php):
 
 #### Annotations format ####
 ```php
+namespace Kassko\Sample;
+
+use Kassko\DataMapper\Annotation as DA;
+
+class Watch
+{
+    /**
+     * @DA\Field
+     */
+    private $brand;
+
+    /**
+     * @DA\Field(name="COLOR")
+     */
+    private $color;
+
+    private $nice;//The field nice has not Field annotation because we don't want the mapper to hydrate it or to extract it
+
+    public function getBrand() { return $this->brand; }
+    public function setBrand($brand) { $this->brand = $brand; }
+    public function getColor() { return $this->color; }
+    public function setColor($color) { $this->color = $color; }
+    public function isNice() { return $this->nice; }
+    public function setNice($nice) { $this->nice = $nice; }
+}
+```
+
+You configure the mapping format to use:
+
+```php
+$configuration->setDefaultClassMetadataResourceType('annotations');//<= for all domain objects
+//or
+$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'annotations');//<= only for Watch objects
+```
+
+See the section "Api details" to know how to get a Configuration instance.
+
+If you use annotations for all your objects, you don't need to specify a configuration because it's the default settings.
+
+You create a yaml file mapping configuration if you prefer this one:
+#### Yaml file format ####
+```yaml
+fields:
+    brand: ~ # this field hasn't got specific configuration but we want the mapper to manage it (it will be hydrated and extracted)
+    color:
+        name: "COLOR"
+
+# The field nice don't appear in the field section because we don't want the mapper to manage it.
+```
+
+You configure the mapping format to use:
+```php
+$configuration->setDefaultClassMetadataResourceType('yaml_file');//<= for all domain objects
+//or
+$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'yaml_file');//<= only for Watch objects
+```
+
+You create a php file mapping configuration if you prefer this one:
+#### Php file format ####
+```php
+return [
+    'fields' => [
+        'brand', //this field hasn't got specific configuration but we want the mapper to manage it (it will be hydrated and extracted)
+        'color' => ['name' => 'COLOR'],
+];
+
+//The field nice don't appear in the field section because we don't want the mapper to manage it.
+```
+
+You configure the mapping format to use:
+```php
+$configuration->setDefaultClassMetadataResourceType('php_file');//<= for all domain objects
+//or
+$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'php_file');//<= only for Watch objects
+```
+
+It's possible to aggregate the Php mapping configuration in the object itself, the resulting format is named Php:
+
+#### Php format ####
+```php
+namespace Kassko\Sample;
+
+class Watch
+{
+    private $brand;
+    private $color;
+    private $nice;
+
+    public function getBrand() { return $this->brand; }
+    public function setBrand($brand) { $this->brand = $brand; }
+    public function getColor() { return $this->color; }
+    public function setColor($color) { $this->color = $color; }
+    public function isNice() { return $this->nice; }
+    public function setNice($nice) { $this->nice = $nice; }
+
+    public static function provideMapping()
+    {
+        return [
+            'fields' => [
+                'brand', //this field hasn't got specific configuration but we want the mapper to manage it (it will be hydrated and extracted)
+                'color' => ['name' => 'COLOR'],
+        ];
+
+        //The field nice don't appear in the field section because we don't want the mapper to manage it.
+    }
+}
+```
+
+You configure the mapping format to use:
+```php
+$configuration->setDefaultClassMetadataResourceType('php');//<= for all domain objects
+//or
+$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'php');//<= only for Watch objects
+```
+
+You configure the provider mapping method:
+```php
+$configuration->setDefaultClassMetadataProviderMethod('provideMapping');//<= for all domain objects
+//or
+$configuration->addClassMetadataProviderMethod('Kassko\Sample\Watch', 'provideMapping');//<= only for Watch objects
+```
+
+If you use the provideMapping() method name for all your objects, you don't need to specify a configuration because it's the default settings.
+
+You can do the same for the Yaml mapping configuration, the resulting format is named Yaml:
+#### Yaml format ####
+```php
+namespace Kassko\Sample;
+
+class Watch
+{
+    private $brand;
+    private $color;
+    private $nice;
+
+    public function getBrand() { return $this->brand; }
+    public function setBrand($brand) { $this->brand = $brand; }
+    public function getColor() { return $this->color; }
+    public function setColor($color) { $this->color = $color; }
+    public function isNice() { return $this->nice; }
+    public function setNice($nice) { $this->nice = $nice; }
+
+    public static function provideMapping()
+    {
+        return <<<EOF
+fields:
+    brand: ~ # this field hasn't got specific configuration but we want the mapper to manage it (it will be hydrated and extracted)
+    color:
+        name: "COLOR"
+
+# The field nice don't appear in the field section because we don't want the mapper to manage it.
+EOF;
+    }
+}
+```
+
+You configure the mapping format to use:
+```php
+$configuration->setDefaultClassMetadataResourceType('yaml');//<= for all domain objects
+//or
+$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'yaml');//<= only for Watch objects
+```
+
+And the the provideMapping() method too.
+
+Here is another example with more advanced mapping:
+
+### Mapping configuration ###
+
+You create a mapping configuration (with annotations, yaml or php):
+
+#### Annotations format ####
+```php
+namespace Kassko\Sample;
 
 use Kassko\DataMapper\Annotation as DA;
 use Kassko\DataMapper\Hydrator\HydrationContextInterface;
@@ -79,7 +253,7 @@ class Watch
     private $waterProof;
 
     /**
-     * @DA\Field(readStrategy="hydrateBoolFromSymbol", writeStrategy="extractBoolToSymbol", mappingExtensionClass="WatchCallbacks")
+     * @DA\Field(readStrategy="hydrateBoolFromSymbol", writeStrategy="extractBoolToSymbol")
      */
     private $stopWatch;
 
@@ -130,6 +304,16 @@ class Watch
         $value->value = $value->value ? '1' : '0';
     }
 
+    public static function hydrateBoolFromSymbol(Value $value, HydrationContextInterface $context)
+    {
+        $value->value = $value->value == 'X';
+    }
+
+    public static function extractBoolToSymbol(Value $value, HydrationContextInterface $context)
+    {
+        $value->value = $value->value ? 'X' : ' ';
+    }
+
     public function onAfterHydrate(HydrationContextInterface $context)
     {
         if ('' === $context->getItem('seal_date')) {
@@ -153,31 +337,161 @@ class Watch
 }
 ```
 
+You can keep your object agnostic of mapping if you use a mapping format file like yaml_file or php_file.
+```php
+namespace Kassko\Sample;
+
+use \DateTime;
+
+/**
+ * @DA\PostHydrate(method="onAfterHydrate")
+ * @DA\PostExtract(method="onAfterExtract")
+ */
+class Watch
+{
+    private static $brandCodeToLabelMap = [1 => 'Brand A', 2 => 'Brand B'];
+    private static $brandLabelToCodeMap = ['Brand A' => 1, 'Brand B' => 2];
+
+    private $brand;
+    private $color;
+    private $createdDate;
+    private $waterProof;
+    private $stopWatch;
+    private $customizable;
+    private $sealDate;
+    private $noSealDate = false;
+
+    public function getBrand() { return $this->brand; }
+    public function setBrand($brand) { $this->brand = $brand; }
+    public function getColor() { return $this->color; }
+    public function setColor($color) { $this->color = $color; }
+    public function getCreatedDate() { return $this->createdDate; }
+    public function setCreatedDate(DateTime $createdDate) { $this->createdDate = $createdDate; }
+    public function isWaterProof() { return $this->waterProof; }
+    public function setWaterProof($waterProof) { $this->waterProof = $waterProof; }
+    public function hasStopWatch() { return $this->stopWatch; }
+    public function setStopWatch($stopWatch) { $this->stopWatch = $stopWatch; }
+    public function canBeCustomized() { return $this->customizable; }
+    public function setCustomizable($customizable) { $this->customizable = $customizable; }
+    public function getSealDate() { return $this->sealDate; }
+    public function setSealDate(DateTime $sealDate) { $this->sealDate = $sealDate; }
+    public function isThereSealDate() { return ! $this->noSealDate; }
+    public function setNoSealDate($nosealDate) { $this->noSealDate = $noSealDate; }
+}
+```
+
+```yaml
+object:
+    fieldMappingExtensionClass: "Kassko\\Sample\\WatchCallbacks"
+    classMappingExtensionClass: "Kassko\\Sample\\WatchCallbacks"
+interceptors:
+    postExtract: onAfterExtract
+    postHydrate: onAfterHydrate
+fields:
+    brand:
+        readStrategy: readBrand
+        writeStrategy: writeBrand
+    color: ~ # this field hasn't got specific configuration but we want the mapper manage it
+    createdDate:
+        name: created_date
+        type: date
+        readDateFormat: "Y-m-d H:i:s"
+        writeDateFormat: "Y-m-d H:i:s"
+    waterProof:
+        readStrategy: hydrateBool
+        writeStrategy: extractBool
+    stopWatch:
+        readStrategy: hydrateBoolFromSymbol
+        writeStrategy: extractBoolToSymbol
+        mappingExtensionClass: WatchCallbacks
+    customizable:
+        readStrategy: hydrateBool
+        writeStrategy: extractBool
+        getter: canBeCustomized
+```
+
 ```php
 //The mapping extension class.
+namespace Kassko\Sample;
+
+use Kassko\DataMapper\Hydrator\HydrationContextInterface;
+use Kassko\DataMapper\Hydrator\Value;
+use DateTime;
 
 class WatchCallbacks
 {
-    public static function hydrateBoolFromSymbol(Value $value)
+    public static function readBrand(Value $value, HydrationContextInterface $context)
+    {
+        if (isset(self::$brandCodeToLabelMap[$value->value])) {
+            $value->value = self::$brandCodeToLabelMap[$value->value];
+        }
+    }
+
+    public static function writeBrand(Value $value, HydrationContextInterface $context)
+    {
+        if (isset(self::$brandLabelToCodeMap[$value->value])) {
+            $value->value = self::$brandLabelToCodeMap[$value->value];
+        }
+    }
+
+    public static function hydrateBool(Value $value, HydrationContextInterface $context)
+    {
+        $value->value = $value->value == '1';
+    }
+
+    public static function extractBool(Value $value, HydrationContextInterface $context)
+    {
+        $value->value = $value->value ? '1' : '0';
+    }
+
+    public static function hydrateBoolFromSymbol(Value $value, HydrationContextInterface $context)
     {
         $value->value = $value->value == 'X';
     }
 
-    public static function extractBoolToSymbol(Value $value)
+    public static function extractBoolToSymbol(Value $value, HydrationContextInterface $context)
+    {
+        $value->value = $value->value ? 'X' : ' ';
+    }
+
+    public static function onAfterHydrate(HydrationContextInterface $context, Watch $object)
+    {
+        //Have a look at the signature method (you add the Watch object when you use an interceptor).
+
+        if ('' === $context->getItem('seal_date')) {
+            $value = $context->getItem('created_date');
+            $object->setNoSealDate(true);
+        } else {
+            $value = $context->getItem('seal_date');
+        }
+
+        $object->setSealDate(DateTime::createFromFormat('Y-m-d H:i:s', $value));
+    }
+
+    public static function onAfterExtract(HydrationContextInterface $context, Watch $object)
+    {
+        //Have a look at the signature method (you add the Watch object when you use an interceptor).
+
+        if (! $object->isThereSealDate()) {
+            $context->setItem('seal_date', '');
+        } else {
+            $context->setItem('seal_date', $object->getSealDate()->format('Y-m-d H:i:s'));
+        }
+    }
+
+    public static function hydrateBoolFromSymbol(Value $value, HydrationContextInterface $context)
+    {
+        $value->value = $value->value == 'X';
+    }
+
+    public static function extractBoolToSymbol(Value $value, HydrationContextInterface $context)
     {
         $value->value = $value->value ? 'X' : ' ';
     }
 }
 ```
 
-Api configuration usage:
-```php
-$configuration->setDefaultClassMetadataResourceType('annotations');
-
-//or
-
-$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'annotations');
-```
+For more details about mapping you can read the mapping reference documentations:
 
 #### Yaml format ####
 [see Yaml mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/yaml_mapping.md).
@@ -192,7 +506,6 @@ $configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'annotations
 [see Php file mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/php_file_mapping.md).
 
 As you can see,
-* A property without "Field" annotation is not managed (not hydrated and not extracted).
 * You can transform raw data before hydration or object values before extraction.
 * You can isolate transformation methods in a separated file (see the mapping extension class WatchCallbacks). So to keep your entity agnostic of mapping use yaml_file or php_file format and put your transformations in a mapping extension class.
 * You can convert a date before hydrating or extracting it.
@@ -610,7 +923,7 @@ object(Keyboard)#283 (8) {
 Note that for performance reasons, we can load the association "$shop" only when we use it. For more details see the "Lazy loading" section.
 
 #### Providers ####
-A provider is usefull to create a super object. That is to say an object wich contains other objects or some collections but there is no relation with these objects.
+A provider is usefull to create a super object. That is to say an object which contains other objects or some collections but there is no relation with these objects.
 
 ```php
 
@@ -853,7 +1166,7 @@ return [
 ```
 
 ```php
-use DataAccess\Configuration\RuntimeConfiguration;
+use DataMapper\Configuration\RuntimeConfiguration;
 
 $data = [
     'red' => '255',
@@ -872,7 +1185,7 @@ $resultBuilder->getSingleResult();
 ```
 
 ```php
-use DataAccess\Configuration\RuntimeConfiguration;
+use DataMapper\Configuration\RuntimeConfiguration;
 
 $data = [
     'rouge' => '255',
@@ -891,7 +1204,7 @@ $resultBuilder->getSingleResult();
 ```
 
 ```php
-use DataAccess\Configuration\RuntimeConfiguration;
+use DataMapper\Configuration\RuntimeConfiguration;
 
 $data = [
     'rojo' => '255',
@@ -991,7 +1304,7 @@ $data = [
 $resultBuilder = $resultBuilderFactory->create('Customer', $data);
 $resultBuilder->getSingleResult();
 ```
-Note that you can have value objects wich contains value objects and so on. And each value object can use it's own mapping configuration format.
+Note that you can have value objects which contains value objects and so on. And each value object can use it's own mapping configuration format.
 
 #### Mapping inheritance ####
 This section will be written later.
@@ -1023,7 +1336,7 @@ These features will be explained and detailled later.
 
 ### Api details ###
 
-Normally, if you work with a framework wich integrates the component data-mapper, you can get a ResultBuilderFactory instance from a container.
+Normally, if you work with a framework which integrates the component data-mapper, you can get a ResultBuilderFactory instance from a container.
 For example, with Symfony framework, we can use the [kassko/data-mapper-bundle](https://github.com/kassko/data-mapper-bundle) which provides to the container a ResultBuilderFactory service.
 
 Otherwise you need to create it yourself.
@@ -1038,9 +1351,8 @@ $resultBuilderFactory = new ResultBuilderFactory($objectManager);
 #### Create the ObjectManager ####
 ```php
 use Doctrine\Common\Annotations\Reader;
-use Doctrine\Common\Cache\ArrayCache;
+use Kassko\DataMapper\Cache\ArrayCache;
 use Kassko\ClassResolver\ClosureClassResolver;
-use Kassko\DataMapperBuilder\Adapter\Cache\DoctrineCacheAdapter;
 use Kassko\DataMapper\ClassMetadataLoader\AnnotationLoader;
 use Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader;
 use Kassko\DataMapper\ClassMetadataLoader\LoaderResolver;
@@ -1054,17 +1366,9 @@ use Symfony\Component\EventDispatcher;
 
 //Configuration
 $configuration = (new ConfigurationChain)
-    ->setClassMetadataCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
-    ->setResultCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
+    ->setClassMetadataCacheConfig(new CacheConfiguration(new ArrayCache))
+    ->setResultCacheConfig(new CacheConfiguration(new ArrayCache))
 ;
-
-
-/*
-The code above provide a cache adapter to use the Kassko cache interface with a Doctrine cache implementation. But you can choose another cache implementation (a ** Winzou ** one for example).
-At the present time, there is no standard cache interface like the PSR-3 PSR\Logger\LoggerInterface.
-PSR-6 should provide one ?
-Then the mapper has it's own cache interface and you should provide an adapter for it. See the next section to know how to create the cache adapter DoctrineCacheAdapter.
-*/
 
 //ClassMetadataFactory
 $delegatingLoader = new DelegatingLoader(
@@ -1079,14 +1383,14 @@ $cmConfigurator = new ClassMetadataFactoryConfigurator($configuration);
 $cmConfigurator->configure($cmFactory);
 
 //ClassResolver, if you have one
-if (isset($closureClassResolver)) {//Here $closureClassResolver is a closure wich return an object after resolving it from a given parameter (wich is usually the object Fqcn).
+if (isset($closureClassResolver)) {//Here $closureClassResolver is a closure which return an object after resolving it from a given parameter (which is usually the object Fqcn).
     $classResolver = new ClosureClassResolver($closureClassResolver);
 
     //You can use other implementation of ClassResolverInterface like FactoryClassResolver or ContainerAwareClassResolver or combine them with the ClassResolverChain.
 }
 
 //ObjectListenerResolver, if you have one
-if (isset($closureObjectListenerResolver)) {//Here $closureObjectListenerResolver is a closure wich return a listener instance after resolving it from a given parameter (wich is usually the listener Fqcn)
+if (isset($closureObjectListenerResolver)) {//Here $closureObjectListenerResolver is a closure which return a listener instance after resolving it from a given parameter (which is usually the listener Fqcn)
     $olr =
         (new ClosureObjectListenerResolver($closureObjectListenerResolver))
         ->setEventManager(new Symfony\Component\EventDispatcher\EventDispatcher)
@@ -1105,6 +1409,8 @@ $objectManager = (new ObjectManager())
 ```
 
 #### Create an adapter for the cache ####
+Instead of use Kassko\DataMapper\Cache\ArrayCache, you can provide a cache adapter. For example, you can use the Kassko cache interface with a Doctrine cache implementation or a Winzou cache implementation.
+
 ```php
 use Kassko\DataMapper\Cache\CacheInterface as KasskoCacheInterface;
 use Doctrine\Common\Cache\Cache as DoctrineCacheInterface;
@@ -1150,6 +1456,33 @@ class DoctrineCacheAdapter implements KasskoCacheInterface
         return $this->doctrineCache->delete($id);
     }
 }
+```
+
+At the present time, there is no standard cache interface like the PSR-3 PSR\Logger\LoggerInterface.
+PSR-6 should provide one ? That's why the data-mapper has it's own cache interface and you should provide an adapter for it.
+
+The code:
+```php
+use Kassko\DataMapper\Cache\ArrayCache;
+use Kassko\DataMapper\Configuration\CacheConfiguration;
+use Kassko\DataMapper\Configuration\ConfigurationChain;
+
+$configuration = (new ConfigurationChain)
+    ->setClassMetadataCacheConfig(new CacheConfiguration(new ArrayCache))
+    ->setResultCacheConfig(new CacheConfiguration(new ArrayCache))
+;
+```
+
+could be changed by using the cache adapter:
+```php
+use Doctrine\Common\Cache\ArrayCache;
+use Kassko\DataMapper\Configuration\CacheConfiguration;
+use Kassko\DataMapper\Configuration\ConfigurationChain;
+
+$configuration = (new ConfigurationChain)
+    ->setClassMetadataCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
+    ->setResultCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
+;
 ```
 
 #### Create a ClassResolver instance ####

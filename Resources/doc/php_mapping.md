@@ -7,11 +7,9 @@ class Keyboard
     public static function loadMapping()
     {
         return [
-            'object' => [
-                'interceptors' => [
-                    'postExtract' => 'onAfterExtract',
-                    'postHydrate' => 'onAfterHydrate',
-                ],
+            'interceptors' => [
+                'postExtract' => 'onAfterExtract',
+                'postHydrate' => 'onAfterHydrate',
             ],
             'fields' => [
                 'brand' => [
