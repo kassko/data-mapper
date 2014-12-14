@@ -20,7 +20,7 @@ data-mapper component represents some raw data like objects as all data-mapper b
 * to reuse or inherit some mapping configurations
 * to choose your mapping configuration format or to use various formats in the same application
 
-data-mapper requires providers. It means you can use mysql, mssql and a webservice to hydrate the same object.
+data-mapper requires providers. It means you can hydrate some properties from mysql, other properties from mssql and some relations from a webservice.
 
 ## Installation ##
 
@@ -416,7 +416,6 @@ namespace Kassko\Sample;
 
 use Kassko\DataMapper\Hydrator\HydrationContextInterface;
 use Kassko\DataMapper\Hydrator\Value;
-use DateTime;
 
 class WatchMappingExtension
 {
@@ -601,18 +600,23 @@ As you can see, the getResult() method return the object in an array. Maybe you 
 ```
 
 ```php
+    /*
     Return the first object found or null if no result found.
+
+    If no result found, throw an exception
+    Kassko\DataMapper\Result\Exception\NoResultException.
+    */
     $resultBuilder->getFirstOrNullResult();
 ```
 
 ```php
     /*
-    Return the first object found or a default result (like a Watch instance).
+    Return the first object found or a default result (like value false).
 
     If no result found, throw an exception
     Kassko\DataMapper\Result\Exception\NoResultException.
     */
-    $resultBuilder->getFirstOrDefaultResult(new Watch);
+    $resultBuilder->getFirstOrDefaultResult(false);
 ```
 
 ```php
@@ -663,7 +667,7 @@ See the section "Api details" to know how to get a ResultBuilderFactory instance
 
 ### Features ###
 
-#### toOne associations ####
+#### toOneProvider associations ####
 
 ```php
 use Kassko\DataMapper\Annotation as DA;
@@ -788,7 +792,7 @@ Note that in an entity, if no property is specified as the identifier, the defau
 
 Note also that for performance reasons, we can load the association "$manufacturer" only when we use it. For more details see the "Lazy loading" section.
 
-#### toMany associations ####
+#### toManyProvider associations ####
 
 An association "to many" is used similarly to "to one".
 
