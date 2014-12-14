@@ -7,16 +7,20 @@ data-mapper
 
 ## Presentation ##
 
-data-mapper component is a mapper which gives a lot of features to representate some raw data like objects. It do not manage data persistence (for example it doesn't generate SQL). Use it if you need:
+data-mapper component represents some raw data like objects as all data-mapper but it particularly allows to create complex representations. Use it:
 
-* only a mapper and not a persister
-* to keep your objects agnostic and preserve their base class
-* to prepare/transform raw data before hydrating an object
+* if you only want a mapper
+* if you administrate your databases yourself
+* if you need to use multiples data sources to hydrate an object (data-mapper is agnostic of data access infrastructure, it abstract it by requiring providers)
 * to create representations with nested objects and several nesting levels (Person => Address => Street)
-* to map value objects (Address, Street) and reuse them with other mapping rules
-* to reuse and inherit the mapping configurations
+* to reuse an object with other mapping rules
+* to prepare/transform some raw data before hydrating an object
+* to prepare/transform object properties before retrieving the corresponding raw data
+* to keep your objects agnostic of mapping
+* to reuse or inherit some mapping configurations
 * to choose your mapping configuration format or to use various formats in the same application
 
+data-mapper requires providers. It means you can use mysql, mssql and a webservice to hydrate the same object.
 
 ## Installation ##
 
@@ -117,7 +121,7 @@ $configuration->setDefaultClassMetadataResourceType('php_file');//<= for all dom
 $configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'php_file');//<= only for Watch objects
 ```
 
-It's possible to aggregate the Php mapping configuration in the object itself, the resulting format is named Php:
+It's possible to aggregate the Php mapping configuration in the object itself:
 
 #### Php format ####
 ```php
@@ -154,6 +158,8 @@ You configure the mapping format to use:
 $configuration->setDefaultClassMetadataResourceType('php');//<= for all domain objects
 //or
 $configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'php');//<= only for Watch objects
+
+//The format name is 'php' and not 'php_file'
 ```
 
 You configure the provider mapping method:
@@ -165,7 +171,7 @@ $configuration->addClassMetadataProviderMethod('Kassko\Sample\Watch', 'provideMa
 
 If you use the provideMapping() method name for all your objects, you don't need to specify a configuration because it's the default settings.
 
-You can do the same for the Yaml mapping configuration, the resulting format is named Yaml:
+You can do the same for the Yaml mapping configuration:
 #### Yaml format ####
 ```php
 namespace Kassko\Sample;
@@ -202,13 +208,14 @@ You configure the mapping format to use:
 $configuration->setDefaultClassMetadataResourceType('yaml');//<= for all domain objects
 //or
 $configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'yaml');//<= only for Watch objects
+
+//The format name is 'yaml' and not 'yaml_file'
 ```
 
-And the the provideMapping() method too.
+And the provideMapping() method too.
 
-Here is another example with more advanced mapping:
 
-### Mapping configuration ###
+### More advanced mapping configuration ###
 
 You create a mapping configuration (with annotations, yaml or php):
 
