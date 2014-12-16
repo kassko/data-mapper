@@ -516,7 +516,7 @@ As you can see,
 
 ### API Usage ###
 
-To do hydration and extraction operations, you get a ResultBuilderFactory instance and you hydrate your object:
+To do hydration and extraction operations, you get a DataMapper instance and you hydrate your object:
 ```php
 $data = [
     'brand' => 'some brand',
@@ -528,7 +528,7 @@ $data = [
     'seal_date' => '',
 ];
 
-$resultBuilder = $resultBuilderFactory->create('Watch', $data);
+$resultBuilder = $dataMapper->createResultBuilder('Watch', $data);
 $result = $resultBuilder->getResult();
 var_dump($result);
 ```
@@ -549,7 +549,7 @@ object(Watch)#283 (8) {
 
 Inversely, you can extract values from your object to have raw result:
 ```php
-$resultBuilder = $resultBuilderFactory->create('Watch');
+$resultBuilder = $dataMapper->createResultBuilder('Watch');
 $result = $resultBuilder->getRawResult($object);
 var_dump($result);
 ```
@@ -578,12 +578,12 @@ As you can see, the getResult() method return the object in an array. Maybe you 
 
 ```php
     /*
-    Return the object found or a default result (like a Watch instance).
+    Return the object found or a default result (like false).
 
     If more than one result are found, throw an exception
     Kassko\DataMapper\Result\Exception\NonUniqueResultException.
     */
-    $resultBuilder->getOneOrDefaultResult(new Watch);
+    $resultBuilder->getOneOrDefaultResult(false);
 ```
 
 ```php
@@ -663,7 +663,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     $resultBuilder->getIterableResultIndexedByColor();
 ```
 
-See the section "Api details" to know how to get a ResultBuilderFactory instance.
+See the section "Api details" to know how to get a DataMapper instance.
 
 ### Features ###
 
@@ -753,9 +753,9 @@ $data = [
     'manufacturer_id' => 1
 ];
 
-//Here some stuff to create $resultBuilderFactory
+//Here some stuff to create $dataMapper
 
-$resultBuilder = $resultBuilderFactory->create('Keyboard', $data);
+$resultBuilder = $dataMapper->createResultBuilder('Keyboard', $data);
 var_dump($resultBuilder->getSingleResult());
 ```
 
@@ -897,9 +897,9 @@ $data = [
     'color' => 'blue'
 ];
 
-//Here some stuff to create $resultBuilderFactory
+//Here some stuff to create $dataMapper
 
-$resultBuilder = $resultBuilderFactory->create($data, 'Keyboard');
+$resultBuilder = $dataMapper->createResultBuilder($data, 'Keyboard');
 var_dump($resultBuilder->getSingleResult());
 ```
 
@@ -1181,7 +1181,7 @@ $data = [
     'blue' => '127',
 ];
 
-$resultBuilder = $resultBuilderFactory->create('Color', $data);
+$resultBuilder = $dataMapper->createResultBuilder('Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')//Optional, if not specified Configuration::defaultClassMetadataResourceDir is used.
@@ -1200,7 +1200,7 @@ $data = [
     'bleu' => '127',
 ];
 
-$resultBuilder = $resultBuilderFactory->create('Color', $data);
+$resultBuilder = $dataMapper->createResultBuilder('Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')
@@ -1219,7 +1219,7 @@ $data = [
     'azul' => '127',
 ];
 
-$resultBuilder = $resultBuilderFactory->create('Color', $data);
+$resultBuilder = $dataMapper->createResultBuilder('Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')
@@ -1302,13 +1302,13 @@ $data = [
     'billing_town' => 'Nuts',
     'billing_postal_code' => '654321'
     'billing_country' => 'England',
-    'billing_street' => '23 smarties street',
-    'billing_town' => 'Mars',
-    'billing_postal_code' => '987654'
-    'billing_country' => 'England',
+    'shipping_street' => '23 smarties street',
+    'shipping_town' => 'Mars',
+    'shipping_postal_code' => '987654'
+    'shipping_country' => 'England',
 ];
 
-$resultBuilder = $resultBuilderFactory->create('Customer', $data);
+$resultBuilder = $dataMapper->createResultBuilder('Customer', $data);
 $resultBuilder->getSingleResult();
 ```
 Note that you can have value objects which contains value objects and so on. And each value object can use it's own mapping configuration format.
@@ -1343,16 +1343,16 @@ These features will be explained and detailled later.
 
 ### Api details ###
 
-Normally, if you work with a framework which integrates the component data-mapper, you can get a ResultBuilderFactory instance from a container.
-For example, with Symfony framework, we can use the [kassko/data-mapper-bundle](https://github.com/kassko/data-mapper-bundle) which provides to the container a ResultBuilderFactory service.
+Normally, if you work with a framework which integrates the component data-mapper, you can get a DataMapper instance from a container.
+For example, with Symfony framework, we can use the [kassko/data-mapper-bundle](https://github.com/kassko/data-mapper-bundle) which provides to the container a DataMapper service.
 
 Otherwise you need to create it yourself.
 
-#### Create the ResultBuilderFactory ####
+#### Create the DataMapper ####
 ```php
-use Kassko\DataMapper\Result\ResultBuilderFactory;
+use Kassko\DataMapper\DataMapper;
 
-$resultBuilderFactory = new ResultBuilderFactory($objectManager);
+$dataMapper = new DataMapper($objectManager);
 ```
 
 #### Create the ObjectManager ####
