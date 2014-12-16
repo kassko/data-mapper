@@ -10,7 +10,8 @@ class NotFoundLoaderException extends \RuntimeException
     {
         parent::__construct(
             sprintf(
-                '[resourcePath="%s"] - [resourceType="%s"] - [resourceClass="%s"] - [resourceMethod="%s"]',
+                'No loader found or no loader satisfies the following criteria: '
+                .'[resourcePath="%s"] - [resourceType="%s"] - [resourceClass="%s"] - [resourceMethod="%s"]',
                 $loadingCriteria->getResourcePath(),
                 $loadingCriteria->getResourceType(),
                 $loadingCriteria->getResourceClass(),

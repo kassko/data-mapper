@@ -1,21 +1,31 @@
 <?php
 
-namespace Kassko\DataMapper\Query;
+namespace Kassko\DataMapper;
 
+use Kassko\DataMapper\Query\Query;
 use Kassko\DataMapper\ObjectManager;
+use Kassko\DataMapper\Result\ResultBuilder;
 
 /**
- * Factory for Query.
- *
- * @author kko
- */
-class QueryFactory implements QueryFactoryInterface
+* DataMapper
+*
+* @author kko
+*/
+class DataMapper
 {
     protected $objectManager;
 
     public function __construct(ObjectManager $objectManager)
     {
         $this->objectManager = $objectManager;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function createResultBuilder($objectClass, $data = null)
+    {
+        return new ResultBuilder($this->objectManager, $objectClass, $data);
     }
 
     /**
