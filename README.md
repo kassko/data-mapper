@@ -75,12 +75,13 @@ class Watch
 You configure the mapping format to use:
 
 ```php
+$configuration = $dataMapper->getConfiguration();
 $configuration->setDefaultClassMetadataResourceType('annotations');//<= for all domain objects
 //or
 $configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'annotations');//<= only for Watch objects
 ```
 
-See the section "Api details" to know how to get a Configuration instance.
+See the section "Api details" to know how to get a DataMapper instance.
 
 If you use annotations for all your objects, you don't need to specify a configuration because it's the default settings.
 
