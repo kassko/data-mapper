@@ -27,7 +27,7 @@ data-mapper requires providers. It means you can hydrate some properties from my
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-mapper": "~0.8.0"
+    "kassko/data-mapper": "~0.8.0@alpha"
 }
 ```
 
