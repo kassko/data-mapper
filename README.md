@@ -215,6 +215,182 @@ $configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'yaml');//<=
 
 And the provideMapping() method too.
 
+### API Usage ###
+
+To do hydration and extraction operations, you get a DataMapper instance and you hydrate your object with its hydrator:
+```php
+$data = [
+    'brand' => 'some brand',
+    'color' => 'blue',
+    'created_date' => '2014 09 14 12:36:52',
+    'waterProof' => '1',
+    'stopWatch' => 'X',
+    'customizable' => '0',
+    'seal_date' => '',
+];
+
+$object = new Kassko\Sample\Watch;
+$dataMapper->hydrator('Kassko\Sample\Watch')->hydrate($data, $object);
+var_dump($object);
+```
+
+The code above will display:
+```php
+object(Watch)#283 (8) {
+    ["brand":"Watch":private]=> string(10) "some brand"
+    ["color":"Watch":private]=> string(4) "blue"
+    ["createdDate":"Watch":private]=>
+        object(DateTime)#320 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
+    ["sealDate":"Watch":private]=>
+        object(DateTime)#319 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
+    ["waterProof":"Watch":private]=> bool(true) ["stopWatch":"Watch":private]=> bool(true)
+    ["customizable":"Watch":private]=> bool(false) ["noSealDate":"Watch":private]=> bool(true)
+}
+```
+
+Inversely, you can extract values from your object to have raw result:
+```php
+$rawResult = $dataMapper->hydrator('Kassko\Sample\Watch')->extract($object);
+var_dump($rawResult);
+```
+
+If you have several records, you need to hydrate a collection rather than a single object. To do that, you can use the ResultBuilder which allows you to choose in what your result should be contained:
+```php
+$data = [
+    0 => [
+        'brand' => 'some brand',
+        'color' => 'blue',
+        'created_date' => '2014 09 14 12:36:52',
+        'waterProof' => '1',
+        'stopWatch' => 'X',
+        'customizable' => '0',
+        'seal_date' => '',
+    ],
+    1 => [
+        'brand' => 'some other brand',
+        'color' => 'green',
+        'created_date' => '2014 09 12 11:36:52',
+        'waterProof' => '1',
+        'stopWatch' => 'X',
+        'customizable' => '0',
+        'seal_date' => '',
+    ],
+];
+
+$dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->all();//The result will an array with two objects.
+$dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->first();//The result will be the object representation of the first record.
+```
+
+Inversely, you can extract values of an object or a an object collection to have raw result:
+```php
+$dataMapper->resultBuilder('Kassko\Sample\Watch')->raw($object);
+$dataMapper->resultBuilder('Kassko\Sample\Watch')->raw($collection);
+```
+
+There are still other ways to get results:
+
+### Ways to get results ###
+
+```php
+    /*
+    Return an array of objects.
+    So return an array with only one object, if only one fullfill the request.
+    */
+    $resultBuilder->all();
+```
+
+```php
+    /*
+    Return the object found.
+
+    If more than one result are found, throw an exception
+    Kassko\DataMapper\Result\Exception\NonUniqueResultException.
+
+    If no result found, throw an exception
+    Kassko\DataMapper\Result\Exception\NoResultException.
+    */
+    $resultBuilder->single();
+```
+
+```php
+    /*
+    Return the object found or null.
+    */
+    $resultBuilder->one();
+
+    /*
+    Return the object found or a default result (like false).
+    */
+    $resultBuilder->one(false);
+
+    /*
+    If more than one result are found, throw an exception
+    Kassko\DataMapper\Result\Exception\NonUniqueResultException.
+    */
+```
+
+```php
+    /*
+    Return the first object found or null.
+    */
+    $resultBuilder->first();
+
+    /*
+    Return the first object found or a default result (like value false).
+    */
+    $resultBuilder->first(false);
+
+    /*
+    If no result found, throw an exception
+    Kassko\DataMapper\Result\Exception\NoResultException.
+    */
+```
+
+```php
+    /*
+    Return an array indexed by a property value (like "brand" value).
+
+    If the index does not exists, throw an exception Kassko\DataMapper\Result\Exception\NotFoundIndexException.
+
+    If the same index is found twice, throw an exception
+    Kassko\DataMapper\Result\Exception\DuplicatedIndexException.
+    */
+    $resultBuilder->allIndexedByBrand();//Indexed by brand value
+    //or
+    $resultBuilder->allIndexedByColor();//Indexed by color value
+```
+
+```php
+    /*
+    Return an iterator.
+
+    Result will not be hydrated immediately but only when you will iterate the results (with "foreach" for example).
+    */
+    $result = $resultBuilder->iterable();
+    foreach ($result as $object) {//$object is hydrated
+
+        if ($object->getColor() === 'blue') {
+            break;
+
+            //We found the good object then we stop the loop and others objects in results will not be hydrated.
+        }
+    }
+```
+
+```php
+    /*
+    Return an iterator indexed by a property value (like "brand" value).
+
+    If the index does not exists, throw an exception Kassko\DataMapper\Result\Exception\NotFoundIndexException.
+
+    If the same index is found twice, throw an exception Kassko\DataMapper\Result\Exception\DuplicatedIndexException.
+    */
+    $resultBuilder->iterableIndexedByBrand();
+    //or
+    $resultBuilder->iterableIndexedByColor();
+```
+
+See the section "Api details" to know how to get a DataMapper instance.
 
 ### More advanced mapping configuration ###
 
@@ -520,188 +696,13 @@ As you can see,
 * Isser (see isWaterProof()) and has methods (see hasStopWatch()) are managed.
 * But you can specify custom getter/setter (see canBeCustomized()).
 
-### API Usage ###
-
-To do hydration and extraction operations, you get a DataMapper instance and you hydrate your object with its hydrator:
-```php
-$data = [
-    'brand' => 'some brand',
-    'color' => 'blue',
-    'created_date' => '2014 09 14 12:36:52',
-    'waterProof' => '1',
-    'stopWatch' => 'X',
-    'customizable' => '0',
-    'seal_date' => '',
-];
-
-$object = new Watch;
-$dataMapper->hydrator('Watch')->hydrate($data, $object);
-var_dump($object);
-```
-
-The code above will display:
-```php
-object(Watch)#283 (8) {
-    ["brand":"Watch":private]=> string(10) "some brand"
-    ["color":"Watch":private]=> string(4) "blue"
-    ["createdDate":"Watch":private]=>
-        object(DateTime)#320 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
-    ["sealDate":"Watch":private]=>
-        object(DateTime)#319 (3) { ["date"]=> string(19) "2014-09-14 12:36:52" ["timezone_type"]=> int(3) ["timezone"]=> string(13) "Europe/Berlin" }
-    ["waterProof":"Watch":private]=> bool(true) ["stopWatch":"Watch":private]=> bool(true)
-    ["customizable":"Watch":private]=> bool(false) ["noSealDate":"Watch":private]=> bool(true)
-}
-```
-
-Inversely, you can extract values from your object to have raw result:
-```php
-$rawResult = $dataMapper->hydrator('Watch')->extract($object);
-var_dump($rawResult);
-```
-
-If you have several records, you need to hydrate a collection rather than a single object. To do that, you can use the ResultBuilder which allows you to choose in what your result should be contained:
-```php
-$data = [
-    0 => [
-        'brand' => 'some brand',
-        'color' => 'blue',
-        'created_date' => '2014 09 14 12:36:52',
-        'waterProof' => '1',
-        'stopWatch' => 'X',
-        'customizable' => '0',
-        'seal_date' => '',
-    ],
-    1 => [
-        'brand' => 'some other brand',
-        'color' => 'green',
-        'created_date' => '2014 09 12 11:36:52',
-        'waterProof' => '1',
-        'stopWatch' => 'X',
-        'customizable' => '0',
-        'seal_date' => '',
-    ],
-];
-
-$dataMapper->resultBuilder('Watch', $data)->all();//The result will an array with two objects.
-$dataMapper->resultBuilder('Watch', $data)->first();//The result will be the object representation of the first record.
-```
-
-Inversely, you can extract values of an object or a an object collection to have raw result:
-```php
-$dataMapper->resultBuilder('Watch')->raw($object);
-$dataMapper->resultBuilder('Watch')->raw($collection);
-```
-
-There are still other ways to get results:
-
-### Ways to get results ###
-
-```php
-    /*
-    Return an array of objects.
-    So return an array with only one object, if only one fullfill the request.
-    */
-    $resultBuilder->all();
-```
-
-```php
-    /*
-    Return the object found.
-
-    If more than one result are found, throw an exception
-    Kassko\DataMapper\Result\Exception\NonUniqueResultException.
-
-    If no result found, throw an exception
-    Kassko\DataMapper\Result\Exception\NoResultException.
-    */
-    $resultBuilder->single();
-```
-
-```php
-    /*
-    Return the object found or null.
-    */
-    $resultBuilder->one();
-
-    /*
-    Return the object found or a default result (like false).
-    */
-    $resultBuilder->one(false);
-
-    /*
-    If more than one result are found, throw an exception
-    Kassko\DataMapper\Result\Exception\NonUniqueResultException.
-    */
-```
-
-```php
-    /*
-    Return the first object found or null.
-    */
-    $resultBuilder->first();
-
-    /*
-    Return the first object found or a default result (like value false).
-    */
-    $resultBuilder->first(false);
-
-    /*
-    If no result found, throw an exception
-    Kassko\DataMapper\Result\Exception\NoResultException.
-    */
-```
-
-```php
-    /*
-    Return an array indexed by a property value (like "brand" value).
-
-    If the index does not exists, throw an exception Kassko\DataMapper\Result\Exception\NotFoundIndexException.
-
-    If the same index is found twice, throw an exception
-    Kassko\DataMapper\Result\Exception\DuplicatedIndexException.
-    */
-    $resultBuilder->allIndexedByBrand();//Indexed by brand value
-    //or
-    $resultBuilder->allIndexedByColor();//Indexed by color value
-```
-
-```php
-    /*
-    Return an iterator.
-
-    Result will not be hydrated immediately but only when you will iterate the results (with "foreach" for example).
-    */
-    $result = $resultBuilder->iterable();
-    foreach ($result as $object) {//$object is hydrated
-
-        if ($object->getColor() === 'blue') {
-            break;
-
-            //We found the good object then we stop the loop and others objects in results will not be hydrated.
-        }
-    }
-```
-
-```php
-    /*
-    Return an iterator indexed by a property value (like "brand" value).
-
-    If the index does not exists, throw an exception Kassko\DataMapper\Result\Exception\NotFoundIndexException.
-
-    If the same index is found twice, throw an exception Kassko\DataMapper\Result\Exception\DuplicatedIndexException.
-    */
-    $resultBuilder->iterableIndexedByBrand();
-    //or
-    $resultBuilder->iterableIndexedByColor();
-```
-
-See the section "Api details" to know how to get a DataMapper instance.
-
 ### Features ###
 
 #### toOneProvider associations ####
 
 ```php
+namespace Kassko\Sample;
+
 use Kassko\DataMapper\Annotation as DA;
 
 class Keyboard
@@ -718,7 +719,7 @@ class Keyboard
     private $color;
 
     /**
-     * @DA\ToOneProvider(entityClass="Manufacturer", findMethod="find")
+     * @DA\ToOneProvider(entityClass="Kassko\Sample\Manufacturer", findMethod="find")
      * @DA\Field(name="manufacturer_id")
      */
     private $manufacturer;
@@ -738,8 +739,10 @@ class Keyboard
 As you can guess, the "find" method is that of the repository of the entity "Manufacturer" meanning "ManufacturerManager::find()".
 
 ```php
+namespace Kassko\Sample;
+
 /**
- * @DA\Object(repositoryClass="ManufacturerManager")
+ * @DA\Object(repositoryClass="Kassko\Sample\ManufacturerManager")
  */
 class Manufacturer
 {
@@ -762,6 +765,8 @@ class Manufacturer
 ```
 
 ```php
+namespace Kassko\Sample;
+
 class ManufacturerManager
 {
     /**
@@ -787,8 +792,7 @@ $data = [
 
 //Here some stuff to create $dataMapper
 
-$resultBuilder = $dataMapper->resultBuilder('Keyboard', $data);
-var_dump($resultBuilder->single());
+var_dump($dataMapper->resultBuilder('Kassko\Sample\Keyboard', $data)->single());
 ```
 
 Display result:
@@ -807,12 +811,14 @@ object(Keyboard)#283 (8) {
 If the repository class wherin we wants to fetch is not that of the entity, we can override it:
 
 ```php
+namespace Kassko\Sample;
+
 use Kassko\DataMapper\Annotation as DA;
 
 class Keyboard
 {
     /**
-     * @DA\ToOneProvider(entityClass="Manufacturer", repositoryClass="UnconventionnalManager" findMethod="find")
+     * @DA\ToOneProvider(entityClass="Kassko\Sample\Manufacturer", repositoryClass="UnconventionnalManager" findMethod="find")
      * @DA\Field
      */
     private $manufacturer;
@@ -829,6 +835,8 @@ Note also that for performance reasons, we can load the association "$manufactur
 An association "to many" is used similarly to "to one".
 
 ```php
+namespace Kassko\Sample;
+
 use Kassko\DataMapper\Annotation as DA;
 
 class Keyboard
@@ -846,7 +854,7 @@ class Keyboard
 
     /**
      * @DA\Field
-     * @DA\ToManyProvider(entityClass="Shop", findMethod="findByKeyboard")
+     * @DA\ToManyProvider(entityClass="Kassko\Sample\Shop", findMethod="findByKeyboard")
      */
     private $shops;
 
@@ -862,6 +870,8 @@ class Keyboard
 ```
 
 ```php
+namespace Kassko\Sample;
+
 class ShopManager
 {
     /**
@@ -876,9 +886,12 @@ class ShopManager
     }
 }
 ```
+
 ```php
+namespace Kassko\Sample;
+
 /**
- * @DA\Object(repositoryClass="ShopManager")
+ * @DA\Object(repositoryClass="Kassko\Sample\ShopManager")
  */
 class Shop
 {
@@ -906,12 +919,14 @@ If the "Shop" FQCN (full qualified class name) was "Kassko\Sample\Shop", the ass
 
 But you can override this association name:
 ```php
+namespace Kassko\Sample;
+
 use Kassko\DataMapper\Annotation as DA;
 
 class Keyboard
 {
     /**
-     * @DA\ToManyProvider(name="insertShop", entityClass="Shop", findMethod="find")
+     * @DA\ToManyProvider(name="insertShop", entityClass="Kassko\Sample\Shop", findMethod="find")
      * @DA\Field
      */
     private $shops;
@@ -931,8 +946,7 @@ $data = [
 
 //Here some stuff to create $dataMapper
 
-$resultBuilder = $dataMapper->resultBuilder($data, 'Keyboard');
-var_dump($resultBuilder->single());
+var_dump($dataMapper->resultBuilder($data, 'Kassko\Sample\Keyboard')->single());
 ```
 
 Possible display result:
@@ -965,17 +979,18 @@ Note that for performance reasons, we can load the association "$shop" only when
 A provider is usefull to create a super object. That is to say an object which contains other objects or some collections but there is no relation with these objects.
 
 ```php
+namespace Kassko\Sample;
 
 class Information
 {
     /**
-     * @DA\Provider(class="Kassko\Samples\KeyboardManager", method="loadKeyboards")
+     * @DA\Provider(class="Kassko\Sample\KeyboardManager", method="loadKeyboards")
      * @DA\Field
      */
     private $keyboards = [];
 
     /**
-     * @DA\Provider(class="Kassko\Samples\ShopManager", method="loadBestShop")
+     * @DA\Provider(class="Kassko\Sample\ShopManager", method="loadBestShop")
      * @DA\Field
      */
     private $bestShop;
@@ -986,6 +1001,8 @@ class Information
 ```
 
 ```php
+namespace Kassko\Sample;
+
 class Keyboard
 {
     /**
@@ -1001,6 +1018,8 @@ class Keyboard
 ```
 
 ```php
+namespace Kassko\Sample;
+
 class Shop
 {
     /**
@@ -1016,6 +1035,8 @@ class Shop
 ```
 
 ```php
+namespace Kassko\Sample;
+
 class ShopManager
 {
     public function loadBestShop(Information $info)
@@ -1026,6 +1047,8 @@ class ShopManager
 ```
 
 ```php
+namespace Kassko\Sample;
+
 class KeyboardManager
 {
     public function loadKeyboards(Information $info)
@@ -1042,6 +1065,8 @@ We also can load the properties "bestShop" and "keyboard" only when we use it. F
 You can lazy load associations ToOneProvider:
 
 ```php
+namespace Kassko\Sample;
+
 use Kassko\DataMapper\Annotation as DA;
 use Kassko\DataMapper\ObjectExtension\LazyLoadableTrait;
 
@@ -1061,7 +1086,7 @@ class Keyboard
     private $color;
 
     /**
-     * @DA\ToOneProvider(entityClass="Manufacturer", findMethod="find", lazyLoading="true")
+     * @DA\ToOneProvider(entityClass="Kassko\Sample\Manufacturer", findMethod="find", lazyLoading="true")
      * @DA\Field(name="manufacturer_id")
      */
     private $manufacturer;
@@ -1087,6 +1112,8 @@ class Keyboard
 And ToManyProvider:
 
 ```php
+namespace Kassko\Sample;
+
 use Kassko\DataMapper\Annotation as DA;
 use Kassko\DataMapper\ObjectExtension\LazyLoadableTrait;
 
@@ -1105,7 +1132,7 @@ class Keyboard
 
     /**
      * @DA\Field
-     * @DA\ToManyProvider(entityClass="Shop", findMethod="findByKeyboard", lazyLoading="true")
+     * @DA\ToManyProvider(entityClass="Kassko\Sample\Shop", findMethod="findByKeyboard", lazyLoading="true")
      */
     private $shops;
 
@@ -1128,17 +1155,18 @@ class Keyboard
 
 And you can "lazy provide":
 ```php
+namespace Kassko\Sample;
 
 class Information
 {
     /**
-     * @DA\Provider(class="Kassko\Samples\KeyboardManager", method="loadKeyboards", lazyLoading="true")
+     * @DA\Provider(class="Kassko\Sample\KeyboardManager", method="loadKeyboards", lazyLoading="true")
      * @DA\Field
      */
     private $keyboards = [];
 
     /**
-     * @DA\Provider(class="Kassko\Samples\ShopManager", method="loadBestShop", lazyLoading="true")
+     * @DA\Provider(class="Kassko\Sample\ShopManager", method="loadBestShop", lazyLoading="true")
      * @DA\Field
      */
     private $bestShop;
@@ -1153,6 +1181,8 @@ class Information
 You can use the same model with various mapping configuration but you must work with mapping configuration files and not with mapping embedded in the object. So 'yaml_file' or 'php_file' are correct mapping format but 'annotations', 'php' or 'yaml' are bad format.
 
 ```php
+namespace Kassko\Sample;
+
 class Color
 {
     private $red;
@@ -1213,7 +1243,7 @@ $data = [
     'blue' => '127',
 ];
 
-$resultBuilder = $dataMapper->resultBuilder('Color', $data);
+$resultBuilder = $dataMapper->resultBuilder('Kassko\Sample\Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')//Optional, if not specified Configuration::defaultClassMetadataResourceDir is used.
@@ -1232,7 +1262,7 @@ $data = [
     'bleu' => '127',
 ];
 
-$resultBuilder = $dataMapper->resultBuilder('Color', $data);
+$resultBuilder = $dataMapper->resultBuilder('Kassko\Sample\Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')
@@ -1251,7 +1281,7 @@ $data = [
     'azul' => '127',
 ];
 
-$resultBuilder = $dataMapper->resultBuilder('Color', $data);
+$resultBuilder = $dataMapper->resultBuilder('Kassko\Sample\Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')
@@ -1264,6 +1294,8 @@ $resultBuilder->single();
 #### Value object ####
 
 ```php
+namespace Kassko\Sample;
+
 use Kassko\DataMapper\Annotation as DA;
 
 class Customer
@@ -1276,19 +1308,21 @@ class Customer
 
     /**
      * @DA\Field
-     * @DA\ValueObject(class="Kassko\Samples\Address", mappingResourceType="yaml_file", mappingResourceName="billing_address.yml")
+     * @DA\ValueObject(class="Kassko\Sample\Address", mappingResourceType="yaml_file", mappingResourceName="billing_address.yml")
      */
     private $billingAddress;//$billingAddress is a value object.
 
     /**
      * @DA\Field
-     * @DA\ValueObject(class="Kassko\Samples\Address", mappingResourceType="yaml_file", mappingResourceName="shipping_address.yml")
+     * @DA\ValueObject(class="Kassko\Sample\Address", mappingResourceType="yaml_file", mappingResourceName="shipping_address.yml")
      */
     private $shippingAddress;//$shippingAddress is a value object too.
 }
 ```
 
 ```php
+namespace Kassko\Sample;
+
 class Address
 {
     private $street;
@@ -1340,8 +1374,7 @@ $data = [
     'shipping_country' => 'England',
 ];
 
-$resultBuilder = $dataMapper->resultBuilder('Customer', $data);
-$resultBuilder->single();
+$dataMapper->resultBuilder('Kassko\Sample\Customer', $data)->single();
 ```
 Note that you can have value objects which contains value objects and so on. And each value object can use it's own mapping configuration format.
 
