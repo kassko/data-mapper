@@ -11,7 +11,7 @@ use Kassko\DataMapper\Result\ResultBuilder;
 *
 * @author kko
 */
-class DataMapper
+class DataMapper implements DataMapperInterface
 {
     protected $objectManager;
 
@@ -21,36 +21,33 @@ class DataMapper
     }
 
     /**
-     * Create a ResultBuilder for the the given object class and data
-     *
-     * @param mixed $objectClass The fqcn of the object to hydrate
-     * @param mixed $data The raw data used to hydrate the object
-     *
-     * @return ResultBuilder
-     */
-    public function createResultBuilder($objectClass, $data = null)
+    * {@inheritdoc}
+    */
+    public function hydrator($objectClass)
+    {
+        return $this->objectManager->getHydratorFor($objectClass);
+    }
+
+    /**
+    * {@inheritdoc}
+    */
+    public function resultBuilder($objectClass, $data = null)
     {
         return new ResultBuilder($this->objectManager, $objectClass, $data);
     }
 
     /**
-     * Create a Query for the the given object class.
-     *
-     * @param $objectClass The class concerned by the query
-     *
-     * @return Query
-     */
-    public function createQuery($objectClass)
+    * {@inheritdoc}
+    */
+    public function query($objectClass)
     {
         return new Query($this->objectManager, $objectClass);
     }
 
     /**
-     * Shortcut to get the configuration
-     *
-     * @return AbstractConfiguration
-     */
-    public function getConfiguration()
+    * {@inheritdoc}
+    */
+    public function configuration()
     {
         return $this->objectManager->getConfiguration();
     }
