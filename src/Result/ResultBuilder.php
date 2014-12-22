@@ -15,7 +15,7 @@ use Kassko\DataMapper\Result\Exception\NotFoundIndexException;
  *
  * @author kko
  */
-class ResultBuilder
+class ResultBuilder extends AbstractResultBuilder
 {
     private $objectManager;
     private $objectClass;
@@ -36,24 +36,17 @@ class ResultBuilder
     }
 
     /**
-     * Return all results.
-     *
-     * @return array
-     */
-    public function getResult()
+    * {@inheritdoc}
+    */
+    public function all()
     {
-        return $this->doGetResult(false);
+        return $this->doAll(false);
     }
 
     /**
-     * Return only one result.
-     *
-     * @return object
-     *
-     * @throws NoResultException Throw NoResultException if no result found.
-     * @throws NonUniqueResultException Throw NonUniqueResultException if more than one résult found.
-     */
-    public function getSingleResult()
+    * {@inheritdoc}
+    */
+    public function single()
     {
         if (0 === count($this->data)) {
             throw new NoResultException($this->objectClass);
@@ -72,27 +65,9 @@ class ResultBuilder
     }
 
     /**
-     * Return one result or null if no result found.
-     *
-     * @return object
-     *
-     * @throws NonUniqueResultException Throw NonUniqueResultException if more than one result found.
-     */
-    public function getOneOrNullResult()
-    {
-        return $this->getOneOrDefaultResult(null);
-    }
-
-    /**
-     * Return one result or a specified default result if no result found.
-     *
-     * @param $defaultResult A default result
-     *
-     * @return object
-     *
-     * @throws NonUniqueResultException Throw NonUniqueResultException if more than one result found.
-     */
-    public function getOneOrDefaultResult($defaultResult)
+    * {@inheritdoc}
+    */
+    public function one($defaultResult = null)
     {
         if (count($this->data) === 0) {
             return $defaultResult;
@@ -111,23 +86,9 @@ class ResultBuilder
     }
 
     /**
-     * Return the first result or null if no result.
-     *
-     * @return object.
-     */
-    public function getFirstOrNullResult()
-    {
-        return $this->getFirstOrDefaultResult(null);
-    }
-
-    /**
-     * Return the first result or a default one if no result.
-     *
-     * @param $defaultResult A default result
-     *
-     * @return object.
-     */
-    public function getFirstOrDefaultResult($defaultResult)
+    * {@inheritdoc}
+    */
+    public function first($defaultResult = null)
     {
         if (count($this->data) === 0) {
             return $defaultResult;
@@ -142,30 +103,20 @@ class ResultBuilder
     }
 
     /**
-     * Return iterable results.
-     *
-     * @return Generator
-     */
-    public function getIterableResult()
+    * {@inheritdoc}
+    */
+    public function iterable()
     {
-        return $this->doGetIterableResult(false);
+        return $this->doIterable(false);
     }
 
     /**
-     * Means getResultIndexedByX() or getIterableResultIndexedByX()
-     * where X is the field name to index.
-     *
-     * Return results as of associative array where key is a field value.
-     *
-     * @param string The method to call ending by the field to index
-     * @param string The method arguments
-     *
-     * @return array Renvoi un tableau d'objets associatif contenant les objets résultats.
-     */
-    public function __call($method, $arguments)
+    * {@inheritdoc}
+    */
+    protected function doCall($method, $arguments)
     {
         switch (true) {
-            case (0 === strpos($method, 'getResultIndexedBy')):
+            case (0 === strpos($method, 'allIndexedBy')):
 
                 $indexOfBy = lcfirst(substr($method, 18));
 
@@ -174,10 +125,10 @@ class ResultBuilder
                     throw new NotFoundIndexException($this->objectClass, $indexOfBy);
                 }
 
-                $result = $this->doGetResult($indexOfBy);
+                $result = $this->doAll($indexOfBy);
                 break;
 
-            case (0 === strpos($method, 'getIterableResultIndexedBy')):
+            case (0 === strpos($method, 'iterableIndexedBy')):
 
                 $indexOfBy = lcfirst(substr($method, 26));
 
@@ -186,7 +137,7 @@ class ResultBuilder
                     throw new NotFoundIndexException($this->objectClass, $indexOfBy);
                 }
 
-                $result = $this->doGetIterableResult($indexOfBy);
+                $result = $this->doIterable($indexOfBy);
                 break;
 
             default:
@@ -197,13 +148,9 @@ class ResultBuilder
     }
 
     /**
-     * Return raw results from an object representation.
-     *
-     * @param mixed $result
-     *
-     * @return array
-     */
-    public function getRawResult()
+    * {@inheritdoc}
+    */
+    public function raw()
     {
         $rh = new ResultExtractor($this->objectManager);
 
@@ -220,7 +167,7 @@ class ResultBuilder
         return new $this->objectClass;
     }
 
-    private function doGetResult($indexOfBy)
+    private function doAll($indexOfBy)
     {
         $rh = new ResultHydrator($this->objectManager);
         $object = $rh->hydrate($this->objectClass, $this->data, $indexOfBy);
@@ -228,7 +175,7 @@ class ResultBuilder
         return is_array($object) ? $object : [$object];
     }
 
-    private function doGetIterableResult($indexOfBy)
+    private function doIterable($indexOfBy)
     {
         $rh = new IterableResultHydrator($this->objectManager);
 

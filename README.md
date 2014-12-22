@@ -27,7 +27,7 @@ data-mapper requires providers. It means you can hydrate some properties from my
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-mapper": "~0.6.0"
+    "kassko/data-mapper": "~0.8.0"
 }
 ```
 
@@ -75,7 +75,7 @@ class Watch
 You configure the mapping format to use:
 
 ```php
-$configuration = $dataMapper->getConfiguration();
+$configuration = $dataMapper->configuration();
 $configuration->setDefaultClassMetadataResourceType('annotations');//<= for all domain objects
 //or
 $configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'annotations');//<= only for Watch objects
@@ -345,42 +345,9 @@ class Watch
 }
 ```
 
-You can keep your object agnostic of mapping if you use a mapping format file like yaml_file or php_file.
-```php
-namespace Kassko\Sample;
+You can keep your object agnostic of mapping if you use a mapping format file like yaml_file or php_file and put your callbacks in a mapping extension class.
 
-use \DateTime;
-
-class Watch
-{
-    private $brand;
-    private $color;
-    private $createdDate;
-    private $waterProof;
-    private $stopWatch;
-    private $customizable;
-    private $sealDate;
-    private $noSealDate = false;
-
-    public function getBrand() { return $this->brand; }
-    public function setBrand($brand) { $this->brand = $brand; }
-    public function getColor() { return $this->color; }
-    public function setColor($color) { $this->color = $color; }
-    public function getCreatedDate() { return $this->createdDate; }
-    public function setCreatedDate(DateTime $createdDate) { $this->createdDate = $createdDate; }
-    public function isWaterProof() { return $this->waterProof; }
-    public function setWaterProof($waterProof) { $this->waterProof = $waterProof; }
-    public function hasStopWatch() { return $this->stopWatch; }
-    public function setStopWatch($stopWatch) { $this->stopWatch = $stopWatch; }
-    public function canBeCustomized() { return $this->customizable; }
-    public function setCustomizable($customizable) { $this->customizable = $customizable; }
-    public function getSealDate() { return $this->sealDate; }
-    public function setSealDate(DateTime $sealDate) { $this->sealDate = $sealDate; }
-    public function isThereSealDate() { return ! $this->noSealDate; }
-    public function setNoSealDate($nosealDate) { $this->noSealDate = $noSealDate; }
-}
-```
-
+Your mapping file:
 ```yaml
 object:
     fieldMappingExtensionClass: "Kassko\\Sample\\WatchMappingExtension"
@@ -411,8 +378,8 @@ fields:
         getter: canBeCustomized
 ```
 
+Your mapping extension class:
 ```php
-//The mapping extension class.
 namespace Kassko\Sample;
 
 use Kassko\DataMapper\Hydrator\HydrationContextInterface;
@@ -494,6 +461,44 @@ class WatchMappingExtension
 }
 ```
 
+And your object cleaned:
+```php
+namespace Kassko\Sample;
+
+use \DateTime;
+
+class Watch
+{
+    private $brand;
+    private $color;
+    private $createdDate;
+    private $waterProof;
+    private $stopWatch;
+    private $customizable;
+    private $sealDate;
+    private $noSealDate = false;
+
+    public function getBrand() { return $this->brand; }
+    public function setBrand($brand) { $this->brand = $brand; }
+    public function getColor() { return $this->color; }
+    public function setColor($color) { $this->color = $color; }
+    public function getCreatedDate() { return $this->createdDate; }
+    public function setCreatedDate(DateTime $createdDate) { $this->createdDate = $createdDate; }
+    public function isWaterProof() { return $this->waterProof; }
+    public function setWaterProof($waterProof) { $this->waterProof = $waterProof; }
+    public function hasStopWatch() { return $this->stopWatch; }
+    public function setStopWatch($stopWatch) { $this->stopWatch = $stopWatch; }
+    public function canBeCustomized() { return $this->customizable; }
+    public function setCustomizable($customizable) { $this->customizable = $customizable; }
+    public function getSealDate() { return $this->sealDate; }
+    public function setSealDate(DateTime $sealDate) { $this->sealDate = $sealDate; }
+    public function isThereSealDate() { return ! $this->noSealDate; }
+    public function setNoSealDate($nosealDate) { $this->noSealDate = $noSealDate; }
+}
+```
+
+As you can see, your object is not aware of mapping.
+
 For more details about mapping you can read the mapping reference documentations:
 
 #### Yaml format ####
@@ -517,7 +522,7 @@ As you can see,
 
 ### API Usage ###
 
-To do hydration and extraction operations, you get a DataMapper instance and you hydrate your object:
+To do hydration and extraction operations, you get a DataMapper instance and you hydrate your object with its hydrator:
 ```php
 $data = [
     'brand' => 'some brand',
@@ -529,9 +534,9 @@ $data = [
     'seal_date' => '',
 ];
 
-$resultBuilder = $dataMapper->createResultBuilder('Watch', $data);
-$result = $resultBuilder->getResult();
-var_dump($result);
+$object = new Watch;
+$dataMapper->hydrator('Watch')->hydrate($data, $object);
+var_dump($object);
 ```
 
 The code above will display:
@@ -550,12 +555,44 @@ object(Watch)#283 (8) {
 
 Inversely, you can extract values from your object to have raw result:
 ```php
-$resultBuilder = $dataMapper->createResultBuilder('Watch');
-$result = $resultBuilder->getRawResult($object);
-var_dump($result);
+$rawResult = $dataMapper->hydrator('Watch')->extract($object);
+var_dump($rawResult);
 ```
 
-As you can see, the getResult() method return the object in an array. Maybe you would prefer to get the object instead of an array containing this object. Note that there are several ways to get results:
+If you have several records, you need to hydrate a collection rather than a single object. To do that, you can use the ResultBuilder which allows you to choose in what your result should be contained:
+```php
+$data = [
+    0 => [
+        'brand' => 'some brand',
+        'color' => 'blue',
+        'created_date' => '2014 09 14 12:36:52',
+        'waterProof' => '1',
+        'stopWatch' => 'X',
+        'customizable' => '0',
+        'seal_date' => '',
+    ],
+    1 => [
+        'brand' => 'some other brand',
+        'color' => 'green',
+        'created_date' => '2014 09 12 11:36:52',
+        'waterProof' => '1',
+        'stopWatch' => 'X',
+        'customizable' => '0',
+        'seal_date' => '',
+    ],
+];
+
+$dataMapper->resultBuilder('Watch', $data)->all();//The result will an array with two objects.
+$dataMapper->resultBuilder('Watch', $data)->first();//The result will be the object representation of the first record.
+```
+
+Inversely, you can extract values of an object or a an object collection to have raw result:
+```php
+$dataMapper->resultBuilder('Watch')->raw($object);
+$dataMapper->resultBuilder('Watch')->raw($collection);
+```
+
+There are still other ways to get results:
 
 ### Ways to get results ###
 
@@ -564,27 +601,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     Return an array of objects.
     So return an array with only one object, if only one fullfill the request.
     */
-    $resultBuilder->getResult();
-```
-
-```php
-    /*
-    Return one object or null if no result found.
-
-    If severals results are found, throw an exception
-    Kassko\DataMapper\Result\Exception\NonUniqueResultException.
-    */
-    $resultBuilder->getOneOrNullResult();
-```
-
-```php
-    /*
-    Return the object found or a default result (like false).
-
-    If more than one result are found, throw an exception
-    Kassko\DataMapper\Result\Exception\NonUniqueResultException.
-    */
-    $resultBuilder->getOneOrDefaultResult(false);
+    $resultBuilder->all();
 ```
 
 ```php
@@ -597,27 +614,41 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     If no result found, throw an exception
     Kassko\DataMapper\Result\Exception\NoResultException.
     */
-    $resultBuilder->getSingleResult();
+    $resultBuilder->single();
 ```
 
 ```php
     /*
-    Return the first object found or null if no result found.
-
-    If no result found, throw an exception
-    Kassko\DataMapper\Result\Exception\NoResultException.
+    Return the object found or null.
     */
-    $resultBuilder->getFirstOrNullResult();
+    $resultBuilder->one();
+
+    /*
+    Return the object found or a default result (like false).
+    */
+    $resultBuilder->one(false);
+
+    /*
+    If more than one result are found, throw an exception
+    Kassko\DataMapper\Result\Exception\NonUniqueResultException.
+    */
 ```
 
 ```php
+    /*
+    Return the first object found or null.
+    */
+    $resultBuilder->first();
+
     /*
     Return the first object found or a default result (like value false).
+    */
+    $resultBuilder->first(false);
 
+    /*
     If no result found, throw an exception
     Kassko\DataMapper\Result\Exception\NoResultException.
     */
-    $resultBuilder->getFirstOrDefaultResult(false);
 ```
 
 ```php
@@ -629,9 +660,9 @@ As you can see, the getResult() method return the object in an array. Maybe you 
     If the same index is found twice, throw an exception
     Kassko\DataMapper\Result\Exception\DuplicatedIndexException.
     */
-    $resultBuilder->getResultIndexedByBrand();//Indexed by brand value
+    $resultBuilder->allIndexedByBrand();//Indexed by brand value
     //or
-    $resultBuilder->getResultIndexedByColor();//Indexed by color value
+    $resultBuilder->allIndexedByColor();//Indexed by color value
 ```
 
 ```php
@@ -640,7 +671,7 @@ As you can see, the getResult() method return the object in an array. Maybe you 
 
     Result will not be hydrated immediately but only when you will iterate the results (with "foreach" for example).
     */
-    $result = $resultBuilder->getIterableResult();
+    $result = $resultBuilder->iterable();
     foreach ($result as $object) {//$object is hydrated
 
         if ($object->getColor() === 'blue') {
@@ -659,9 +690,9 @@ As you can see, the getResult() method return the object in an array. Maybe you 
 
     If the same index is found twice, throw an exception Kassko\DataMapper\Result\Exception\DuplicatedIndexException.
     */
-    $resultBuilder->getIterableResultIndexedByBrand();
+    $resultBuilder->iterableIndexedByBrand();
     //or
-    $resultBuilder->getIterableResultIndexedByColor();
+    $resultBuilder->iterableIndexedByColor();
 ```
 
 See the section "Api details" to know how to get a DataMapper instance.
@@ -756,8 +787,8 @@ $data = [
 
 //Here some stuff to create $dataMapper
 
-$resultBuilder = $dataMapper->createResultBuilder('Keyboard', $data);
-var_dump($resultBuilder->getSingleResult());
+$resultBuilder = $dataMapper->resultBuilder('Keyboard', $data);
+var_dump($resultBuilder->single());
 ```
 
 Display result:
@@ -900,8 +931,8 @@ $data = [
 
 //Here some stuff to create $dataMapper
 
-$resultBuilder = $dataMapper->createResultBuilder($data, 'Keyboard');
-var_dump($resultBuilder->getSingleResult());
+$resultBuilder = $dataMapper->resultBuilder($data, 'Keyboard');
+var_dump($resultBuilder->single());
 ```
 
 Possible display result:
@@ -1182,14 +1213,14 @@ $data = [
     'blue' => '127',
 ];
 
-$resultBuilder = $dataMapper->createResultBuilder('Color', $data);
+$resultBuilder = $dataMapper->resultBuilder('Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')//Optional, if not specified Configuration::defaultClassMetadataResourceDir is used.
     ->addMappingResourceInfo('Color', 'color_en.yml', 'yaml')
 );
 
-$resultBuilder->getSingleResult();
+$resultBuilder->single();
 ```
 
 ```php
@@ -1201,14 +1232,14 @@ $data = [
     'bleu' => '127',
 ];
 
-$resultBuilder = $dataMapper->createResultBuilder('Color', $data);
+$resultBuilder = $dataMapper->resultBuilder('Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')
     ->addMappingResourceInfo('Color', 'color_fr.yml', 'yaml')
 );
 
-$resultBuilder->getSingleResult();
+$resultBuilder->single();
 ```
 
 ```php
@@ -1220,14 +1251,14 @@ $data = [
     'azul' => '127',
 ];
 
-$resultBuilder = $dataMapper->createResultBuilder('Color', $data);
+$resultBuilder = $dataMapper->resultBuilder('Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')
     ->addMappingResourceInfo('Color', 'color_es.php', 'php')
 );
 
-$resultBuilder->getSingleResult();
+$resultBuilder->single();
 ```
 
 #### Value object ####
@@ -1309,8 +1340,8 @@ $data = [
     'shipping_country' => 'England',
 ];
 
-$resultBuilder = $dataMapper->createResultBuilder('Customer', $data);
-$resultBuilder->getSingleResult();
+$resultBuilder = $dataMapper->resultBuilder('Customer', $data);
+$resultBuilder->single();
 ```
 Note that you can have value objects which contains value objects and so on. And each value object can use it's own mapping configuration format.
 
