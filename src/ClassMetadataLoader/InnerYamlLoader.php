@@ -7,18 +7,18 @@ use Kassko\DataMapper\Configuration\Configuration;
 use Symfony\Component\Yaml\Parser;
 
 /**
- * Class metadata loader for yaml format.
+ * Class metadata loader for yaml embeded in objects.
  *
  * @author kko
  */
-class YamlLoader extends AbstractLoader
+class InnerYamlLoader extends AbstractLoader
 {
     private $classMetadata;
 
     public function supports(LoadingCriteriaInterface $loadingCriteria)
     {
         return
-            'yaml' === $loadingCriteria->getResourceType()
+            'inner_yaml' === $loadingCriteria->getResourceType()
             &&
             method_exists($loadingCriteria->getResourceClass(), $loadingCriteria->getResourceMethod())
         ;

@@ -1,4 +1,4 @@
-### Yaml mapping ###
+### Inner Yaml mapping ###
 
 Yaml mapping is Yaml provided by the domain object itself:
 ```php

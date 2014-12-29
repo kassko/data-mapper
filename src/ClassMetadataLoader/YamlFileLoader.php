@@ -7,7 +7,7 @@ namespace Kassko\DataMapper\ClassMetadataLoader;
  *
  * @author kko
  */
-class YamlFileLoader extends YamlLoader
+class YamlFileLoader extends InnerYamlLoader
 {
     public function supports(LoadingCriteriaInterface $loadingCriteria)
     {

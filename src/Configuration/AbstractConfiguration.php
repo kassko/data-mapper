@@ -67,7 +67,7 @@ abstract class AbstractConfiguration
         return $this;
     }
 
-    public function setDefaultClassMetadataProviderMethod()
+    public function setDefaultClassMetadataProviderMethod($defaultClassMetadataProviderMethod)
     {
         $this->defaultClassMetadataProviderMethod = $defaultClassMetadataProviderMethod;
         return $this;

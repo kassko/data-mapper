@@ -7,7 +7,7 @@ namespace Kassko\DataMapper\ClassMetadataLoader;
  *
  * @author kko
  */
-class PhpFileLoader extends PhpLoader
+class PhpFileLoader extends InnerPhpLoader
 {
     public function supports(LoadingCriteriaInterface $loadingCriteria)
     {

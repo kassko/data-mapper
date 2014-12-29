@@ -181,7 +181,7 @@ class ObjectManager
 
     public function findFromProviders($customSourceClass, $customSourceMethod, $object)
     {
-        $customSource = $this->classResolver ? $this->classResolver->resolve($customSourceClass) : new $repositoryClass;
+        $customSource = $this->classResolver ? $this->classResolver->resolve($customSourceClass) : new $customSourceClass;
 
         if (! method_exists($customSource, $customSourceMethod) || ! is_callable([$customSource, $customSourceMethod])) {
             throw new \BadMethodCallException(sprintf('Erreur lors de l\'appel de la méthode "%s::%s"', get_class($customSource), $customSourceMethod));

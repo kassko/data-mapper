@@ -72,20 +72,7 @@ class Watch
 }
 ```
 
-You configure the mapping format to use:
-
-```php
-$configuration = $dataMapper->configuration();
-$configuration->setDefaultClassMetadataResourceType('annotations');//<= for all domain objects
-//or
-$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'annotations');//<= only for Watch objects
-```
-
-See the section "Api details" to know how to get a DataMapper instance.
-
-If you use annotations for all your objects, you don't need to specify a configuration because it's the default settings.
-
-You create a yaml file mapping configuration if you prefer this one:
+Or you create a yaml file mapping configuration:
 #### Yaml file format ####
 ```yaml
 fields:
@@ -96,14 +83,7 @@ fields:
 # The field nice don't appear in the field section because we don't want the mapper to manage it.
 ```
 
-You configure the mapping format to use:
-```php
-$configuration->setDefaultClassMetadataResourceType('yaml_file');//<= for all domain objects
-//or
-$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'yaml_file');//<= only for Watch objects
-```
-
-You create a php file mapping configuration if you prefer this one:
+Or you create a php file mapping configuration:
 #### Php file format ####
 ```php
 return [
@@ -115,16 +95,9 @@ return [
 //The field nice don't appear in the field section because we don't want the mapper to manage it.
 ```
 
-You configure the mapping format to use:
-```php
-$configuration->setDefaultClassMetadataResourceType('php_file');//<= for all domain objects
-//or
-$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'php_file');//<= only for Watch objects
-```
+Or you create an inner php mapping configuration (the php config will be returned by the object itself):
 
-It's possible to aggregate the Php mapping configuration in the object itself:
-
-#### Php format ####
+#### Inner php format ####
 ```php
 namespace Kassko\Sample;
 
@@ -154,26 +127,9 @@ class Watch
 }
 ```
 
-You configure the mapping format to use:
-```php
-$configuration->setDefaultClassMetadataResourceType('php');//<= for all domain objects
-//or
-$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'php');//<= only for Watch objects
+Or you create an inner yaml mapping configuration (the yaml config will be returned by the object itself):
 
-//The format name is 'php' and not 'php_file'
-```
-
-You configure the provider mapping method:
-```php
-$configuration->setDefaultClassMetadataProviderMethod('provideMapping');//<= for all domain objects
-//or
-$configuration->addClassMetadataProviderMethod('Kassko\Sample\Watch', 'provideMapping');//<= only for Watch objects
-```
-
-If you use the provideMapping() method name for all your objects, you don't need to specify a configuration because it's the default settings.
-
-You can do the same for the Yaml mapping configuration:
-#### Yaml format ####
+#### Inner yaml format ####
 ```php
 namespace Kassko\Sample;
 
@@ -204,17 +160,6 @@ EOF;
 }
 ```
 
-You configure the mapping format to use:
-```php
-$configuration->setDefaultClassMetadataResourceType('yaml');//<= for all domain objects
-//or
-$configuration->addClassMetadataResourceType('Kassko\Sample\Watch', 'yaml');//<= only for Watch objects
-
-//The format name is 'yaml' and not 'yaml_file'
-```
-
-And the provideMapping() method too.
-
 ### API Usage ###
 
 To do hydration and extraction operations, you get a DataMapper instance and you hydrate your object with its hydrator:
@@ -228,6 +173,8 @@ $data = [
     'customizable' => '0',
     'seal_date' => '',
 ];
+
+$dataMapper = (new Kassko\DataMapper\Factory)->instance();
 
 $object = new Kassko\Sample\Watch;
 $dataMapper->hydrator('Kassko\Sample\Watch')->hydrate($data, $object);
@@ -250,6 +197,8 @@ object(Watch)#283 (8) {
 
 Inversely, you can extract values from your object to have raw result:
 ```php
+$dataMapper = (new Kassko\DataMapper\Factory)->instance();
+
 $rawResult = $dataMapper->hydrator('Kassko\Sample\Watch')->extract($object);
 var_dump($rawResult);
 ```
@@ -277,12 +226,16 @@ $data = [
     ],
 ];
 
+$dataMapper = (new Kassko\DataMapper\Factory)->instance();
+
 $dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->all();//The result will an array with two objects.
 $dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->first();//The result will be the object representation of the first record.
 ```
 
 Inversely, you can extract values of an object or a an object collection to have raw result:
 ```php
+$dataMapper = (new Kassko\DataMapper\Factory)->instance();
+
 $dataMapper->resultBuilder('Kassko\Sample\Watch')->raw($object);
 $dataMapper->resultBuilder('Kassko\Sample\Watch')->raw($collection);
 ```
@@ -390,7 +343,167 @@ There are still other ways to get results:
     $resultBuilder->iterableIndexedByColor();
 ```
 
-See the section "Api details" to know how to get a DataMapper instance.
+### Api usage: Configure the DataMapper ###
+
+The DataMapper has several settings. Its default settings are often appropriate but not everytime.
+
+For example, if you want to use another mapping format than the default one ('annotation'), you need to configure the DataMapper before its instanciation:
+
+```php
+use Kassko\DataMapper\DataMapperFactory;
+
+$dataMapper = (new DataMapperFactory)
+    ->settings(
+        [
+            'default_resource_type' => 'yaml_file',
+            'default_resource_dir' => 'c:\mapping',
+            'object' =>
+                [
+                    [
+                        'class' => 'Kassko\Sample\Watch'
+                        'resource_path' => 'c:\some_project\mapping\watch.yml'
+                    ],
+                ]
+        ]
+    )
+    ->instance()
+;
+```
+
+Allows to use the yaml file format everywhere. And the files are in c:\mapping
+
+```php
+use Kassko\DataMapper\DataMapperFactory;
+
+$dataMapper = (new DataMapperFactory)
+    ->settings(
+        [
+            //'default_resource_type' => 'annotations',//By default, 'default_resource_type' is set to 'annotations'
+            'default_resource_dir' => 'c:\mapping'
+            'mapping' =>
+            [
+                'object' =>
+                [
+                    [
+                        'class' => 'Kassko\Sample\Watch'
+                        'resource_type' => 'yaml_file'
+                        'resource_path' => 'c:\some_project\mapping\watch.yml'
+                    ],
+                ],
+                'object' =>
+                [
+                    [
+                        'class' => 'Kassko\Sample\Keyboard'
+                    ],
+                ],
+            ]
+        ]
+    )
+    ->instance()
+;
+
+Here, you use the yaml file format only for Kassko\Sample\Watch
+For all others objects, you use annotations.
+```
+
+### Configuration reference ###
+----------
+
+```php
+[
+    'mapping' =>
+    [
+        //Default is "annotations" or other type (1).
+        'default_resource_type' => 'annotations',
+
+        //Optional key.
+        'default_resource_dir' => 'some_dir',
+
+        //Optional key. Has only sense if you use inner_php or inner_yaml format.
+        //It's the method whereby you provide the mapping.
+        'default_provider_method' => 'some_method_name',
+
+        //Optional section.
+        'groups' =>
+        [
+            'some_group' =>
+            [
+                //Default is "annotations" or other type (1).
+                'resource_type' => annotations,
+
+                //The resource dir of the given bundle.
+                'resource_dir' => 'some_dir',
+
+                //Default value is null.
+                'provider_method' => null,
+            ],
+        ],
+
+        //Optional section
+        'objects':
+        [
+            [
+                //Required (the full qualified object class name).
+                'class' => 'some_fqcn',
+
+                //Optional key. Allows to inherit settings from a group if there are not specified.
+                'group' => 'some_group',
+
+                //Optional key.
+                'resource_type' => 'yaml_file',
+
+                //Optional key.
+                //The resource directory with the resource name.
+                //If not defined, data-mapper fallback to resource_name and prepend to it a resource_dir (this object resource_dir or a group resource_dir or the default_resource_dir).
+                //So if resource_path is not defined, keys resource_name and a resource_dir should be defined.
+                'resource_path' => 'some_path',
+
+                //Optional key. Only the resource name (so without the directory).
+                'resource_name' => 'some_ressource.yml',
+
+                //Optional key. Override default_provider_method.
+                'provider_method' => 'some_method_name',
+            ],
+        ],
+    ],
+
+    //Optional section.
+    'cache' =>
+    [
+        //Optional section. The cache for mapping metadata.
+        'metadata_cache' =>
+        [
+            //A cache instance which implements Kassko\Cache\CacheInterface. Default is Kassko\Cache\ArrayCache.
+            //If you use a third-party cache provider, maybe you need to wrap it into an adapter to enforce compatibility with Kassko\Cache\CacheInterface.
+            'instance' => 'Kassko\Cache\ArrayCache',
+
+            //Default value is 0.
+            //0 means the data will never been deleted from the cache.
+            //Obviously, 'life_time' has no sense with an "ArrayCache" implementation.
+            'life_time' => 0,
+
+            //Default value is false. Indicates if the cache is shared or not.
+            //If you don't specify it, you're not wrong. It optimises the
+            'is_shared' => false,
+        ],
+
+        //Optional section. The cache for query results.
+        //This section has the same keys as 'metadata_cache' section.
+        'result_cache': => [],
+    ],
+
+    //Optional key. A logger instance which implements Psr\Logger\LoggerInterface.
+    'logger' => $logger,
+
+    //Optional key. Needed to retrieve repositories specified in 'repository_class' mapping attributes and which creation is assigned to a creator (a factory, a container, a callable).
+    'class_resolver' => $someClassResolver,
+
+    //Optional key. Needed to retrieve object listener specified in 'object_listener' mapping attributes and which creation is assigned to a creator (a factory, a container, a callable).
+    'object_listener_resolver' => $someObjectListenerResolver,
+]
+```
+(1) availables types are annotations, yaml_file, php_file, inner_php, inner_yaml.
+And maybe others if you add some custom mapping loaders.
 
 ### More advanced mapping configuration ###
 
@@ -521,7 +634,7 @@ class Watch
 }
 ```
 
-You can keep your object agnostic of mapping if you use a mapping format file like yaml_file or php_file and put your callbacks in a mapping extension class.
+You can keep your object agnostic of mapping if you use one of the outer mapping format and put your callbacks in a mapping extension class.
 
 Your mapping file:
 ```yaml
@@ -677,21 +790,21 @@ As you can see, your object is not aware of mapping.
 
 For more details about mapping you can read the mapping reference documentations:
 
-#### Yaml format ####
-[see Yaml mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/yaml_mapping.md).
+#### Inner yaml format ####
+[see inner Yaml mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/inner_yaml_mapping.md).
 
 #### Yaml file format ####
-[see Yaml file mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/yaml_file_mapping.md).
+[see yaml mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/yaml_file_mapping.md).
 
-#### Php format ####
-[see Php mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/php_mapping.md).
+#### Inner php ####
+[see inner php mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/inner_php_mapping.md).
 
 #### Php file format ####
-[see Php file mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/php_file_mapping.md).
+[see Php mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/php_file_mapping.md).
 
 As you can see,
 * You can transform raw data before hydration or object values before extraction.
-* You can isolate transformation methods in a separated file (see the mapping extension class WatchCallbacks). So to keep your entity agnostic of mapping use yaml_file or php_file format and put your transformations in a mapping extension class.
+* You can isolate transformation methods in a separated file (see the mapping extension class WatchCallbacks). So to keep your entity agnostic of mapping use one of the outer mapping format and put your transformations in a mapping extension class.
 * You can convert a date before hydrating or extracting it.
 * Isser (see isWaterProof()) and has methods (see hasStopWatch()) are managed.
 * But you can specify custom getter/setter (see canBeCustomized()).
@@ -1178,7 +1291,7 @@ class Information
 
 #### Use the same model with various mapping configuration ####
 
-You can use the same model with various mapping configuration but you must work with mapping configuration files and not with mapping embedded in the object. So 'yaml_file' or 'php_file' are correct mapping format but 'annotations', 'php' or 'yaml' are bad format.
+You can use the same model with various mapping configuration but you must work with one of the outer mapping configuration and not with mapping embedded in the object. So 'yaml_file' or 'php_file' are correct mapping format but 'annotations', 'inner_php' or 'inner_yaml' are bad format.
 
 ```php
 namespace Kassko\Sample;
@@ -1198,7 +1311,7 @@ class Color
 }
 ```
 
-A english data source with the mapping in yaml_file:
+A english data source with the mapping in yaml:
 ```yaml
 # color_en.yml
 
@@ -1208,7 +1321,7 @@ fields:
     blue: ~
 ```
 
-A french data source with the mapping in yaml_file:
+A french data source with the mapping in yaml:
 ```yaml
 # color_fr.yml
 
@@ -1221,7 +1334,7 @@ fields:
         name: bleu
 ```
 
-And imagine we've got a spanish data source with the mapping in a php_file format.
+And imagine we've got a spanish data source with the mapping in a php format.
 ```php
 //color_es.php
 
@@ -1247,7 +1360,7 @@ $resultBuilder = $dataMapper->resultBuilder('Kassko\Sample\Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')//Optional, if not specified Configuration::defaultClassMetadataResourceDir is used.
-    ->addMappingResourceInfo('Color', 'color_en.yml', 'yaml')
+    ->addMappingResourceInfo('Color', 'color_en.yml', 'inner_yaml')
 );
 
 $resultBuilder->single();
@@ -1266,7 +1379,7 @@ $resultBuilder = $dataMapper->resultBuilder('Kassko\Sample\Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')
-    ->addMappingResourceInfo('Color', 'color_fr.yml', 'yaml')
+    ->addMappingResourceInfo('Color', 'color_fr.yml', 'inner_yaml')
 );
 
 $resultBuilder->single();
@@ -1285,7 +1398,7 @@ $resultBuilder = $dataMapper->resultBuilder('Kassko\Sample\Color', $data);
 $resultBuilder->setRuntimeConfiguration(
     (new RuntimeConfiguration)
     ->addClassMetadataDir('Color', 'some_resource_dir')
-    ->addMappingResourceInfo('Color', 'color_es.php', 'php')
+    ->addMappingResourceInfo('Color', 'color_es.php', 'inner_php')
 );
 
 $resultBuilder->single();
@@ -1308,13 +1421,13 @@ class Customer
 
     /**
      * @DA\Field
-     * @DA\ValueObject(class="Kassko\Sample\Address", mappingResourceType="yaml_file", mappingResourceName="billing_address.yml")
+     * @DA\ValueObject(class="Kassko\Sample\Address", mappingResourceType="yaml", mappingResourceName="billing_address.yml")
      */
     private $billingAddress;//$billingAddress is a value object.
 
     /**
      * @DA\Field
-     * @DA\ValueObject(class="Kassko\Sample\Address", mappingResourceType="yaml_file", mappingResourceName="shipping_address.yml")
+     * @DA\ValueObject(class="Kassko\Sample\Address", mappingResourceType="yaml", mappingResourceName="shipping_address.yml")
      */
     private $shippingAddress;//$shippingAddress is a value object too.
 }
@@ -1413,72 +1526,6 @@ For example, with Symfony framework, we can use the [kassko/data-mapper-bundle](
 
 Otherwise you need to create it yourself.
 
-#### Create the DataMapper ####
-```php
-use Kassko\DataMapper\DataMapper;
-
-$dataMapper = new DataMapper($objectManager);
-```
-
-#### Create the ObjectManager ####
-```php
-use Doctrine\Common\Annotations\Reader;
-use Kassko\DataMapper\Cache\ArrayCache;
-use Kassko\ClassResolver\ClosureClassResolver;
-use Kassko\DataMapper\ClassMetadataLoader\AnnotationLoader;
-use Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader;
-use Kassko\DataMapper\ClassMetadataLoader\LoaderResolver;
-use Kassko\DataMapper\ClassMetadata\ClassMetadataFactory;
-use Kassko\DataMapper\Configuration\CacheConfiguration;
-use Kassko\DataMapper\Configuration\ClassMetadataFactoryConfigurator;
-use Kassko\DataMapper\Configuration\ConfigurationChain;
-use Kassko\DataMapper\ObjectManager;
-use Kassko\DataMapper\Registry\Registry;
-use Symfony\Component\EventDispatcher;
-
-//Configuration
-$configuration = (new ConfigurationChain)
-    ->setClassMetadataCacheConfig(new CacheConfiguration(new ArrayCache))
-    ->setResultCacheConfig(new CacheConfiguration(new ArrayCache))
-;
-
-//ClassMetadataFactory
-$delegatingLoader = new DelegatingLoader(
-    new LoaderResolver(
-        new AnnotationLoader(
-            new Reader
-        )
-    )
-);
-$cmFactory = (new ClassMetadataFactory)->setClassMetadataLoader($delegatingLoader);
-$cmConfigurator = new ClassMetadataFactoryConfigurator($configuration);
-$cmConfigurator->configure($cmFactory);
-
-//ClassResolver, if you have one
-if (isset($closureClassResolver)) {//Here $closureClassResolver is a closure which return an object after resolving it from a given parameter (which is usually the object Fqcn).
-    $classResolver = new ClosureClassResolver($closureClassResolver);
-
-    //You can use other implementation of ClassResolverInterface like FactoryClassResolver or ContainerAwareClassResolver or combine them with the ClassResolverChain.
-}
-
-//ObjectListenerResolver, if you have one
-if (isset($closureObjectListenerResolver)) {//Here $closureObjectListenerResolver is a closure which return a listener instance after resolving it from a given parameter (which is usually the listener Fqcn)
-    $olr =
-        (new ClosureObjectListenerResolver($closureObjectListenerResolver))
-        ->setEventManager(new Symfony\Component\EventDispatcher\EventDispatcher)
-    ;
-
-    //You can use other implementation of ObjectListenerResolverInterface like FactoryObjectListenerResolver or ContainerAwareObjectListenerResolver or combine them with the ObjectListenerResolverChain.
-}
-
-//ObjectManager
-$objectManager = (new ObjectManager())
-    ->setConfiguration($configuration)
-    ->setClassMetadataFactory($cmFactory)
-    ->setObjectListenerResolver($olr)
-    ->setClassResolver($classResolver)
-;
-```
 
 #### Create an adapter for the cache ####
 Instead of use Kassko\DataMapper\Cache\ArrayCache, you can provide a cache adapter. For example, you can use the Kassko cache interface with a Doctrine cache implementation or a Winzou cache implementation.
@@ -1533,53 +1580,9 @@ class DoctrineCacheAdapter implements KasskoCacheInterface
 At the present time, there is no standard cache interface like the PSR-3 PSR\Logger\LoggerInterface.
 PSR-6 should provide one ? That's why the data-mapper has it's own cache interface and you should provide an adapter for it.
 
-The code:
-```php
-use Kassko\DataMapper\Cache\ArrayCache;
-use Kassko\DataMapper\Configuration\CacheConfiguration;
-use Kassko\DataMapper\Configuration\ConfigurationChain;
-
-$configuration = (new ConfigurationChain)
-    ->setClassMetadataCacheConfig(new CacheConfiguration(new ArrayCache))
-    ->setResultCacheConfig(new CacheConfiguration(new ArrayCache))
-;
-```
-
-could be changed by using the cache adapter:
-```php
-use Doctrine\Common\Cache\ArrayCache;
-use Kassko\DataMapper\Configuration\CacheConfiguration;
-use Kassko\DataMapper\Configuration\ConfigurationChain;
-
-$configuration = (new ConfigurationChain)
-    ->setClassMetadataCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
-    ->setResultCacheConfig(new CacheConfiguration(new DoctrineCacheAdapter(new ArrayCache)))
-;
-```
 
 #### Create a ClassResolver instance ####
 To know more about ClassResolver, see [the class-resolver documentation](https://github.com/kassko/class-resolver/blob/master/README.md)
 
 #### Create an ObjectListenerResolver instance ####
 This section will be written later.
-
-#### Register LazyLoader before adding the lazy loading behaviour to your objects ####
-```php
-use Kassko\DataMapper\LazyLoader\LazyLoaderFactory;
-use Kassko\DataMapper\Registry\Registry;
-
-//LazyLoaderFactory
-$lazyLoaderFactory = new LazyLoaderFactory($objectManager);
-Registry::getInstance()[Registry::KEY_LAZY_LOADER_FACTORY] = $lazyLoaderFactory;
-
-//You need to do it to use the Kassko\DataMapper\ObjectExtension\LazyLoadableTrait in your objects.
-```
-
-#### Register logger before adding the logging behaviour to your objects ####
-```php
-use Kassko\DataMapper\Registry\Registry;
-
-Registry::getInstance()[Registry::KEY_LOGGER] = $logger;
-
-//You need to do it to use the Kassko\DataMapper\ObjectExtension\LoggableTrait in your objects.
-```

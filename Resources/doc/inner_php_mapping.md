@@ -1,4 +1,4 @@
-### Php mapping ###
+### Inner Php mapping ###
 
 Php mapping is Php provided by the domain object itself:
 ```php

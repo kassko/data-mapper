@@ -5,18 +5,18 @@ namespace Kassko\DataMapper\ClassMetadataLoader;
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 
 /**
- * Class metadata loader for php format.
+ * Class metadata loader for php embeded in objects.
  *
  * @author kko
  */
-class PhpLoader extends AbstractLoader
+class InnerPhpLoader extends AbstractLoader
 {
     private $classMetadata;
 
     public function supports(LoadingCriteriaInterface $loadingCriteria)
     {
         return
-            'php' === $loadingCriteria->getResourceType()
+            'inner_php' === $loadingCriteria->getResourceType()
             &&
             method_exists($loadingCriteria->getResourceClass(), $loadingCriteria->getResourceMethod())
         ;
