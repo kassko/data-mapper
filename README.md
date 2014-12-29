@@ -229,7 +229,7 @@ $data = [
 $dataMapper = (new Kassko\DataMapper\Factory)->instance();
 
 $dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->all();//The result will an array with two objects.
-$dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->first();//The result will be the object representation of the first record.
+$dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->first();//The result will be a watch object representing the first record.
 ```
 
 Inversely, you can extract values of an object or a an object collection to have raw result:
@@ -240,7 +240,7 @@ $dataMapper->resultBuilder('Kassko\Sample\Watch')->raw($object);
 $dataMapper->resultBuilder('Kassko\Sample\Watch')->raw($collection);
 ```
 
-There are still other ways to get results:
+There are other ways to get results:
 
 ### Ways to get results ###
 
@@ -345,7 +345,7 @@ There are still other ways to get results:
 
 ### Api usage: Configure the DataMapper ###
 
-The DataMapper has several settings. Its default settings are often appropriate but not everytime.
+The DataMapper has several settings. Its default settings are sometimes not appropriate.
 
 For example, if you want to use another mapping format than the default one ('annotation'), you need to configure the DataMapper before its instanciation:
 
@@ -363,6 +363,13 @@ $dataMapper = (new DataMapperFactory)
                         'class' => 'Kassko\Sample\Watch'
                         'resource_path' => 'c:\some_project\mapping\watch.yml'
                     ],
+                    'object' =>
+                    [
+                        [
+                            'class' => 'Kassko\Sample\Keyboard'
+                            'resource_type' => 'annotations'
+                        ],
+                    ],
                 ]
         ]
     )
@@ -370,41 +377,11 @@ $dataMapper = (new DataMapperFactory)
 ;
 ```
 
-Allows to use the yaml file format everywhere. And the files are in c:\mapping
-
-```php
-use Kassko\DataMapper\DataMapperFactory;
-
-$dataMapper = (new DataMapperFactory)
-    ->settings(
-        [
-            //'default_resource_type' => 'annotations',//By default, 'default_resource_type' is set to 'annotations'
-            'default_resource_dir' => 'c:\mapping'
-            'mapping' =>
-            [
-                'object' =>
-                [
-                    [
-                        'class' => 'Kassko\Sample\Watch'
-                        'resource_type' => 'yaml_file'
-                        'resource_path' => 'c:\some_project\mapping\watch.yml'
-                    ],
-                ],
-                'object' =>
-                [
-                    [
-                        'class' => 'Kassko\Sample\Keyboard'
-                    ],
-                ],
-            ]
-        ]
-    )
-    ->instance()
-;
-
-Here, you use the yaml file format only for Kassko\Sample\Watch
-For all others objects, you use annotations.
-```
+The code above means:
+* the default mapping format is yaml_file
+* by default, mapping yaml files are located in 'c:\mapping'
+* except for the Watch class which override the yaml mapping file location to 'c:\some_project\mapping\watch.yml'
+* the Keyboard class uses the annotations format
 
 ### Configuration reference ###
 ----------
