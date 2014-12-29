@@ -380,7 +380,7 @@ $dataMapper = (new DataMapperFactory)
 The code above means:
 * the default mapping format is yaml_file
 * by default, mapping yaml files are located in 'c:\mapping'
-* except for the Watch class which override the yaml mapping file location to 'c:\some_project\mapping\watch.yml'
+* except for the Watch class which overrides the yaml mapping file location to 'c:\some_project\mapping\watch.yml'
 * the Keyboard class uses the annotations format
 
 ### Configuration reference ###
@@ -452,7 +452,7 @@ The code above means:
         [
             //A cache instance which implements Kassko\Cache\CacheInterface. Default is Kassko\Cache\ArrayCache.
             //If you use a third-party cache provider, maybe you need to wrap it into an adapter to enforce compatibility with Kassko\Cache\CacheInterface.
-            'instance' => 'Kassko\Cache\ArrayCache',
+            'instance' => $someCacheInstance,
 
             //Default value is 0.
             //0 means the data will never been deleted from the cache.
@@ -727,7 +727,7 @@ class WatchMappingExtension
 }
 ```
 
-And your object cleaned:
+And your object not aware of mapping:
 ```php
 namespace Kassko\Sample;
 
@@ -763,7 +763,12 @@ class Watch
 }
 ```
 
-As you can see, your object is not aware of mapping.
+As you can see:
+* You can transform raw data before hydration or object values before extraction.
+* You can isolate transformation methods in a separated file (see the mapping extension class WatchCallbacks). So to keep your entity agnostic of mapping use one of the outer mapping format and put your transformations in a mapping extension class.
+* You can convert a date before hydrating or extracting it.
+* Isser (see isWaterProof()) and has methods (see hasStopWatch()) are managed.
+* But you can specify custom getter/setter (see canBeCustomized()).
 
 For more details about mapping you can read the mapping reference documentations:
 
@@ -779,14 +784,7 @@ For more details about mapping you can read the mapping reference documentations
 #### Php file format ####
 [see Php mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/php_file_mapping.md).
 
-As you can see,
-* You can transform raw data before hydration or object values before extraction.
-* You can isolate transformation methods in a separated file (see the mapping extension class WatchCallbacks). So to keep your entity agnostic of mapping use one of the outer mapping format and put your transformations in a mapping extension class.
-* You can convert a date before hydrating or extracting it.
-* Isser (see isWaterProof()) and has methods (see hasStopWatch()) are managed.
-* But you can specify custom getter/setter (see canBeCustomized()).
-
-### Features ###
+### Other features ###
 
 #### toOneProvider associations ####
 
