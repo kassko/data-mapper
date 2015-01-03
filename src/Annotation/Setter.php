@@ -10,13 +10,5 @@ namespace Kassko\DataMapper\Annotation;
 */
 final class Setter
 {
-    /**
-    * @var string
-    */
-    public $type = 'set';
-
-    /**
-    * @var string
-    */
-    public $name;
+    use PropertyWrapperTrait;
 }

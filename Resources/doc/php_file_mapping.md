@@ -10,28 +10,28 @@ return [
     ],
     'fields' => [
         'brand' => [
-            'readStrategy' => 'readBrand',
-            'writeStrategy' => 'writeBrand',
+            'readConverter' => 'readBrand',
+            'writeConverter' => 'writeBrand',
         ],
         'color', //this field hasn't got specific configuration but we want the mapper manage it
         'createdDate' => [
             'name' => 'created_date',
             'type' => 'date',
-            'readDateFormat' => 'Y-m-d H:i:s',
-            'writeDateFormat' => 'Y-m-d H:i:s',
+            'readDateConverter' => 'Y-m-d H:i:s',
+            'writeDateConverter' => 'Y-m-d H:i:s',
         ],
         'waterProof' => [
-            'readStrategy' => 'hydrateBool',
-            'writeStrategy' => 'extractBool',
+            'readConverter' => 'hydrateBool',
+            'writeConverter' => 'extractBool',
         ],
         'stopWatch' => [
-            'readStrategy' => 'hydrateBoolFromSymbol',
-            'writeStrategy' => 'extractBoolToSymbol',
+            'readConverter' => 'hydrateBoolFromSymbol',
+            'writeConverter' => 'extractBoolToSymbol',
             'mappingExtensionClass' => 'WatchCallbacks',
         ],
         'customizable' => [
-            'readStrategy': 'hydrateBool',
-            'writeStrategy': 'extractBool',
+            'readConverter': 'hydrateBool',
+            'writeConverter': 'extractBool',
             'getter': 'canBeCustomized',
         ],
     ],

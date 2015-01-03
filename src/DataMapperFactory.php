@@ -26,15 +26,18 @@ class DataMapperFactory
      *          'default_resource_type' =>  //annotations # Default is "annotations" or other type (1).
      *          'default_resource_dir' => //Optional.
      *          'default_provider_method' => //Optional.
-     *          'groups' => [//optional section
-     *              'some_group' => [
+     *          'groups' =>
+     *          [//optional section
+     *              'some_group' =>
+     *              [
      *                  'resource_type' => //annotations # Default is "annotations" or other type (1).
      *                  'resource_dir' => //The resource dir of the given bundle.
      *                  'provider_method' => null //Required. Default value is null.
      *              ],
-     *           ],
-     *          'objects' => [// Optional section.
-     *              'some_object' => [
+     *          ],
+     *          'objects' =>
+     *          [// Optional section.
+     *              [
      *                  'class' => //Required (full qualified object class name).
      *                  'group' => //Optional.
      *                  'resource_type' => //Optional.
@@ -45,8 +48,10 @@ class DataMapperFactory
      *          ],
      *      ],
      *     'logger' =>//Optional. A logger service name. Il will be used for logging in data-mapper component.
-     *     'cache' => [
-     *         'metadata_cache' => [ //Optional section
+     *     'cache' =>
+     *      [
+     *         'metadata_cache' =>
+     *          [ //Optional section
      *             'adapter_class' => //Default is "Kassko\Bundle\DataMapperBundle\Adapter\Cache\DoctrineCacheAdapter"
      *             'life_time' => //Default is 0
      *             'is_shared' => //Default is false
@@ -219,8 +224,9 @@ class DataMapperFactory
      */
     public function settings(array $settings)
     {
-        //$this->pSettings[] = ['kassko_data_mapper' => $settings];
-        $this->pSettings[] = $settings;
+        var_dump(Utils::getUnpackedSettings($settings));
+        $this->pSettings[] = Utils::getUnpackedSettings($settings);
+
         return $this;
     }
 

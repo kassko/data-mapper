@@ -44,12 +44,12 @@ class InnerPhpLoader extends AbstractLoader
             $this->classMetadata->setRepositoryClass($data['object']['repositoryClass']);
         }
 
-        if (isset($data['object']['readDateFormat'])) {
-            $this->classMetadata->setObjectReadDateFormat($data['object']['readDateFormat']);
+        if (isset($data['object']['readDateConverter'])) {
+            $this->classMetadata->setObjectReadDateFormat($data['object']['readDateConverter']);
         }
 
-        if (isset($data['object']['writeDateFormat'])) {
-            $this->classMetadata->setObjectWriteDateFormat($data['object']['writeDateFormat']);
+        if (isset($data['object']['writeDateConverter'])) {
+            $this->classMetadata->setObjectWriteDateFormat($data['object']['writeDateConverter']);
         }
 
         if (isset($data['object']['propertyAccessStrategy'])) {
@@ -163,7 +163,7 @@ class InnerPhpLoader extends AbstractLoader
                $mappedDateFieldNames[] = $mappedFieldName;
             }
 
-            if (isset($fieldData['writeStrategy']) || isset($fieldData['readStrategy'])) {
+            if (isset($fieldData['writeConverter']) || isset($fieldData['readConverter'])) {
 
                 $fieldsWithHydrationStrategy[$mappedFieldName] = [];
                 $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = null;
@@ -171,12 +171,12 @@ class InnerPhpLoader extends AbstractLoader
                 $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = null;
             }
 
-            if (isset($fieldData['writeStrategy'])) {
-                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = $fieldData['writeStrategy'];
+            if (isset($fieldData['writeConverter'])) {
+                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = $fieldData['writeConverter'];
             }
 
-            if (isset($fieldData['readStrategy'])) {
-                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $fieldData['readStrategy'];
+            if (isset($fieldData['readConverter'])) {
+                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $fieldData['readConverter'];
             }
 
             if (isset($fieldData['mappingExtensionClass'])) {

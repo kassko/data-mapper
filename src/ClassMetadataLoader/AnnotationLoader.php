@@ -77,8 +77,8 @@ class AnnotationLoader extends AbstractLoader
             switch (get_class($annotation)) {
                 case self::$objectAnnotationName:
                     $this->classMetadata->setRepositoryClass($annotation->repositoryClass);
-                    $this->classMetadata->setObjectReadDateFormat($annotation->readDateFormat);
-                    $this->classMetadata->setObjectWriteDateFormat($annotation->writeDateFormat);
+                    $this->classMetadata->setObjectReadDateFormat($annotation->readDateConverter);
+                    $this->classMetadata->setObjectWriteDateFormat($annotation->writeDateConverter);
                     $this->classMetadata->setPropertyAccessStrategyEnabled($annotation->propertyAccessStrategy);
                     $this->classMetadata->setPropertyMetadataExtensionClass($annotation->fieldMappingExtensionClass);
                     $this->classMetadata->setClassMetadataExtensionClass($annotation->classMappingExtensionClass);
@@ -164,7 +164,7 @@ class AnnotationLoader extends AbstractLoader
                            $mappedDateFieldNames[] = $mappedFieldName;
                         }
 
-                        if (isset($annotation->writeStrategy) || isset($annotation->readStrategy)) {
+                        if (isset($annotation->writeConverter) || isset($annotation->readConverter)) {
 
                             $fieldsWithHydrationStrategy[$mappedFieldName] = [];
                             $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = null;
@@ -172,12 +172,12 @@ class AnnotationLoader extends AbstractLoader
                             $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = null;
                         }
 
-                        if (isset($annotation->writeStrategy)) {
-                            $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = $annotation->writeStrategy;
+                        if (isset($annotation->writeConverter)) {
+                            $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = $annotation->writeConverter;
                         }
 
-                        if (isset($annotation->readStrategy)) {
-                            $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $annotation->readStrategy;
+                        if (isset($annotation->readConverter)) {
+                            $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $annotation->readConverter;
                         }
 
                         if (isset($annotation->mappingExtensionClass)) {

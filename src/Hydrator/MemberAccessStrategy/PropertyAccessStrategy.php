@@ -16,7 +16,7 @@ class PropertyAccessStrategy implements MemberAccessStrategyInterface
 
     public function prepare($object, ClassMetadata $metadata)
     {
-        $this->reflectionClass =  $metadata->getReflectionClass();//new ReflectionClass($object);
+        $this->reflectionClass =  $metadata->getReflectionClass();
     }
 
     public function getValue($object, $fieldName)
