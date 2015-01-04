@@ -40,8 +40,8 @@ class InnerPhpLoader extends AbstractLoader
 
     private function loadClassAnnotations(array $data)
     {
-        if (isset($data['object']['repositoryClass'])) {
-            $this->classMetadata->setRepositoryClass($data['object']['repositoryClass']);
+        if (isset($data['object']['providerClass'])) {
+            $this->classMetadata->setRepositoryClass($data['object']['providerClass']);
         }
 
         if (isset($data['object']['readDateConverter'])) {

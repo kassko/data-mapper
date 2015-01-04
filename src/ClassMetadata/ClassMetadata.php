@@ -167,18 +167,18 @@ class ClassMetadata
     {
         if (array_key_exists($mappedFieldName, $this->toOneAssociations)) {
 
-            if (isset($this->toOneAssociations[$mappedFieldName]['entityClass'])) {
+            if (isset($this->toOneAssociations[$mappedFieldName]['objectClass'])) {
 
-                return $this->toOneAssociations[$mappedFieldName]['entityClass'];
+                return $this->toOneAssociations[$mappedFieldName]['objectClass'];
             }
         }
 
 
         if (array_key_exists($mappedFieldName, $this->toManyAssociations)) {
 
-            if (isset($this->toManyAssociations[$mappedFieldName]['entityClass'])) {
+            if (isset($this->toManyAssociations[$mappedFieldName]['objectClass'])) {
 
-                return $this->toManyAssociations[$mappedFieldName]['entityClass'];
+                return $this->toManyAssociations[$mappedFieldName]['objectClass'];
             }
         }
 
@@ -193,7 +193,7 @@ class ClassMetadata
         }
 
         if (
-            ! isset($this->toOneAssociations[$mappedFieldName]['entityClass'])
+            ! isset($this->toOneAssociations[$mappedFieldName]['objectClass'])
             ||
             ! isset($this->toOneAssociations[$mappedFieldName]['findMethod'])
             ||
@@ -203,8 +203,8 @@ class ClassMetadata
         }
 
         return [
-            $this->toOneAssociations[$mappedFieldName]['entityClass'],
-            isset($this->toOneAssociations[$mappedFieldName]['repositoryClass']) ? $this->toOneAssociations[$mappedFieldName]['repositoryClass'] : null,
+            $this->toOneAssociations[$mappedFieldName]['objectClass'],
+            isset($this->toOneAssociations[$mappedFieldName]['class']) ? $this->toOneAssociations[$mappedFieldName]['class'] : null,
             $this->toOneAssociations[$mappedFieldName]['findMethod'],
             $this->toOneAssociations[$mappedFieldName]['lazyLoading'],
         ];
@@ -216,7 +216,7 @@ class ClassMetadata
             throw ObjectMappingException::notFoundAssociation($mappedFieldName, $this->getName());
         }
 
-        $infoKeys = ['name', 'entityClass', 'findMethod', 'lazyLoading'];
+        $infoKeys = ['name', 'objectClass', 'findMethod', 'lazyLoading'];
         foreach ($infoKeys as $infoKey) {
 
             if (! isset($this->toManyAssociations[$mappedFieldName][$infoKey])) {
@@ -227,8 +227,8 @@ class ClassMetadata
 
         return [
             $this->toManyAssociations[$mappedFieldName]['name'],
-            $this->toManyAssociations[$mappedFieldName]['entityClass'],
-            isset($this->toManyAssociations[$mappedFieldName]['repositoryClass']) ? $this->toManyAssociations[$mappedFieldName]['repositoryClass'] : null,
+            $this->toManyAssociations[$mappedFieldName]['objectClass'],
+            isset($this->toManyAssociations[$mappedFieldName]['class']) ? $this->toManyAssociations[$mappedFieldName]['class'] : null,
             $this->toManyAssociations[$mappedFieldName]['findMethod'],
             $this->toManyAssociations[$mappedFieldName]['lazyLoading'],
         ];

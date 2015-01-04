@@ -1,6 +1,7 @@
 data-mapper
 ==================
 
+[![Build Status](https://secure.travis-ci.org/kassko/data-mapper-bundle.png?branch=master)](https://travis-ci.org/kassko/data-mapper-bundle)
 [![Latest Stable Version](https://poser.pugx.org/kassko/data-mapper/v/stable.png)](https://packagist.org/packages/kassko/data-mapper)
 [![Total Downloads](https://poser.pugx.org/kassko/data-mapper/downloads.png)](https://packagist.org/packages/kassko/data-mapper)
 [![Latest Unstable Version](https://poser.pugx.org/kassko/data-mapper/v/unstable.png)](https://packagist.org/packages/kassko/data-mapper)
@@ -10,23 +11,21 @@ data-mapper
 data-mapper component represents some raw data like objects as all data-mapper but it particularly allows to create complex representations. Use it:
 
 * for persistence ignorance
-* to provide converters for properties or raw data
-* to use multiples data sources to hydrate an object
+* to provide converters for properties or raw data before hydration
+* to use a specific database or a specific DBMS to hydrate one or a particular set of properties of your object
+* to work with relation using a database or a DBMS different of the object owner one
 * to map composite objects
-* to specify some mapping rules only at runtime
-* to bind mapping rules to instance level raher than class level
-* to reuse or inherit some mapping configurations
+* to bind mapping rules to object property level rather than object class level
+* to choose or change an object mapping configurations at runtime
 * to choose your mapping configuration format
 * to work with various formats in the same application
-
-data-mapper requires providers. It means you can hydrate some properties from mysql, other properties from mssql and some relations from a webservice.
 
 # Installation #
 
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-mapper": "~0.8.0@alpha"
+    "kassko/data-mapper": "~0.9.0@alpha"
 }
 ```
 
@@ -84,7 +83,7 @@ return [
 ];
 ```
 
-Later you'll see that you can use inner yaml and inner php mapping format and provide your own format.
+Later you'll see that you can use inner yaml or inner php mapping format and provide your own format.
 
 ### Use the hydrator ###
 
@@ -114,8 +113,8 @@ Inversely, you can extract values from your object to have raw result:
 ```php
 $dataMapper = (new Kassko\DataMapper\DataMapperFactory)->instance();
 
+$object = (new Kassko\Sample\Watch)->setBrand('some brand')->setColor('color');
 $rawResult = $dataMapper->hydrator('Kassko\Sample\Watch')->extract($object);
-var_dump($rawResult);
 ```
 
 ### Use the ResultBuilder ###
@@ -135,7 +134,7 @@ $data = [
 
 $dataMapper = (new Kassko\DataMapper\DataMapperFactory)->instance();
 
-$dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->all();//The result will an array with two objects.
+$dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->all();//The result will be an array with two objects.
 $dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->first();//The result will be a watch object representing the first record.
 ```
 
@@ -206,12 +205,28 @@ There are other ways to get results. You can find below all the ways to get resu
 
 ```php
     /*
-    Return an array indexed by a property value (like "brand" value).
+    Return an array indexed by a property value.
 
-    If the index does not exists, throw an exception Kassko\DataMapper\Result\Exception\NotFoundIndexException.
+    If the index does not exists (allIndexedByUnknown()), throw an exception Kassko\DataMapper\Result\Exception\NotFoundIndexException.
 
     If the same index is found twice, throw an exception
     Kassko\DataMapper\Result\Exception\DuplicatedIndexException.
+
+    Examples:
+
+    allIndexedByBrand() will index by brand value:
+    [
+        'BrandA' => $theWatchInstanceWithBrandA,
+        'BrandB' => $theWatchInstanceWithBrandB,
+    ]
+
+    allIndexedByColor() will index by color value:
+    [
+        'Blue' => $theWatchInstanceWithColorBlue,
+        'Red' => $theWatchInstanceWithColorRed,
+    ]
+
+    allIndexedByUnknown() will throw a Kassko\DataMapper\Result\Exception\NotFoundIndexException.
     */
     $resultBuilder->allIndexedByBrand();//Indexed by brand value
     //or
@@ -237,7 +252,7 @@ There are other ways to get results. You can find below all the ways to get resu
 
 ```php
     /*
-    Return an iterator indexed by a property value (like "brand" value).
+    Return an iterator indexed by a property value.
 
     If the index does not exists, throw an exception Kassko\DataMapper\Result\Exception\NotFoundIndexException.
 
@@ -692,7 +707,7 @@ class Watch
 }
 ```
 
-Is the Watch object persisted ? We really don't know ! However, you could reply that's very practical to work with annotations beacause we can see both the domain object and its mapping rules. That's right ! Both have advantages and drawbacks. The choice is yours !
+Is the Watch object persisted ? We really don't know ! However, you could reply that's very practical to work with annotations because we can see both the domain object and its mapping rules. That's right ! Both have advantages and drawbacks. The choice is yours !
 
 ### Provider for toOne association ###
 
@@ -715,7 +730,7 @@ class Keyboard
     private $color;
 
     /**
-     * @DM\ToOneProvider(entityClass="Kassko\Sample\Manufacturer", findMethod="find")
+     * @DM\ToOneProvider(objectClass="Kassko\Sample\Manufacturer", findMethod="find")
      * @DM\Field(name="manufacturer_id")
      */
     private $manufacturer;
@@ -732,13 +747,13 @@ class Keyboard
 }
 ```
 
-As you can guess, the "find" method is that of the repository of the entity "Manufacturer" meanning "ManufacturerManager::find()".
+As you can guess, the "find" method is that of the manager of the object "Manufacturer" meanning "ManufacturerManager::find()".
 
 ```php
 namespace Kassko\Sample;
 
 /**
- * @DM\Object(repositoryClass="Kassko\Sample\ManufacturerManager")
+ * @DM\Object(providerClass="Kassko\Sample\ManufacturerManager")
  */
 class Manufacturer
 {
@@ -778,7 +793,7 @@ class ManufacturerManager
 }
 ```
 
-Usage:
+The following code:
 ```php
 $data = [
     'id' => 1,
@@ -786,12 +801,11 @@ $data = [
     'manufacturer_id' => 1
 ];
 
-//Here some stuff to create $dataMapper
-
+$dataMapper = (new Kassko\DataMapper\DataMapperFactory)->instance();
 var_dump($dataMapper->resultBuilder('Kassko\Sample\Keyboard', $data)->single());
 ```
 
-Display result:
+Will display:
 ```php
 object(Keyboard)#283 (8) {
     ["id":"Keyboard":private]=> int(1)
@@ -804,31 +818,13 @@ object(Keyboard)#283 (8) {
 }
 ```
 
-If the repository class wherin we wants to fetch is not that of the entity, we can override it:
-
-```php
-namespace Kassko\Sample;
-
-use Kassko\DataMapper\Annotation as DM;
-
-class Keyboard
-{
-    /**
-     * @DM\ToOneProvider(entityClass="Kassko\Sample\Manufacturer", repositoryClass="UnconventionnalManager" findMethod="find")
-     * @DM\Field
-     */
-    private $manufacturer;
-}
-```
-The find method will be "UnconventionnalManager::find()" instead of "ManufacturerManager::find()".
-
-Note that in an entity, if no property is specified as the identifier, the default identifier is a property named "$id". And if no property "$id" exists, an exception is thrown when the system attempt to know the entity identifier.
+Note that in an object, if no property is specified as the identifier, the default identifier is a property named "$id". And if no property "$id" exists, an exception is thrown when the system attempt to know the object identifier.
 
 Note also that for performance reasons, we can load the association "$manufacturer" only when we use it. For more details see the "Lazy loading" section.
 
-### Provider for toMany association ###
+### Provider for toMany relation ###
 
-An association "to many" is used similarly to "to one".
+An relation "to many" is used similarly to "to one".
 
 ```php
 namespace Kassko\Sample;
@@ -850,7 +846,7 @@ class Keyboard
 
     /**
      * @DM\Field
-     * @DM\ToManyProvider(entityClass="Kassko\Sample\Shop", findMethod="findByKeyboard")
+     * @DM\ToManyProvider(objectClass="Kassko\Sample\Shop", findMethod="findByKeyboard")
      */
     private $shops;
 
@@ -887,7 +883,7 @@ class ShopManager
 namespace Kassko\Sample;
 
 /**
- * @DM\Object(repositoryClass="Kassko\Sample\ShopManager")
+ * @DM\Object(providerClass="Kassko\Sample\ShopManager")
  */
 class Shop
 {
@@ -909,7 +905,7 @@ class Shop
 }
 ```
 
-The association name is the entity class name not full qualified. So if "Shop" is the entity class name, then "Shop" is the association name and then in "Keyboard" entity the "adder" is "addShop()".
+The association name is the object class name not full qualified. So if "Shop" is the object class name, then "Shop" is the association name and then in "Keyboard" object the "adder" is "addShop()".
 
 If the "Shop" FQCN (full qualified class name) was "Kassko\Sample\Shop", the association name would had been "Shop" and the adder would had been "addShop()".
 
@@ -922,7 +918,7 @@ use Kassko\DataMapper\Annotation as DM;
 class Keyboard
 {
     /**
-     * @DM\ToManyProvider(name="insertShop", entityClass="Kassko\Sample\Shop", findMethod="find")
+     * @DM\ToManyProvider(name="insertShop", objectClass="Kassko\Sample\Shop", findMethod="find")
      * @DM\Field
      */
     private $shops;
@@ -971,12 +967,14 @@ object(Keyboard)#283 (8) {
 
 Note that for performance reasons, we can load the association "$shop" only when we use it. For more details see the "Lazy loading" section.
 
-### Use multiples data sources to hydrate the same object ###
+### Use a specific database or a specific DBMS to hydrate one or a particular set of properties of your object ###
 
-A provider is usefull to create a super object. That is to say an object which contains other objects or some collections but there is no relation with these objects.
+data-mapper can use a specific database or a specific DBMS to hydrate one or a particular set of properties of your object. You can achieve that by creating a specific provider and requiring it in your mapping.
 
 ```php
 namespace Kassko\Sample;
+
+use Kassko\DataMapper\Annotation as DM;
 
 class Information
 {
@@ -994,11 +992,15 @@ class Information
 
     public function setBestShop(Shop $shop) { $this->bestShop = $bestShop; }
     public function addShop(Keyboard $keyboard) { $this->keyboard[] = $keyboard; }
+    public function getKeyboards() { return $this->keyboards; }
+    public function getBestShop() { return $this->bestShop; }
 }
 ```
 
 ```php
 namespace Kassko\Sample;
+
+use Kassko\DataMapper\Annotation as DM;
 
 class Keyboard
 {
@@ -1016,6 +1018,8 @@ class Keyboard
 
 ```php
 namespace Kassko\Sample;
+
+use Kassko\DataMapper\Annotation as DM;
 
 class Shop
 {
@@ -1036,9 +1040,16 @@ namespace Kassko\Sample;
 
 class ShopManager
 {
+    /**
+     * A connection to Shop database on MySql.
+     */
+    private $shopConnection;
+
     public function loadBestShop(Information $info)
     {
-        $info->setBestShop((new Shop())->setName('The best')->setAddress('3 best street'));
+        $rawData = $shopConnection->execute('some query to retrieve the best shop raw data');
+
+        $info->setBestShop((new Shop())->setName($rawData['name'])->setAddress($rawData['address']));
     }
 }
 ```
@@ -1048,16 +1059,95 @@ namespace Kassko\Sample;
 
 class KeyboardManager
 {
+    /**
+     * A connection to Instrument database on SqlServer.
+     */
+    private $instrumentConnection;
+
     public function loadKeyboards(Information $info)
     {
-        $info->addKeyboard((new Keyboard())->setBrand('Some brand')->setColor('blue'));
-        $info->addKeyboard((new Keyboard())->setBrand('Another brand')->setColor('green'));
+        $rawData = $instrumentConnection->execute('SELECT brand, color FROM keyboard');
+
+        foreach ($rawData as $record) {
+            $info->addKeyboard((new Keyboard())->setBrand($record['brand'])->setColor($record['color']));
+        }
     }
 }
 ```
-We also can load the properties "bestShop" and "keyboard" only when we use it. For more details see the "Lazy loading" section.
+We can load the properties "bestShop" and "keyboard" only when we use it. For more details see the "Lazy loading" section.
 
-### Lazy load relations data sources and other data sources ###
+### Create an object composite ###
+
+A provider is also usefull to create an object composite. That is to say an object which contains other objects or some collections but there is no relation with these objects (unlike object in relation toOneProvider or toManyProvider). In the previous section, the object Information is an object composite.
+
+### RelationProvider using a database or a DBMS different of its object owner one ###
+
+If you need it, you can override the provider class for toOneProvider or toManyProvider. It allows you to have relations between different databases or between different DBMS.
+
+Below, the toOneProvider is ManufacturerManager::find().
+
+```php
+namespace Kassko\Sample;
+
+use Kassko\DataMapper\Annotation as DM;
+
+class Keyboard
+{
+    /**
+     * @DM\ToOneProvider(objectClass="Kassko\Sample\Manufacturer", findMethod="find")
+     * @DM\Field
+     */
+    private $manufacturer;
+}
+```
+
+```php
+namespace Kassko\Sample;
+
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\Object(providerClass="Kassko\Sample\ManufacturerManager")
+ */
+class Manufacturer
+{
+    /**
+     * @DM\Field
+     * @DM\Id
+     */
+    private $id;
+
+    /**
+     * @DM\Field
+     */
+    private $name;
+
+    public function getId() { return $this->id; }
+    public function setId($id) { $this->id = $id; }
+    public function getName() { return $this->name; }
+    public function setName($name) { $this->name = $name; }
+}
+```
+
+With the following keyboard class:
+```php
+namespace Kassko\Sample;
+
+use Kassko\DataMapper\Annotation as DM;
+
+class Keyboard
+{
+    /**
+     * @DM\ToOneProvider(objectClass="Kassko\Sample\Manufacturer", class="UnconventionnalManager" findMethod="find")
+     * @DM\Field
+     */
+    private $manufacturer;
+}
+```
+
+The find method become "UnconventionnalManager::find()".
+
+### Lazy load toOneProvider, toManyProvider and Provider ###
 
 You can lazy load associations ToOneProvider:
 
@@ -1083,7 +1173,7 @@ class Keyboard
     private $color;
 
     /**
-     * @DM\ToOneProvider(entityClass="Kassko\Sample\Manufacturer", findMethod="find", lazyLoading="true")
+     * @DM\ToOneProvider(objectClass="Kassko\Sample\Manufacturer", findMethod="find", lazyLoading="true")
      * @DM\Field(name="manufacturer_id")
      */
     private $manufacturer;
@@ -1095,7 +1185,7 @@ class Keyboard
 
     public function getManufacturer()
     {
-        $this->loadProperty('manufacturer');//<= Load the manufacturer if not loaded.
+        $this->loadProperty('manufacturer');//<= Load the manufacturer from the property name if not loaded.
         return $this->manufacturer;
     }
 
@@ -1106,7 +1196,7 @@ class Keyboard
 }
 ```
 
-And ToManyProvider:
+Or ToManyProvider:
 
 ```php
 namespace Kassko\Sample;
@@ -1129,7 +1219,7 @@ class Keyboard
 
     /**
      * @DM\Field
-     * @DM\ToManyProvider(entityClass="Kassko\Sample\Shop", findMethod="findByKeyboard", lazyLoading="true")
+     * @DM\ToManyProvider(objectClass="Kassko\Sample\Shop", findMethod="findByKeyboard", lazyLoading="true")
      */
     private $shops;
 
@@ -1142,7 +1232,7 @@ class Keyboard
 
     public function getShops()
     {
-        $this->loadProperty('shops');//<= Load the manufacturer if not loaded.
+        $this->loadProperty('shops');//<= Load shops from the property name if not loaded.
         return $this->shops;
     }
 
@@ -1150,9 +1240,12 @@ class Keyboard
 }
 ```
 
-And you can "lazy provide":
+Or Provider:
 ```php
 namespace Kassko\Sample;
+
+use Kassko\DataMapper\Annotation as DM;
+use Kassko\DataMapper\ObjectExtension\LazyLoadableTrait;
 
 class Information
 {
@@ -1170,6 +1263,17 @@ class Information
 
     public function setBestShop(Shop $shop) { $this->bestShop = $bestShop; }
     public function addShop(Keyboard $keyboard) { $this->keyboard[] = $keyboard; }
+    public function getKeyboards()
+    {
+        $this->loadProperty('keyboards');//<= Load keyboards from the property name if not loaded.
+        return $this->keyboards;
+    }
+
+    public function getBestShop()
+    {
+        $this->loadProperty('bestShop');//<= Load the best shop from the property name if not loaded.
+        return $this->bestShop;
+    }
 }
 ```
 
@@ -1197,7 +1301,7 @@ class Color
 }
 ```
 
-A english data source with the mapping in yaml:
+A english Provider with the mapping in yaml:
 ```yaml
 # color_en.yml
 
@@ -1207,7 +1311,7 @@ fields:
     blue: ~
 ```
 
-A french data source with the mapping in yaml:
+A french Provider with the mapping in yaml:
 ```yaml
 # color_fr.yml
 
@@ -1220,7 +1324,7 @@ fields:
         name: bleu
 ```
 
-And imagine we've got a spanish data source with the mapping in a php format.
+And imagine we've got a spanish Provider with the mapping in a php format.
 ```php
 //color_es.php
 
@@ -1290,7 +1394,7 @@ $resultBuilder->setRuntimeConfiguration(
 $resultBuilder->single();
 ```
 
-### Map composite objects or assemble DTO (Data Transfer Objects) ###
+### Map composite objects ###
 
 ```php
 namespace Kassko\Sample;
@@ -1377,7 +1481,9 @@ $dataMapper->resultBuilder('Kassko\Sample\Customer', $data)->single();
 ```
 Note that you can have value objects which contains value objects and so on. And each value object can use it's own mapping configuration format.
 
-### Include mapping configuration ine other ones or inherit some mapping configurations ###
+### Assemble DTO (Data Transfer Objects) ###
+
+### Include mapping configuration in other ones or inherit some mapping configurations ###
 
 ### Field mapping level and class mapping level and inheritance ###
 If all fields use a same option, you can configure this option at "object" level.
@@ -1389,24 +1495,36 @@ This section will be written later.
 This section will be written later.
 
 ### Use inner configuration ###
+This section will be written later.
 
 ### Provide a custom configuration ###
+This section will be written later.
 
 ### Work with various mapping configuration formats in the same application ###
+This section will be written later.
 
-### You can cache your object ###
+### Cache your object ###
+This section will be written later.
+
 [see more in cache reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/cache.md).
 
 ### You can attach listeners to an action ###
+This section will be written later.
+
 [see more in listener reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/listener.md).
 
 ### You can use public properties instead of getters/setters ###
+This section will be written later.
+
 [see more in public properties reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/public_property.md).
 
 ### You can log in your object without injecting to it a logger dependency ###
+This section will be written later.
+
 [see more in log reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/log.md).
 
-### Use a dependency without injecting it in your domain object (keep POJO) ###
+### Use a service without injecting a dependency in your domain object ###
+This section will be written later.
 
 ### API details ###
 

@@ -8,5 +8,5 @@ namespace Kassko\DataMapper\Annotation;
 */
 final class ToOneProvider
 {
-    use AssociationCommonTrait;
+    use RelationProviderTrait;
 }
