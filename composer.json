@@ -13,8 +13,8 @@
     "require":{
         "php":">=5.5.0",
         "doctrine/common": "~2.4",
-        "symfony/config": "~2.6",
-        "symfony/yaml": "~2.6",
+        "symfony/config": "~2.5",
+        "symfony/yaml": "~2.5",
         "zendframework/zend-stdlib": "~2.3",
         "kassko/class-resolver": "~0.3.0@alpha"
     },
