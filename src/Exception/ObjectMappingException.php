@@ -31,12 +31,12 @@ class ObjectMappingException extends Exception
         return new self(sprintf("Bad object class. Value [%s] given.", $objectClassName));
     }
 
-    public static function invalidDateToWriteToStorage($value, $writeDateFormat)
+    public static function invalidDateToWriteToStorage($value, $writeDateConverter)
     {
         return new self(
             sprintf(
                 "Invalid date to write to storage. Date given [%s]. Format given [%s].",
-                is_object($value) ? get_class($value) : (isset($value) ? $value : 'null'), $writeDateFormat
+                is_object($value) ? get_class($value) : (isset($value) ? $value : 'null'), $writeDateConverter
             )
         );
     }
@@ -100,51 +100,5 @@ class ObjectMappingException extends Exception
     public static function notFoundAssociation($fieldName, $objectClassName)
     {
         return new self(sprintf("No association metadata found for property %s on class %s.", $fieldName, $objectClassName));
-    }
-
-    public static function invalidGetter($fieldName, array $config)
-    {
-        return new self(
-                sprintf(
-                    'Invalid "getter" configuration for field "%s". Values given : "%s".',
-                    $fieldName,
-                    '['
-                    .implode(
-                        ','
-                        ,
-                        array_map(
-                            function($key, $value) {
-                                return $key.' => '.$value;
-                            },
-                            array_keys($config),
-                            $config
-                        )
-                    )
-                    .']'
-                )
-            );
-    }
-
-    public static function invalidSetter($fieldName, array $config)
-    {
-        return new self(
-                sprintf(
-                    'Invalid "setter" configuration for field "%s". Values given : "%s".',
-                    $fieldName,
-                    '['
-                    .implode(
-                        ','
-                        ,
-                        array_map(
-                            function($key, $value) {
-                                return $key.' => '.$value;
-                            },
-                            array_keys($config),
-                            $config
-                        )
-                    )
-                    .']'
-                )
-            );
     }
 }

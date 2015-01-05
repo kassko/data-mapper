@@ -69,9 +69,15 @@ class ClassMetadata
     private $onAfterHydrate;
 
     /**
+     * @var array class methods
+     */
+    private $methods;
+
+    /**
      * @var ReflectionClass
      */
     protected $reflectionClass;
+
 
     /**
      * @param object|string $objectName
@@ -79,6 +85,7 @@ class ClassMetadata
     public function __construct($objectName)
     {
         $this->reflectionClass = new \ReflectionClass($objectName);
+        $this->methods = get_class_methods($objectName);
     }
 
     /**
@@ -110,11 +117,11 @@ class ClassMetadata
                 if (isset($fieldDataByKey['field']['type']) && 'date' == $fieldDataByKey['field']['type']) {
 
                     if (isset($this->objectReadDateFormat)) {
-                        $fieldDataByKey['field']['readDateFormat'] = $this->objectReadDateFormat;
+                        $fieldDataByKey['field']['readDateConverter'] = $this->objectReadDateFormat;
                     }
 
                     if (isset($this->objectWriteDateFormat)) {
-                        $fieldDataByKey['field']['writeDateFormat'] = $this->objectWriteDateFormat;
+                        $fieldDataByKey['field']['writeDateConverter'] = $this->objectWriteDateFormat;
                     }
                 }
             }
@@ -160,44 +167,44 @@ class ClassMetadata
     {
         if (array_key_exists($mappedFieldName, $this->toOneAssociations)) {
 
-            if (isset($this->toOneAssociations[$mappedFieldName]['entityClass'])) {
+            if (isset($this->toOneAssociations[$mappedFieldName]['objectClass'])) {
 
-                return $this->toOneAssociations[$mappedFieldName]['entityClass'];
+                return $this->toOneAssociations[$mappedFieldName]['objectClass'];
             }
         }
 
 
         if (array_key_exists($mappedFieldName, $this->toManyAssociations)) {
 
-            if (isset($this->toManyAssociations[$mappedFieldName]['entityClass'])) {
+            if (isset($this->toManyAssociations[$mappedFieldName]['objectClass'])) {
 
-                return $this->toManyAssociations[$mappedFieldName]['entityClass'];
+                return $this->toManyAssociations[$mappedFieldName]['objectClass'];
             }
         }
 
 
-        throw ObjectMappingException::notFoundAssociationTargetClass($mappedFieldName, $this->reflectionClass->getName());
+        throw ObjectMappingException::notFoundAssociationTargetClass($mappedFieldName, $this->getName());
     }
 
     public function getSingleValuedAssociationInfo($mappedFieldName)
     {
         if (! array_key_exists($mappedFieldName, $this->toOneAssociations)) {
-            throw ObjectMappingException::notFoundAssociation($mappedFieldName, $this->reflectionClass->getName());
+            throw ObjectMappingException::notFoundAssociation($mappedFieldName, $this->getName());
         }
 
         if (
-            ! isset($this->toOneAssociations[$mappedFieldName]['entityClass'])
+            ! isset($this->toOneAssociations[$mappedFieldName]['objectClass'])
             ||
             ! isset($this->toOneAssociations[$mappedFieldName]['findMethod'])
             ||
             ! isset($this->toOneAssociations[$mappedFieldName]['lazyLoading'])
         ) {
-            throw ObjectMappingException::notFoundAssociationInfo($mappedFieldName, $this->reflectionClass->getName());
+            throw ObjectMappingException::notFoundAssociationInfo($mappedFieldName, $this->getName());
         }
 
         return [
-            $this->toOneAssociations[$mappedFieldName]['entityClass'],
-            isset($this->toOneAssociations[$mappedFieldName]['repositoryClass']) ? $this->toOneAssociations[$mappedFieldName]['repositoryClass'] : null,
+            $this->toOneAssociations[$mappedFieldName]['objectClass'],
+            isset($this->toOneAssociations[$mappedFieldName]['class']) ? $this->toOneAssociations[$mappedFieldName]['class'] : null,
             $this->toOneAssociations[$mappedFieldName]['findMethod'],
             $this->toOneAssociations[$mappedFieldName]['lazyLoading'],
         ];
@@ -206,22 +213,22 @@ class ClassMetadata
     public function getCollectionValuedAssociationInfo($mappedFieldName)
     {
         if (! array_key_exists($mappedFieldName, $this->toManyAssociations)) {
-            throw ObjectMappingException::notFoundAssociation($mappedFieldName, $this->reflectionClass->getName());
+            throw ObjectMappingException::notFoundAssociation($mappedFieldName, $this->getName());
         }
 
-        $infoKeys = ['name', 'entityClass', 'findMethod', 'lazyLoading'];
+        $infoKeys = ['name', 'objectClass', 'findMethod', 'lazyLoading'];
         foreach ($infoKeys as $infoKey) {
 
             if (! isset($this->toManyAssociations[$mappedFieldName][$infoKey])) {
 
-                throw ObjectMappingException::notFoundAssociationInfo($mappedFieldName, $this->reflectionClass->getName(), $infoKey);
+                throw ObjectMappingException::notFoundAssociationInfo($mappedFieldName, $this->getName(), $infoKey);
             }
         }
 
         return [
             $this->toManyAssociations[$mappedFieldName]['name'],
-            $this->toManyAssociations[$mappedFieldName]['entityClass'],
-            isset($this->toManyAssociations[$mappedFieldName]['repositoryClass']) ? $this->toManyAssociations[$mappedFieldName]['repositoryClass'] : null,
+            $this->toManyAssociations[$mappedFieldName]['objectClass'],
+            isset($this->toManyAssociations[$mappedFieldName]['class']) ? $this->toManyAssociations[$mappedFieldName]['class'] : null,
             $this->toManyAssociations[$mappedFieldName]['findMethod'],
             $this->toManyAssociations[$mappedFieldName]['lazyLoading'],
         ];
@@ -662,7 +669,7 @@ class ClassMetadata
     public function getReadDateFormatByMappedField($mappedFieldName, $default)
     {
         if (null != $data = $this->getDataForField($mappedFieldName, $this->columnDataName)) {
-            return isset($data['readDateFormat']) ? $data['readDateFormat'] : $this->objectReadDateFormat;//<=== A REVOIR !!! Kassko
+            return isset($data['readDateConverter']) ? $data['readDateConverter'] : $this->objectReadDateFormat;//<=== A REVOIR !!! Kassko
         }
 
         return $default;
@@ -671,7 +678,7 @@ class ClassMetadata
     public function getWriteDateFormatByMappedField($mappedFieldName, $default)
     {
         if (null != $data = $this->getDataForField($mappedFieldName, $this->columnDataName)) {
-            return isset($data['writeDateFormat']) ? $data['writeDateFormat'] : $this->objectWriteDateFormat;//<=== A REVOIR !!! Kassko
+            return isset($data['writeDateConverter']) ? $data['writeDateConverter'] : $this->objectWriteDateFormat;//<=== A REVOIR !!! Kassko
         }
 
         return $default;
@@ -789,15 +796,16 @@ class ClassMetadata
                 return $this->getters[$mappedFieldName]['name'];
             }
 
-            switch ($type = $this->getters[$mappedFieldName]['type']) {
-
-                case 'get':
-                case 'is':
-                case 'has':
-                    return $type.ucfirst($mappedFieldName);
+            if (isset($this->getters[$mappedFieldName]['prefix'])) {
+                return $this->getters[$mappedFieldName]['prefix'].ucfirst($mappedFieldName);
             }
 
-            throw ObjectMappingException::invalidGetter($mappedFieldName, $this->getters[$mappedFieldName]);
+            static $defaultsGettersTypes = ['get', 'is', 'has'];
+            foreach ($defaultsGettersTypes as $getterType) {
+                if (in_array($getter = $getter.ucfirst($mappedFieldName), $this->methods)) {
+                    return $this->getters[$mappedFieldName]['name'] = $getter;
+                }
+            }
         }
 
         return 'get'.ucfirst($mappedFieldName);
@@ -815,13 +823,13 @@ class ClassMetadata
                 return $this->setters[$mappedFieldName]['name'];
             }
 
-            switch ($type = $this->setters[$mappedFieldName]['type']) {
-
-                case 'set':
-                    return $type.ucfirst($mappedFieldName);
+            if (isset($this->setters[$mappedFieldName]['prefix'])) {
+                return $this->setters[$mappedFieldName]['prefix'].ucfirst($mappedFieldName);
             }
 
-            throw ObjectMappingException::invalidSetter($mappedFieldName, $this->setters[$mappedFieldName]);
+            if (in_array($setter = 'set'.ucfirst($mappedFieldName), $this->methods)) {
+                return $this->setters[$mappedFieldName]['name'] = $setter;
+            }
         }
 
         return 'set'.ucfirst($mappedFieldName);

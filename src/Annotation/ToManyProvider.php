@@ -8,7 +8,7 @@ namespace Kassko\DataMapper\Annotation;
 */
 final class ToManyProvider
 {
-    use AssociationCommonTrait;
+    use RelationProviderTrait;
 
     /**
      * @var string

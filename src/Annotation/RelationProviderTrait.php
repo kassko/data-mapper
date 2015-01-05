@@ -3,21 +3,21 @@
 namespace Kassko\DataMapper\Annotation;
 
 /**
-* Property annotations to be used in ToOneProvider annotations or ToManyProvider annotations.
+* Property annotations to be used in ToOneDataSource annotations or ToManyDataSource annotations.
 *
 * @author kko
 */
-trait AssociationCommonTrait
+trait RelationProviderTrait
 {
-	/**
-     * @var string
-     */
-    public $entityClass;
-
     /**
      * @var string
      */
-    public $repositoryClass;
+    public $class;
+
+	/**
+     * @var string
+     */
+    public $objectClass;
 
     /**
      * @var string

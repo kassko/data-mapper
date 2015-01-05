@@ -18,7 +18,7 @@ class ArrayCache implements CacheInterface
     /**
      * {@inheritdoc}
      */
-    protected function fetch($id)
+    public function fetch($id)
     {
         return $this->contains($id) ? $this->data[$id] : false;
     }
@@ -26,7 +26,7 @@ class ArrayCache implements CacheInterface
     /**
      * {@inheritdoc}
      */
-    protected function contains($id)
+    public function contains($id)
     {
         return isset($this->data[$id]) || array_key_exists($id, $this->data);
     }
@@ -34,7 +34,7 @@ class ArrayCache implements CacheInterface
     /**
      * {@inheritdoc}
      */
-    protected function save($id, $data, $lifeTime = 0)
+    public function save($id, $data, $lifeTime = 0)
     {
         $this->data[$id] = $data;
 
@@ -44,7 +44,7 @@ class ArrayCache implements CacheInterface
     /**
      * {@inheritdoc}
      */
-    protected function delete($id)
+    public function delete($id)
     {
         unset($this->data[$id]);
 

@@ -3,7 +3,7 @@
 namespace Kassko\DataMapper\ClassMetadataLoader;
 
 use Doctrine\Common\Annotations\Reader as ReaderInterface;
-use Kassko\DataMapper\Annotation as OM;
+use Kassko\DataMapper\Annotation as DM;
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 use Kassko\DataMapper\Configuration\Configuration;
 
@@ -18,25 +18,25 @@ class AnnotationLoader extends AbstractLoader
     private $classMetadata;
     private $objectReflectionClass;
 
-    private static $objectAnnotationName = OM\Object::class;
-    private static $fieldAnnotationName = OM\Field::class;
-    private static $idAnnotationName = OM\Id::class;
-    private static $idCompositePartAnnotationName = OM\IdCompositePart::class;
-    private static $versionAnnotationName = OM\Version::class;
-    private static $transientAnnotationName = OM\Transient::class;
-    private static $valueObjectAnnotationName = OM\ValueObject::class;
-    private static $customHydratorAnnotationName = OM\CustomHydrator::class;
-    private static $objectListenersAnnotationName = OM\ObjectListeners::class;
-    private static $toOneAnnotationName = OM\ToOneProvider::class;
-    private static $toManyAnnotationName = OM\ToManyProvider::class;
-    private static $providerAnnotationName = OM\Provider::class;
-    private static $getterAnnotationName = OM\Getter::class;
-    private static $setterAnnotationName = OM\Setter::class;
+    private static $objectAnnotationName = DM\Object::class;
+    private static $fieldAnnotationName = DM\Field::class;
+    private static $idAnnotationName = DM\Id::class;
+    private static $idCompositePartAnnotationName = DM\IdCompositePart::class;
+    private static $versionAnnotationName = DM\Version::class;
+    private static $transientAnnotationName = DM\Transient::class;
+    private static $valueObjectAnnotationName = DM\ValueObject::class;
+    private static $customHydratorAnnotationName = DM\CustomHydrator::class;
+    private static $objectListenersAnnotationName = DM\ObjectListeners::class;
+    private static $toOneAnnotationName = DM\ToOneProvider::class;
+    private static $toManyAnnotationName = DM\ToManyProvider::class;
+    private static $providerAnnotationName = DM\Provider::class;
+    private static $getterAnnotationName = DM\Getter::class;
+    private static $setterAnnotationName = DM\Setter::class;
 
-    private static $preExtractAnnotationName = OM\PreExtract::class;
-    private static $postExtractAnnotationName = OM\PostExtract::class;
-    private static $preHydrateAnnotationName = OM\PreHydrate::class;
-    private static $postHydrateAnnotationName = OM\PostHydrate::class;
+    private static $preExtractAnnotationName = DM\PreExtract::class;
+    private static $postExtractAnnotationName = DM\PostExtract::class;
+    private static $preHydrateAnnotationName = DM\PreHydrate::class;
+    private static $postHydrateAnnotationName = DM\PostHydrate::class;
 
     public function __construct(ReaderInterface $reader)
     {
@@ -76,9 +76,9 @@ class AnnotationLoader extends AbstractLoader
 
             switch (get_class($annotation)) {
                 case self::$objectAnnotationName:
-                    $this->classMetadata->setRepositoryClass($annotation->repositoryClass);
-                    $this->classMetadata->setObjectReadDateFormat($annotation->readDateFormat);
-                    $this->classMetadata->setObjectWriteDateFormat($annotation->writeDateFormat);
+                    $this->classMetadata->setRepositoryClass($annotation->providerClass);
+                    $this->classMetadata->setObjectReadDateFormat($annotation->readDateConverter);
+                    $this->classMetadata->setObjectWriteDateFormat($annotation->writeDateConverter);
                     $this->classMetadata->setPropertyAccessStrategyEnabled($annotation->propertyAccessStrategy);
                     $this->classMetadata->setPropertyMetadataExtensionClass($annotation->fieldMappingExtensionClass);
                     $this->classMetadata->setClassMetadataExtensionClass($annotation->classMappingExtensionClass);
@@ -164,7 +164,7 @@ class AnnotationLoader extends AbstractLoader
                            $mappedDateFieldNames[] = $mappedFieldName;
                         }
 
-                        if (isset($annotation->writeStrategy) || isset($annotation->readStrategy)) {
+                        if (isset($annotation->writeConverter) || isset($annotation->readConverter)) {
 
                             $fieldsWithHydrationStrategy[$mappedFieldName] = [];
                             $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = null;
@@ -172,12 +172,12 @@ class AnnotationLoader extends AbstractLoader
                             $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = null;
                         }
 
-                        if (isset($annotation->writeStrategy)) {
-                            $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = $annotation->writeStrategy;
+                        if (isset($annotation->writeConverter)) {
+                            $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = $annotation->writeConverter;
                         }
 
-                        if (isset($annotation->readStrategy)) {
-                            $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $annotation->readStrategy;
+                        if (isset($annotation->readConverter)) {
+                            $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $annotation->readConverter;
                         }
 
                         if (isset($annotation->mappingExtensionClass)) {
@@ -194,9 +194,9 @@ class AnnotationLoader extends AbstractLoader
                     case self::$toManyAnnotationName:
                         $toManyAssociations[$mappedFieldName] = (array)$annotation;
 
-                        if (! isset($toManyAssociations[$mappedFieldName]['name']) && isset($toManyAssociations[$mappedFieldName]['entityClass'])) {
+                        if (! isset($toManyAssociations[$mappedFieldName]['name']) && isset($toManyAssociations[$mappedFieldName]['objectClass'])) {
 
-                            $toManyAssociations[$mappedFieldName]['name'] = substr(strrchr($toManyAssociations[$mappedFieldName]['entityClass'], "\\"), 1);
+                            $toManyAssociations[$mappedFieldName]['name'] = substr(strrchr($toManyAssociations[$mappedFieldName]['objectClass'], "\\"), 1);
                         }
                         break;
 

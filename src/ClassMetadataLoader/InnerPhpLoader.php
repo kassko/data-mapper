@@ -3,22 +3,20 @@
 namespace Kassko\DataMapper\ClassMetadataLoader;
 
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
-use Kassko\DataMapper\Configuration\Configuration;
-use Symfony\Component\Yaml\Parser;
 
 /**
- * Class metadata loader for yaml format.
+ * Class metadata loader for php embeded in objects.
  *
  * @author kko
  */
-class YamlLoader extends AbstractLoader
+class InnerPhpLoader extends AbstractLoader
 {
     private $classMetadata;
 
     public function supports(LoadingCriteriaInterface $loadingCriteria)
     {
         return
-            'yaml' === $loadingCriteria->getResourceType()
+            'inner_php' === $loadingCriteria->getResourceType()
             &&
             method_exists($loadingCriteria->getResourceClass(), $loadingCriteria->getResourceMethod())
         ;
@@ -27,7 +25,7 @@ class YamlLoader extends AbstractLoader
     protected function doGetData(LoadingCriteriaInterface $loadingCriteria)
     {
         $callable = [$loadingCriteria->getResourceClass(), $loadingCriteria->getResourceMethod()];
-        return $this->parseContent($callable());
+        return $callable();
     }
 
     protected function doLoadClassMetadata(ClassMetadata $classMetadata, array $data)
@@ -42,16 +40,16 @@ class YamlLoader extends AbstractLoader
 
     private function loadClassAnnotations(array $data)
     {
-        if (isset($data['object']['repositoryClass'])) {
-            $this->classMetadata->setRepositoryClass($data['object']['repositoryClass']);
+        if (isset($data['object']['providerClass'])) {
+            $this->classMetadata->setRepositoryClass($data['object']['providerClass']);
         }
 
-        if (isset($data['object']['readDateFormat'])) {
-            $this->classMetadata->setObjectReadDateFormat($data['object']['readDateFormat']);
+        if (isset($data['object']['readDateConverter'])) {
+            $this->classMetadata->setObjectReadDateFormat($data['object']['readDateConverter']);
         }
 
-        if (isset($data['object']['writeDateFormat'])) {
-            $this->classMetadata->setObjectWriteDateFormat($data['object']['writeDateFormat']);
+        if (isset($data['object']['writeDateConverter'])) {
+            $this->classMetadata->setObjectWriteDateFormat($data['object']['writeDateConverter']);
         }
 
         if (isset($data['object']['propertyAccessStrategy'])) {
@@ -133,6 +131,10 @@ class YamlLoader extends AbstractLoader
         $dataName = 'fields';
         foreach ($data[$dataName] as $mappedFieldName => $fieldData) {
 
+            if (is_numeric($mappedFieldName)) {//if $mappedFieldName is a numeric index, $fieldData contains the field.
+                $fieldData = ['name' => $fieldData];
+            }
+
             $mappedManagedFieldNames[] = $mappedFieldName;
 
             if (! isset($fieldData['name'])) {
@@ -161,7 +163,7 @@ class YamlLoader extends AbstractLoader
                $mappedDateFieldNames[] = $mappedFieldName;
             }
 
-            if (isset($fieldData['writeStrategy']) || isset($fieldData['readStrategy'])) {
+            if (isset($fieldData['writeConverter']) || isset($fieldData['readConverter'])) {
 
                 $fieldsWithHydrationStrategy[$mappedFieldName] = [];
                 $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = null;
@@ -169,12 +171,12 @@ class YamlLoader extends AbstractLoader
                 $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = null;
             }
 
-            if (isset($fieldData['writeStrategy'])) {
-                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = $fieldData['writeStrategy'];
+            if (isset($fieldData['writeConverter'])) {
+                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = $fieldData['writeConverter'];
             }
 
-            if (isset($fieldData['readStrategy'])) {
-                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $fieldData['readStrategy'];
+            if (isset($fieldData['readConverter'])) {
+                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $fieldData['readConverter'];
             }
 
             if (isset($fieldData['mappingExtensionClass'])) {
@@ -269,10 +271,5 @@ class YamlLoader extends AbstractLoader
         if (count($fieldsWithHydrationStrategy)) {
             $this->classMetadata->setFieldsWithHydrationStrategy($fieldsWithHydrationStrategy);
         }
-    }
-
-    protected function parseContent($content)
-    {
-        return (new Parser())->parse($content);
     }
 }

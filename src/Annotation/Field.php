@@ -25,10 +25,10 @@ final class Field
     /**
     * @var string
     */
-    public $readStrategy;
+    public $readConverter;
 
     /**
     * @var string
     */
-    public $writeStrategy;
+    public $writeConverter;
 }

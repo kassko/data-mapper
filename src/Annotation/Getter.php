@@ -10,13 +10,5 @@ namespace Kassko\DataMapper\Annotation;
 */
 final class Getter
 {
-    /**
-    * @var string
-    */
-    public $type = 'get';
-
-    /**
-    * @var string
-    */
-    public $name;
+    use PropertyWrapperTrait;
 }

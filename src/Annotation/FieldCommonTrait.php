@@ -16,12 +16,12 @@ trait FieldCommonTrait
 	/**
     * @var string
     */
-    public $readDateFormat;
+    public $readDateConverter;
 
     /**
     * @var string
     */
-    public $writeDateFormat;
+    public $writeDateConverter;
 
     /**
     * @var string

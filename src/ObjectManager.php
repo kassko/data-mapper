@@ -113,14 +113,14 @@ class ObjectManager
 
             if ($metadata->isMappedDateField($mappedFieldName)) {
 
-                $readDateFormat = $metadata->getReadDateFormatByMappedField($mappedFieldName, null);
-                $writeDateFormat = $metadata->getWriteDateFormatByMappedField($mappedFieldName, null);
+                $readDateConverter = $metadata->getReadDateFormatByMappedField($mappedFieldName, null);
+                $writeDateConverter = $metadata->getWriteDateFormatByMappedField($mappedFieldName, null);
 
-                if (! is_null($readDateFormat) && ! is_null($writeDateFormat)) {
-                    $strategy = new DateHydrationStrategy($readDateFormat, $writeDateFormat, $strategy);
+                if (! is_null($readDateConverter) && ! is_null($writeDateConverter)) {
+                    $strategy = new DateHydrationStrategy($readDateConverter, $writeDateConverter, $strategy);
                 } else {
                     throw new ObjectMappingException(
-                        'A date field should provide "readDateFormat" and "writeDateFormat" metadata'
+                        'A date field should provide "readDateConverter" and "writeDateConverter" metadata'
                     );
                 }
             }
@@ -181,7 +181,7 @@ class ObjectManager
 
     public function findFromProviders($customSourceClass, $customSourceMethod, $object)
     {
-        $customSource = $this->classResolver ? $this->classResolver->resolve($customSourceClass) : new $repositoryClass;
+        $customSource = $this->classResolver ? $this->classResolver->resolve($customSourceClass) : new $customSourceClass;
 
         if (! method_exists($customSource, $customSourceMethod) || ! is_callable([$customSource, $customSourceMethod])) {
             throw new \BadMethodCallException(sprintf('Erreur lors de l\'appel de la méthode "%s::%s"', get_class($customSource), $customSourceMethod));

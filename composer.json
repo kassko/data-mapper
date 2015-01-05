@@ -13,8 +13,10 @@
     "require":{
         "php":">=5.5.0",
         "doctrine/common": "~2.4",
+        "symfony/config": "~2.6",
+        "symfony/yaml": "~2.6",
         "zendframework/zend-stdlib": "~2.3",
-        "kassko/class-resolver": "~0.1@alpha"
+        "kassko/class-resolver": "~0.3.0@alpha"
     },
     "autoload":{
         "psr-4":{
@@ -23,7 +25,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "0.8.0.x-dev"
+            "dev-master": "0.9.0.x-dev"
         }
     }
 }

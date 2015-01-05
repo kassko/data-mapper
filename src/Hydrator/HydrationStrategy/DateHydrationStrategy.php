@@ -13,14 +13,14 @@ use DateTime;
 */
 class DateHydrationStrategy implements HydrationStrategyInterface
 {
-    private $readDateFormat;
-    private $writeDateFormat;
+    private $readDateConverter;
+    private $writeDateConverter;
     private $strategyOnNoDate;
 
-    public function __construct($readDateFormat, $writeDateFormat, ClosureHydrationStrategy $strategyOnNoDate = null)
+    public function __construct($readDateConverter, $writeDateConverter, ClosureHydrationStrategy $strategyOnNoDate = null)
     {
-        $this->readDateFormat = $readDateFormat;
-        $this->writeDateFormat = $writeDateFormat;
+        $this->readDateConverter = $readDateConverter;
+        $this->writeDateConverter = $writeDateConverter;
         $this->strategyOnNoDate = $strategyOnNoDate;
     }
 
@@ -29,7 +29,7 @@ class DateHydrationStrategy implements HydrationStrategyInterface
     */
     public function extract($value, $object = null, $data = null)
     {
-        if (! isset($this->writeDateFormat)) {
+        if (! isset($this->writeDateConverter)) {
             throw ObjectMappingException::unspecifiedWriteDateFormat();
         }
 
@@ -42,10 +42,10 @@ class DateHydrationStrategy implements HydrationStrategyInterface
         }
 
         if (! $value instanceof DateTimeInterface) {
-            throw ObjectMappingException::invalidDateToWriteToStorage($value, $this->writeDateFormat);
+            throw ObjectMappingException::invalidDateToWriteToStorage($value, $this->writeDateConverter);
         }
 
-        return $value->format($this->writeDateFormat);
+        return $value->format($this->writeDateConverter);
     }
 
     /**
@@ -53,7 +53,7 @@ class DateHydrationStrategy implements HydrationStrategyInterface
     */
     public function hydrate($value, $data = null, $object = null)
     {
-        if (is_null($this->readDateFormat)) {
+        if (is_null($this->readDateConverter)) {
             return $value;
         }
 
@@ -69,9 +69,9 @@ class DateHydrationStrategy implements HydrationStrategyInterface
             return $value;
         }
 
-        $mappedValue = DateTime::createFromFormat($this->readDateFormat, $value);
+        $mappedValue = DateTime::createFromFormat($this->readDateConverter, $value);
         if (false === $mappedValue) {
-            throw ObjectMappingException::cantCreateDateFromSpecifiedFormat($value, $this->readDateFormat);
+            throw ObjectMappingException::cantCreateDateFromSpecifiedFormat($value, $this->readDateConverter);
         }
 
         return $mappedValue;

@@ -2,16 +2,16 @@
 
 namespace Kassko\DataMapper\Listener;
 
-use Kassko\ClassResolver\FactoryClassResolver;
+use Kassko\ClassResolver\CallableClassResolver;
 use Kassko\DataMapper\Listener\EventManagerAwareTrait;
 use Kassko\DataMapper\Listener\QueryEvent;
 
 /**
- * Object listener resolver to work with a factory.
+ * Object listener resolver which allows to work with a callable.
  *
  * @author kko
  */
-class ClosureObjectListenerResolver extends ClosureClassResolver implements ObjectListenerResolverInterface
+class CallableObjectListenerResolver extends CallableClassResolver implements ObjectListenerResolverInterface
 {
     use EventManagerAwareTrait;
 

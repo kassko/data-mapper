@@ -1,7 +1,11 @@
+0.9.0.0-alpha - 2015/01/04 - Break version:
+** New **: Add a high level configuration to facilitate to create a DataMapper instance
+** Break **: Rename some keys in mapping configuration
+
 0.8.0.0-alpha - 2014/12/22 - Break version:
+** New **: Add a method to get an hydrator from the DataMapper class
 ** Break **: Modify the DataMapper class API, rename the methods with shorter names
 ** Break **: Modify the ResultBuilder class API, rename the methods with shorter names
-** New **: Add a method to get an hydrator from the DataMapper class
 
 0.7.1.0-alpha - 2014/12/16 - NEW version:
 ** New **: Add a method to get the configuration from the DataMapper class
