@@ -259,6 +259,8 @@ class Hydrator extends AbstractHydrator
 
     public function loadProperty($object, $mappedFieldName)
     {
+        $this->prepare($object);
+        
         if ($this->metadata->isSingleValuedAssociation($mappedFieldName)) {
 
             $this->walkToOneHydration($mappedFieldName, $object, $this->memberAccessStrategy->getValue($object, $mappedFieldName), true);
