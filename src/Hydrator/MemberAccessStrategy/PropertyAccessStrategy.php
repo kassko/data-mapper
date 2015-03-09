@@ -27,7 +27,7 @@ class PropertyAccessStrategy implements MemberAccessStrategyInterface
         return $reflProperty->getValue($object);
     }
 
-    public function setScalarValue($value, $object, $fieldName)
+    public function setValue($value, $object, $fieldName)
     {
         if (! isset($fieldName)) {
             return;
@@ -36,19 +36,6 @@ class PropertyAccessStrategy implements MemberAccessStrategyInterface
         $reflProperty = $this->reflectionClass->getProperty($fieldName);
         $reflProperty->setAccessible(true);
         $reflProperty->setValue($object, $value);
-    }
-
-    public function setObjectValue($subObjectClassName, $object, $fieldName)
-    {
-        if (! isset($fieldName)) {
-            return false;
-        }
-
-        $reflProperty = $this->reflectionClass->getProperty($fieldName);
-        $reflProperty->setAccessible(true);
-        $reflProperty->setValue($object, $value = new $subObjectClassName);
-
-        return $value;
     }
 
     public function setSingleAssociation($subObject, $object, $fieldName)

@@ -29,7 +29,7 @@ class AnnotationLoader extends AbstractLoader
     private static $objectListenersAnnotationName = DM\ObjectListeners::class;
     private static $toOneAnnotationName = DM\ToOneProvider::class;
     private static $toManyAnnotationName = DM\ToManyProvider::class;
-    private static $providerAnnotationName = DM\Provider::class;
+    private static $providerAnnotationName = DM\DataSource::class;
     private static $getterAnnotationName = DM\Getter::class;
     private static $setterAnnotationName = DM\Setter::class;
 

@@ -13,8 +13,7 @@ interface MemberAccessStrategyInterface
 {
     function prepare($object, ClassMetadata $metadata);
     function getValue($object, $fieldName);
-    function setScalarValue($value, $object, $fieldName);
-    function setObjectValue($subObjectClassName, $object, $fieldName);
+    function setValue($value, $object, $fieldName);
     function setSingleAssociation($subObject, $object, $fieldName);
     function setCollectionAssociation(array $subObjects, $object, $fieldName, $adderPart);
 }

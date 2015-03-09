@@ -35,31 +35,13 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
         return isset($getter) && in_array($getter, $this->classMethods) ? $object->$getter() : null;
     }
 
-    public function setScalarValue($value, $object, $fieldName)
+    public function setValue($value, $object, $fieldName)
     {
         $setter = $this->classMetadata->setterise($fieldName);
 
         if (isset($setter) && in_array($setter, $this->classMethods)) {
             $object->$setter($value);
         }
-    }
-
-    public function setObjectValue($subObjectClassName, $object, $fieldName)
-    {
-        $setter = $this->classMetadata->setterise($fieldName);
-
-        if (in_array($setter, $this->classMethods)) {
-            if ('DateTime' != $subObjectClassName) {
-                $value = new $subObjectClassName;
-            } else {
-                $value = new \DateTime;
-            }
-            $object->$setter($value);
-
-            return $value;
-        }
-
-        return false;
     }
 
     public function setSingleAssociation($subObject, $object, $fieldName)

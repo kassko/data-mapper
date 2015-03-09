@@ -6,7 +6,7 @@ namespace Kassko\DataMapper\Annotation;
 * @Annotation
 * @Target("PROPERTY")
 */
-final class Provider
+final class DataSource
 {
     /**
      * @var string

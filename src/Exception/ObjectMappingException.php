@@ -101,4 +101,29 @@ class ObjectMappingException extends Exception
     {
         return new self(sprintf("No association metadata found for property %s on class %s.", $fieldName, $objectClassName));
     }
+
+    public static function forbiddenKeyInDataSource(
+        $objectClassName, 
+        $dataSourceClassName,
+        $dataSourceMethodName,
+        $originalFieldName,
+        $originalFieldNames,
+        $mappedFieldNames
+    ) {
+        return new ObjectMappingException(
+            sprintf(
+                'In domain object "%s", the data source "%s::%s" return the forbidden key "%s".'
+                . ' Maybe you have provided too many keys or some numerical keys, allowed keys are "%s".'
+                . ' Or maybe in your domain object mapping configuration,'
+                . ' you have forgotten to associate a property to the data source.'
+                . ' Actual properties associated are "%s".',
+                $objectClassName,
+                $dataSourceClassName,
+                $dataSourceMethodName,
+                $originalFieldName,
+                '[ ' . implode(', ', $originalFieldNames) . ' ]',
+                '[ ' . implode(', ', $mappedFieldNames) . ' ]'
+            )
+        );
+    }
 }

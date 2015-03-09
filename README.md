@@ -25,7 +25,7 @@ data-mapper component represents some raw data like objects as all data-mapper b
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-mapper": "~0.9.0@alpha"
+    "kassko/data-mapper": "~0.10.0@alpha"
 }
 ```
 
@@ -969,7 +969,7 @@ Note that for performance reasons, we can load the association "$shop" only when
 
 ### Use a specific database or a specific DBMS to hydrate one or a particular set of properties of your object ###
 
-data-mapper can use a specific database or a specific DBMS to hydrate one or a particular set of properties of your object. You can achieve that by creating a specific provider and requiring it in your mapping.
+data-mapper can use a specific database or a specific DBMS to hydrate one or a particular set of properties of your object. You can achieve that by creating a specific data source and requiring it in your mapping.
 
 ```php
 namespace Kassko\Sample;
@@ -979,13 +979,13 @@ use Kassko\DataMapper\Annotation as DM;
 class Information
 {
     /**
-     * @DM\Provider(class="Kassko\Sample\KeyboardManager", method="loadKeyboards")
+     * @DM\DataSource(class="Kassko\Sample\KeyboardManager", method="loadKeyboards")
      * @DM\Field
      */
     private $keyboards = [];
 
     /**
-     * @DM\Provider(class="Kassko\Sample\ShopManager", method="loadBestShop")
+     * @DM\DataSource(class="Kassko\Sample\ShopManager", method="loadBestShop")
      * @DM\Field
      */
     private $bestShop;
@@ -1078,7 +1078,7 @@ We can load the properties "bestShop" and "keyboard" only when we use it. For mo
 
 ### Create an object composite ###
 
-A provider is also usefull to create an object composite. That is to say an object which contains other objects or some collections but there is no relation with these objects (unlike object in relation toOneProvider or toManyProvider). In the previous section, the object Information is an object composite.
+A custom data source is also usefull to create an object composite. That is to say an object which contains other objects or some collections but there is no relation with these objects (unlike object in relation toOneProvider or toManyProvider). In the previous section, the object Information is an object composite.
 
 ### RelationProvider using a database or a DBMS different of its object owner one ###
 
@@ -1240,7 +1240,7 @@ class Keyboard
 }
 ```
 
-Or Provider:
+Or DataSource:
 ```php
 namespace Kassko\Sample;
 
@@ -1250,13 +1250,13 @@ use Kassko\DataMapper\ObjectExtension\LazyLoadableTrait;
 class Information
 {
     /**
-     * @DM\Provider(class="Kassko\Sample\KeyboardManager", method="loadKeyboards", lazyLoading="true")
+     * @DM\DataSource(class="Kassko\Sample\KeyboardManager", method="loadKeyboards", lazyLoading="true")
      * @DM\Field
      */
     private $keyboards = [];
 
     /**
-     * @DM\Provider(class="Kassko\Sample\ShopManager", method="loadBestShop", lazyLoading="true")
+     * @DM\DataSource(class="Kassko\Sample\ShopManager", method="loadBestShop", lazyLoading="true")
      * @DM\Field
      */
     private $bestShop;
@@ -1301,7 +1301,7 @@ class Color
 }
 ```
 
-A english Provider with the mapping in yaml:
+A english data source with the mapping in yaml:
 ```yaml
 # color_en.yml
 
@@ -1311,7 +1311,7 @@ fields:
     blue: ~
 ```
 
-A french Provider with the mapping in yaml:
+A french data source with the mapping in yaml:
 ```yaml
 # color_fr.yml
 
@@ -1324,7 +1324,7 @@ fields:
         name: bleu
 ```
 
-And imagine we've got a spanish Provider with the mapping in a php format.
+And imagine we've got a spanish data source with the mapping in a php format.
 ```php
 //color_es.php
 

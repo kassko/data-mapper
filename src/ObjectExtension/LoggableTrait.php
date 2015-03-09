@@ -14,6 +14,17 @@ trait LoggableTrait
     public function getLogger()
     {
         static $logger;
-        return $logger = $logger ?: Registry::getInstance()[Registry::KEY_LOGGER];
+
+        if (null === $logger) {
+
+            $registry = Registry::getInstance();
+            if (isset($registry[Registry::KEY_LOGGER])) {
+                $logger = $registry[Registry::KEY_LOGGER]->getInstance(get_called_class());
+            } else {
+                $logger = false;
+            }
+        }
+
+        return $logger; 
     }
 }

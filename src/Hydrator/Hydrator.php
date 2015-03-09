@@ -197,8 +197,8 @@ class Hydrator extends AbstractHydrator
 
                 if (null === $mappedFieldName) {
 
-                    //It's possible that a raw field name don't mathh a field name
-                    //beacause a raw field can be a value object part.
+                    //It's possible that a raw field name has no corresponding field name
+                    //because a raw field can be a value object part.
                     continue;
                 }
 
@@ -319,7 +319,7 @@ class Hydrator extends AbstractHydrator
         }
 
         //if ($this->hasStrategy($mappedFieldName)) {
-            $this->memberAccessStrategy->setScalarValue($value, $object, $mappedFieldName);
+            $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);
         //}
 
         return true;
@@ -382,7 +382,32 @@ class Hydrator extends AbstractHydrator
 
         if (! isset($this->providerLoadingDone[$key]) && ($enforceLoading || ! $lazyLoading)) {
 
-            $this->findFromProviders($class, $method, $object);
+            $data = $this->findFromProviders($class, $method);
+            $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameProvider($mappedFieldName));
+
+            foreach ($data as $originalFieldName => $value) {
+                
+                $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
+                if (! in_array($mappedFieldName, $mappedFieldsToHydrate)) {
+
+                    throw ObjectMappingException::forbiddenKeyInDataSource(
+                        get_class($object),
+                        $class,
+                        $method,
+                        $originalFieldName,
+                        array_map(
+                            function ($mappedFieldName) {
+                                return $this->metadata->getOriginalFieldName($mappedFieldName);
+                            },
+                            $mappedFieldsToHydrate
+                        ),
+                        $mappedFieldsToHydrate
+                    );
+                }
+
+                $this->walkHydration($mappedFieldName, $object, $value, $data);                    
+            }
+            
             $this->providerLoadingDone[$key] = true;
         }
     }
@@ -399,7 +424,7 @@ class Hydrator extends AbstractHydrator
         $valueObjectHydrator = $this->objectManager->createHydratorFor($objectKey);
 
         $valueObject = new $voClassName;
-        $this->memberAccessStrategy->setScalarValue($valueObject, $object, $mappedFieldName);
+        $this->memberAccessStrategy->setValue($valueObject, $object, $mappedFieldName);
         $result = $valueObjectHydrator->hydrate($data, $valueObject, $objectKey);
         $this->popRuntimeConfiguration();
 
@@ -463,9 +488,9 @@ class Hydrator extends AbstractHydrator
         return $this->objectManager->findCollection($objectClass, $findMethod, $repositoryClass);
     }
 
-    protected function findFromProviders($customSourceClass, $customSourceMethod, $object)
+    protected function findFromProviders($customSourceClass, $customSourceMethod)
     {
-        $this->objectManager->findFromProviders($customSourceClass, $customSourceMethod, $object);
+        return $this->objectManager->findFromProviders($customSourceClass, $customSourceMethod);
     }
 
     protected function setTemporaryValueForPropertyToLazyLoad($value, $object, $mappedFieldName)
@@ -480,7 +505,7 @@ class Hydrator extends AbstractHydrator
             $memberAccessStrategy = $this->memberAccessStrategy;
         }
 
-        $memberAccessStrategy->setScalarValue($value, $object, $mappedFieldName);
+        $memberAccessStrategy->setValue($value, $object, $mappedFieldName);
     }
 
     protected function doPrepare($object, ObjectKey $objectKey = null)
