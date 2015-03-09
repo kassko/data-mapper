@@ -1,4 +1,4 @@
-0.10.0.0-alpha - 2015/01/04 - Break version:
+0.10.0.0-alpha - 2015/03/09 - Break version:
 ** Break **: In domain object mapping configuration, move provider concept to a data source concept and the provider key name is moved to something as "data source" in all configuration format.
 ** New **: A data source concept which improves the previous provider concept (removed). It does better the work to allow to hydrate some properties from a specific source.
 ** Fix **: Fix bug in domain object using an unavailable extension. For example, if the lazyloading extension is unavailable, the code for it (the loadProperty() method) is disable and the program no longer crashes.
