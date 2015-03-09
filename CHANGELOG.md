@@ -1,3 +1,17 @@
+0.10.0.0-alpha - 2015/01/04 - Break version:
+** Break **: In domain object mapping configuration, move provider concept to a data source concept and the provider key name is moved to something as "data source" in all configuration format.
+** New **: A data source concept which improves the previous provider concept (removed). It does better the work to allow to hydrate some properties from a specific source.
+** Fix **: Fix bug in domain object using an unavailable extension. For example, if the lazyloading extension is unavailable, the code for it (the loadProperty() method) is disable and the program no longer crashes.
+
+0.9.0.3-alpha - 2015/01/04 - Break version:
+** Fix **: Fix a bug which occurs sometimes when using the Hydrator::loadPropertyMethod()
+
+0.9.0.2-alpha - 2015/01/04 - Break version:
+** Fix **: Fix travis information
+
+0.9.0.1-alpha - 2015/01/04 - Break version:
+** Fix **: Fix some bad component version requirements
+
 0.9.0.0-alpha - 2015/01/04 - Break version:
 ** New **: Add a high level configuration to facilitate to create a DataMapper instance
 ** Break **: Rename some keys in mapping configuration

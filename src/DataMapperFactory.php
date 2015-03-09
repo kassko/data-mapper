@@ -224,7 +224,6 @@ class DataMapperFactory
      */
     public function settings(array $settings)
     {
-        var_dump(Utils::getUnpackedSettings($settings));
         $this->pSettings[] = Utils::getUnpackedSettings($settings);
 
         return $this;

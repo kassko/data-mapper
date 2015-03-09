@@ -198,8 +198,8 @@ class InnerYamlLoader extends AbstractLoader
             }
         }
 
-        if (isset($data['provider'])) {
-            $providers[$mappedFieldName] = $data['provider'];
+        if (isset($data['dataSource'])) {
+            $providers[$mappedFieldName] = $data['dataSource'];
         }
 
         if (isset($data['valueObjects'])) {
