@@ -147,7 +147,7 @@ class ObjectManager
             $repo = $this->classResolver ? $this->classResolver->resolve($repositoryClass) : new $repositoryClass;
         }
 
-        if (! method_exists($repo, $findMethod) || ! is_callable([$repo, $findMethod])) {//method_exists() est nécessaire pour filtrer la méthode magique __call() que ne filtre pas is_callable().
+        if (! method_exists($repo, $findMethod) || ! is_callable([$repo, $findMethod])) {//method_exists() est nÃ©cessaire pour filtrer la mÃ©thode magique __call() que ne filtre pas is_callable().
             throw new \BadMethodCallException(
                 sprintf(
                     "Error on method call %s::%s",
@@ -167,7 +167,7 @@ class ObjectManager
             $repo = $this->classResolver ? $this->classResolver->resolve($repositoryClass) : new $repositoryClass;
         }
 
-        if (! method_exists($repo, $findMethod) || ! is_callable([$repo, $findMethod])) {//method_exists() est nécessaire pour filtrer la méthode magique __call() que ne filtre pas is_callable().
+        if (! method_exists($repo, $findMethod) || ! is_callable([$repo, $findMethod])) {//method_exists() est nÃ©cessaire pour filtrer la mÃ©thode magique __call() que ne filtre pas is_callable().
             throw new \BadMethodCallException(
                 sprintf(
                     "Error on method call %s::%s",
@@ -179,15 +179,15 @@ class ObjectManager
         return $repo->$findMethod();
     }
 
-    public function findFromProviders($customSourceClass, $customSourceMethod)
+    public function findFromProviders($customSourceClass, $customSourceMethod, $object)
     {
         $customSource = $this->classResolver ? $this->classResolver->resolve($customSourceClass) : new $customSourceClass;
 
         if (! method_exists($customSource, $customSourceMethod) || ! is_callable([$customSource, $customSourceMethod])) {
-            throw new \BadMethodCallException(sprintf('Erreur lors de l\'appel de la m�thode "%s::%s"', get_class($customSource), $customSourceMethod));
+            throw new \BadMethodCallException(sprintf('Erreur lors de l\'appel de la méthode "%s::%s"', get_class($customSource), $customSourceMethod));
         }
 
-        return $customSource->$customSourceMethod();
+        return $customSource->$customSourceMethod($object);
     }
 
     public function getRepository($objectClass)
