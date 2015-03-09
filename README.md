@@ -25,7 +25,7 @@ data-mapper component represents some raw data like objects as all data-mapper b
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-mapper": "~0.9.0@alpha"
+    "kassko/data-mapper": "~0.10.0@alpha"
 }
 ```
 
