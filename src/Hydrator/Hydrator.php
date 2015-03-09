@@ -382,7 +382,7 @@ class Hydrator extends AbstractHydrator
 
         if (! isset($this->providerLoadingDone[$key]) && ($enforceLoading || ! $lazyLoading)) {
 
-            $data = $this->findFromProviders($class, $method);
+            $data = $this->findFromProviders($class, $method, $object);
             $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameProvider($mappedFieldName));
 
             foreach ($data as $originalFieldName => $value) {
@@ -488,9 +488,9 @@ class Hydrator extends AbstractHydrator
         return $this->objectManager->findCollection($objectClass, $findMethod, $repositoryClass);
     }
 
-    protected function findFromProviders($customSourceClass, $customSourceMethod)
+    protected function findFromProviders($customSourceClass, $customSourceMethod, $object)
     {
-        return $this->objectManager->findFromProviders($customSourceClass, $customSourceMethod);
+        return $this->objectManager->findFromProviders($customSourceClass, $customSourceMethod, $object);
     }
 
     protected function setTemporaryValueForPropertyToLazyLoad($value, $object, $mappedFieldName)
