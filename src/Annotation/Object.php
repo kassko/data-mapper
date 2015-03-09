@@ -15,7 +15,7 @@ final class Object
     /**
 	* @var string
 	*/
-    public $repositoryClass;
+    public $providerClass;
 
     /**
 	* @var boolean
