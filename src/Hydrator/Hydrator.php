@@ -378,7 +378,7 @@ class Hydrator extends AbstractHydrator
         }
 
         list($class, $method, $lazyLoading) = $this->metadata->getProvidersInfo($mappedFieldName);
-        $key = $class.$method;
+        $key = $class.$method.spl_object_hash($object);
 
         if (! isset($this->providerLoadingDone[$key]) && ($enforceLoading || ! $lazyLoading)) {
 
