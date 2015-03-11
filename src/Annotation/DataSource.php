@@ -19,9 +19,19 @@ final class DataSource
     public $method;
 
     /**
+     * @var array
+     */
+    public $args = [];
+
+    /**
      * Loading strategy to use for this provider.
      *
      * @var bool
      */
     public $lazyLoading = false;
+
+    /**
+     * @var string
+     */
+    public $objectClass = null;
 }

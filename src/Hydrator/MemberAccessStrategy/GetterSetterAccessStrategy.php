@@ -11,8 +11,14 @@ use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 */
 class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
 {
+    private $propertyAccessStrategy;
     private $classMethods;
     private $classMetadata;
+
+    public function __construct(PropertyAccessStrategy $propertyAccessStrategy)
+    {
+        $this->propertyAccessStrategy = $propertyAccessStrategy;
+    }
 
     public function prepare($object, ClassMetadata $classMetadata)
     {
@@ -22,6 +28,8 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
 
         $this->classMethods = get_class_methods($object);
         $this->classMetadata = $classMetadata;
+
+        $this->propertyAccessStrategy->prepare($object, $classMetadata);
     }
 
     public function getValue($object, $fieldName)
@@ -31,8 +39,11 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
         }
 
         $getter = $this->classMetadata->getterise($fieldName);
+        if (isset($getter) && in_array($getter, $this->classMethods)) {
+            return $object->$getter();
+        } 
 
-        return isset($getter) && in_array($getter, $this->classMethods) ? $object->$getter() : null;
+        return $this->propertyAccessStrategy->getValue($object, $fieldName);
     }
 
     public function setValue($value, $object, $fieldName)
@@ -41,6 +52,8 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
 
         if (isset($setter) && in_array($setter, $this->classMethods)) {
             $object->$setter($value);
+        } else {
+            $this->propertyAccessStrategy->setValue($value, $object, $fieldName);
         }
     }
 
@@ -48,27 +61,28 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
     {
         $setter = $this->classMetadata->setterise($fieldName);
         if (in_array($setter, $this->classMethods)) {
-
             $object->$setter($subObject);
             return true;
         }
 
-        return false;
+        return $this->propertyAccessStrategy->setSingleAssociation($subObject, $object, $fieldName);
     }
 
     public function setCollectionAssociation(array $subObjects, $object, $fieldName, $adderPart)
     {
         $adder = 'add'.ucfirst($adderPart);
-
         if (in_array($adder, $this->classMethods)) {
-
             foreach ($subObjects as $subObject) {
                 $object->$adder($subObject);
             }
-
             return true;
         }
 
-        return false;
+        $setter = $this->classMetadata->setterise($fieldName);
+        if (isset($setter) && in_array($setter, $this->classMethods)) {
+            $object->$setter($subObjects);
+        }
+
+        return $this->propertyAccessStrategy->setCollectionAssociation($subObjects, $object, $fieldName, $adderPart);
     }
 }

@@ -194,7 +194,6 @@ class Hydrator extends AbstractHydrator
 
             foreach ($data as $originalFieldName => $value) {
                 $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
-
                 if (null === $mappedFieldName) {
 
                     //It's possible that a raw field name has no corresponding field name
@@ -377,39 +376,80 @@ class Hydrator extends AbstractHydrator
             return false;
         }
 
-        list($class, $method, $lazyLoading) = $this->metadata->getProvidersInfo($mappedFieldName);
+        list($class, $method, $args, $lazyLoading, $nestedObjectClass) = $this->metadata->getProvidersInfo($mappedFieldName);
         $key = $class.$method.spl_object_hash($object);
 
         if (! isset($this->providerLoadingDone[$key]) && ($enforceLoading || ! $lazyLoading)) {
 
-            $data = $this->findFromProviders($class, $method, $object);
+            if (count($args)) {
+                foreach ($args as &$arg) {
+
+                    if ('@this' === $arg) {
+
+                        $arg = $object; 
+                    } elseif ('@' === $arg[0]) {
+
+                        if ($this->classResolver) {
+                            $arg = $this->classResolver->resolve($arg);
+                        } else {
+                            throw new ObjectMappingException(sprintf('Cannot resolve id "%s. No resolver is available."', substr($arg, 1)));
+                        }
+                    } else {
+
+                        $argsMappedFieldName = $this->metadata->getMappedFieldName($arg);
+                        $arg = $this->extractProperty($object, $argsMappedFieldName);  
+                    }   
+                }
+            }
+
+            $data = $this->findFromProviders($class, $method, $args);
             $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameProvider($mappedFieldName));
 
-            foreach ($data as $originalFieldName => $value) {
-                
-                $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
-                if (! in_array($mappedFieldName, $mappedFieldsToHydrate)) {
+            if (null === $nestedObjectClass) {
 
-                    throw ObjectMappingException::forbiddenKeyInDataSource(
-                        get_class($object),
-                        $class,
-                        $method,
-                        $originalFieldName,
-                        array_map(
-                            function ($mappedFieldName) {
-                                return $this->metadata->getOriginalFieldName($mappedFieldName);
-                            },
+                foreach ($data as $originalFieldName => $value) {
+                
+                    $providerMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
+                    if (! in_array($providerMappedFieldName, $mappedFieldsToHydrate)) {
+
+                        throw ObjectMappingException::forbiddenKeyInDataSource(
+                            get_class($object),
+                            $class,
+                            $method,
+                            $originalFieldName,
+                            array_map(
+                                function ($providerMappedFieldName) {
+                                    return $this->metadata->getOriginalFieldName($providerMappedFieldName);
+                                },
+                                $mappedFieldsToHydrate
+                            ),
                             $mappedFieldsToHydrate
-                        ),
-                        $mappedFieldsToHydrate
-                    );
+                        );
+                    }
+
+                    $this->walkHydration($providerMappedFieldName, $object, $value, $data);                    
+                }
+            } else {
+
+                reset($data);
+                if (! is_array(current($data))) {
+                    $data = [$data];
                 }
 
-                $this->walkHydration($mappedFieldName, $object, $value, $data);                    
-            }
+                $nestedObjectHydrator = $this->objectManager->createHydratorFor($nestedObjectClass);
+                $nestedResult = [];
+
+                foreach ($data as $record) {
+                    
+                    $nestedObject = new $nestedObjectClass;
+                    $nestedResult[] = $nestedObjectHydrator->hydrate($record, $nestedObject);                   
+                }
+
+                $this->memberAccessStrategy->setValue($nestedResult, $object, $mappedFieldName);
             
-            $this->providerLoadingDone[$key] = true;
-        }
+                $this->providerLoadingDone[$key] = true;
+            }
+        }            
     }
 
     protected function walkValueObjectHydration($mappedFieldName, $object, $data)
@@ -488,9 +528,9 @@ class Hydrator extends AbstractHydrator
         return $this->objectManager->findCollection($objectClass, $findMethod, $repositoryClass);
     }
 
-    protected function findFromProviders($customSourceClass, $customSourceMethod, $object)
+    protected function findFromProviders($customSourceClass, $customSourceMethod, $args)
     {
-        return $this->objectManager->findFromProviders($customSourceClass, $customSourceMethod, $object);
+        return $this->objectManager->findFromProviders($customSourceClass, $customSourceMethod, $args);
     }
 
     protected function setTemporaryValueForPropertyToLazyLoad($value, $object, $mappedFieldName)
@@ -518,7 +558,12 @@ class Hydrator extends AbstractHydrator
 
     private function createMemberAccessStrategy($object)
     {
-        $memberAccessStrategy = $this->isPropertyAccessStrategyOn ? new MemberAccessStrategy\PropertyAccessStrategy : new MemberAccessStrategy\GetterSetterAccessStrategy;
+        $memberAccessStrategy = 
+        $this->isPropertyAccessStrategyOn ? 
+        new MemberAccessStrategy\PropertyAccessStrategy : 
+        new MemberAccessStrategy\GetterSetterAccessStrategy(new MemberAccessStrategy\PropertyAccessStrategy)
+        ;
+        
         $memberAccessStrategy->prepare($object, $this->metadata);
 
         return $memberAccessStrategy;

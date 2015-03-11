@@ -21,10 +21,7 @@ class PropertyAccessStrategy implements MemberAccessStrategyInterface
 
     public function getValue($object, $fieldName)
     {
-        $reflProperty = $this->reflectionClass->getProperty($fieldName);
-        $reflProperty->setAccessible(true);
-
-        return $reflProperty->getValue($object);
+        return $this->doGetValue($fieldName, $object);
     }
 
     public function setValue($value, $object, $fieldName)
@@ -33,9 +30,7 @@ class PropertyAccessStrategy implements MemberAccessStrategyInterface
             return;
         }
 
-        $reflProperty = $this->reflectionClass->getProperty($fieldName);
-        $reflProperty->setAccessible(true);
-        $reflProperty->setValue($object, $value);
+        $this->doSetValue($fieldName, $object, $value);
     }
 
     public function setSingleAssociation($subObject, $object, $fieldName)
@@ -54,10 +49,26 @@ class PropertyAccessStrategy implements MemberAccessStrategyInterface
             return false;
         }
 
-        $reflProperty = $this->reflectionClass->getProperty($fieldName);
-        $reflProperty->setAccessible(true);
-        $reflProperty->setValue($object, $subObjectOrCollection);
+        $this->doSetValue($fieldName, $object, $subObjectOrCollection);
 
         return true;
+    }
+
+    private function doGetValue($fieldName, $object)
+    {
+        $reflProperty = $this->reflectionClass->getProperty($fieldName);
+        if ($reflProperty->isPrivate()) {
+            $reflProperty->setAccessible(true);
+        }
+        return $reflProperty->getValue($object);
+    }
+
+    private function doSetValue($fieldName, $object, $value)
+    {
+        $reflProperty = $this->reflectionClass->getProperty($fieldName);
+        if ($reflProperty->isPrivate()) {
+            $reflProperty->setAccessible(true);
+        }
+        $reflProperty->setValue($object, $value);
     }
 }
