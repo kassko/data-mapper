@@ -740,7 +740,7 @@ class ClassMetadata
 
     public function extractVersion($object, Hydrator $hydrator)
     {
-        return $hydrator->extractProperty($object, $this->mappedVersionFieldNamer);
+        return $hydrator->extractProperty($object, $this->mappedVersionFieldName);
     }
 
     public function extractField($object, $fieldName, Hydrator $hydrator)
@@ -871,7 +871,9 @@ class ClassMetadata
         return [
             $this->providers[$mappedFieldName]['class'],
             $this->providers[$mappedFieldName]['method'],
-            $this->providers[$mappedFieldName]['lazyLoading']
+            $this->providers[$mappedFieldName]['args'],
+            $this->providers[$mappedFieldName]['lazyLoading'],
+            $this->providers[$mappedFieldName]['objectClass'],
         ];
     }
 

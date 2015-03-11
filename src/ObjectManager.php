@@ -179,7 +179,7 @@ class ObjectManager
         return $repo->$findMethod();
     }
 
-    public function findFromProviders($customSourceClass, $customSourceMethod, $object)
+    public function findFromProviders($customSourceClass, $customSourceMethod, $args)
     {
         $customSource = $this->classResolver ? $this->classResolver->resolve($customSourceClass) : new $customSourceClass;
 
@@ -187,7 +187,7 @@ class ObjectManager
             throw new \BadMethodCallException(sprintf('Erreur lors de l\'appel de la méthode "%s::%s"', get_class($customSource), $customSourceMethod));
         }
 
-        return $customSource->$customSourceMethod($object);
+        return call_user_func_array([$customSource, $customSourceMethod], $args);
     }
 
     public function getRepository($objectClass)

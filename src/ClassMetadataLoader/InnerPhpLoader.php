@@ -131,31 +131,27 @@ class InnerPhpLoader extends AbstractLoader
         $dataName = 'fields';
         foreach ($data[$dataName] as $mappedFieldName => $fieldData) {
 
+            //Normalisation: begin
             if (is_numeric($mappedFieldName)) {//if $mappedFieldName is a numeric index, $fieldData contains the field.
-                $fieldData = ['name' => $fieldData];
+                $mappedFieldName = $fieldData;                
             }
 
-            $mappedManagedFieldNames[] = $mappedFieldName;
-
-            if (! isset($fieldData['name'])) {
-
-                $mappedFieldNames[] = $mappedFieldName;
-                $originalFieldNames[] = $mappedFieldName;
-
-                $toOriginal[$mappedFieldName] = $mappedFieldName;
-                $toMapped[$mappedFieldName] = $mappedFieldName;
-            } else {
-
-                $mappedFieldNames[] = $mappedFieldName;
-                $originalFieldNames[] = $fieldData['name'];
-
-                $toOriginal[$mappedFieldName] = $fieldData['name'];
-                $toMapped[$fieldData['name']] = $mappedFieldName;
+            if (! is_array($fieldData)) {
+                $fieldData = ['name' => $fieldData];
             }
 
             if (! isset($fieldData['type'])) {
                 $fieldData['type'] = 'string';
             }
+            //Normalisation: end
+
+            $mappedManagedFieldNames[] = $mappedFieldName;
+
+            $mappedFieldNames[] = $mappedFieldName;
+            $originalFieldNames[] = $fieldData['name'];
+
+            $toOriginal[$mappedFieldName] = $fieldData['name'];
+            $toMapped[$fieldData['name']] = $mappedFieldName;
 
             $fieldDataByKey['field'] = $fieldData;
 
