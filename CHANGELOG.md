@@ -1,5 +1,6 @@
-0.10.1.0-alpha - 2015/03/11 - New version:
-** New ** New key in mapping configuration "data source / object class" to allow the automatic hydration of nested objects.
+0.11.0.0-alpha - 2015/03/11 - New version:
+** Break ** The object is no longer send as parameter of the data source method. If you still need this object, set the new key "args" of the data source key to "args={"@this"}".
+** New ** New key in mapping configuration "data source / object class" to allow the automatic hydration of nested objects. You can send parameters to your data source method like the curent object "args={"@this"}" or some key of the raw data like "args={"some_key_value"}" and several arguments like that "args={"@this", "some_key_value"}".
 ** Improvement ** You no longer need to create getters and setters in your objects. If no getters and setters are found, the mapper access directly the properties (even if there are private or protected).
 ** Fix ** Fix bad interpretation of php mapping format configuration
 
