@@ -82,6 +82,11 @@ final class Registry implements \ArrayAccess, \IteratorAggregate
         return new \ArrayIterator($this->registry);
     }
 
+    public function flush()
+    {
+        $this->registry = [];
+    }
+
     private function __construct() {}
 
     private function __clone() {}
