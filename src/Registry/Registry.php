@@ -60,9 +60,9 @@ final class Registry implements \ArrayAccess, \IteratorAggregate
             throw new RuntimeException(sprintf('You should specify an index "%s" where to save in the registry.', $offset));
         }
 
-        if ($this->offsetExists($offset)) {
+        /*if ($this->offsetExists($offset)) {
             throw new RuntimeException(sprintf('The key "%s" cannot be overriden in the registry.', $offset));
-        }
+        }*/
 
         $this->registry[$offset] = $value;
     }
