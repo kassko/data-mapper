@@ -56,19 +56,23 @@ class PropertyAccessStrategy implements MemberAccessStrategyInterface
 
     private function doGetValue($fieldName, $object)
     {
-        $reflProperty = $this->reflectionClass->getProperty($fieldName);
-        if ($reflProperty->isPrivate()) {
-            $reflProperty->setAccessible(true);
-        }
+        $reflProperty = $this->getAccessibleProperty($fieldName);
         return $reflProperty->getValue($object);
     }
 
     private function doSetValue($fieldName, $object, $value)
     {
-        $reflProperty = $this->reflectionClass->getProperty($fieldName);
-        if ($reflProperty->isPrivate()) {
-            $reflProperty->setAccessible(true);
-        }
+        $reflProperty = $this->getAccessibleProperty($fieldName);
         $reflProperty->setValue($object, $value);
+    }
+
+    private function getAccessibleProperty($fieldName)
+    {
+        $reflProperty = $this->reflectionClass->getProperty($fieldName);
+        if (! $reflProperty->isPublic()) {
+            $reflProperty->setAccessible(true);
+        }  
+
+        return $reflProperty;
     }
 }
