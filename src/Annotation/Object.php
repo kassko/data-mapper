@@ -13,6 +13,13 @@ final class Object
 	use FieldCommonTrait;
 
     /**
+    * @var string
+    *
+    * @Enum({"include_all", "exclude_all"})
+    */
+    public $fieldExclusionPolicy = 'include_all';
+
+    /**
 	* @var string
 	*/
     public $providerClass;

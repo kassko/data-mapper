@@ -42,6 +42,10 @@ class InnerYamlLoader extends AbstractLoader
 
     private function loadClassAnnotations(array $data)
     {
+        if (isset($data['object']['fieldExclusionPolicy'])) {
+            $this->classMetadata->setFieldExclusionPolicy($data['object']['fieldExclusionPolicy']);
+        }
+
         if (isset($data['object']['providerClass'])) {
             $this->classMetadata->setRepositoryClass($data['object']['providerClass']);
         }
@@ -101,17 +105,17 @@ class InnerYamlLoader extends AbstractLoader
         $mappedFieldNames = [];
         $mappedDateFieldNames = [];
         $originalFieldNames = [];
+        $includedFields = [];
+        $excludedFields = [];
         $toOriginal = [];
         $toMapped = [];
-        $toOneAssociations = [];
-        $toManyAssociations = [];
+        $dataSources = [];
         $providers = [];
         $valueObjects = [];
         $mappedIdFieldName = null;
         $mappedIdCompositePartFieldName = [];
         $mappedVersionFieldName = null;
         $mappedTransientFieldNames = [];
-        $mappedManagedFieldNames = [];
         $fieldsWithHydrationStrategy = [];
 
         if (isset($data['id'])) {
@@ -133,8 +137,6 @@ class InnerYamlLoader extends AbstractLoader
         $dataName = 'fields';
         foreach ($data[$dataName] as $mappedFieldName => $fieldData) {
 
-            $mappedManagedFieldNames[] = $mappedFieldName;
-
             if (! isset($fieldData['name'])) {
 
                 $mappedFieldNames[] = $mappedFieldName;
@@ -153,6 +155,10 @@ class InnerYamlLoader extends AbstractLoader
 
             if (! isset($fieldData['type'])) {
                 $fieldData['type'] = 'string';
+            }
+
+            if (! isset($fieldData['class'])) {
+                $fieldData['class'] = null;
             }
 
             $fieldDataByKey['field'] = $fieldData;
@@ -181,29 +187,31 @@ class InnerYamlLoader extends AbstractLoader
                 $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = $fieldData['mappingExtensionClass'];
             }
 
+            if (isset($fieldData['dataSource'])) {
+                $dataSources[$mappedFieldName] = $fieldData['dataSource'];
+            }
+
+            if (isset($fieldData['provider'])) {
+                $providers[$mappedFieldName] = $fieldData['provider'];
+            }
+
+            if (isset($fieldData['valueObjects'])) {
+                $valueObjects = $fieldData['valueObjects'];
+            }
+
             $fieldsDataByKey[$mappedFieldName] = $fieldDataByKey;
         }
 
-        if (isset($data['toOneProvider'])) {
-
-            foreach ($data['toOneProvider'] as $associationName => $toOneData) {
-                $toOneAssociations[$mappedFieldName][] = ['name' => $associationName] + $toOneData;
-            }
+        if (isset($data['include'])) {
+            foreach ($data['include'] as $fieldToInclude) {            
+                $includedFields[$fieldToInclude] = true;
+            }    
         }
 
-        if (isset($data['toManyProvider'])) {
-
-            foreach ($data['toManyProvider'] as $associationName => $toManyData) {
-                $toManyAssociations[$mappedFieldName][] = ['name' => $associationName] + $toManyData;
-            }
-        }
-
-        if (isset($data['dataSource'])) {
-            $providers[$mappedFieldName] = $data['dataSource'];
-        }
-
-        if (isset($data['valueObjects'])) {
-            $valueObjects = $data['valueObjects'];
+        if (isset($data['exclude'])) {
+            foreach ($data['exclude'] as $fieldToExclude) {            
+                $excludedFields[$fieldToExclude] = true;
+            }    
         }
 
         if (count($fieldsDataByKey)) {
@@ -218,6 +226,14 @@ class InnerYamlLoader extends AbstractLoader
             $this->classMetadata->setOriginalFieldNames($originalFieldNames);
         }
 
+        if (count($includedFields)) {
+            $this->classMetadata->setIncludedFields($includedFields);
+        }
+
+        if (count($excludedFields)) {
+            $this->classMetadata->setExcludedFields($excludedFields);
+        }
+
         if (count($toOriginal)) {
             $this->classMetadata->setToOriginal($toOriginal);
         }
@@ -226,12 +242,8 @@ class InnerYamlLoader extends AbstractLoader
             $this->classMetadata->setToMapped($toMapped);
         }
 
-        if (count($toOneAssociations)) {
-            $this->classMetadata->setToOneAssociations($toOneAssociations);
-        }
-
-        if (count($toManyAssociations)) {
-            $this->classMetadata->setToManyAssociations($toManyAssociations);
+        if (count($dataSources)) {
+            $this->classMetadata->setDataSources($dataSources);
         }
 
         if (count($providers)) {
@@ -260,10 +272,6 @@ class InnerYamlLoader extends AbstractLoader
 
         if (count($mappedTransientFieldNames)) {
             $this->classMetadata->setMappedTransientFieldNames($mappedTransientFieldNames);
-        }
-
-        if (count($mappedManagedFieldNames)) {
-            $this->classMetadata->setMappedManagedFieldNames($mappedManagedFieldNames);
         }
 
         if (count($fieldsWithHydrationStrategy)) {

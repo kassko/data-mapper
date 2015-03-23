@@ -25,7 +25,7 @@ data-mapper component represents some raw data like objects as all data-mapper b
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-mapper": "~0.11.0@alpha"
+    "kassko/data-mapper": "~0.12.0"
 }
 ```
 
@@ -94,7 +94,7 @@ $data = [
     'COLOR' => 'blue',
 ];
 
-$dataMapper = (new Kassko\DataMapper\DataMapperFactory)->instance();
+$dataMapper = (new Kassko\DataMapper\DataMapperBuilder)->instance();
 
 $object = new Kassko\Sample\Watch;
 $dataMapper->hydrator('Kassko\Sample\Watch')->hydrate($data, $object);
@@ -111,7 +111,7 @@ object(Watch)#283 (8) {
 
 Inversely, you can extract values from your object to have raw result:
 ```php
-$dataMapper = (new Kassko\DataMapper\DataMapperFactory)->instance();
+$dataMapper = (new Kassko\DataMapper\DataMapperBuilder)->instance();
 
 $object = (new Kassko\Sample\Watch)->setBrand('some brand')->setColor('color');
 $rawResult = $dataMapper->hydrator('Kassko\Sample\Watch')->extract($object);
@@ -132,7 +132,7 @@ $data = [
     ],
 ];
 
-$dataMapper = (new Kassko\DataMapper\DataMapperFactory)->instance();
+$dataMapper = (new Kassko\DataMapper\DataMapperBuilder)->instance();
 
 $dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->all();//The result will be an array with two objects.
 $dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->first();//The result will be a watch object representing the first record.
@@ -140,7 +140,7 @@ $dataMapper->resultBuilder('Kassko\Sample\Watch', $data)->first();//The result w
 
 Inversely, you can extract values of an object or a an object collection to have raw result:
 ```php
-$dataMapper = (new Kassko\DataMapper\DataMapperFactory)->instance();
+$dataMapper = (new Kassko\DataMapper\DataMapperBuilder)->instance();
 
 $dataMapper->resultBuilder('Kassko\Sample\Watch')->raw($object);
 $dataMapper->resultBuilder('Kassko\Sample\Watch')->raw($collection);
@@ -270,9 +270,9 @@ The DataMapper has several settings that we haven't used.
 For example, if you want to use another mapping format than the default one ('annotation'), you need to configure the DataMapper before its instanciation:
 
 ```php
-use Kassko\DataMapper\DataMapperFactory;
+use Kassko\DataMapper\DataMapperBuilder;
 
-$dataMapper = (new DataMapperFactory)
+$dataMapper = (new DataMapperBuilder)
     ->settings(
         [
             'default_resource_type' => 'yaml_file',
@@ -543,7 +543,7 @@ $data = [
     'created_date' => '2014-09-14 12:36:52',
 ];
 
-$dataMapper = (new Kassko\DataMapper\DataMapperFactory)->instance();
+$dataMapper = (new Kassko\DataMapper\DataMapperBuilder)->instance();
 $object = new Kassko\Sample\Watch;
 $dataMapper->hydrator('Kassko\Sample\Watch')->hydrate($data, $object);
 var_dump($object);
@@ -801,7 +801,7 @@ $data = [
     'manufacturer_id' => 1
 ];
 
-$dataMapper = (new Kassko\DataMapper\DataMapperFactory)->instance();
+$dataMapper = (new Kassko\DataMapper\DataMapperBuilder)->instance();
 var_dump($dataMapper->resultBuilder('Kassko\Sample\Keyboard', $data)->single());
 ```
 

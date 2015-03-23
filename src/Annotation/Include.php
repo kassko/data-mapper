@@ -5,8 +5,9 @@ namespace Kassko\DataMapper\Annotation;
 /**
 * @Annotation
 * @Target("PROPERTY")
+*
+* @author kko
 */
-final class ToOneProvider
+final class Include
 {
-    use RelationProviderTrait;
 }

@@ -17,6 +17,9 @@ class ClassMetadata
     const INDEX_EXTENSION_CLASS = 2;
     const INDEX_METADATA_EXTENSION_CLASS = 3;
 
+    private $fieldExclusionPolicy = 'include_all';
+    private $includedFields = [];
+    private $excludedFields = [];
     private $originalFieldNames = [];
     private $mappedFieldNames = [];
     private $mappedDateFieldNames = [];
@@ -44,19 +47,15 @@ class ClassMetadata
      */
     private $classMetadataExtensionClass;
 
-    private $mappedManagedFieldNames = [];
     private $mappedTransientFieldNames = [];
     private $fieldsWithHydrationStrategy = [];
-    private $toOneAssociations = [];
-    private $toManyAssociations = [];
+
+    private $dataSources = [];
+    private $providers = [];
+    
     private $getters = [];
     private $setters = [];
 
-    /**
-     * Source (class and method) which hydrate a field.
-     * @var array
-     */
-    private $providers = [];
     private $objectListenerClasses = [];
     private $idGetter;
     private $idSetter;
@@ -130,129 +129,16 @@ class ClassMetadata
         }
     }
 
-    public function getToOneAssociations()
+    public function getFieldExclusionPolicy()
     {
-        return $this->toOneAssociations;
+        return $this->fieldExclusionPolicy;
     }
 
-    public function setToOneAssociations(array $toOneAssociations)
+    public function setFieldExclusionPolicy($fieldExclusionPolicy)
     {
-        $this->toOneAssociations = $toOneAssociations;
-
+        $this->fieldExclusionPolicy = $fieldExclusionPolicy;
         return $this;
-    }
-
-    public function getToManyAssociations()
-    {
-        return $this->toManyAssociations;
-    }
-
-    public function setToManyAssociations(array $toManyAssociations)
-    {
-        $this->toManyAssociations = $toManyAssociations;
-
-        return $this;
-    }
-
-    public function hasAssociation($mappedFieldName)
-    {
-        return
-            array_key_exists($mappedFieldName, $this->toOneAssociations)
-            ||
-            array_key_exists($mappedFieldName, $this->toManyAssociations)
-        ;
-    }
-
-    public function getAssociationTargetClass($mappedFieldName)
-    {
-        if (array_key_exists($mappedFieldName, $this->toOneAssociations)) {
-
-            if (isset($this->toOneAssociations[$mappedFieldName]['objectClass'])) {
-
-                return $this->toOneAssociations[$mappedFieldName]['objectClass'];
-            }
-        }
-
-
-        if (array_key_exists($mappedFieldName, $this->toManyAssociations)) {
-
-            if (isset($this->toManyAssociations[$mappedFieldName]['objectClass'])) {
-
-                return $this->toManyAssociations[$mappedFieldName]['objectClass'];
-            }
-        }
-
-
-        throw ObjectMappingException::notFoundAssociationTargetClass($mappedFieldName, $this->getName());
-    }
-
-    public function getSingleValuedAssociationInfo($mappedFieldName)
-    {
-        if (! array_key_exists($mappedFieldName, $this->toOneAssociations)) {
-            throw ObjectMappingException::notFoundAssociation($mappedFieldName, $this->getName());
-        }
-
-        if (
-            ! isset($this->toOneAssociations[$mappedFieldName]['objectClass'])
-            ||
-            ! isset($this->toOneAssociations[$mappedFieldName]['findMethod'])
-            ||
-            ! isset($this->toOneAssociations[$mappedFieldName]['lazyLoading'])
-        ) {
-            throw ObjectMappingException::notFoundAssociationInfo($mappedFieldName, $this->getName());
-        }
-
-        return [
-            $this->toOneAssociations[$mappedFieldName]['objectClass'],
-            isset($this->toOneAssociations[$mappedFieldName]['class']) ? $this->toOneAssociations[$mappedFieldName]['class'] : null,
-            $this->toOneAssociations[$mappedFieldName]['findMethod'],
-            $this->toOneAssociations[$mappedFieldName]['lazyLoading'],
-        ];
-    }
-
-    public function getCollectionValuedAssociationInfo($mappedFieldName)
-    {
-        if (! array_key_exists($mappedFieldName, $this->toManyAssociations)) {
-            throw ObjectMappingException::notFoundAssociation($mappedFieldName, $this->getName());
-        }
-
-        $infoKeys = ['name', 'objectClass', 'findMethod', 'lazyLoading'];
-        foreach ($infoKeys as $infoKey) {
-
-            if (! isset($this->toManyAssociations[$mappedFieldName][$infoKey])) {
-
-                throw ObjectMappingException::notFoundAssociationInfo($mappedFieldName, $this->getName(), $infoKey);
-            }
-        }
-
-        return [
-            $this->toManyAssociations[$mappedFieldName]['name'],
-            $this->toManyAssociations[$mappedFieldName]['objectClass'],
-            isset($this->toManyAssociations[$mappedFieldName]['class']) ? $this->toManyAssociations[$mappedFieldName]['class'] : null,
-            $this->toManyAssociations[$mappedFieldName]['findMethod'],
-            $this->toManyAssociations[$mappedFieldName]['lazyLoading'],
-        ];
-    }
-
-    public function isSingleValuedAssociation($mappedFieldName)
-    {
-        return array_key_exists($mappedFieldName, $this->toOneAssociations);
-    }
-
-    public function isCollectionValuedAssociation($mappedFieldName)
-    {
-        return array_key_exists($mappedFieldName, $this->toManyAssociations);
-    }
-
-    public function getSingleValuedAssociations()
-    {
-        return array_keys($this->toOneAssociations);
-    }
-
-    public function getCollectionValuedAssociations()
-    {
-        return array_keys($this->toManyAssociations);
-    }
+    } 
 
     public function getRepositoryClass()
     {
@@ -470,7 +356,8 @@ class ClassMetadata
     public function isValueObject($mappedFieldName)
     {
         return array_key_exists($mappedFieldName, $this->valueObjects);
-    }*/
+    }
+    */
 
     public function getFieldsWithValueObjects()
     {
@@ -513,13 +400,25 @@ class ClassMetadata
     }
 
     public function isNotManaged($mappedFieldName)
-    {
-        return !in_array($mappedFieldName, $this->mappedManagedFieldNames);
+    {//todo: optimize it.
+        return 
+            ( 
+                ('include_all' === $this->fieldExclusionPolicy && isset($this->excludedFields[$mappedFieldName]))
+                ||
+                ('exclude_all' === $this->fieldExclusionPolicy && isset($this->includedFields[$mappedFieldName]))
+            )
+        ;
     }
 
-    public function setMappedManagedFieldNames(array $mappedManagedFieldNames)
+    public function setIncludedFields(array $includedFields)
     {
-        $this->mappedManagedFieldNames = $mappedManagedFieldNames;
+        $this->includedFields = $includedFields;
+        return $this;
+    }
+
+    public function setExcludedFields(array $excludedFields)
+    {
+        $this->excludedFields = $excludedFields;
         return $this;
     }
 
@@ -637,6 +536,15 @@ class ClassMetadata
 
         return 'string';
     }
+
+    public function getClassOfMappedField($mappedFieldName)
+    {
+        if (null != $data = $this->getDataForField($mappedFieldName, $this->columnDataName)) {
+            return $data['class'];
+        }
+
+        return null;
+    } 
 
     public function getOriginalFieldName($mappedFieldName)
     {
@@ -844,17 +752,90 @@ class ClassMetadata
         return $this->fieldsDataByKey[$mappedFieldName][$columnDataName];
     }
 
+    //========================= Data sources : begin
+
+    public function getDataSources()
+    {
+        return $this->dataSources;
+    }
+
     /**
-     * Gets the Source (class and method) which hydrate a field.
+     * Sets the Source (class and method) which hydrate a field.
+     *
+     * @param array $dataSources the hydration sources
+     *
+     * @return self
+     */
+    public function setDataSources(array $dataSources)
+    {
+        $this->dataSources = $dataSources;
+
+        return $this;
+    }
+
+    public function hasDataSource($mappedFieldName)
+    {
+        return isset($this->dataSources[$mappedFieldName]);
+    }
+
+    public function getFieldsWithDataSources()
+    {
+        return array_keys($this->dataSources);
+    }
+
+    public function getDataSourcesInfo($mappedFieldName)
+    {
+        return [
+            $this->dataSources[$mappedFieldName]['class'],
+            $this->dataSources[$mappedFieldName]['method'],
+            $this->dataSources[$mappedFieldName]['args'],
+            $this->dataSources[$mappedFieldName]['lazyLoading'],
+            $this->dataSources[$mappedFieldName]['objectClass'],
+        ];
+    }
+
+    /**
+     * Retrieve fields with the same data source as $mappedFieldNameRef.
+     *
+     * @param array $mappedFieldNameRef The reference field.
      *
      * @return array
      */
-    /*
+    public function getFieldsWithSameDataSource($mappedFieldNameRef)
+    {
+        if (! isset($this->dataSources[$mappedFieldNameRef])) {
+            throw new ObjectMappingException(sprintf('A "data source" metadata is expected for the field "%s".', $mappedFieldNameRef));
+        }
+
+        $class = $this->dataSources[$mappedFieldNameRef]['class'];
+        $method = $this->dataSources[$mappedFieldNameRef]['method'];
+
+        $propLoadedTogether = [];
+        foreach ($this->dataSources as $mappedFieldName => $value) {
+
+            if ($mappedFieldName !== $mappedFieldNameRef && $value['class'] === $class && $value['method'] === $method) {
+                $propLoadedTogether[] = $mappedFieldName;
+            }
+        }
+
+        return $propLoadedTogether;
+    }
+
+    //========================= Data sources : end
+
+    //========================= Providers : begin
+
     public function getProviders()
     {
         return $this->providers;
     }
-    */
+
+    public function setProviders(array $toOneProviders)
+    {
+        $this->providers = $providers;
+
+        return $this;
+    }
 
     public function hasProvider($mappedFieldName)
     {
@@ -878,34 +859,6 @@ class ClassMetadata
     }
 
     /**
-     * Sets the Source (class and method) which hydrate a field.
-     *
-     * @param array $providers the hydration sources
-     *
-     * @return self
-     */
-    public function setProviders(array $providers)
-    {
-        $this->providers = $providers;
-
-        return $this;
-    }
-
-    public function setGetters(array $getters)
-    {
-        $this->getters = $getters;
-
-        return $this;
-    }
-
-    public function setSetters(array $setters)
-    {
-        $this->setters = $setters;
-
-        return $this;
-    }
-
-    /**
      * Retrieve fields with the same provider as $mappedFieldNameRef.
      *
      * @param array $mappedFieldNameRef The reference field.
@@ -915,7 +868,7 @@ class ClassMetadata
     public function getFieldsWithSameProvider($mappedFieldNameRef)
     {
         if (! isset($this->providers[$mappedFieldNameRef])) {
-            throw new ObjectMappingException(sprintf('A "provider" metadata is expected for the field "%s".', $mappedFieldNameRef));
+            throw new ObjectMappingException(sprintf('A "data source" metadata is expected for the field "%s".', $mappedFieldNameRef));
         }
 
         $class = $this->providers[$mappedFieldNameRef]['class'];
@@ -930,6 +883,22 @@ class ClassMetadata
         }
 
         return $propLoadedTogether;
+    }
+
+    //========================= Providers : end
+
+    public function setGetters(array $getters)
+    {
+        $this->getters = $getters;
+
+        return $this;
+    }
+
+    public function setSetters(array $setters)
+    {
+        $this->setters = $setters;
+
+        return $this;
     }
 
     public function existsMappedFieldName($mappedFieldName)

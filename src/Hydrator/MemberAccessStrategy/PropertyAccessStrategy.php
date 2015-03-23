@@ -3,6 +3,7 @@
 namespace Kassko\DataMapper\Hydrator\MemberAccessStrategy;
 
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
+use Kassko\DataMapper\Exception\NotFoundMemberException;
 use ReflectionClass;
 
 /**
@@ -21,7 +22,7 @@ class PropertyAccessStrategy implements MemberAccessStrategyInterface
 
     public function getValue($object, $fieldName)
     {
-        return $this->doGetValue($fieldName, $object);
+        return $this->doGetValue($object, $fieldName);
     }
 
     public function setValue($value, $object, $fieldName)
@@ -54,20 +55,32 @@ class PropertyAccessStrategy implements MemberAccessStrategyInterface
         return true;
     }
 
-    private function doGetValue($fieldName, $object)
+    private function doGetValue($object, $fieldName)
     {
         $reflProperty = $this->getAccessibleProperty($fieldName);
+        if (false === $reflProperty) {
+            throw new NotFoundMemberException(sprintf('Not found member "%s::%s"', get_class($object), $fieldName));
+        }
+
         return $reflProperty->getValue($object);
     }
 
     private function doSetValue($fieldName, $object, $value)
     {
         $reflProperty = $this->getAccessibleProperty($fieldName);
+        if (false === $reflProperty) {
+            return;
+        }
+
         $reflProperty->setValue($object, $value);
     }
 
     private function getAccessibleProperty($fieldName)
     {
+        if (! $this->reflectionClass->hasProperty($fieldName)) {
+            return false;
+        }
+
         $reflProperty = $this->reflectionClass->getProperty($fieldName);
         if (! $reflProperty->isPublic()) {
             $reflProperty->setAccessible(true);

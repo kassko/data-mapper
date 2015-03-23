@@ -5,20 +5,22 @@ namespace Kassko\DataMapper;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Kassko\DataMapper\ClassMetadataLoader\AnnotationLoader;
 use Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader;
+use Kassko\DataMapper\ClassMetadataLoader\InnerPhpLoader;
+use Kassko\DataMapper\ClassMetadataLoader\InnerYamlLoader;
 use Kassko\DataMapper\ClassMetadataLoader\LoaderResolver;
 use Kassko\DataMapper\ClassMetadataLoader\PhpFileLoader;
-use Kassko\DataMapper\ClassMetadataLoader\InnerPhpLoader;
 use Kassko\DataMapper\ClassMetadataLoader\YamlFileLoader;
-use Kassko\DataMapper\ClassMetadataLoader\InnerYamlLoader;
 use Kassko\DataMapper\ClassMetadata\ClassMetadataFactory;
 use Kassko\DataMapper\Configuration\CacheConfiguration;
 use Kassko\DataMapper\Configuration\ClassMetadataFactoryConfigurator;
 use Kassko\DataMapper\Configuration\ConfigurationChain;
 use Kassko\DataMapper\LazyLoader\LazyLoaderFactory;
+use Kassko\DataMapper\ObjectManager;
 use Kassko\DataMapper\Registry\Registry;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Config\Definition\Processor;
 
-class DataMapperFactory
+class DataMapperBuilder
 {
     /**
      *  [
@@ -47,6 +49,7 @@ class DataMapperFactory
      *              ],
      *          ],
      *      ],
+     *      'class_resolver' => //Optional. See Kassko\ClassResolver for more details.
      *     'logger' =>//Optional. A logger service name. Il will be used for logging in data-mapper component.
      *     'cache' =>
      *      [
@@ -75,12 +78,69 @@ class DataMapperFactory
     {
         $settings = $this->getValidatedSettings();
 
+        $objectManager = $this->createObjectManager($settings);
+        $logger = isset($settings['logger']) ? isset($settings['logger']) : null;
+
+        $this->initializeRegistry($objectManager, $logger);
+
+        return new DataMapper($objectManager);
+    }
+
+    /**
+     * Initialise the environment so that lazy loading could be triggered.
+     */
+    public function initializeEnvironment()
+    {
+        $this->instance();
+    }
+
+    /**
+     * Add settings
+     *
+     * @param array $settings The settings
+     *
+     * @return self
+     */
+    public function settings(array $settings)
+    {
+        $this->pSettings[] = Utils::getUnpackedSettings($settings);
+
+        return $this;
+    }
+
+    /**
+     * Clear settings
+     *
+     * @return self
+     */
+    public function clearSettings()
+    {
+        $this->pSettings = [];
+        return $this;
+    }
+
+    /**
+     * Validates settings and reduces them if multiple settings given.
+     */
+    private function getValidatedSettings()
+    {
+        $processor = new Processor();
+        $settingsValidator = new SettingsValidator();
+        $validatedSettings = $processor->processConfiguration(
+            $settingsValidator,
+            $this->pSettings
+        );
+
+        return $validatedSettings;
+    }
+
+    private function createObjectManager(array $settings)
+    {
         $defaultResourceDir = isset($settings['mapping']['default_resource_dir']) ? $settings['mapping']['default_resource_dir'] : null;
         $defaultClassMetadataProviderMethod = isset($settings['mapping']['default_provider_method']) ? $settings['mapping']['default_provider_method'] : null;
 
         $classResolver = isset($settings['class_resolver']) ? isset($settings['class_resolver']) : null;
         $objectListenerResolver = isset($settings['object_listener_resolver']) ? isset($settings['object_listener_resolver']) : null;
-        $logger = isset($settings['logger']) ? isset($settings['logger']) : null;
 
         $loaders = [
             //TODO: instantiate only the loaders that are required in the settings.
@@ -204,54 +264,16 @@ class DataMapperFactory
             $objectManager->setObjectListenerResolver($objectListenerResolver);
         }
 
-        if (isset($logger)) {
-            $objectManager->setClassResolver($logger);
+        return $objectManager;
+    }
+
+    private function initializeRegistry(ObjectManager $objectManager, LoggerInterface $logger = null)
+    {
+        if (null !== $logger) {
             Registry::getInstance()[Registry::KEY_LOGGER] = $logger;
         }
 
         $lazyLoaderFactory = new LazyLoaderFactory($objectManager);
         Registry::getInstance()[Registry::KEY_LAZY_LOADER_FACTORY] = $lazyLoaderFactory;
-
-        return new DataMapper($objectManager);
-    }
-
-    /**
-     * Add settings
-     *
-     * @param array $settings The settings
-     *
-     * @return self
-     */
-    public function settings(array $settings)
-    {
-        $this->pSettings[] = Utils::getUnpackedSettings($settings);
-
-        return $this;
-    }
-
-    /**
-     * Clear settings
-     *
-     * @return self
-     */
-    public function clearSettings()
-    {
-        $this->pSettings = [];
-        return $this;
-    }
-
-    /**
-     * Validates settings and reduces them if multiple settings given.
-     */
-    private function getValidatedSettings()
-    {
-        $processor = new Processor();
-        $settingsValidator = new SettingsValidator();
-        $validatedSettings = $processor->processConfiguration(
-            $settingsValidator,
-            $this->pSettings
-        );
-
-        return $validatedSettings;
     }
 }

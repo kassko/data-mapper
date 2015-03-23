@@ -33,6 +33,8 @@ class ObjectManager
     private $lazyLoaderFactory;
     private $logger;
     private $hydratorInstances = [];
+    private static $objectLoaded = [];
+    private $identityMap = [];
 
     private static $eventToRegisterData = [
         Events::OBJECT_PRE_CREATE => 'preCreate',
@@ -58,6 +60,57 @@ class ObjectManager
     public static function getInstance()
     {
         return new static;
+    }
+
+    public function isPropertyLoaded($object, $propertyName)
+    {
+        $objectHash = spl_object_hash($object);
+        if (false === $object->__isRegistered) {//Checks if hash is orphan.
+        //This is possible because when a object dead, it's hash is reused on another object. 
+            unset(self::$objectLoaded[$objectHash]); 
+        }
+
+        return isset(self::$objectLoaded[$objectHash][$propertyName]);
+    }
+
+    public function markPropertyLoaded($object, $propertyName)
+    {
+        $objectHash = spl_object_hash($object);
+
+        if (! isset(self::$objectLoaded[$objectHash])) {
+            self::$objectLoaded[$objectHash] = [];
+            $object->__isRegistered = true;
+        }
+        self::$objectLoaded[$objectHash][$propertyName] = true;
+
+        //Properties which has the same provider as $propertyName are marked loaded.
+        $metadata = $this->getMetadata(get_class($object));
+        foreach ($metadata->getFieldsWithSameDataSource($propertyName) as $otherLoadedPropertyName) {
+            self::$objectLoaded[$objectHash][$otherLoadedPropertyName] = true;
+        }
+    }
+
+    /**
+     * Retrieve other properties loaded when $propertyName is loaded.
+     *
+     * @param array $propertyName A property name.
+     *
+     * @return array
+     */
+    public function getPropertiesLoadedTogether($object, $propertyName)
+    {
+        $metadata = $this->getMetadata(get_class($object));
+        return $metadata->getFieldsWithSameDataSource($propertyName);
+    }
+
+    public function manage($object)
+    {
+        $this->resultManager->manage($object);
+    }
+
+    public function unmanage($object)
+    {
+        $this->resultManager->unmanage($object);
     }
 
     /**
@@ -120,13 +173,15 @@ class ObjectManager
                     $strategy = new DateHydrationStrategy($readDateConverter, $writeDateConverter, $strategy);
                 } else {
                     throw new ObjectMappingException(
-                        'A date field should provide "readDateConverter" and "writeDateConverter" metadata'
+                        sprintf(
+                            'The date field "%s" should provide "readDateConverter" and "writeDateConverter" metadata.',
+                            $mappedFieldName
+                        )
                     );
                 }
             }
 
             if (! is_null($strategy)) {
-
                 $hydrator->addStrategy($mappedFieldName, $strategy);
             }
         }
@@ -139,7 +194,16 @@ class ObjectManager
         return $hydrator;
     }
 
-    public function find($objectClass, $id, $findMethod, $repositoryClass)
+    /**
+     * Find an object from a FQCN and an identity.
+     *
+     * @param string $objectClass FQCN of object to find.
+     * @param mixed $id Identity of object to find.
+     * @param mixed $findMethod Method witch find object.
+     *
+     * @return object|null Return the object or null if it's not found.
+     */
+    /*public function find($objectClass, $id, $findMethod, $repositoryClass)
     {
         if (! isset($repositoryClass)) {
             $repo = $this->getRepository($objectClass);
@@ -157,9 +221,17 @@ class ObjectManager
         }
 
         return $repo->$findMethod($id);
-    }
+    }*/
 
-    public function findCollection($objectClass, $findMethod, $repositoryClass)
+    /**
+     * Find a collection from a FQCN.
+     *
+     * @param string $objectClass FQCN of object to find.
+     * @param mixed $findMethod Method witch find collection.
+     *
+     * @return object|null Renvoi the collection or null if it's not found.
+     */
+    /*public function findCollection($objectClass, $findMethod, $repositoryClass)
     {
         if (! isset($repositoryClass)) {
             $repo = $this->getRepository($objectClass);
@@ -177,9 +249,9 @@ class ObjectManager
         }
 
         return $repo->$findMethod();
-    }
+    }*/
 
-    public function findFromProviders($customSourceClass, $customSourceMethod, $args)
+    public function findFromSource($customSourceClass, $customSourceMethod, $args)
     {
         $customSource = $this->classResolver ? $this->classResolver->resolve($customSourceClass) : new $customSourceClass;
 
