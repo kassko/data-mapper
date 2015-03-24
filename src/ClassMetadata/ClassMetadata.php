@@ -790,7 +790,7 @@ class ClassMetadata
             $this->dataSources[$mappedFieldName]['method'],
             $this->dataSources[$mappedFieldName]['args'],
             $this->dataSources[$mappedFieldName]['lazyLoading'],
-            $this->dataSources[$mappedFieldName]['objectClass'],
+            $this->dataSources[$mappedFieldName]['supplySeveralFields'],
         ];
     }
 
@@ -854,7 +854,7 @@ class ClassMetadata
             $this->providers[$mappedFieldName]['method'],
             $this->providers[$mappedFieldName]['args'],
             $this->providers[$mappedFieldName]['lazyLoading'],
-            $this->providers[$mappedFieldName]['objectClass'],
+            $this->providers[$mappedFieldName]['supplySeveralFields'],
         ];
     }
 

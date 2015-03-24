@@ -89,7 +89,7 @@ class DataMapperBuilder
     /**
      * Initialise the environment so that lazy loading could be triggered.
      */
-    public function initializeEnvironment()
+    public function run()
     {
         $this->instance();
     }
