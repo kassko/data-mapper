@@ -1,8 +1,8 @@
 `0.12.0.0-alpha - 2015/03/24 - Break version`:
-* `Break`: 
-To decide if a field should be managed, in your mapping configuration use the keys Include/Exclude/Object.fieldExclusionPolicy. The key Field don't do the job anymore.
-To send the curent object as parameter of a data source method use ##this instead of @this. To send the value of a property, use #some_property instead of some_property.
-DataMapperFactory is moved to DataMapperBuilder.
+* `Break`: To decide if a field should be managed, in your mapping configuration use the keys Include/Exclude/Object.fieldExclusionPolicy. The key Field don't do the job anymore.
+* `Break`: To send the curent object as parameter of a data source method use ##this instead of @this. To send the value of a property, use #some_property instead of some_property.
+* `Break`: Relations ToOneProvider and ToManyProvider have been removed. They will be implemented in DataSource and Provider in a next version.
+* `Break`: DataMapperFactory is moved to DataMapperBuilder.
 
 * `New`: 
 You can send some arbitrary values as parameters of a data source method (2, 'foo'). That's why conventions have changed.
