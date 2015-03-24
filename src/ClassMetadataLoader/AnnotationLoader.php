@@ -20,6 +20,8 @@ class AnnotationLoader extends AbstractLoader
 
     private static $objectAnnotationName = DM\Object::class;
     private static $fieldAnnotationName = DM\Field::class;
+    private static $includeAnnotationName = 'Kassko\\DataMapper\\Annotation\\Include';//DM\Include::class;
+    private static $excludeAnnotationName = DM\Exclude::class;
     private static $idAnnotationName = DM\Id::class;
     private static $idCompositePartAnnotationName = DM\IdCompositePart::class;
     private static $versionAnnotationName = DM\Version::class;
@@ -27,12 +29,12 @@ class AnnotationLoader extends AbstractLoader
     private static $valueObjectAnnotationName = DM\ValueObject::class;
     private static $customHydratorAnnotationName = DM\CustomHydrator::class;
     private static $objectListenersAnnotationName = DM\ObjectListeners::class;
-    private static $toOneAnnotationName = DM\ToOneProvider::class;
-    private static $toManyAnnotationName = DM\ToManyProvider::class;
-    private static $providerAnnotationName = DM\DataSource::class;
+    
+    private static $dataSourceAnnotationName = DM\DataSource::class;
+    private static $providerAnnotationName = DM\Provider::class;
+    
     private static $getterAnnotationName = DM\Getter::class;
     private static $setterAnnotationName = DM\Setter::class;
-
     private static $preExtractAnnotationName = DM\PreExtract::class;
     private static $postExtractAnnotationName = DM\PostExtract::class;
     private static $preHydrateAnnotationName = DM\PreHydrate::class;
@@ -76,6 +78,7 @@ class AnnotationLoader extends AbstractLoader
 
             switch (get_class($annotation)) {
                 case self::$objectAnnotationName:
+                    $this->classMetadata->setFieldExclusionPolicy($annotation->fieldExclusionPolicy);
                     $this->classMetadata->setRepositoryClass($annotation->providerClass);
                     $this->classMetadata->setObjectReadDateFormat($annotation->readDateConverter);
                     $this->classMetadata->setObjectWriteDateFormat($annotation->writeDateConverter);
@@ -117,17 +120,19 @@ class AnnotationLoader extends AbstractLoader
         $mappedFieldNames = [];
         $mappedDateFieldNames = [];
         $originalFieldNames = [];
+        $includedFields = [];
+        $excludedFields = [];
         $toOriginal = [];
         $toMapped = [];
-        $toOneAssociations = [];
-        $toManyAssociations = [];
+
+        $dataSources = [];
         $providers = [];
+        
         $mappedIdFieldName = null;
         $mappedIdCompositePartFieldName = [];
         $mappedVersionFieldName = null;
         $valueObjects = [];
         $mappedTransientFieldNames = [];
-        $mappedManagedFieldNames = [];
         $fieldsWithHydrationStrategy = [];
         $getters = [];
         $setters = [];
@@ -145,8 +150,6 @@ class AnnotationLoader extends AbstractLoader
 
                 switch ($annotationName) {
                     case self::$fieldAnnotationName:
-
-                        $mappedManagedFieldNames[$mappedFieldName] = $mappedFieldName;
 
                         if (! isset($annotation->name)) {
 
@@ -187,17 +190,17 @@ class AnnotationLoader extends AbstractLoader
                         $annotationsByKey['field'] = (array)$annotation;
                         break;
 
-                    case self::$toOneAnnotationName:
-                        $toOneAssociations[$mappedFieldName] = (array)$annotation;
+                    case self::$includeAnnotationName:
+                        $includedFields[$mappedFieldName] = true;
                         break;
 
-                    case self::$toManyAnnotationName:
-                        $toManyAssociations[$mappedFieldName] = (array)$annotation;
+                    case self::$excludeAnnotationName:
+                        $excludedFields[$mappedFieldName] = true;
+                        break;
 
-                        if (! isset($toManyAssociations[$mappedFieldName]['name']) && isset($toManyAssociations[$mappedFieldName]['objectClass'])) {
+                    case self::$dataSourceAnnotationName:
 
-                            $toManyAssociations[$mappedFieldName]['name'] = substr(strrchr($toManyAssociations[$mappedFieldName]['objectClass'], "\\"), 1);
-                        }
+                        $dataSources[$mappedFieldName] = (array)$annotation;
                         break;
 
                     case self::$providerAnnotationName:
@@ -255,6 +258,14 @@ class AnnotationLoader extends AbstractLoader
             $this->classMetadata->setOriginalFieldNames($originalFieldNames);
         }
 
+        if (count($includedFields)) {
+            $this->classMetadata->setIncludedFields($includedFields);
+        }
+
+        if (count($excludedFields)) {
+            $this->classMetadata->setExcludedFields($excludedFields);
+        }
+
         if (count($toOriginal)) {
             $this->classMetadata->setToOriginal($toOriginal);
         }
@@ -263,12 +274,8 @@ class AnnotationLoader extends AbstractLoader
             $this->classMetadata->setToMapped($toMapped);
         }
 
-        if (count($toOneAssociations)) {
-            $this->classMetadata->setToOneAssociations($toOneAssociations);
-        }
-
-        if (count($toManyAssociations)) {
-            $this->classMetadata->setToManyAssociations($toManyAssociations);
+        if (count($dataSources)) {
+            $this->classMetadata->setDataSources($dataSources);
         }
 
         if (count($providers)) {
@@ -297,10 +304,6 @@ class AnnotationLoader extends AbstractLoader
 
         if (count($mappedTransientFieldNames)) {
             $this->classMetadata->setMappedTransientFieldNames($mappedTransientFieldNames);
-        }
-
-        if (count($mappedManagedFieldNames)) {
-            $this->classMetadata->setMappedManagedFieldNames($mappedManagedFieldNames);
         }
 
         if (count($fieldsWithHydrationStrategy)) {

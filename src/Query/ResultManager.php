@@ -22,6 +22,12 @@ class ResultManager
         $this->objectManager = $objectManager;
     }
 
+    public function unmanage($object)
+    {
+        $hashedId = $this->getHashedIdFromObject($object);
+        unset($this->identityMap[get_class($object)][$hashedId]);
+    }
+
     public function create(
         $object,
         Callable $callback,

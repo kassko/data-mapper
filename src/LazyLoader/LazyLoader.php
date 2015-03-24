@@ -33,20 +33,11 @@ class LazyLoader
             throw new \LogicException(sprintf('Invalid object type. Expected "%s" but got "%s".', $this->objectClass, get_class($object)));
         }
 
+        if ($this->objectManager->isPropertyLoaded($object, $propertyName)) {
+            return;   
+        }
+
         $hydrator = $this->objectManager->getHydratorFor($this->objectClass);
         $hydrator->loadProperty($object, $propertyName);
-    }
-
-    /**
-     * Retrieve other properties loaded when $propertyName is loaded.
-     *
-     * @param array $propertyName A property name.
-     *
-     * @return array
-     */
-    public function getPropertiesLoadedTogether($propertyName)
-    {
-        $metadata = $this->objectManager->getMetadata($this->objectClass);
-        return $metadata->getFieldsWithSameProvider($propertyName);
     }
 }

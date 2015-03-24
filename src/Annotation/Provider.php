@@ -6,7 +6,7 @@ namespace Kassko\DataMapper\Annotation;
 * @Annotation
 * @Target("PROPERTY")
 */
-final class DataSource
+final class Provider
 {
     use SourceCommonTrait;
 }

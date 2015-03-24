@@ -9,6 +9,11 @@ fields:
     brand:
         readConverter: readBrand
         writeConverter: writeBrand
+    shops:
+        dataSource:
+            class: MyClass
+            method: find()
+            lazyLoading: true
     color: ~ # this field hasn't got specific configuration but we want the mapper manage it
     createdDate:
         name: created_date

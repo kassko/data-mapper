@@ -25,6 +25,11 @@ final class Field
     /**
     * @var string
     */
+    public $class = null;
+
+    /**
+    * @var string
+    */
     public $readConverter;
 
     /**
