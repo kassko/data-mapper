@@ -33,8 +33,6 @@ Given an object:
 ```php
 namespace Kassko\Sample;
 
-use Kassko\DataMapper\Annotation as DM;
-
 class Watch
 {
     private $brand;
@@ -101,7 +99,7 @@ class Watch
     private $brand;
 
     /**
-     * DM\Fields(name="COLOR")
+     * @DM\Fields(name="COLOR")
      */
     private $color;
 
@@ -122,12 +120,12 @@ use Kassko\DataMapper\Annotation as DM;
 class Watch
 {
     /**
-     * DM\Exclude
+     * @DM\Exclude
      */
     private $brand;//Is not managed because of Exclude annotation.
 
     /**
-     * DM\Fields(name="COLOR")
+     * @DM\Fields(name="COLOR")
      */
     private $color;//Is managed because of fieldExclusionPolicy tuned by default to "include_all".
 
@@ -153,8 +151,8 @@ class Watch
     private $brand;//Is not managed because of fieldExclusionPolicy tuned to "exclude_all".
 
     /**
-     * DM\Include
-     * DM\Fields(name="COLOR")
+     * @DM\Include
+     * @DM\Fields(name="COLOR")
      */
     private $color;//Is managed because of Include annotation.
 
@@ -168,82 +166,21 @@ class Watch
 If not specify, fieldExclusionPolicy is tuned on "exclude_all".
 
 To know more about `kassko/data-mapper`:
-* [`Basic usage`](https://github.com/kassko/data-mapper/blob/master/README.md)
 * [`Map some property names to keys of your raw datas`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/map_properties.md)
 * [`Specify your field exclusion policy`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/field_exclusion_policy.md)
 * [`Convert some values before hydration or before extraction`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/converters.md)
 * [`Hydrate nested object or nested collections`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/nested_object_hydration.md)
 * [`Use a data source`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/data_source.md)
 * [`Use a provider`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/provider.md)
-* [`Lazy load some fields`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/lazy_loading.md)
 * [`Result builder in details`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/result_builder.md)
 * [`Use value objects`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/value_objects.md)
 * [`Choose or change an object mapping configurations at runtime`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/runtime_configuration.md)
 * [`Choose your mapping configuration format`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/mapping_format.md)
-
-### Include mapping configuration in other ones or inherit some mapping configurations ###
-
-### Field mapping level and class mapping level and inheritance ###
-If all fields use a same option, you can configure this option at "object" level.
-
-### Class mapping inheritance ###
-This section will be written later.
-
-### Resource mapping inheritance ###
-This section will be written later.
-
-### Use inner configuration ###
-This section will be written later.
-
-### Provide a custom configuration ###
-This section will be written later.
-
-### Work with various mapping configuration formats in the same application ###
-This section will be written later.
-
-### You can attach listeners to an action ###
-This section will be written later.
-
-[see more in listener reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/listener.md).
-
-### You can log in your object without injecting to it a logger dependency ###
-[see more in log reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/log.md).
-
-### Use a service without injecting a dependency in your object ###
-This section will be written later.
-
-### API details ###
-
-#### Create a ClassResolver instance ####
-To know more about ClassResolver, see [the class-resolver documentation](https://github.com/kassko/class-resolver/blob/master/README.md)
-
-#### Create an ObjectListenerResolver instance ####
-This section will be written later.
-
-### Create an adapter for the cache ###
-
-### Configuration reference ###
-
-### Mapping reference ###
-
-
-### Configuration reference ###
-To know more about configuration, see [configuration reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/configuration.md)
-
-
-For more details about mapping you can read the mapping reference documentations:
-
-#### Inner yaml format ####
-[see inner Yaml mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/inner_yaml_mapping.md).
-
-#### Yaml file format ####
-[see yaml mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/yaml_file_mapping.md).
-
-#### Inner php ####
-[see inner php mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/inner_php_mapping.md).
-
-#### Php file format ####
-[see Php mapping reference documentation](https://github.com/kassko/data-mapper/blob/master/Resources/doc/php_file_mapping.md).
+* [`Configuration reference documentation`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/configuration.md)
+* [`Inner Yaml mapping reference documentation`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/inner_yaml_mapping.md).
+* [`Yaml mapping reference documentation`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/yaml_file_mapping.md).
+* [`Inner php mapping reference documentation`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/inner_php_mapping.md).
+* [`Php mapping reference documentation`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/php_file_mapping.md).
 
 
 
