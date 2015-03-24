@@ -172,7 +172,6 @@ To know more about `kassko/data-mapper`:
 * [`Hydrate nested object or nested collections`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/nested_object_hydration.md)
 * [`Use a data source`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/data_source.md)
 * [`Use a provider`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/provider.md)
-* [`Lazy load some fields`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/lazy_loading.md)
 * [`Result builder in details`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/result_builder.md)
 * [`Use value objects`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/value_objects.md)
 * [`Choose or change an object mapping configurations at runtime`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/runtime_configuration.md)
