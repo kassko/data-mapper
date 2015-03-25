@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataMapper\Exception;
+namespace Kassko\DataMapper\Hydrator\MemberAccessStrategy\Exception;
 
 use Exception;
 

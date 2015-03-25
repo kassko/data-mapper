@@ -3,7 +3,7 @@
 namespace Kassko\DataMapper\Hydrator\MemberAccessStrategy;
 
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
-use Kassko\DataMapper\Exception\NotFoundMemberException;
+use Kassko\DataMapper\Hydrator\MemberAccessStrategy\Exception\NotFoundMemberException;
 use ReflectionClass;
 
 /**
