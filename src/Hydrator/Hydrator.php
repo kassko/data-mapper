@@ -290,14 +290,14 @@ class Hydrator extends AbstractHydrator
         	reset($value);
         	$fieldHydrator = $this->objectManager->createHydratorFor($fieldClass);
 
-            if (! is_array(current($value))) {                      
+            if (key($value) != null && !is_numeric(key($value))) {
 	            
 	            $field = new $fieldClass;
 	            $fieldHydrator->hydrate($value, $field);
 	            $this->memberAccessStrategy->setValue($field, $object, $mappedFieldName);                		        
             } else {
 
-            	$nestedResult = [];
+            	$fieldResult = [];
 	            foreach ($value as $record) {	           
 	                $field = new $fieldClass;
 	                $fieldResult[] = $fieldHydrator->hydrate($record, $field);                   
