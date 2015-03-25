@@ -290,7 +290,7 @@ class Hydrator extends AbstractHydrator
         	reset($value);
         	$fieldHydrator = $this->objectManager->createHydratorFor($fieldClass);
 
-            if (key($value) != null && !is_numeric(key($value))) {
+            if (0 !== count($value) && ! is_numeric(key($value))) {
 	            
 	            $field = new $fieldClass;
 	            $fieldHydrator->hydrate($value, $field);
