@@ -42,6 +42,10 @@ class InnerYamlLoader extends AbstractLoader
 
     private function loadClassAnnotations(array $data)
     {
+        if (isset($data['object']['dataSourcesStore'])) {
+            $this->classMetadata->setDataSourcesStore($data['object']['dataSourcesStore']);
+        }
+        
         if (isset($data['object']['fieldExclusionPolicy'])) {
             $this->classMetadata->setFieldExclusionPolicy($data['object']['fieldExclusionPolicy']);
         }
@@ -111,6 +115,7 @@ class InnerYamlLoader extends AbstractLoader
         $toMapped = [];
         $dataSources = [];
         $providers = [];
+        $refSources = [];
         $valueObjects = [];
         $mappedIdFieldName = null;
         $mappedIdCompositePartFieldName = [];
@@ -195,6 +200,10 @@ class InnerYamlLoader extends AbstractLoader
                 $providers[$mappedFieldName] = $fieldData['provider'];
             }
 
+            if (isset($fieldData['refSource'])) {
+                $refSources[$mappedFieldName] = $fieldData['refSource'];
+            }
+
             if (isset($fieldData['valueObjects'])) {
                 $valueObjects = $fieldData['valueObjects'];
             }
@@ -248,6 +257,10 @@ class InnerYamlLoader extends AbstractLoader
 
         if (count($providers)) {
             $this->classMetadata->setProviders($providers);
+        }
+
+        if (count($refSources)) {
+            $this->classMetadata->setRefSources($refSources);
         }
 
         if (count($valueObjects)) {

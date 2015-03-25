@@ -4,7 +4,9 @@ namespace Kassko\DataMapper\Annotation;
 
 /**
 * @Annotation
-* @Target("PROPERTY")
+* @Target({"CLASS","PROPERTY","ANNOTATION"})
+*
+* @author kko
 */
 final class DataSource
 {

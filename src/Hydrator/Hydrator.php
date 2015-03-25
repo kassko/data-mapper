@@ -5,6 +5,7 @@ namespace Kassko\DataMapper\Hydrator;
 use DateTime;
 use Exception;
 use Kassko\ClassResolver\ClassResolverInterface;
+use Kassko\DataMapper\ClassMetadata\SourcePropertyMetadata;
 use Kassko\DataMapper\Configuration\ObjectKey;
 use Kassko\DataMapper\Configuration\RuntimeConfiguration;
 use Kassko\DataMapper\Exception\NotFoundMemberException;
@@ -320,15 +321,46 @@ class Hydrator extends AbstractHydrator
         return true;
     }
 
+    protected function findFromSource(SourcePropertyMetadata $sourceMetadata)
+    {
+        if (! isset($sourceMetadata->fallbackSourceId)) {
+            return $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+        }
+
+        if (SourcePropertyMetadata::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->onFail) {
+            
+            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+            if ($sourceMetadata->areDataInvalid($data)) {
+                $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
+                return $this->findFromSource($sourceMetadata);
+            }
+
+            return $data;
+        } 
+
+        //Else SourcePropertyMetadata::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->onFail.
+        try {
+            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+        } catch (Exception $e) {
+            if (! $e instanceof $sourceMetadata->exceptionClass) {
+                throw $e;
+            }
+            $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
+            return $this->findFromSource($sourceMetadata);
+        }
+
+        return $data;  
+    }
+
     protected function walkHydrationByDataSource($mappedFieldName, $object, $enforceLoading)
     {
         if ($this->metadata->isNotManaged($mappedFieldName)) {
             return false;
         }
 
-        list($class, $method, $args, $lazyLoading, $multiFields) = $this->metadata->getDataSourcesInfo($mappedFieldName);
+        $sourceMetadata = $this->metadata->getDataSourceInfo($mappedFieldName);
         
-        $key = $class.$method.spl_object_hash($object);
+        $key = $this->computeSourceKey($sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method) . spl_object_hash($object);
 
         //Checks if hash is orphan.
         //This is possible because when a object dead, it's hash is reused on another object. 
@@ -336,12 +368,12 @@ class Hydrator extends AbstractHydrator
             unset($this->dataSourceLoadingDone[$key]); 
         }
 
-        if (! isset($this->dataSourceLoadingDone[$key]) && ($enforceLoading || ! $lazyLoading)) {
+        if (! isset($this->dataSourceLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
 
-            $this->resolveMethodArgs($args, $object, $mappedFieldName);
-            $data = $this->objectManager->findFromSource($class, $method, $args);
+            $this->resolveMethodArgs($sourceMetadata->args, $object, $mappedFieldName);
+            $data = $this->findFromSource($sourceMetadata);
             
-            if (! $multiFields) {
+            if (! $sourceMetadata->supplySeveralFields) {
                 $this->walkHydration($mappedFieldName, $object, $data, $data);
             } else {
                 $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameDataSource($mappedFieldName));
@@ -367,9 +399,9 @@ class Hydrator extends AbstractHydrator
             return false;
         }
 
-        list($class, $method, $args, $lazyLoading, $multiFields) = $this->metadata->getProvidersInfo($mappedFieldName);
+        $sourceMetadata = $this->metadata->getProviderInfo($mappedFieldName);
         
-        $key = $class.$method.spl_object_hash($object);
+        $key = $this->computeSourceKey($sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method) . spl_object_hash($object);
 
         //Checks if hash is orphan.
         //This is possible because when a object dead, it's hash is reused on another object. 
@@ -377,12 +409,12 @@ class Hydrator extends AbstractHydrator
             unset($this->providerLoadingDone[$key]); 
         }
 
-        if (! isset($this->providerLoadingDone[$key]) && ($enforceLoading || ! $lazyLoading)) {
+        if (! isset($this->providerLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
 
-            $this->resolveMethodArgs($args, $object, $mappedFieldName);
-            $data = $this->objectManager->findFromSource($class, $method, $args);
+            $this->resolveMethodArgs($sourceMetadata->args, $object, $mappedFieldName);
+            $data = $this->findFromSource($sourceMetadata);
             
-            if (! $multiFields) {
+            if (! $sourceMetadata->supplySeveralFields) {
                 $this->memberAccessStrategy->setValue($data, $object, $mappedFieldName);  
             } else {
                 $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameProvider($mappedFieldName));
@@ -443,6 +475,14 @@ class Hydrator extends AbstractHydrator
                 }
             }
         }
+    }
+
+    protected function computeSourceKey($id, $class, $method)
+    {
+        if (null === $id) {
+            return $class . $method;
+        } 
+        return $id . $class . $method;
     }
 
     protected function pushRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResource, $voResourceType)

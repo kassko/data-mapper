@@ -16,7 +16,7 @@
         "symfony/config": "~2.5",
         "symfony/yaml": "~2.5",
         "zendframework/zend-stdlib": "~2.3",
-        "kassko/class-resolver": "~0.3.0@alpha"
+        "kassko/class-resolver": "~0.3.2"
     },
     "autoload":{
         "psr-4":{
