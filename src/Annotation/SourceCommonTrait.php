@@ -13,6 +13,11 @@ namespace Kassko\DataMapper\Annotation;
 */
 trait SourceCommonTrait
 {
+    /**
+     * @var string
+     */
+    public $id;
+
 	/**
      * @var string
      */
@@ -41,4 +46,28 @@ trait SourceCommonTrait
      * @var bool
      */
     public $supplySeveralFields = false;
+
+    /**
+     * @var string
+     *
+     * @Enum({"checkReturnValue", "checkException"})
+     */
+    public $onFail = 'checkReturnValue';
+
+    /**
+     * @var string
+     */
+    public $exceptionClass;
+
+    /**
+     * @var string
+     *
+     * @Enum({"null", "false", "emptyString", "emptyArray"})
+     */
+    public $badReturnValue = 'null';
+
+    /**
+     * @var string
+     */
+    public $fallbackSourceId;
 }

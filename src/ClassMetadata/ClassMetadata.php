@@ -51,7 +51,10 @@ class ClassMetadata
     private $fieldsWithHydrationStrategy = [];
 
     private $dataSources = [];
+    private $dataSourcesStore = [];
     private $providers = [];
+    private $providersStore = [];
+    private $refSources = [];
     
     private $getters = [];
     private $setters = [];
@@ -126,6 +129,17 @@ class ClassMetadata
             }
 
             unset($fieldDataByKey);
+        }
+
+        $this->normalizeDataSourcesStore();
+        $this->normalizeProvidersStore();
+
+        foreach ($this->refSources as $mappedFieldName => $refSource) {
+            if (! isset($this->dataSources[$mappedFieldName]) && null !== $dataSource = $this->findDataSourceByIdBeforeCompilation($refSource)) {
+                $this->dataSources[$mappedFieldName] = $dataSource;
+            } elseif (! isset($this->providers[$mappedFieldName]) && null !== $provider = $this->findProviderByIdBeforeCompilation($refSource)) {
+                $this->providers[$mappedFieldName] = $providers;
+            }
         }
     }
 
@@ -752,6 +766,53 @@ class ClassMetadata
         return $this->fieldsDataByKey[$mappedFieldName][$columnDataName];
     }
 
+    public function findSourceById($id)
+    {//@todo: optimize it.
+        foreach ($this->dataSourcesStore as $dataSource) {
+            if ($dataSource['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($dataSource);
+            }
+        }
+
+        foreach ($this->dataSources as $dataSource) {
+            if ($dataSource['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($dataSource);
+            }
+        }
+
+        foreach ($this->providersStore as $provider) {
+            if ($provider['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($provider);
+            }
+        }
+
+        foreach ($this->providers as $provider) {
+            if ($provider['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($provider);
+            }
+        }
+
+        throw new ObjectMappingException(sprintf('No source found for the given id "%s".', $id));
+    }
+
+    private function createSourcePropertyMetadataFromArrayData(array $source)
+    {
+        $sourcePropertyMetadata = new SourcePropertyMetadata;
+
+        $sourcePropertyMetadata->id = $source['id'];
+        $sourcePropertyMetadata->class = $source['class'];
+        $sourcePropertyMetadata->method = $source['method'];
+        $sourcePropertyMetadata->args = $source['args'];
+        $sourcePropertyMetadata->lazyLoading = $source['lazyLoading'];
+        $sourcePropertyMetadata->supplySeveralFields = $source['supplySeveralFields'];
+        $sourcePropertyMetadata->onFail = $source['onFail'];
+        $sourcePropertyMetadata->exceptionClass = $source['exceptionClass'];
+        $sourcePropertyMetadata->badReturnValue = $source['badReturnValue'];
+        $sourcePropertyMetadata->fallbackSourceId = $source['fallbackSourceId'];
+
+        return $sourcePropertyMetadata;
+    }
+
     //========================= Data sources : begin
 
     public function getDataSources()
@@ -759,16 +820,16 @@ class ClassMetadata
         return $this->dataSources;
     }
 
-    /**
-     * Sets the Source (class and method) which hydrate a field.
-     *
-     * @param array $dataSources the hydration sources
-     *
-     * @return self
-     */
     public function setDataSources(array $dataSources)
     {
         $this->dataSources = $dataSources;
+
+        return $this;
+    }
+
+    public function setDataSourcesStore(array $dataSourcesStore)
+    {
+        $this->dataSourcesStore = $dataSourcesStore;
 
         return $this;
     }
@@ -783,15 +844,9 @@ class ClassMetadata
         return array_keys($this->dataSources);
     }
 
-    public function getDataSourcesInfo($mappedFieldName)
+    public function getDataSourceInfo($mappedFieldName)
     {
-        return [
-            $this->dataSources[$mappedFieldName]['class'],
-            $this->dataSources[$mappedFieldName]['method'],
-            $this->dataSources[$mappedFieldName]['args'],
-            $this->dataSources[$mappedFieldName]['lazyLoading'],
-            $this->dataSources[$mappedFieldName]['supplySeveralFields'],
-        ];
+        return $this->createSourcePropertyMetadataFromArrayData($this->dataSources[$mappedFieldName]);
     }
 
     /**
@@ -830,9 +885,16 @@ class ClassMetadata
         return $this->providers;
     }
 
-    public function setProviders(array $toOneProviders)
+    public function setProviders(array $providers)
     {
         $this->providers = $providers;
+
+        return $this;
+    }
+
+    public function setProvidersStore(array $providersStore)
+    {
+        $this->providersStore = $providersStore;
 
         return $this;
     }
@@ -847,15 +909,9 @@ class ClassMetadata
         return array_keys($this->providers);
     }
 
-    public function getProvidersInfo($mappedFieldName)
+    public function getProviderInfo($mappedFieldName)
     {
-        return [
-            $this->providers[$mappedFieldName]['class'],
-            $this->providers[$mappedFieldName]['method'],
-            $this->providers[$mappedFieldName]['args'],
-            $this->providers[$mappedFieldName]['lazyLoading'],
-            $this->providers[$mappedFieldName]['supplySeveralFields'],
-        ];
+        return $this->createSourcePropertyMetadataFromArrayData($this->providers[$mappedFieldName]);
     }
 
     /**
@@ -886,6 +942,13 @@ class ClassMetadata
     }
 
     //========================= Providers : end
+
+    public function setRefSources(array $refSources)
+    {
+        $this->refSources = $refSources;
+
+        return $this;
+    }
 
     public function setGetters(array $getters)
     {
@@ -923,5 +986,53 @@ class ClassMetadata
             $this->customHydrator['hydrateMethod'],
             $this->customHydrator['extractMethod'],
         ];
+    }
+
+    private function normalizeDataSourcesStore()
+    {
+        foreach ($this->dataSourcesStore as $dataSource) {
+            $dataSource['supplySeveralFields'] = false;
+        }
+    }
+
+    private function normalizeProvidersStore()
+    {
+        foreach ($this->providersStore as $provider) {
+            $provider['supplySeveralFields'] = false;
+        }
+    }
+
+    private function findDataSourceByIdBeforeCompilation($id)
+    {
+        foreach ($this->dataSourcesStore as $dataSource) {
+            if ($dataSource['id'] === $id) {
+                return $dataSource;
+            }
+        }
+
+        foreach ($this->dataSources as $dataSource) {
+            if ($dataSource['id'] === $id) {
+                return $dataSource;
+            }
+        }
+
+        return null;
+    }
+
+    private function findProviderByIdBeforeCompilation($id)
+    {
+        foreach ($this->providersStore as $provider) {
+            if ($provider['id'] === $id) {
+                return $provider;
+            }
+        }
+
+        foreach ($this->providers as $provider) {
+            if ($provider['id'] === $id) {
+                return $provider;
+            }
+        }
+
+        return null;
     }
 }

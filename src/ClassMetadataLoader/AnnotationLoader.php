@@ -32,6 +32,9 @@ class AnnotationLoader extends AbstractLoader
     
     private static $dataSourceAnnotationName = DM\DataSource::class;
     private static $providerAnnotationName = DM\Provider::class;
+    private static $refSourceAnnotationName = DM\RefSource::class;
+    private static $dataSourcesStoreAnnotationName = DM\DataSourcesStore::class;
+    private static $providersStoreAnnotationName = DM\ProvidersStore::class;
     
     private static $getterAnnotationName = DM\Getter::class;
     private static $setterAnnotationName = DM\Setter::class;
@@ -91,13 +94,24 @@ class AnnotationLoader extends AbstractLoader
                     $this->classMetadata->setObjectListenerClasses($annotation->classList);
                     break;
 
+                case self::$dataSourcesStoreAnnotationName:
+                    foreach ($annotation->items as &$item) {
+                        $item = (array)$item;
+                    }
+                    $this->classMetadata->setDataSourcesStore($annotation->items);
+                    break;
+
+                case self::$providersStoreAnnotationName:
+                    $this->classMetadata->setProvidersStore($annotation->items);
+                    break;
+
                 case self::$customHydratorAnnotationName:
                     $this->classMetadata->setCustomHydrator((array)$annotation);
                     break;
 
                 case self::$preExtractAnnotationName:
-                        $this->classMetadata->setOnBeforeExtract($annotation->method);
-                        break;
+                    $this->classMetadata->setOnBeforeExtract($annotation->method);
+                    break;
 
                 case self::$postExtractAnnotationName:
                     $this->classMetadata->setOnAfterExtract($annotation->method);
@@ -124,10 +138,9 @@ class AnnotationLoader extends AbstractLoader
         $excludedFields = [];
         $toOriginal = [];
         $toMapped = [];
-
         $dataSources = [];
         $providers = [];
-        
+        $refSources = [];  
         $mappedIdFieldName = null;
         $mappedIdCompositePartFieldName = [];
         $mappedVersionFieldName = null;
@@ -208,6 +221,11 @@ class AnnotationLoader extends AbstractLoader
                         $providers[$mappedFieldName] = (array)$annotation;
                         break;
 
+                    case self::$refSourceAnnotationName:
+
+                        $refSources[$mappedFieldName] = $annotation->ref;
+                        break;          
+
                     case self::$valueObjectAnnotationName:
 
                         $valueObjects[$mappedFieldName] = [];
@@ -280,6 +298,10 @@ class AnnotationLoader extends AbstractLoader
 
         if (count($providers)) {
             $this->classMetadata->setProviders($providers);
+        }
+
+        if (count($refSources)) {
+            $this->classMetadata->setRefSources($refSources);
         }
 
         if (isset($mappedIdFieldName)) {
