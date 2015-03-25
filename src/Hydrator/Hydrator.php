@@ -465,7 +465,7 @@ class Hydrator extends AbstractHydrator
             } /*elseif ('##value' === $arg) {
                 $arg = $object; 
             }*/ elseif ('#' === $arg[0]) {
-                $argsMappedFieldName = $this->metadata->getMappedFieldName(substr($arg[0], 1));
+                $argsMappedFieldName = $this->metadata->getMappedFieldName(substr($arg, 1));
                 $arg = $this->extractProperty($object, $argsMappedFieldName);  
             } elseif ('@' === $arg[0]) {
                 if ($this->classResolver) {
