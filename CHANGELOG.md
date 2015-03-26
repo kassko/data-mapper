@@ -1,8 +1,14 @@
+`0.12.2.0-alpha - 2015/03/25 - Improvements version`:
+* `Improvements`: Add data source key "id" which replaces the key "ref". "ref" is kept but marked deprecated. This key should be removed in the next significant release.
+
+`0.12.1.1-alpha - 2015/03/25 - Fix version`:
+* `Fix`: Fix bug on hydration of more than 2 nested objects from a DataSource.
+
 `0.12.1.0-alpha - 2015/03/25 - New version`:
 * `New`: Add DataSourcesStore and ProvidersStore to centralize all sources.
 * `New`: Allows to link a property to source from the store to reduce the mapping code.
 * `New`: Allows to chaine sources as fallback sources if some sources do not respond properly.
-* `Break`: Use stable version of class-resolver component (not an alpha version)
+* `New`: Use stable version of class-resolver component (no an alpha version)
 
 `0.12.0.0-alpha - 2015/03/24 - Break version`:
 * `Break`: To decide if a field should be managed, in your mapping configuration use the keys Include/Exclude/Object.fieldExclusionPolicy. The key Field don't do the job anymore.
