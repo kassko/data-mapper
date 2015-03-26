@@ -18,7 +18,7 @@ class Watch
     /**
      * DM\Fields(name="COLOR")
      */
-    private $color;//Is managed because of fieldExclusionPolicy tuned by default to "include_all".
+    private $color;//Is managed because of fieldExclusionPolicy set by default to "include_all".
 
     public function getBrand() { return $this->brand; }
     public function setBrand($brand) { $this->brand = $brand; }
@@ -39,7 +39,7 @@ use Kassko\DataMapper\Annotation as DM;
  */
 class Watch
 {
-    private $brand;//Is not managed because of fieldExclusionPolicy tuned to "exclude_all".
+    private $brand;//Is not managed because of fieldExclusionPolicy set to "exclude_all".
 
     /**
      * DM\Include
@@ -54,4 +54,4 @@ class Watch
 }
 ``` 
 
-If not specify, fieldExclusionPolicy is tuned on "exclude_all".
+If not specify, fieldExclusionPolicy is set to "exclude_all".

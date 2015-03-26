@@ -110,61 +110,6 @@ class Watch
 }
 ```
 
-By default, all fields are managed (hydrated and extracted). You can ignore some fields with the annotation Exclude.
-
-```php
-namespace Kassko\Sample;
-
-use Kassko\DataMapper\Annotation as DM;
-
-class Watch
-{
-    /**
-     * @DM\Exclude
-     */
-    private $brand;//Is not managed because of Exclude annotation.
-
-    /**
-     * @DM\Fields(name="COLOR")
-     */
-    private $color;//Is managed because of fieldExclusionPolicy tuned by default to "include_all".
-
-    public function getBrand() { return $this->brand; }
-    public function setBrand($brand) { $this->brand = $brand; }
-    public function getColor() { return $this->color; }
-    public function setColor($color) { $this->color = $color; }
-}
-```
-
-You can switch the behaviour such as it ignores all fields by default.
-
-```php
-namespace Kassko\Sample;
-
-use Kassko\DataMapper\Annotation as DM;
-
-/**
- * DM\Object(fieldExclusionPolicy="exclude_all")
- */
-class Watch
-{
-    private $brand;//Is not managed because of fieldExclusionPolicy tuned to "exclude_all".
-
-    /**
-     * @DM\Include
-     * @DM\Fields(name="COLOR")
-     */
-    private $color;//Is managed because of Include annotation.
-
-    public function getBrand() { return $this->brand; }
-    public function setBrand($brand) { $this->brand = $brand; }
-    public function getColor() { return $this->color; }
-    public function setColor($color) { $this->color = $color; }
-}
-``` 
-
-If not specify, fieldExclusionPolicy is tuned on "exclude_all".
-
 To know more about `kassko/data-mapper`:
 * [`Result builder in details`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/result_builder.md)
 * [`Map some property names to keys of your raw datas`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/map_properties.md)
@@ -176,7 +121,7 @@ To know more about `kassko/data-mapper`:
 * [`Use fallback data sources`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/fallback_source.md)
 * [`Use a provider`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/provider.md)
 * [`Use value objects`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/value_objects.md)
-* [`Specify your field exclusion policy`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/field_exclusion_policy.md)
+* [`Select the fields to map`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/field_exclusion_policy.md)
 * [`Getters, isser, hasser and more get methods`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/getter_setter.md)
 * [`Choose or change an object mapping configurations at runtime`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/runtime_configuration.md)
 * [`Choose your mapping configuration format`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/mapping_format.md)
