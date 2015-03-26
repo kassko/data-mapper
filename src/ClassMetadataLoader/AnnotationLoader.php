@@ -223,7 +223,9 @@ class AnnotationLoader extends AbstractLoader
 
                     case self::$refSourceAnnotationName:
 
-                        $refSources[$mappedFieldName] = $annotation->ref;
+                        //ref is deprecated, it should be removed in the next significant release. 
+                        $data = (array)$annotation;
+                        $refSources[$mappedFieldName] = isset($annotation->id) ? $annotation->id : $annotation->ref;
                         break;          
 
                     case self::$valueObjectAnnotationName:

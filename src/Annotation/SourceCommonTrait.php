@@ -57,7 +57,7 @@ trait SourceCommonTrait
     /**
      * @var string
      */
-    public $exceptionClass;
+    public $exceptionClass = '\Exception';
 
     /**
      * @var string
