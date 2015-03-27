@@ -82,12 +82,13 @@ class ClassMetadata
 
 
     /**
-     * @param object|string $objectName
+     * @param object|string $objectClass
      */
-    public function __construct($objectName)
+    public function __construct($objectClass)
     {
-        $this->reflectionClass = new \ReflectionClass($objectName);
-        $this->methods = get_class_methods($objectName);
+        $objectClass = \Doctrine\Common\Util\ClassUtils::getRealClass($objectClass);
+        $this->reflectionClass = new \ReflectionClass($objectClass);
+        $this->methods = get_class_methods($objectClass);
     }
 
     /**
