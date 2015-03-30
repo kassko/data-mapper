@@ -20,7 +20,8 @@
     },
     "autoload":{
         "psr-4":{
-            "Kassko\\DataMapper\\": "src"
+            "Kassko\\DataMapper\\": "src",
+            "files": ["Resources/init.php"]
         }
     },
     "extra": {
