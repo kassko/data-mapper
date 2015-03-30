@@ -50,6 +50,11 @@ class SourcePropertyMetadata
      */
     public $fallbackSourceId;
 
+    /**
+     * @var string
+     */
+    public $involvedSourceId;
+
     public function areDataInvalid($data) 
     {
     	switch ($this->badReturnValue) {

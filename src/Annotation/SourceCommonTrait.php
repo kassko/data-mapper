@@ -35,9 +35,11 @@ trait SourceCommonTrait
     public $supplySeveralFields = false;
 
     /**
+     * A source involved.
+     *
      * @var array
      */
-    public $relationFields;
+    public $involvedSourceId = null;
 
     /**
      * @var string

@@ -215,7 +215,7 @@ class Hydrator extends AbstractHydrator
                     continue;
                 }
 
-                if (! $this->metadata->hasDataSource($mappedFieldName)) {
+                if (! $this->metadata->hasSource($mappedFieldName)) {
                     //Classical hydration.
                     $this->walkHydration($mappedFieldName, $object, $value, $data);
                 }
@@ -296,7 +296,7 @@ class Hydrator extends AbstractHydrator
         return $this->extractValue($mappedFieldName, $value, $object, $data);
     }
 
-    protected function walkHydration($mappedFieldName, $object, $value, $data)
+    protected function walkHydration($mappedFieldName, $object, $value, $data, $lastSource = true)
     {
         if ($this->metadata->isNotManaged($mappedFieldName)) {
             return false;
@@ -309,6 +309,12 @@ class Hydrator extends AbstractHydrator
         if (null === $value) {
             $this->memberAccessStrategy->setValue(null, $object, $mappedFieldName);
             return true;
+        }
+
+        if ($lastSource) {
+            $memberAccessStrategy = $this->memberAccessStrategy;
+        } else {
+            $memberAccessStrategy = $this->getPropertyAccessStrategy($object);
         }
 
         if ($fieldClass = $this->metadata->getClassOfMappedField($mappedFieldName)) {
@@ -367,7 +373,7 @@ class Hydrator extends AbstractHydrator
             }
         }
 
-        $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);
+        $memberAccessStrategy->setValue($value, $object, $mappedFieldName);
 
         return true;
     }
@@ -389,32 +395,44 @@ class Hydrator extends AbstractHydrator
         }
 
         if (! isset($this->dataSourceLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
-
-            $this->resolveMethodArgs($sourceMetadata->args, $object);
-            $data = $this->findFromSource($sourceMetadata);
-            
-            $this->executePreprocessors($sourceMetadata, $object);
-
-            if (! $sourceMetadata->supplySeveralFields) {
-                $this->walkHydration($mappedFieldName, $object, $data, $data);
-            } else {
-                $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameDataSource($mappedFieldName));
-                foreach ($data as $originalFieldName => $value) {
-            
-                    $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
-                    
-                    if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
-                        continue;
-                    }
-
-                    $this->walkHydration($otherMappedFieldName, $object, $value, $data);                    
-                }
-            }
-
-            $this->executeProcessors($sourceMetadata, $object);
-
+            $this->walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
             $this->dataSourceLoadingDone[$key] = true;
         }            
+    }
+
+    protected function walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading)
+    {
+        $this->resolveMethodArgs($sourceMetadata->args, $object);
+        $data = $this->findFromSource($sourceMetadata);
+            
+        $this->executePreprocessors($sourceMetadata, $object);
+
+        if (! $sourceMetadata->supplySeveralFields) {
+            $this->walkHydration($mappedFieldName, $object, $data, $data, ! isset($sourceMetadata->involvedSourceId));
+        } else {
+            $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameDataSource($mappedFieldName));
+            foreach ($data as $originalFieldName => $value) {
+        
+                $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
+                
+                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
+                    continue;
+                }
+
+                $this->walkHydration($otherMappedFieldName, $object, $value, $data, ! isset($sourceMetadata->involvedSourceId));                    
+            }
+        }
+
+        if (isset($sourceMetadata->involvedSourceId)) {
+            $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->involvedSourceId);
+            if ($sourceMetadata->isDataSource) {
+                $this->walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+            } else {
+                $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+            }
+        }
+
+        $this->executeProcessors($sourceMetadata, $object);
     }
 
     protected function walkHydrationByProvider($mappedFieldName, $object, $enforceLoading)
@@ -434,31 +452,49 @@ class Hydrator extends AbstractHydrator
         }
 
         if (! isset($this->providerLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
-
-            $this->resolveMethodArgs($sourceMetadata->args, $object);
-            $data = $this->findFromSource($sourceMetadata);
-
-            $this->executePreprocessors($sourceMetadata, $object);
-            
-            if (! $sourceMetadata->supplySeveralFields) {
-                $this->memberAccessStrategy->setValue($data, $object, $mappedFieldName);  
-            } else {
-                $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameProvider($mappedFieldName));
-                foreach ($data as $originalFieldName => $value) {
-                
-                    $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
-                    if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
-                        continue;
-                    }
-
-                    $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);                   
-                }
-            }      
-
-            $this->executeProcessors($sourceMetadata, $object);
-
+            $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
             $this->providerLoadingDone[$key] = true;
         }            
+    }
+
+    protected function walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading)
+    {
+        $this->resolveMethodArgs($sourceMetadata->args, $object);
+        $data = $this->findFromSource($sourceMetadata);
+
+        $this->executePreprocessors($sourceMetadata, $object);
+
+        if (! isset($sourceMetadata->involvedSourceId)) {
+            $memberAccessStrategy = $this->memberAccessStrategy;
+        } else {
+            $memberAccessStrategy = $this->getPropertyAccessStrategy($object);
+        }
+        
+        if (! $sourceMetadata->supplySeveralFields) {
+            $memberAccessStrategy->setValue($data, $object, $mappedFieldName);  
+        } else {
+            $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameProvider($mappedFieldName));
+            foreach ($data as $originalFieldName => $value) {
+            
+                $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
+                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
+                    continue;
+                }
+
+                $memberAccessStrategy->setValue($value, $object, $mappedFieldName);                   
+            }
+        }
+
+        if (isset($sourceMetadata->involvedSourceId)) {
+            $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->involvedSourceId);
+            if ($sourceMetadata->isDataSource) {
+                $this->walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+            } else {
+                $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+            }
+        }
+
+        $this->executeProcessors($sourceMetadata, $object);
     }
 
     protected function walkValueObjectHydration($mappedFieldName, $object, $data)
@@ -511,7 +547,7 @@ class Hydrator extends AbstractHydrator
         if (null === $sourceId) {
             return $objectClass . $sourceClass . $sourceMethod;
         } 
-        
+
         return $objectClass . $sourceId . $sourceClass . $sourceMethod;
     }
 
@@ -592,12 +628,15 @@ class Hydrator extends AbstractHydrator
         $this->objectManager->getConfiguration()->popRuntimeConfiguration();
     }
 
-    protected function setTemporaryValueForPropertyToLazyLoad($value, $object, $mappedFieldName)
+    /**
+     * Set in an object a value that will be modified by a next source.
+     *
+     * When several sources are are involved, we cannot use the setter to put a value 
+     * because maybe it casts on the type of the definitive value 
+     * and maybe the temporary value has a different type.
+     */
+    protected function setTemporaryValue($value, $object, $mappedFieldName)
     {
-        //The property will be lazy loaded.
-        //We just set the id of object to lazy load in the property.
-        //We cannot use the setter to put this id because it cast on object type.
-        //Later we will transform this id to the corresponding object.
         if (! $this->memberAccessStrategy instanceof MemberAccessStrategy\PropertyAccessStrategy) {
             $memberAccessStrategy = $this->createPropertyAccessStrategy($object);
         } else {
@@ -634,5 +673,14 @@ class Hydrator extends AbstractHydrator
         $memberAccessStrategy->prepare($object, $this->metadata);
 
         return $memberAccessStrategy;
+    }
+
+    private function getPropertyAccessStrategy($object)
+    {
+        if (! $this->memberAccessStrategy instanceof MemberAccessStrategy\PropertyAccessStrategy) {
+            retrun $this->createPropertyAccessStrategy($object);
+        } 
+
+        return $this->memberAccessStrategy;
     }
 }

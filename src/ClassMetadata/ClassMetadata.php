@@ -815,36 +815,33 @@ class ClassMetadata
         return $this->fieldsDataByKey[$mappedFieldName][$columnDataName];
     }
 
+    //========================= Sources : begin
+
+    public function hasSource($mappedFieldName)
+    {
+        if ($this->hasDataSource($mappedFieldName)) {
+            return true;
+        }
+        
+        return $this->hasProvider($mappedFieldName);
+    }
+
     public function findSourceById($id)
     {//@todo: optimize it.
-        foreach ($this->dataSourcesStore as $dataSource) {
-            if ($dataSource['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($dataSource);
-            }
+        $result = $this->findDataSourceById($id);
+        if (null !== $result) {
+            return $result;
         }
 
-        foreach ($this->dataSources as $dataSource) {
-            if ($dataSource['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($dataSource);
-            }
-        }
-
-        foreach ($this->providersStore as $provider) {
-            if ($provider['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($provider);
-            }
-        }
-
-        foreach ($this->providers as $provider) {
-            if ($provider['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($provider);
-            }
+        $result = $this->findProviderById($id);
+        if (null !== $result) {
+            return $result;
         }
 
         throw new ObjectMappingException(sprintf('No source found for the given id "%s".', $id));
     }
 
-    private function createSourcePropertyMetadataFromArrayData(array $source)
+    private function createSourcePropertyMetadataFromArrayData(array $source, $isDataSource)
     {
         $sourcePropertyMetadata = new SourcePropertyMetadata;
 
@@ -893,8 +890,13 @@ class ClassMetadata
             }
         }
 
+        $sourcePropertyMetadata->involvedSourceId = $source['involvedSourceId'];
+        $sourcePropertyMetadata->isDataSource = $isDataSource;
+
         return $sourcePropertyMetadata;
     }
+
+    //========================= Sources : end
 
     //========================= Data sources : begin
 
@@ -929,7 +931,7 @@ class ClassMetadata
 
     public function getDataSourceInfo($mappedFieldName)
     {
-        return $this->createSourcePropertyMetadataFromArrayData($this->dataSources[$mappedFieldName]);
+        return $this->createSourcePropertyMetadataFromArrayData($this->dataSources[$mappedFieldName], true);
     }
 
     /**
@@ -957,6 +959,23 @@ class ClassMetadata
         }
 
         return $propLoadedTogether;
+    }
+
+    public function findDataSourceById($id)
+    {//@todo: optimize it.
+        foreach ($this->dataSourcesStore as $dataSource) {
+            if ($dataSource['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($dataSource, true);
+            }
+        }
+
+        foreach ($this->dataSources as $dataSource) {
+            if ($dataSource['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($dataSource, true);
+            }
+        }
+
+        return null;
     }
 
     //========================= Data sources : end
@@ -1023,6 +1042,24 @@ class ClassMetadata
 
         return $propLoadedTogether;
     }
+
+    public function findProviderById($id)
+    {//@todo: optimize it.
+        foreach ($this->providersStore as $provider) {
+            if ($provider['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($provider);
+            }
+        }
+
+        foreach ($this->providers as $provider) {
+            if ($provider['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($provider);
+            }
+        }
+
+        return null;
+    }
+
 
     //========================= Providers : end
 
