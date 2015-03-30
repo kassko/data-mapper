@@ -270,25 +270,28 @@ class Hydrator extends AbstractHydrator
         if (! $this->hasStrategy($mappedFieldName)) {
             $value = $this->handleTypeConversions($value, $this->metadata->getTypeOfMappedField($mappedFieldName));
         }
+        
+        if (null === $value) {
+            $this->memberAccessStrategy->setValue(null, $object, $mappedFieldName);
+	    return true;
+        }
 
         if ($fieldClass = $this->metadata->getClassOfMappedField($mappedFieldName)) {
 
-        	if (is_null($value)) {
-                $value = [];
-            } elseif (! is_array($value)) {
-        		throw new ObjectMappingException(
-        			sprintf(
-        				'Cannot hydrate field "%s" of class "%s" from raw data.'
-        				. ' Raw data should be an array but got "%s".', 
-        				$mappedFieldName,
-        				$fieldClass,
-        				is_object($value) ? get_class($value) : gettype($value)
-    				)
-				);
-        	}
+  	    if (! is_array($value)) {
+        	throw new ObjectMappingException(
+		    sprintf(
+		        'Cannot hydrate field "%s" of class "%s" from raw data.'
+		        . ' Raw data should be an array but got "%s".', 
+		        $mappedFieldName,
+		        $fieldClass,
+		        is_object($value) ? get_class($value) : gettype($value)
+    		    )
+		);
+            }
 
-        	reset($value);
-        	$fieldHydrator = $this->objectManager->createHydratorFor($fieldClass);
+            reset($value);
+            $fieldHydrator = $this->objectManager->createHydratorFor($fieldClass);
 
             if (0 !== count($value) && ! is_numeric(key($value))) {
 	            
@@ -298,11 +301,11 @@ class Hydrator extends AbstractHydrator
             } else {
 
             	$fieldResult = [];
-	            foreach ($value as $record) {	           
-	                $field = new $fieldClass;
-	                $fieldResult[] = $fieldHydrator->hydrate($record, $field);                   
-	            }
-	            $this->memberAccessStrategy->setValue($fieldResult, $object, $mappedFieldName);
+	        foreach ($value as $record) {	           
+	            $field = new $fieldClass;
+	            $fieldResult[] = $fieldHydrator->hydrate($record, $field);                   
+	        }
+	        $this->memberAccessStrategy->setValue($fieldResult, $object, $mappedFieldName);
             }     
 
             return true;       
