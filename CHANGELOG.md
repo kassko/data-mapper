@@ -1,6 +1,6 @@
 `0.12.3.0 - 2015/03/30 - New version`:
 * `New`: Allows to hydrate a property with value null.
-* 
+
 `0.12.2.2 - 2015/03/29 - Fix version`:
 * `Fix`: Fix conflict between data sources with same id in different object.
 
