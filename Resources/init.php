@@ -2,4 +2,9 @@
 
 use Doctrine\Common\Annotations\AnnotationRegistry;
 
-AnnotationRegistry::registerLoader(array($loader, 'loadClass'));
+$loaders = spl_autoload_functions();
+foreach ($loaders as $loader) {
+    if (is_array($loader) && 2 === count($loader) && $loader[0] instanceof Composer\Autoload\ClassLoader) {
+        AnnotationRegistry::registerLoader($loader);
+    }
+}
