@@ -360,7 +360,7 @@ class Hydrator extends AbstractHydrator
 
         $sourceMetadata = $this->metadata->getDataSourceInfo($mappedFieldName);
         
-        $key = $this->computeSourceKey($sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method) . spl_object_hash($object);
+        $key = $this->computeSourceKey(get_class($object), $sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method) . spl_object_hash($object);
 
         //Checks if hash is orphan.
         //This is possible because when a object dead, it's hash is reused on another object. 
@@ -401,7 +401,7 @@ class Hydrator extends AbstractHydrator
 
         $sourceMetadata = $this->metadata->getProviderInfo($mappedFieldName);
         
-        $key = $this->computeSourceKey($sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method) . spl_object_hash($object);
+        $key = $this->computeSourceKey(get_class($object), $sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method) . spl_object_hash($object);
 
         //Checks if hash is orphan.
         //This is possible because when a object dead, it's hash is reused on another object. 
@@ -477,12 +477,13 @@ class Hydrator extends AbstractHydrator
         }
     }
 
-    protected function computeSourceKey($id, $class, $method)
+    protected function computeSourceKey($objectClass, $sourceId, $sourceClass, $sourceMethod)
     {
-        if (null === $id) {
-            return $class . $method;
+        if (null === $sourceId) {
+            return $objectClass . $sourceClass . $sourceMethod;
         } 
-        return $id . $class . $method;
+        
+        return $objectClass . $sourceId . $sourceClass . $sourceMethod;
     }
 
     protected function pushRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResource, $voResourceType)
