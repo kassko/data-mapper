@@ -477,7 +477,7 @@ class Hydrator extends AbstractHydrator
         }
     }
 
-    protected function computeSourceKey($objectClass, $id, $class, $method)
+    protected function computeSourceKey($objectClass, $sourceId, $sourceClass, $sourceMethod)
     {
         if (null === $sourceId) {
             return $objectClass . $sourceClass . $sourceMethod;
