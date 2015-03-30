@@ -21,7 +21,8 @@
     "autoload":{
         "psr-4":{
             "Kassko\\DataMapper\\": "src"
-        }
+        },
+        "files": ["Resources/init.php"]
     },
     "extra": {
         "branch-alias": {

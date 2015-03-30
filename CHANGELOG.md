@@ -1,3 +1,6 @@
+`0.12.3.1 - 2015/03/30 - Fix version`:
+* `Fix`: Fix data mapper annotations autoload.
+
 `0.12.3.0 - 2015/03/30 - New version`:
 * `New`: Allows to hydrate a property with value null.
 
