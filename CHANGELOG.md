@@ -1,11 +1,14 @@
+`0.12.3.0 - 2015/03/30 - New version`:
+* `New`: Allows to hydrate a property with value null.
+* 
 `0.12.2.2 - 2015/03/29 - Fix version`:
 * `Fix`: Fix conflict between data sources with same id in different object.
 
 `0.12.2.1 - 2015/03/26 - Fix version`:
 * `Fix`: Fix Doctrine entity incompatibility.
 
-`0.12.2.0 - 2015/03/25 - Improvements version`:
-* `Improvements`: Add data source key "id" which replaces the key "ref". "ref" is kept but marked deprecated. This key should be removed in the next significant release.
+`0.12.2.0 - 2015/03/25 - New version`:
+* `New`: Add data source key "id" which replaces the key "ref". "ref" is kept but marked deprecated. This key should be removed in the next significant release.
 
 `0.12.1.1 - 2015/03/25 - Fix version`:
 * `Fix`: Fix bug on hydration of more than 2 nested objects from a DataSource.
