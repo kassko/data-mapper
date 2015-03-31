@@ -158,22 +158,20 @@ class AnnotationLoader extends AbstractLoader
 
             $existsFieldAnnotation = false;
 
+            $toOriginal[$mappedFieldName] = $mappedFieldName;
+            $toMapped[$mappedFieldName] = $mappedFieldName;
+            $originalFieldNames[$mappedFieldName] = $mappedFieldName;//Todo: remove it. It's useless now.
+
             foreach ($annotations as $annotation) {
                 $annotationName = get_class($annotation);
 
                 switch ($annotationName) {
                     case self::$fieldAnnotationName:
 
-                        if (! isset($annotation->name)) {
-
-                            $toOriginal[$mappedFieldName] = $mappedFieldName;
-                            $toMapped[$mappedFieldName] = $mappedFieldName;
-                            $originalFieldNames[] = $mappedFieldName;
-                        } else {
-
+                        if (! empty($annotation->name)) {
                             $toOriginal[$mappedFieldName] = $annotation->name;
                             $toMapped[$annotation->name] = $mappedFieldName;
-                            $originalFieldNames[] = $annotation->name;
+                            $originalFieldNames[$mappedFieldName] = $annotation->name;
                         }
 
                         if ('date' === $annotation->type) {
