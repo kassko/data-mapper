@@ -367,12 +367,10 @@ class ClassMetadata
         return $this;
     }
 
-    /*
     public function isValueObject($mappedFieldName)
     {
         return array_key_exists($mappedFieldName, $this->valueObjects);
     }
-    */
 
     public function getFieldsWithValueObjects()
     {

@@ -2,8 +2,9 @@
 
 namespace Kassko\DataMapper;
 
-use Kassko\DataMapper\Query\Query;
 use Kassko\DataMapper\ObjectManager;
+use Kassko\DataMapper\Query\Query;
+use Kassko\DataMapper\Result\RawResultBuilder;
 use Kassko\DataMapper\Result\ResultBuilder;
 
 /**
@@ -34,6 +35,14 @@ class DataMapper implements DataMapperInterface
     public function resultBuilder($objectClass, $data = null)
     {
         return new ResultBuilder($this->objectManager, $objectClass, $data);
+    }
+
+    /**
+    * {@inheritdoc}
+    */
+    public function rawResultBuilder($data)
+    {
+        return new RawResultBuilder($this->objectManager, $data);
     }
 
     /**

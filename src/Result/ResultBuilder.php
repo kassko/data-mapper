@@ -11,17 +11,16 @@ use Kassko\DataMapper\Result\Exception\NotFoundIndexException;
 
 /**
  * Transform raw results into object representation.
- * And inversely, transform an objet or an object collection into raw results.
  *
  * @author kko
  */
-class ResultBuilder extends AbstractResultBuilder
+class ResultBuilder extends AbstractResultBuilder implements ResultBuilderInterface
 {
-    private $objectManager;
-    private $objectClass;
-    private $data;
+    protected $objectManager;
+    protected $objectClass;
+    protected $data;
 
-    public function __construct(ObjectManager $objectManager, $objectClass, $data)
+    public function __construct(ObjectManager $objectManager, $objectClass, array $data)
     {
         $this->objectManager = $objectManager;
         $this->objectClass = $objectClass;
@@ -52,7 +51,7 @@ class ResultBuilder extends AbstractResultBuilder
             throw new NoResultException($this->objectClass);
         }
 
-        if (count($this->data) > 1) {
+        if (count($this->data) > 1 && is_numeric(key($this->data))) {
             throw new NonUniqueResultException($this->objectClass);
         }
 
@@ -73,7 +72,7 @@ class ResultBuilder extends AbstractResultBuilder
             return $defaultResult;
         }
 
-        if (count($this->data) > 1) {
+        if (count($this->data) > 1 && is_numeric(key($this->data))) {
             throw new NonUniqueResultException($this->objectClass);
         }
 
@@ -145,16 +144,6 @@ class ResultBuilder extends AbstractResultBuilder
         }
 
         return $result;
-    }
-
-    /**
-    * {@inheritdoc}
-    */
-    public function raw()
-    {
-        $rh = new ResultExtractor($this->objectManager);
-
-        return $rh->extract($this->objectClass, $this->data);
     }
 
     /**
