@@ -313,10 +313,14 @@ class Hydrator extends AbstractHydrator
 
         $value = $this->hydrateValue($mappedFieldName, $value, $data, $object);        
 
-        //We do not call the setter for a DateTime when the value to defined is null or empty.
-        //We do so instead of initialize this DateTime to the current date.
-        if (empty($value) && $this->metadata->isMappedDateField($mappedFieldName)) {
-            return true;
+        if (! $this->metadata->isMappedDateField($mappedFieldName)) {
+            settype($value, $this->metadata->gettypeOfMappedField($mappedFieldName));
+        } else {
+            //We do not call the setter for a DateTime when the value to defined is null or empty.
+            //We do so instead of initialize this DateTime to the current date.
+            if (empty($value)) {
+                return true;
+            }
         }
 
         $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);
