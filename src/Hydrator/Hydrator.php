@@ -2,7 +2,7 @@
 
 namespace Kassko\DataMapper\Hydrator;
 
-use DateTime;
+use \DateTimeInterface;
 use Exception;
 use Kassko\ClassResolver\ClassResolverInterface;
 use Kassko\DataMapper\ClassMetadata\SourcePropertyMetadata;
@@ -138,7 +138,10 @@ class Hydrator extends AbstractHydrator
 
             list($customHydratorClass, , $customExtractMethod) = $this->metadata->getCustomHydratorInfo();
             $customHydrator = $this->classResolver ? $this->classResolver->resolve($customHydratorClass) : new $customHydratorClass;
-            $data = $customHydrator->$customExtractMethod($object);
+            
+            if (! method_exists($customHydrator, '__call') && ! (method_exists($customHydrator, $customExtractMethod) && is_callable([$customHydrator, $customExtractMethod]))) {
+                throw new \BadMethodCallException(sprintf('Failure on call method "%s::%s".', get_class($customHydrator), $customExtractMethod));
+            }
         }
 
         //Value objects extraction.
@@ -273,39 +276,37 @@ class Hydrator extends AbstractHydrator
         
         if (null === $value) {
             $this->memberAccessStrategy->setValue(null, $object, $mappedFieldName);
-	    return true;
+            return true;
         }
 
         if ($fieldClass = $this->metadata->getClassOfMappedField($mappedFieldName)) {
 
-  	    if (! is_array($value)) {
-        	throw new ObjectMappingException(
-		    sprintf(
-		        'Cannot hydrate field "%s" of class "%s" from raw data.'
-		        . ' Raw data should be an array but got "%s".', 
-		        $mappedFieldName,
-		        $fieldClass,
-		        is_object($value) ? get_class($value) : gettype($value)
-    		    )
-		);
+            if (! is_array($value)) {
+                throw new ObjectMappingException(
+                        sprintf(
+                            'Cannot hydrate field "%s" of class "%s" from raw data.'
+                            . ' Raw data should be an array but got "%s".', 
+                            $mappedFieldName,
+                            $fieldClass,
+                            is_object($value) ? get_class($value) : gettype($value)
+                        )
+                    );
             }
 
             reset($value);
             $fieldHydrator = $this->objectManager->createHydratorFor($fieldClass);
 
             if (0 !== count($value) && ! is_numeric(key($value))) {
-	            
-	            $field = new $fieldClass;
-	            $fieldHydrator->hydrate($value, $field);
-	            $this->memberAccessStrategy->setValue($field, $object, $mappedFieldName);                		        
+                $field = new $fieldClass;
+                $fieldHydrator->hydrate($value, $field);
+                $this->memberAccessStrategy->setValue($field, $object, $mappedFieldName);                               
             } else {
-
-            	$fieldResult = [];
-	        foreach ($value as $record) {	           
-	            $field = new $fieldClass;
-	            $fieldResult[] = $fieldHydrator->hydrate($record, $field);                   
-	        }
-	        $this->memberAccessStrategy->setValue($fieldResult, $object, $mappedFieldName);
+                $fieldResult = [];
+                foreach ($value as $record) {              
+                    $field = new $fieldClass;
+                    $fieldResult[] = $fieldHydrator->hydrate($record, $field);                   
+                }
+                $this->memberAccessStrategy->setValue($fieldResult, $object, $mappedFieldName);
             }     
 
             return true;       
@@ -314,7 +315,18 @@ class Hydrator extends AbstractHydrator
         $value = $this->hydrateValue($mappedFieldName, $value, $data, $object);        
 
         if (! $this->metadata->isMappedDateField($mappedFieldName)) {
-            settype($value, $this->metadata->gettypeOfMappedField($mappedFieldName));
+            $type = $this->metadata->getTypeOfMappedField($mappedFieldName);
+            
+            if (null !== $type) {
+                if (! is_array($value)) {
+                    settype($value, $type);    
+                } else {
+                    foreach ($value as &$itemValue) {
+                        settype($itemValue, $type);    
+                    }
+                }
+            }
+            
         } else {
             //We do not call the setter for a DateTime when the value to defined is null or empty.
             //We do so instead of initialize this DateTime to the current date.

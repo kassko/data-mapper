@@ -3,6 +3,7 @@
 namespace Kassko\DataMapper\Hydrator;
 
 use ArrayObject;
+use DateTime;
 use Kassko\DataMapper\Configuration\ObjectKey;
 use Kassko\DataMapper\Exception\NotImplementedMethodException;
 use Kassko\DataMapper\Hydrator\HydrationStrategy\HydrationStrategyInterface;
@@ -212,9 +213,7 @@ abstract class AbstractHydrator
                 } elseif (is_string($value)) {
                     $value = new DateTime($value);
                 }
-
                 break;
-            default:
         }
 
         return $value;
