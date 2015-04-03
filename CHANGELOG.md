@@ -1,3 +1,11 @@
+`0.13.0.0 - 2015/03/31 - Break version`:
+* `Break`: ResultBuilder. The way to get raw result from an object has changed. Use DataMapper::rawResultBuilder() instead of DataMapper::resultBuilder() and ResultBuilder::raw() instead of RawResultBuilder::raw(). 
+* `Break`: ResultBuilder. Remove useless method ResultBuilder::createObject().
+* `Break`: RawResultBuilder (ResultBuilder previously). In the method raw(), the parameter class is removed. Now you only need one parameter that is the data to extract.
+* `Fix`: Fix bug on ResultBuilder. Fix methods ResultBuilder::single() and ResultBuilder::one() which always failed (with NonUniqueResultException) when hydrating an array with multiple entries. Now they fail only if entries are records, and not when entries are the fields of a unique record. 
+* `Fix`: Fix bug on extraction. Members with no getters were were never extracted.
+* `Fix`: Fix bug on extraction. Properties which are objects which were not extracted.
+
 `0.12.3.0 - 2015/03/30 - New version`:
 * `New`: Allows to hydrate a property with value null.
 

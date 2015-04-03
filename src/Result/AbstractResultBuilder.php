@@ -8,7 +8,7 @@ namespace Kassko\DataMapper\Result;
  *
  * @author kko
  */
-abstract class AbstractResultBuilder implements ResultBuilderInterface
+abstract class AbstractResultBuilder
 {
     public function __call($method, $arguments)
     {

@@ -34,14 +34,12 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
 
     public function getValue($object, $fieldName)
     {
-        if (empty($this->classMethods)) {
-            return null;
+        if (! empty($this->classMethods)) {
+            $getter = $this->classMetadata->getterise($fieldName);
+            if (isset($getter) && in_array($getter, $this->classMethods)) {
+                return $object->$getter();
+            };
         }
-
-        $getter = $this->classMetadata->getterise($fieldName);
-        if (isset($getter) && in_array($getter, $this->classMethods)) {
-            return $object->$getter();
-        } 
 
         return $this->propertyAccessStrategy->getValue($object, $fieldName);
     }

@@ -14,7 +14,7 @@ interface ResultBuilderInterface
      *
      * @return array
      */
-    function all();
+    public function all();
 
     /**
      * Return only one result.
@@ -24,7 +24,7 @@ interface ResultBuilderInterface
      * @throws NoResultException Throw NoResultException if no result found.
      * @throws NonUniqueResultException Throw NonUniqueResultException if more than one résult found.
      */
-    function single();
+    public function single();
 
     /**
      * Return one result or a specified default result if no result found.
@@ -35,7 +35,7 @@ interface ResultBuilderInterface
      *
      * @throws NonUniqueResultException Throw NonUniqueResultException if more than one result found.
      */
-    function one($defaultResult = null);
+    public function one($defaultResult = null);
 
     /**
      * Return the first result or a specified default one if no result.
@@ -44,21 +44,12 @@ interface ResultBuilderInterface
      *
      * @return object.
      */
-    function first($defaultResult = null);
+    public function first($defaultResult = null);
 
     /**
      * Return iterable results.
      *
      * @return Generator
      */
-    function iterable();
-
-    /**
-     * Return raw results from an object representation.
-     *
-     * @param mixed $result
-     *
-     * @return array
-     */
-    function raw();
+    public function iterable();
 }
