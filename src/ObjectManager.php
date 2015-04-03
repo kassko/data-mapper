@@ -211,7 +211,7 @@ class ObjectManager
             $repo = $this->classResolver ? $this->classResolver->resolve($repositoryClass) : new $repositoryClass;
         }
 
-        if (! method_exists($repo, $findMethod) || ! is_callable([$repo, $findMethod])) {//method_exists() est nÃ©cessaire pour filtrer la mÃ©thode magique __call() que ne filtre pas is_callable().
+        if (! method_exists($repo, $findMethod) || ! is_callable([$repo, $findMethod])) {
             throw new \BadMethodCallException(
                 sprintf(
                     "Error on method call %s::%s",
@@ -239,7 +239,7 @@ class ObjectManager
             $repo = $this->classResolver ? $this->classResolver->resolve($repositoryClass) : new $repositoryClass;
         }
 
-        if (! method_exists($repo, $findMethod) || ! is_callable([$repo, $findMethod])) {//method_exists() est nÃ©cessaire pour filtrer la mÃ©thode magique __call() que ne filtre pas is_callable().
+        if (! method_exists($repo, $findMethod) || ! is_callable([$repo, $findMethod])) {
             throw new \BadMethodCallException(
                 sprintf(
                     "Error on method call %s::%s",
@@ -255,8 +255,8 @@ class ObjectManager
     {
         $customSource = $this->classResolver ? $this->classResolver->resolve($customSourceClass) : new $customSourceClass;
 
-        if (! method_exists($customSource, $customSourceMethod) || ! is_callable([$customSource, $customSourceMethod])) {
-            throw new \BadMethodCallException(sprintf('Erreur lors de l\'appel de la méthode "%s::%s"', get_class($customSource), $customSourceMethod));
+        if (! method_exists($customSource, '__call') && ! (method_exists($customSource, $customSourceMethod) && is_callable([$customSource, $customSourceMethod]))) {
+            throw new \BadMethodCallException(sprintf('Failure on call method "%s::%s".', get_class($customSource), $customSourceMethod));
         }
 
         return call_user_func_array([$customSource, $customSourceMethod], $args);

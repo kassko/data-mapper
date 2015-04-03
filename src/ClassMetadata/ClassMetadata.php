@@ -544,6 +544,10 @@ class ClassMetadata
     public function getTypeOfMappedField($mappedFieldName)
     {
         if (null != $data = $this->getDataForField($mappedFieldName, $this->columnDataName)) {
+            if ('mixed' === $data['type']) {
+                return null;
+            }
+
             return $data['type'];
         }
 
