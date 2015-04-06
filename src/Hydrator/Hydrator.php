@@ -2,7 +2,6 @@
 
 namespace Kassko\DataMapper\Hydrator;
 
-use \DateTimeInterface;
 use Exception;
 use Kassko\ClassResolver\ClassResolverInterface;
 use Kassko\DataMapper\ClassMetadata\SourcePropertyMetadata;
@@ -10,9 +9,11 @@ use Kassko\DataMapper\Configuration\ObjectKey;
 use Kassko\DataMapper\Configuration\RuntimeConfiguration;
 use Kassko\DataMapper\Exception\NotFoundMemberException;
 use Kassko\DataMapper\Exception\ObjectMappingException;
+use Kassko\DataMapper\Expression\Exception\UnexpectedExpressionException;
 use Kassko\DataMapper\Hydrator\MemberAccessStrategy;
 use Kassko\DataMapper\ObjectManager;
 use Zend\Stdlib\Hydrator\Filter\FilterProviderInterface;
+use \DateTimeInterface;
 
 /**
 * An object hydrator.
@@ -477,21 +478,20 @@ class Hydrator extends AbstractHydrator
             return;
         }
 
+        $argResolver = new MethodArgumentResolver($object, $this, $this->metadata, $this->classResolver);
+
         foreach ($args as &$arg) {
 
-            if ('##this' === $arg) {
-                $arg = $object; 
-            } /*elseif ('##value' === $arg) {
-                $arg = $object; 
-            }*/ elseif ('#' === $arg[0]) {
-                $argsMappedFieldName = $this->metadata->getMappedFieldName(substr($arg, 1));
-                $arg = $this->extractProperty($object, $argsMappedFieldName);  
-            } elseif ('@' === $arg[0]) {
-                if ($this->classResolver) {
-                    $arg = $this->classResolver->resolve($arg);
-                } else {
-                    throw new ObjectMappingException(sprintf('Cannot resolve id "%s". No resolver is available.', substr($arg, 1)));
-                }
+            try {
+                $arg = $argResolver->handle($arg));
+            } catch (UnexpectedExpressionException $e) {
+                //continue
+            }
+
+            try {
+                $arg = $this->expressionArgInterpreter->handle($arg));
+            } catch (UnexpectedExpressionException $e) {
+                //continue
             }
         }
     }
