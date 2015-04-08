@@ -1,5 +1,6 @@
 `0.12.4.0 - 2015/04/08 - New version`:
 * `New`: Hydrator configuration: add expression language for methods arguments.
+* `New`: Hydrator configuration: enhance type - allows to enforce type of fields.
 * `Fix`: Hydrator configuration: allows to invoke __call method. 
 * `Fix`: Data Mapper configuration: Fix forgotten keys `class_resolver` and `object_listener_resolver`.
 
