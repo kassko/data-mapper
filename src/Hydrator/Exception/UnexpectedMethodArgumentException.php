@@ -1,6 +1,6 @@
 <?php
 
-namespace Kassko\DataMapper\Expression\Exception;
+namespace Kassko\DataMapper\Hydrator\Exception;
 
 use Exception;
 
@@ -9,13 +9,13 @@ use Exception;
  *
  * @author kko
  */
-class UnexpectedExpressionException extends Exception
+class UnexpectedMethodArgumentException extends Exception
 {
     /**
      * @param expression The expression which cannot be ridden.
      */
     public function __construct($expression)
     {
-        parent::__construct('The expression "%s" cannot be evaluated.', $expression);
+        parent::__construct(sprintf('The expression "%s" cannot be evaluated.', $expression), 0, null);
     }   
 }

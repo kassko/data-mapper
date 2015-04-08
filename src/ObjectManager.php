@@ -17,6 +17,7 @@ use Kassko\DataMapper\Listener\ObjectListenerResolverInterface;
 use Kassko\DataMapper\Query\CacheConfig;
 use Kassko\DataMapper\Query\ResultManager;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 /**
 * Manage persistent object.
@@ -32,6 +33,10 @@ class ObjectManager
     private $classResolver;
     private $lazyLoaderFactory;
     private $logger;
+    /**
+     * @var ExpressionLanguage
+     */
+    private $expressionLanguage;
     private $hydratorInstances = [];
     private static $objectLoaded = [];
     private $identityMap = [];
@@ -382,5 +387,29 @@ class ObjectManager
                 $this->objectListenerResolver->dispatchEvent($listenerClass, $eventName, $eventFactoryMethod());
             }
         }
+    }
+
+    /**
+     * Gets the value of expressionLanguage.
+     *
+     * @return ExpressionLanguage
+     */
+    public function getExpressionLanguage()
+    {
+        return $this->expressionLanguage;
+    }
+
+    /**
+     * Sets the value of expressionLanguage.
+     *
+     * @param ExpressionLanguage $expressionLanguage the expression language
+     *
+     * @return self
+     */
+    public function setExpressionLanguage(ExpressionLanguage $expressionLanguage)
+    {
+        $this->expressionLanguage = $expressionLanguage;
+
+        return $this;
     }
 }

@@ -1,48 +1,53 @@
 <?php
-namespace Kassko\DataMapper;
+namespace Kassko\DataMapper\Hydrator;
 
 use Kassko\ClassResolver\ClassResolverInterface;
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 use Kassko\DataMapper\Exception\ObjectMappingException;
 use Kassko\DataMapper\Hydrator\AbstractHydrator;
+use Kassko\DataMapper\Hydrator\Exception\UnexpectedMethodArgumentException;
 
 /**
 * MethodArgumentResolver
 *
 * @author kko
 */
-class MethodArgumentResolver
+class MethodArgumentResolver implements MethodArgumentResolverInterface
 {
     private static $serviceMarker = '@';
-
+    private static $serviceMarkerSize = 1;
+    private static $fieldMarker = '#';
+    private static $fieldMarkerSize = 1;
+    
     private $object;
     private $hydrator;
     private $metadata;
     private $classResolver;
 
-    public function __construct($object, AbstractHydrator $hydrator, ClassMetadata $metadata, ClassResolverInterface $classResolver = null)
-    {
-        $this->object = $object;
+    public function __construct(AbstractHydrator $hydrator, ClassMetadata $metadata, ClassResolverInterface $classResolver = null)
+    {        
         $this->hydrator = $hydrator;
         $this->metadata = $metadata;
         $this->classResolver = $classResolver;
     }
 
-    public function handle($arg)
+    public function handle($arg, $object)
     {
+        $this->object = $object;
+
         if ('##this' === $arg) {
             return $this->object; 
         } 
 
-        if ('#' === $arg[0]) {
-            return $this->resolveFieldValue(substr($arg, 1));
+        if (self::$fieldMarkerSize === $arg[0]) {
+            return $this->resolveFieldValue(substr($arg, self::$fieldMarkerSize));
         } 
 
-        if ('@' === $arg[0]) {
-            return $this->resolveServiceFromExpression($arg);
+        if (self::$serviceMarker === $arg[0]) {
+            return $this->resolveServiceFromMarker($arg);
         }
 
-        throw new UnexpectedExpressionException($arg);
+        throw new UnexpectedMethodArgumentException($arg);
     }
 
     public function resolveObject()
@@ -53,20 +58,20 @@ class MethodArgumentResolver
     public function resolveFieldValue($fieldName)
     {
         $argsMappedFieldName = $this->metadata->getMappedFieldName($fieldName);
-        return $this->extractProperty($this->object, $argsMappedFieldName);
+        return $this->hydrator->extractProperty($this->object, $argsMappedFieldName);
     }
 
     public function resolveService($serviceId)
     {
-        $this->resolveServiceFromExpression(self::$serviceMarker . $serviceId);
+        return $this->resolveServiceFromMarker(self::$serviceMarker . $serviceId);
     }
 
-    public function resolveServiceFromExpression($serviceId)
+    private function resolveServiceFromMarker($serviceId)
     {
         if ($this->classResolver) {
-            $serviceId = $this->classResolver->resolve(self::$serviceMarker . $serviceId);
-        } else {
-            throw new ObjectMappingException(sprintf('Cannot resolve id "%s". No resolver is available.', substr($serviceId, 1)));
-        }
+            return $this->classResolver->resolve($serviceId);
+        } 
+        
+        throw new ObjectMappingException(sprintf('Cannot resolve id "%s". No resolver is available.', substr($serviceId, self::$serviceMarkerSize)));
     }
 }

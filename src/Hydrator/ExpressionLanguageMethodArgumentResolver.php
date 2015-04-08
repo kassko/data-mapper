@@ -1,7 +1,7 @@
 <?php
-namespace Kassko\DataMapper;
+namespace Kassko\DataMapper\Hydrator;
 
-use Symfony\Component\ExpressionLanguage\ExpressionFunction;
+use Kassko\DataMapper\Hydrator\Exception\UnexpectedMethodArgumentException;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 /**
@@ -9,49 +9,31 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 *
 * @author kko
 */
-class ExpressionLanguageMethodArgumentResolver implements ExpressionFunctionProviderInterface 
+class ExpressionLanguageMethodArgumentResolver implements MethodArgumentResolverInterface
 {
     private $expressionLanguage;
     private $simpleMethodArgResolver;
 
-    public function __construct(ExpressionLanguage $expressionLanguage, MethodArgumentResolver $simpleMethodArgResolver)
+    public function __construct(ExpressionLanguage $expressionLanguage, MethodArgumentResolverInterface $simpleMethodArgResolver)
     {
         $this->expressionLanguage = $expressionLanguage;
         $this->simpleMethodArgResolver = $simpleMethodArgResolver;
     }
 
-    public function handle($expression)
+    public function handle($arg, $object)
     {
-        $expressionDetected = preg_match('/expr\((\w+)\)/', $expression, $matches);
+        $expressionDetected = preg_match('/expr\((.+)\)/', $arg, $matches);
 
         if (1 !== $expressionDetected) {
-            throw new UnexpectedExpressionException($expression);
+            throw new UnexpectedMethodArgumentException($arg);
         }
 
-        return $this->expressionLanguage->evaluate($matches[0]);
-    }
-
-    public function provideExpressionFunctions()
-    {
-        return [
-            new ExpressionFunction(
-                'service',
-                function ($arg) {
-                        return sprintf('$this->simpleMethodArgResolver->resolveService(%s)', $arg);
-                }, 
-                function (array $context, $value) {
-                    return $this->simpleMethodArgResolver->resolveService($value);
-                }
-            ),
-            new ExpressionFunction(
-                'field',
-                function ($arg) {
-                    return sprintf('$this->simpleMethodArgResolver->resolveFieldValue(%s)', $arg);
-                }, 
-                function (array $context, $value) {
-                    return $this->simpleMethodArgResolver->resolveFieldValue($value);
-                }
-            )
-        ];
+        return $this->expressionLanguage->evaluate(
+            $matches[1], 
+            [
+                'arg_resolver' => $this->simpleMethodArgResolver,
+                'this' => $object
+            ]
+        );
     }
 }

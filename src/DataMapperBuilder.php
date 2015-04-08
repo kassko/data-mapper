@@ -14,11 +14,13 @@ use Kassko\DataMapper\ClassMetadata\ClassMetadataFactory;
 use Kassko\DataMapper\Configuration\CacheConfiguration;
 use Kassko\DataMapper\Configuration\ClassMetadataFactoryConfigurator;
 use Kassko\DataMapper\Configuration\ConfigurationChain;
+use Kassko\DataMapper\Expression\ExpressionFunctionProvider;
 use Kassko\DataMapper\LazyLoader\LazyLoaderFactory;
 use Kassko\DataMapper\ObjectManager;
 use Kassko\DataMapper\Registry\Registry;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Config\Definition\Processor;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 class DataMapperBuilder
 {
@@ -249,6 +251,14 @@ class DataMapperBuilder
         $cmFactory = (new ClassMetadataFactory)->setClassMetadataLoader($delegatingLoader);
         $cmConfigurator = new ClassMetadataFactoryConfigurator($configuration);
         $cmConfigurator->configure($cmFactory);
+   
+        //Expressions
+        /*$functionProviders = [];
+        foreach ($settings['expression']['function_providers'] as $functionProvider) {
+            $functionProviders[] = $functionProvider->getFunctions();
+        }
+
+        $expressionLanguage = new ExpressionLanguage(null, $functionProviders);*/
 
         //ObjectManager
         $objectManager = ObjectManager::getInstance()
@@ -263,6 +273,8 @@ class DataMapperBuilder
         if (isset($objectListenerResolver)) {
             $objectManager->setObjectListenerResolver($objectListenerResolver);
         }
+
+        $objectManager->setExpressionLanguage(new ExpressionLanguage());
 
         return $objectManager;
     }
