@@ -1,3 +1,8 @@
+`0.12.4.0 - 2015/04/08 - New version`:
+* `New`: Hydrator configuration: add expression language for methods arguments.
+* `Fix`: Hydrator configuration: allows to invoke __call method. 
+* `Fix`: Data Mapper configuration: Fix forgotten keys `class_resolver` and `object_listener_resolver`.
+
 `0.12.3.0 - 2015/03/30 - New version`:
 * `New`: Allows to hydrate a property with value null.
 

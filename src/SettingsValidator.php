@@ -49,6 +49,25 @@ class SettingsValidator implements ConfigurationInterface
 
                 ->variableNode('logger')->end()
 
+                ->variableNode('class_resolver')->defaultNull()->end()
+
+                ->variableNode('object_listener_resolver')->defaultNull()->end()
+                
+                /*->arrayNode('expression')->addDefaultsIfNotSet()
+                    ->children()
+                        //TODO: add markers for service @, field # and semantic ##
+                    ->arrayNode('function_providers')
+                        ->prototype('scalar')->end()*/
+                        /*
+                        ->arrayNode('function_providers')
+                            ->prototype('array')
+                                ->children()
+                                ->end()
+                            ->end()
+                        */
+                    /*->end()
+                ->end()*/
+
                 ->arrayNode('cache')->addDefaultsIfNotSet()
                     ->append($this->addCacheNode('metadata'))
                     ->append($this->addCacheNode('result'))

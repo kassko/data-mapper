@@ -16,7 +16,8 @@
         "symfony/config": "~2.5",
         "symfony/yaml": "~2.5",
         "zendframework/zend-stdlib": "~2.3",
-        "kassko/class-resolver": "~0.3.2"
+        "kassko/class-resolver": "~0.3.2",
+        "symfony/expression-language": "~2.4"
     },
     "autoload":{
         "psr-4":{
@@ -25,7 +26,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "0.12.3.x-dev"
+            "dev-master": "0.12.4.x-dev"
         }
     }
 }

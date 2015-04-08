@@ -2,7 +2,6 @@
 
 namespace Kassko\DataMapper\Hydrator;
 
-use \DateTimeInterface;
 use Exception;
 use Kassko\ClassResolver\ClassResolverInterface;
 use Kassko\DataMapper\ClassMetadata\SourcePropertyMetadata;
@@ -10,9 +9,14 @@ use Kassko\DataMapper\Configuration\ObjectKey;
 use Kassko\DataMapper\Configuration\RuntimeConfiguration;
 use Kassko\DataMapper\Exception\NotFoundMemberException;
 use Kassko\DataMapper\Exception\ObjectMappingException;
+use Kassko\DataMapper\Hydrator\Exception\UnexpectedMethodArgumentException;
+use Kassko\DataMapper\Hydrator\ExpressionLanguageMethodArgumentResolver;
 use Kassko\DataMapper\Hydrator\MemberAccessStrategy;
+use Kassko\DataMapper\Hydrator\MethodArgumentResolver;
+use Kassko\DataMapper\Expression\ExpressionLanguage;
 use Kassko\DataMapper\ObjectManager;
 use Zend\Stdlib\Hydrator\Filter\FilterProviderInterface;
+use \DateTimeInterface;
 
 /**
 * An object hydrator.
@@ -35,18 +39,33 @@ class Hydrator extends AbstractHydrator
 
     /**
      * Track properties already hydrated. Only properties hydrated by data sources.
+     * @var bool[]
      */
     private $dataSourceLoadingDone;
 
     /**
      * Track properties already hydrated. Only properties hydrated by providers.
+     * @var bool[]
      */
     private $providerLoadingDone;
 
     /**
      * Retrieve an object instance from it's class name.
+     * @var ClassResolverInterface
      */
     private $classResolver;
+
+    /**
+     * Retrieve an object instance from it's class name.
+     * @var MethodArgumentResolver
+     */
+    private $methodArgumentResolver;
+
+    /**
+     * Retrieve an object instance from it's class name.
+     * @var ExpressionLanguageMethodArgumentResolver
+     */
+    private $expressionLanguageMethodArgumentResolver;
 
     /**
     * Constructor
@@ -478,20 +497,22 @@ class Hydrator extends AbstractHydrator
         }
 
         foreach ($args as &$arg) {
+            $resolved = false;
 
-            if ('##this' === $arg) {
-                $arg = $object; 
-            } /*elseif ('##value' === $arg) {
-                $arg = $object; 
-            }*/ elseif ('#' === $arg[0]) {
-                $argsMappedFieldName = $this->metadata->getMappedFieldName(substr($arg, 1));
-                $arg = $this->extractProperty($object, $argsMappedFieldName);  
-            } elseif ('@' === $arg[0]) {
-                if ($this->classResolver) {
-                    $arg = $this->classResolver->resolve($arg);
-                } else {
-                    throw new ObjectMappingException(sprintf('Cannot resolve id "%s". No resolver is available.', substr($arg, 1)));
-                }
+            try {
+                $arg = $this->methodArgumentResolver->handle($arg, $object);
+                $resolved = true;
+            } catch (UnexpectedMethodArgumentException $e) {              
+            }
+            
+            if ($resolved) {
+                continue;//Next loop.
+            }
+
+            try {
+                $arg = $this->expressionLanguageMethodArgumentResolver->handle($arg, $object);
+            } catch (UnexpectedMethodArgumentException $e) {
+                //Assumes that $arg doesn't need to be resolved. Next loop.
             }
         }
     }
@@ -541,8 +562,13 @@ class Hydrator extends AbstractHydrator
     protected function doPrepare($object, ObjectKey $objectKey = null)
     {
         if (isset($object)) {
-
             $this->memberAccessStrategy = $this->createMemberAccessStrategy($object);
+
+            $this->methodArgumentResolver = new MethodArgumentResolver($this, $this->metadata, $this->classResolver);
+            $this->expressionLanguageMethodArgumentResolver = new ExpressionLanguageMethodArgumentResolver(
+                $this->objectManager->getExpressionLanguage(), 
+                $this->methodArgumentResolver
+            );
         }
     }
 
