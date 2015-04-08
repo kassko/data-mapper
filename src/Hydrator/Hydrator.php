@@ -506,7 +506,7 @@ class Hydrator extends AbstractHydrator
             }
             
             if ($resolved) {
-                continue;//Next resolver.
+                continue;//Next loop.
             }
 
             try {
