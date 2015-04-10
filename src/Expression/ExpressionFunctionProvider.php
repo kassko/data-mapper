@@ -2,14 +2,13 @@
 namespace Kassko\DataMapper\Expression;
 
 use Symfony\Component\ExpressionLanguage\ExpressionFunction;
-use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
 
 /**
 * ExpressionFunctionProvider
 *
 * @author kko
 */
-class ExpressionFunctionProvider implements ExpressionFunctionProviderInterface 
+class ExpressionFunctionProvider 
 {
     public function getFunctions()
     {

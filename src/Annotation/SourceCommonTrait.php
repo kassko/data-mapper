@@ -13,25 +13,32 @@ namespace Kassko\DataMapper\Annotation;
 */
 trait SourceCommonTrait
 {
+    use MethodTrait;
+
     /**
      * @var string
      */
     public $id;
 
-	/**
-     * @var string
+    /**
+     * @var \Kassko\DataMapper\Annotation\Method
      */
-    public $class;
+    public $preprocessor = null;
 
     /**
-     * @var string
+     * @var \Kassko\DataMapper\Annotation\Method
      */
-    public $method;
+    public $processor = null;
 
     /**
-     * @var array
+     * @var \Kassko\DataMapper\Annotation\Methods
      */
-    public $args = [];
+    public $preprocessors = [];
+
+    /**
+     * @var \Kassko\DataMapper\Annotation\Methods
+     */
+    public $processors = [];
 
     /**
      * Loading strategy to use for this provider.

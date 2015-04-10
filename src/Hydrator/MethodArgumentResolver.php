@@ -39,7 +39,7 @@ class MethodArgumentResolver implements MethodArgumentResolverInterface
             return $this->object; 
         } 
 
-        if (self::$fieldMarkerSize === $arg[0]) {
+        if (self::$fieldMarker === $arg[0]) {
             return $this->resolveFieldValue(substr($arg, self::$fieldMarkerSize));
         } 
 

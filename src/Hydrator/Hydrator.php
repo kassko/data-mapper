@@ -339,11 +339,11 @@ class Hydrator extends AbstractHydrator
             if (null !== $type) {
                 if (! is_array($value)) {
                     settype($value, $type);    
-                } else {
+                } /*else {
                     foreach ($value as &$itemValue) {
                         settype($itemValue, $type);    
                     }
-                }
+                }*/
             }
             
         } else {
@@ -390,6 +390,34 @@ class Hydrator extends AbstractHydrator
         return $data;  
     }
 
+    private function executePreprocessors(SourcePropertyMetadata $sourceMetadata, $object)
+    {
+        foreach ($sourceMetadata->preprocessors as $preprocessor) {
+            if ('##this' === $preprocessor->class) {
+                $preprocessorInstance = $object;
+            } else {
+                $preprocessorInstance = $this->classResolver ? $this->classResolver->resolve($preprocessor->class) : new $preprocessor->class;
+            }
+
+            $this->resolveMethodArgs($preprocessor->args, $object);
+            call_user_func_array([$preprocessorInstance, $preprocessor->method], $preprocessor->args);
+        }
+    }
+
+    private function executeProcessors(SourcePropertyMetadata $sourceMetadata, $object)
+    {
+        foreach ($sourceMetadata->processors as $processor) {
+            if ('##this' === $processor->class) {
+                $processorInstance = $object;
+            } else {
+                $processorInstance = $this->classResolver ? $this->classResolver->resolve($processor->class) : new $processor->class;
+            }
+
+            $this->resolveMethodArgs($processor->args, $object);
+            call_user_func_array([$processorInstance, $processor->method], $processor->args);
+        }
+    }
+
     protected function walkHydrationByDataSource($mappedFieldName, $object, $enforceLoading)
     {
         if ($this->metadata->isNotManaged($mappedFieldName)) {
@@ -408,9 +436,11 @@ class Hydrator extends AbstractHydrator
 
         if (! isset($this->dataSourceLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
 
-            $this->resolveMethodArgs($sourceMetadata->args, $object, $mappedFieldName);
+            $this->resolveMethodArgs($sourceMetadata->args, $object);
             $data = $this->findFromSource($sourceMetadata);
             
+            $this->executePreprocessors($sourceMetadata, $object);
+
             if (! $sourceMetadata->supplySeveralFields) {
                 $this->walkHydration($mappedFieldName, $object, $data, $data);
             } else {
@@ -426,6 +456,8 @@ class Hydrator extends AbstractHydrator
                     $this->walkHydration($otherMappedFieldName, $object, $value, $data);                    
                 }
             }
+
+            $this->executeProcessors($sourceMetadata, $object);
 
             $this->dataSourceLoadingDone[$key] = true;
         }            
@@ -449,8 +481,10 @@ class Hydrator extends AbstractHydrator
 
         if (! isset($this->providerLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
 
-            $this->resolveMethodArgs($sourceMetadata->args, $object, $mappedFieldName);
+            $this->resolveMethodArgs($sourceMetadata->args, $object);
             $data = $this->findFromSource($sourceMetadata);
+
+            $this->executePreprocessors($sourceMetadata, $object);
             
             if (! $sourceMetadata->supplySeveralFields) {
                 $this->memberAccessStrategy->setValue($data, $object, $mappedFieldName);  
@@ -466,6 +500,8 @@ class Hydrator extends AbstractHydrator
                     $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);                   
                 }
             }      
+
+            $this->executeProcessors($sourceMetadata, $object);
 
             $this->providerLoadingDone[$key] = true;
         }            
@@ -490,29 +526,25 @@ class Hydrator extends AbstractHydrator
         return $result;
     }
 
-    protected function resolveMethodArgs(array &$args, $object, $mappedFieldName)
+    protected function resolveMethodArgs(array &$args, $object)
     {
         if (0 === count($args)) {
             return;
         }
 
         foreach ($args as &$arg) {
-            $resolved = false;
-
             try {
                 $arg = $this->methodArgumentResolver->handle($arg, $object);
-                $resolved = true;
+                continue;//$arg is resolved because no exception is thrown. So next loop.
             } catch (UnexpectedMethodArgumentException $e) {              
             }
             
-            if ($resolved) {
-                continue;//Next loop.
-            }
-
+            //$arg is not resolved, we try to resolve it with another resolver.
             try {
                 $arg = $this->expressionLanguageMethodArgumentResolver->handle($arg, $object);
+                //$arg is resolved with the second resolver.
             } catch (UnexpectedMethodArgumentException $e) {
-                //Assumes that $arg doesn't need to be resolved. Next loop.
+                //$arg is not resolved. We assumes it doesn't need to be resolved. Next loop.
             }
         }
     }

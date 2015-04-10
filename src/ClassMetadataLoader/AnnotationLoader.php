@@ -212,11 +212,33 @@ class AnnotationLoader extends AbstractLoader
                         break;
 
                     case self::$dataSourceAnnotationName:
+                        $annotation->preprocessor = (array)$annotation->preprocessor;
+                        $annotation->processor = (array)$annotation->processor;      
+                        
+                        $annotation->preprocessors = (array)$annotation->preprocessors;
+                        foreach ($annotation->preprocessors['items'] as &$preprocessor) {
+                            $preprocessor = (array)$preprocessor;
+                        }
+                        
+                        foreach ($annotation->processors as &$processor) {
+                            $processor = (array)$processor;
+                        }
 
                         $dataSources[$mappedFieldName] = (array)$annotation;
                         break;
 
                     case self::$providerAnnotationName:
+                        $annotation->preprocessor = (array)$annotation->preprocessor;
+                        $annotation->processor = (array)$annotation->processor;
+                        
+                        $annotation->preprocessors = (array)$annotation->preprocessors;
+                        foreach ($annotation->preprocessors['items'] as &$preprocessor) {
+                            $preprocessor = (array)$preprocessor;
+                        }
+                        
+                        foreach ($annotation->processors as &$processor) {
+                            $processor = (array)$processor;
+                        }
 
                         $providers[$mappedFieldName] = (array)$annotation;
                         break;

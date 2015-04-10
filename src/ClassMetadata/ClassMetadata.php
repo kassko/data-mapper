@@ -814,6 +814,40 @@ class ClassMetadata
         $sourcePropertyMetadata->exceptionClass = $source['exceptionClass'];
         $sourcePropertyMetadata->badReturnValue = $source['badReturnValue'];
         $sourcePropertyMetadata->fallbackSourceId = $source['fallbackSourceId'];
+        
+        $sourcePropertyMetadata->preprocessors = [];
+        if (isset($source['preprocessor']['method'])) {
+            $sourcePropertyMetadata->preprocessors[] = new MethodMetadata(
+                $source['preprocessor']['class'],
+                $source['preprocessor']['method'],
+                $source['preprocessor']['args']
+            );
+        } elseif (isset($source['preprocessors']['items'])) {
+            foreach ($source['preprocessors']['items'] as $preprocessor) {
+                $sourcePropertyMetadata->preprocessors[] = new MethodMetadata(
+                    $preprocessor['class'],
+                    $preprocessor['method'],
+                    $preprocessor['args']
+                );
+            }
+        }
+
+        $sourcePropertyMetadata->processors = [];
+        if (isset($source['processor']['method'])) {
+            $sourcePropertyMetadata->processors[] = new MethodMetadata(
+                $source['processor']['class'],
+                $source['processor']['method'],
+                $source['processor']['args']
+            );
+        } elseif (isset($source['processors']['items'])) {
+            foreach ($source['processors']['items'] as $processor) {
+                $sourcePropertyMetadata->processors[] = new MethodMetadata(
+                    $processor['class'],
+                    $processor['method'],
+                    $processor['args']
+                );
+            }
+        }
 
         return $sourcePropertyMetadata;
     }
