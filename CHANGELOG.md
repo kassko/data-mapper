@@ -1,4 +1,4 @@
-`0.12.4.0 - 2015/04/08 - New version`:
+`0.12.4.0 - 2015/04/12 - New version`:
 * `New`: Hydrator configuration: add expression language for methods arguments.
 * `New`: Hydrator configuration: add processors (some methods) to do some stuff before or after a source.
 * `New`: Hydrator configuration: enhance type - allows to enforce type of fields.
