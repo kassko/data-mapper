@@ -14,7 +14,10 @@ use Kassko\DataMapper\ClassMetadata\ClassMetadataFactory;
 use Kassko\DataMapper\Configuration\CacheConfiguration;
 use Kassko\DataMapper\Configuration\ClassMetadataFactoryConfigurator;
 use Kassko\DataMapper\Configuration\ConfigurationChain;
+use Kassko\DataMapper\Expression\ExpressionContext;
 use Kassko\DataMapper\Expression\ExpressionFunctionProvider;
+use Kassko\DataMapper\Expression\ExpressionLanguageConfigurator;
+use Kassko\DataMapper\Hydrator\ExpressionLanguageEvaluator;
 use Kassko\DataMapper\LazyLoader\LazyLoaderFactory;
 use Kassko\DataMapper\ObjectManager;
 use Kassko\DataMapper\Registry\Registry;
@@ -253,12 +256,20 @@ class DataMapperBuilder
         $cmConfigurator->configure($cmFactory);
    
         //Expressions
-        /*$functionProviders = [];
-        foreach ($settings['expression']['function_providers'] as $functionProvider) {
-            $functionProviders[] = $functionProvider->getFunctions();
+        $functionProviders = [new ExpressionFunctionProvider];
+        if (isset($settings['mapping']['expression']['function_providers'])) {
+            foreach ($settings['mapping']['expression']['function_providers'] as $functionProvider) {
+                $functionProviders[] = $functionProvider;
+            }
         }
 
-        $expressionLanguage = new ExpressionLanguage(null, $functionProviders);*/
+        $expressionLanguage = new ExpressionLanguage;
+        $elConfigurator = new ExpressionLanguageConfigurator($functionProviders);
+        $elConfigurator->configure($expressionLanguage);
+
+        $expressionContext = new ExpressionContext;
+        
+        $expressionLanguageEvaluator = new ExpressionLanguageEvaluator($expressionLanguage, $expressionContext);
 
         //ObjectManager
         $objectManager = ObjectManager::getInstance()
@@ -274,7 +285,8 @@ class DataMapperBuilder
             $objectManager->setObjectListenerResolver($objectListenerResolver);
         }
 
-        $objectManager->setExpressionLanguage(new ExpressionLanguage());
+        $objectManager->setExpressionLanguageEvaluator($expressionLanguageEvaluator);
+        $objectManager->setExpressionContext($expressionContext);
 
         return $objectManager;
     }

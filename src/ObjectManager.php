@@ -8,7 +8,9 @@ use Kassko\DataMapper\ClassMetadata\ClassMetadataFactoryInterface;
 use Kassko\DataMapper\Configuration\Configuration;
 use Kassko\DataMapper\Configuration\ObjectKey;
 use Kassko\DataMapper\Exception\ObjectMappingException;
+use Kassko\DataMapper\Expression\ExpressionContext;
 use Kassko\DataMapper\Hydrator;
+use Kassko\DataMapper\Hydrator\ExpressionLanguageEvaluator;
 use Kassko\DataMapper\Hydrator\HydrationStrategy\ClosureHydrationStrategy;
 use Kassko\DataMapper\Hydrator\HydrationStrategy\DateHydrationStrategy;
 use Kassko\DataMapper\LazyLoader\LazyLoaderFactoryInterface;
@@ -17,7 +19,6 @@ use Kassko\DataMapper\Listener\ObjectListenerResolverInterface;
 use Kassko\DataMapper\Query\CacheConfig;
 use Kassko\DataMapper\Query\ResultManager;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 /**
 * Manage persistent object.
@@ -36,7 +37,12 @@ class ObjectManager
     /**
      * @var ExpressionLanguage
      */
-    private $expressionLanguage;
+    private $expressionLanguageEvaluator;
+    /**
+     * Contains all the expression context variables.
+     * @var ExpressionContext
+     */
+    private $expressionContext;
     private $hydratorInstances = [];
     private static $objectLoaded = [];
     private $identityMap = [];
@@ -390,25 +396,49 @@ class ObjectManager
     }
 
     /**
-     * Gets the value of expressionLanguage.
+     * Gets the value of expressionLanguageEvaluator.
      *
-     * @return ExpressionLanguage
+     * @return ExpressionLanguageEvaluator
      */
-    public function getExpressionLanguage()
+    public function getExpressionLanguageEvaluator()
     {
-        return $this->expressionLanguage;
+        return $this->expressionLanguageEvaluator;
     }
 
     /**
-     * Sets the value of expressionLanguage.
+     * Sets the value of expressionLanguageEvaluator.
      *
-     * @param ExpressionLanguage $expressionLanguage the expression language
+     * @param ExpressionLanguage $expressionLanguageEvaluator the expression language
      *
      * @return self
      */
-    public function setExpressionLanguage(ExpressionLanguage $expressionLanguage)
+    public function setExpressionLanguageEvaluator(ExpressionLanguageEvaluator $expressionLanguageEvaluator)
     {
-        $this->expressionLanguage = $expressionLanguage;
+        $this->expressionLanguageEvaluator = $expressionLanguageEvaluator;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of expressionContext.
+     *
+     * @return ExpressionContext
+     */
+    public function getExpressionContext()
+    {
+        return $this->expressionContext;
+    }
+
+    /**
+     * Sets the value of expressionContext.
+     *
+     * @param ExpressionContext $expressionContext the expression context
+     *
+     * @return self
+     */
+    public function setExpressionContext(ExpressionContext $expressionContext)
+    {
+        $this->expressionContext = $expressionContext;
 
         return $this;
     }

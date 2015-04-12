@@ -12,7 +12,7 @@ use Kassko\DataMapper\Hydrator\Exception\UnexpectedMethodArgumentException;
 *
 * @author kko
 */
-class MethodArgumentResolver implements MethodArgumentResolverInterface
+class MethodArgumentResolver
 {
     private static $serviceMarker = '@';
     private static $serviceMarkerSize = 1;
@@ -44,7 +44,7 @@ class MethodArgumentResolver implements MethodArgumentResolverInterface
         } 
 
         if (self::$serviceMarker === $arg[0]) {
-            return $this->resolveServiceFromMarker($arg);
+            return $this->resolveService($arg);
         }
 
         throw new UnexpectedMethodArgumentException($arg);
@@ -61,12 +61,12 @@ class MethodArgumentResolver implements MethodArgumentResolverInterface
         return $this->hydrator->extractProperty($this->object, $argsMappedFieldName);
     }
 
-    public function resolveService($serviceId)
+    public function resolveClass($class)
     {
-        return $this->resolveServiceFromMarker(self::$serviceMarker . $serviceId);
+        return $this->classResolver ? $this->classResolver->resolve($class) : new $class; 
     }
 
-    private function resolveServiceFromMarker($serviceId)
+    private function resolveService($serviceId)
     {
         if ($this->classResolver) {
             return $this->classResolver->resolve($serviceId);

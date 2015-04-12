@@ -44,6 +44,20 @@ class SettingsValidator implements ConfigurationInterface
                                 ->end()
                             ->end()
                         ->end()
+                        ->arrayNode('expression')->addDefaultsIfNotSet()
+                            ->children()
+                                //TODO: add markers for service @, field # and semantic ##
+                                ->arrayNode('function_providers')
+                                    ->prototype('variable')->end()
+                                    
+                                    /*->arrayNode('function_providers')
+                                        ->prototype('array')
+                                            ->children()
+                                            ->end()
+                                        ->end()*/
+                                ->end()        
+                            ->end()
+                        ->end()
                     ->end()
                 ->end()
 
@@ -52,21 +66,6 @@ class SettingsValidator implements ConfigurationInterface
                 ->variableNode('class_resolver')->defaultNull()->end()
 
                 ->variableNode('object_listener_resolver')->defaultNull()->end()
-                
-                /*->arrayNode('expression')->addDefaultsIfNotSet()
-                    ->children()
-                        //TODO: add markers for service @, field # and semantic ##
-                    ->arrayNode('function_providers')
-                        ->prototype('scalar')->end()*/
-                        /*
-                        ->arrayNode('function_providers')
-                            ->prototype('array')
-                                ->children()
-                                ->end()
-                            ->end()
-                        */
-                    /*->end()
-                ->end()*/
 
                 ->arrayNode('cache')->addDefaultsIfNotSet()
                     ->append($this->addCacheNode('metadata'))
