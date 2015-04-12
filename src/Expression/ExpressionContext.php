@@ -18,7 +18,7 @@ class ExpressionContext implements ArrayAccess, IteratorAggregate
      * Contains all the context variables.
      * @var array
      */
-    private $context;
+    private $variables;
 
     /**
      * Return all the context variables.
@@ -26,7 +26,25 @@ class ExpressionContext implements ArrayAccess, IteratorAggregate
      */
     public function getData()
     {
-    	return $this->context;
+    	return $this->variables;
+    }
+
+    /**
+     * Return all the context variables.
+     * @return array
+     */
+    public function addVariable($key, $value)
+    {
+        if (is_null($key) || ! is_string($key)) {
+            throw new RuntimeException(sprintf('The key where to save your variable in the expression context is invalid. Got "%s".', $key));
+        }
+
+        $this->variables[$key] = $value;
+    }
+
+    public function flush()
+    {
+        $this->variables = [];
     }
 
     /**
@@ -34,7 +52,7 @@ class ExpressionContext implements ArrayAccess, IteratorAggregate
      */
     public function offsetExists($key)
     {
-        return array_key_exists($key, $this->context);
+        return array_key_exists($key, $this->variables);
     }
 
     /**
@@ -43,10 +61,10 @@ class ExpressionContext implements ArrayAccess, IteratorAggregate
     public function offsetGet($key)
     {
         if ($this->offsetExists($key)) {
-            return $this->context[$key];
+            return $this->variables[$key];
         }
 
-        throw new RuntimeException(sprintf('No data registered on key "%s" in expression context.', $key));
+        throw new RuntimeException(sprintf('No variable registered on key "%s" in expression context.', $key));
     }
 
     /**
@@ -54,11 +72,7 @@ class ExpressionContext implements ArrayAccess, IteratorAggregate
      */
     public function offsetSet($offset, $value)
     {
-        if (is_null($offset)) {
-            throw new RuntimeException(sprintf('You should specify an index "%s" where to save in the expression context.', $offset));
-        }
-
-        $this->context[$offset] = $value;
+        $this->addVariable($offset, $value);
     }
 
     /**
@@ -66,18 +80,13 @@ class ExpressionContext implements ArrayAccess, IteratorAggregate
      */
     public function offsetUnset($key)
     {
-        unset($this->context[$key]);
+        unset($this->variables[$key]);
     }
 
     /**
      * {@inheritdoc}
      */
     public function getIterator() {
-        return new ArrayIterator($this->context);
-    }
-
-    public function flush()
-    {
-        $this->context = [];
+        return new ArrayIterator($this->variables);
     }
 }

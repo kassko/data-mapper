@@ -57,7 +57,7 @@ final class Registry implements \ArrayAccess, \IteratorAggregate
     public function offsetSet($offset, $value)
     {
         if (is_null($offset)) {
-            throw new RuntimeException(sprintf('You should specify an index "%s" where to save in the registry.', $offset));
+            throw new RuntimeException('You should specify an index where to save in the registry. Got value "null".', $offset);
         }
 
         /*
