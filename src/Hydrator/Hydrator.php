@@ -10,7 +10,7 @@ use Kassko\DataMapper\Configuration\RuntimeConfiguration;
 use Kassko\DataMapper\Exception\NotFoundMemberException;
 use Kassko\DataMapper\Exception\ObjectMappingException;
 use Kassko\DataMapper\Hydrator\Exception\UnexpectedMethodArgumentException;
-use Kassko\DataMapper\Hydrator\ExpressionLanguageMethodArgumentResolver;
+use Kassko\DataMapper\Hydrator\ExpressionLanguageEvaluator;
 use Kassko\DataMapper\Hydrator\MemberAccessStrategy;
 use Kassko\DataMapper\Hydrator\MethodArgumentResolver;
 use Kassko\DataMapper\Expression\ExpressionLanguage;
@@ -62,10 +62,16 @@ class Hydrator extends AbstractHydrator
     private $methodArgumentResolver;
 
     /**
-     * Retrieve an object instance from it's class name.
-     * @var ExpressionLanguageMethodArgumentResolver
+     * Evaluate expression language.
+     * @var ExpressionLanguageEvaluator
      */
-    private $expressionLanguageMethodArgumentResolver;
+    private $expressionLanguageEvaluator;
+
+    /**
+     * Contains all the expression context variables.
+     * @var ExpressionContext
+     */
+    private $expressionContext;
 
     /**
     * Constructor
@@ -78,6 +84,8 @@ class Hydrator extends AbstractHydrator
         parent::__construct($objectManager);
 
         $this->isPropertyAccessStrategyOn = $isPropertyAccessStrategyOn;
+        $this->expressionLanguageEvaluator = $this->objectManager->getExpressionLanguageEvaluator();
+        $this->expressionContext = $this->objectManager->getExpressionContext();
     }
 
     public function setClassResolver(ClassResolverInterface $classResolver)
@@ -339,11 +347,11 @@ class Hydrator extends AbstractHydrator
             if (null !== $type) {
                 if (! is_array($value)) {
                     settype($value, $type);    
-                } else {
+                } /*else {
                     foreach ($value as &$itemValue) {
                         settype($itemValue, $type);    
                     }
-                }
+                }*/
             }
             
         } else {
@@ -390,6 +398,34 @@ class Hydrator extends AbstractHydrator
         return $data;  
     }
 
+    private function executePreprocessors(SourcePropertyMetadata $sourceMetadata, $object)
+    {
+        foreach ($sourceMetadata->preprocessors as $preprocessor) {
+            if ('##this' === $preprocessor->class) {
+                $preprocessorInstance = $object;
+            } else {
+                $preprocessorInstance = $this->classResolver ? $this->classResolver->resolve($preprocessor->class) : new $preprocessor->class;
+            }
+
+            $this->resolveMethodArgs($preprocessor->args, $object);
+            call_user_func_array([$preprocessorInstance, $preprocessor->method], $preprocessor->args);
+        }
+    }
+
+    private function executeProcessors(SourcePropertyMetadata $sourceMetadata, $object)
+    {
+        foreach ($sourceMetadata->processors as $processor) {
+            if ('##this' === $processor->class) {
+                $processorInstance = $object;
+            } else {
+                $processorInstance = $this->classResolver ? $this->classResolver->resolve($processor->class) : new $processor->class;
+            }
+
+            $this->resolveMethodArgs($processor->args, $object);
+            call_user_func_array([$processorInstance, $processor->method], $processor->args);
+        }
+    }
+
     protected function walkHydrationByDataSource($mappedFieldName, $object, $enforceLoading)
     {
         if ($this->metadata->isNotManaged($mappedFieldName)) {
@@ -408,9 +444,11 @@ class Hydrator extends AbstractHydrator
 
         if (! isset($this->dataSourceLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
 
-            $this->resolveMethodArgs($sourceMetadata->args, $object, $mappedFieldName);
+            $this->resolveMethodArgs($sourceMetadata->args, $object);
             $data = $this->findFromSource($sourceMetadata);
             
+            $this->executePreprocessors($sourceMetadata, $object);
+
             if (! $sourceMetadata->supplySeveralFields) {
                 $this->walkHydration($mappedFieldName, $object, $data, $data);
             } else {
@@ -426,6 +464,8 @@ class Hydrator extends AbstractHydrator
                     $this->walkHydration($otherMappedFieldName, $object, $value, $data);                    
                 }
             }
+
+            $this->executeProcessors($sourceMetadata, $object);
 
             $this->dataSourceLoadingDone[$key] = true;
         }            
@@ -449,8 +489,10 @@ class Hydrator extends AbstractHydrator
 
         if (! isset($this->providerLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
 
-            $this->resolveMethodArgs($sourceMetadata->args, $object, $mappedFieldName);
+            $this->resolveMethodArgs($sourceMetadata->args, $object);
             $data = $this->findFromSource($sourceMetadata);
+
+            $this->executePreprocessors($sourceMetadata, $object);
             
             if (! $sourceMetadata->supplySeveralFields) {
                 $this->memberAccessStrategy->setValue($data, $object, $mappedFieldName);  
@@ -466,6 +508,8 @@ class Hydrator extends AbstractHydrator
                     $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);                   
                 }
             }      
+
+            $this->executeProcessors($sourceMetadata, $object);
 
             $this->providerLoadingDone[$key] = true;
         }            
@@ -490,29 +534,28 @@ class Hydrator extends AbstractHydrator
         return $result;
     }
 
-    protected function resolveMethodArgs(array &$args, $object, $mappedFieldName)
+    protected function resolveMethodArgs(array &$args, $object)
     {
         if (0 === count($args)) {
             return;
         }
 
-        foreach ($args as &$arg) {
-            $resolved = false;
+        $this->expressionContext['arg_resolver'] = $this->methodArgumentResolver;
+        $this->expressionContext['this'] = $object;
 
+        foreach ($args as &$arg) {
             try {
                 $arg = $this->methodArgumentResolver->handle($arg, $object);
-                $resolved = true;
+                continue;//$arg is resolved because no exception is thrown. So next loop.
             } catch (UnexpectedMethodArgumentException $e) {              
             }
             
-            if ($resolved) {
-                continue;//Next loop.
-            }
-
+            //$arg is not resolved, we try to resolve it with another resolver.
             try {
-                $arg = $this->expressionLanguageMethodArgumentResolver->handle($arg, $object);
+                $arg = $this->expressionLanguageEvaluator->handle($arg, $object);
+                //$arg is resolved with the second resolver.
             } catch (UnexpectedMethodArgumentException $e) {
-                //Assumes that $arg doesn't need to be resolved. Next loop.
+                //$arg is not resolved. We assumes it doesn't need to be resolved. Next loop.
             }
         }
     }
@@ -562,13 +605,8 @@ class Hydrator extends AbstractHydrator
     protected function doPrepare($object, ObjectKey $objectKey = null)
     {
         if (isset($object)) {
-            $this->memberAccessStrategy = $this->createMemberAccessStrategy($object);
-
+            $this->memberAccessStrategy = $this->createMemberAccessStrategy($object); 
             $this->methodArgumentResolver = new MethodArgumentResolver($this, $this->metadata, $this->classResolver);
-            $this->expressionLanguageMethodArgumentResolver = new ExpressionLanguageMethodArgumentResolver(
-                $this->objectManager->getExpressionLanguage(), 
-                $this->methodArgumentResolver
-            );
         }
     }
 

@@ -4,6 +4,9 @@ namespace Kassko\DataMapper\ClassMetadata;
 
 use DomainException;
 
+/**
+ * @author kko
+ */
 class SourcePropertyMetadata
 {
 	const ON_FAIL_CHECK_RETURN_VALUE = 'checkReturnValue';
@@ -20,6 +23,8 @@ class SourcePropertyMetadata
 	public $args;
 	public $lazyLoading;
 	public $supplySeveralFields;
+    public $preprocessors = [];
+    public $processors = [];
 
 	/**
      * @var string

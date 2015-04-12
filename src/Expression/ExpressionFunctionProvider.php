@@ -1,32 +1,32 @@
 <?php
+
 namespace Kassko\DataMapper\Expression;
 
-use Symfony\Component\ExpressionLanguage\ExpressionFunction;
-use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
+use Kassko\DataMapper\Expression\ExpressionFunction;
 
 /**
 * ExpressionFunctionProvider
 *
 * @author kko
 */
-class ExpressionFunctionProvider implements ExpressionFunctionProviderInterface 
+class ExpressionFunctionProvider implements ExpressionFunctionProviderInterface
 {
     public function getFunctions()
     {
         return [
             new ExpressionFunction(
-                'service',
+                'class',
                 function ($arg) {
-                        return sprintf('$this->simpleMethodArgResolver->resolveService(%s)', $arg);
+                    return sprintf('arg_resolver.resolveClass(%s)', $arg);
                 }, 
                 function (array $context, $value) {
-                    return $context['arg_resolver']->resolveService($value);
+                    return $context['arg_resolver']->resolveClass($value);
                 }
             ),
             new ExpressionFunction(
                 'field',
                 function ($arg) {
-                    return sprintf('$this->simpleMethodArgResolver->resolveFieldValue(%s)', $arg);
+                    return sprintf('arg_resolver.resolveFieldValue(%s)', $arg);
                 }, 
                 function (array $context, $value) {
                     return $context['arg_resolver']->resolveFieldValue($value);
