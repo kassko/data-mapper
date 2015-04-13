@@ -26,10 +26,10 @@ Note that:
 * the fourth for hotfix
 * the first for new API or to go from pre-release to release (from 0 to 1)
 
-* [Basic Usage](#basic-usage)
-* [Result Builder](#result-builder)
-* [Enforce Type Of Fields](#enforce-fields-type)
-* [Apply Converters Before Hydration Or Extraction](#converters)
+* [Basic usage](#basic-usage)
+* [Result builder](#result-builder)
+* [Enforce type of fields](#enforce-fields-type)
+* [Apply converters before hydration or extraction](#converters)
   - [Converter](#converter)
   - [Date converter](#date-converter)
 * [Add callbacks before or after hydration process](#callbacks)
