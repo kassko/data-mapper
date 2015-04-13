@@ -27,43 +27,43 @@ Note that:
 * the first for new API or to go from pre-release to release (from 0 to 1)
 
 * [Basic usage](#basic-usage)
-* [Result builder](#result-builder)
-* [Enforce type of fields](#enforce-fields-type)
-* [Apply converters before hydration or extraction](#converters)
+* [Use the Result builder](#use-the-result-builder)
+* [Enforce type of fields](#enforce-type-of-fields)
+* [Apply converters before hydration or extraction](#apply-converters-before-hydration-or-extraction)
   - [Converter](#converter)
   - [Date converter](#date-converter)
-* [Add callbacks before or after hydration process](#callbacks)
-* [Personalise getters and setters](#getters-setters)
+* [Add callbacks before or after hydration process](#add-callbacks-before-or-after-hydration-process)
+* [Customize getters and setters](#customize-getters-and-setters)
 * [Hydrate nested objects](#hydrate-nested-objects)
-* [Configure a php object hydrator instead of a mapping configuration](#php-object-hydrator)
-* [Work with object complex to create like service](#service-mapping-config)
-* [Work with other mapping configuration format](#other-mapping-config)
-  - [Outer format](#outer-mapping-config)
-  - [Inner format](#inner-mapping-config)
-* [Improve persistance ignorance](#persistance-ignorance)
-* [Choose a mapping configuration at runtime](#runtime-mapping-config)
-* [Bind a mapping configuration to a property especially](#config-prop-level)
-* [Bind a source to a property or a set of properties / hydrate object from multi-sources, multi-orm](#bind-source-property)
-    - [Provider](#provider)
-    - [Data source](#data-source)
-    - [Method arguments](#method-arg)
-    - [Lazy loading](#lazy-loading)
-    - [Source store](#source-store)
-    - [Fallbacks sources](#fallback-sources)
-    - [Processors](#processors)
-* [Work with relations](#relations)
-* [How to have DataMapper/ResultBuilder ignorance in the client code](#data-mapper-ignorance)
-* [Use expression language](#expression-language)
-    - [Basic usage of expression language](#expression-language-basic)
-    - [Add a function provider](#add-provider)
+* [Configure a php object hydrator instead of using a mapping configuration](#configure-a-php-object-hydrator-instead-of-using-a-mapping-configuration)
+* [Work with object complex to create like service](#work-with-object-complex-to-create-like-service)
+* [Work with other mapping configuration format](#work-with-other-mapping-configuration-format)
+  - [Outer mapping configuration format](#outer-mapping-configuration-format)
+  - [Inner mapping configuration format](#inner-mapping-configuration-format)
+* [Improve persistance ignorance](#improve-persistance-ignorance)
+* [Choose a mapping configuration at runtime](#choose-a-mapping-configuration-at-runtime)
+* [Bind a mapping configuration to a property especially](#bind-a-mapping-configuration-to-a-property-especially)
+* [Bind a source to a property or a set of properties / hydrate object from multi-sources, multi-orm](#bind-a-source-to-a-property-or-a-set-of-properties-hydrate-object-from-multi-sources-multi-orm)
+  - [Provider](#provider)
+  - [Data source](#data-source)
+  - [Method arguments](#method-arguments)
+  - [Lazy loading](#lazy-loading)
+  - [Source store](#source-store)
+  - [Fallback source](#fallback-source)
+  - [Processor](#processor)
+* [Work with relations](#work-with-relations)
+* [How to have DataMapper/ResultBuilder ignorance in the client code](#how-to-have-datamapper-resultbuilder-ignorance-in-the-client-code)
+* [Use expression language](#use-expression-language)
+  - [Basic usage of expression language](#basic-usage-of-expression-language)
+  - [Add a function provider](#add-a-function-provider)
 * [Object listener](#object-listener)
-* [Add a custom mapping configuration format](#custom-mapping-config)
-* [Inherit mapping configuration](#inherit-mapping-config)
-* [Data mapper configuration reference](#config-reference)
-* [Mapping configuration reference](#mapping-config-reference)
-    - [Annotations](#annotations-mapping-config)
-    - [Yaml](#yaml-mapping-config)
-    - [Php](#php-mapping-config)
+* [Add a custom mapping configuration format](#add-a-custom-mapping-configuration-format)
+* [Inherit mapping configuration](#inherit-mapping-configuration)
+* [Component configuration reference](#component-configuration-reference)
+* [Mapping configuration reference](#mapping-configuration-reference)
+  - [Annotations mapping config](#annotations-mapping-config)
+  - [Yaml mapping config](#yaml-mapping-config)
+  - [Php mapping config](#php-mapping-config)
 
 
 
@@ -286,6 +286,7 @@ You can find below all the ways to get results with the ResultBuilder:
 
 Enforce type of fields
 -----------
+This section will be written later.
 
 Apply converters before hydration or extraction
 -----------
@@ -403,11 +404,13 @@ If the created_date had a bad format, an exception would have been thrown.
 For example, the format given above in the read date converter is 'Y-m-d H:i:s', so a create_date like '2014 09 14 12h36m52s' is not correct.
 
 ### Date converter
+This section will be written later.
 
 Add callbacks before or after hydration process
 -----------
+This section will be written later.
 
-Personalise getters and setters
+Customize getters and setters
 -----------
 
 DataMapper automatically recognize getter (or isser or haser) and setter of a field.
@@ -498,22 +501,30 @@ class Watch
 
 Hydrate nested objects
 -----------
+This section will be written later.
 
-Configure a php object hydrator instead of a mapping configuration
+Configure a php object hydrator instead of using a mapping configuration
 -----------
+This section will be written later.
 
 Work with object complex to create, like service
 -----------
+This section will be written later.
 
 Work with other mapping configuration format
 -----------
+This section will be written later.
 
-### Outer format
 
-### Inner format
+### Outer mapping configuration format
+This section will be written later.
+
+### Inner mapping configuration format
+This section will be written later.
 
 Improve persistance ignorance
 -----------
+This section will be written later.
 
 Choose a mapping configuration at runtime
 -----------
@@ -723,6 +734,7 @@ Bind a source to a property or a set of properties / hydrate object from multi-s
 -----------
 
 ### Provider
+This section will be written later.
 
 ### Data source
 
@@ -789,6 +801,7 @@ class ShopDataSource
 ```
 
 ### Method arguments
+This section will be written later.
 
 ### Lazy loading
 
@@ -956,7 +969,7 @@ class Person
 }
 ```
 
-### Fallbacks sources
+### Fallback source
 
 Here, sourceB replace sourceA if its not stable:
 
@@ -999,7 +1012,7 @@ class Person
 ```
 Bad return values could be: `"null"`, `"false"`, `"emptyString"` or `"emptyArray"`.
 
-### Processors
+### Processor
 
 ```php
 namespace Kassko\Sample;
@@ -1066,6 +1079,7 @@ class KeyPreprocessor
 ```
 
 Or:
+```php
 class Key
 {
     use LazyLoadableTrait;
@@ -1104,27 +1118,35 @@ class Key
 
 Work with relations
 -----------
+This section will be written later.
 
 How to have DataMapper/ResultBuilder ignorance in the client code
 -----------
+This section will be written later.
 
 Use expression language
 -----------
+This section will be written later.
 
 ### Basic usage of expression language
+This section will be written later.
 
 ### Add a function provider
+This section will be written later.
 
 Object listener
 -----------
+This section will be written later.
 
 Add a custom mapping configuration format
 -----------
+This section will be written later.
 
 Inherit mapping configuration
 -----------
+This section will be written later.
 
-Data mapper configuration reference
+Component configuration reference
 -----------
 
 ```php
@@ -1225,12 +1247,16 @@ And maybe others if you add some custom mapping loaders.
 
 Mapping configuration reference
 -----------
+This section will be written later.
 
-### Annotations
+### Annotations mapping config
+This section will be written later.
 
-### Yaml
+### Yaml mapping config
+This section will be written later.
 
-### Php
+### Php mapping config
+This section will be written later.
 
 ========================================
 
