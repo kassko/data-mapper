@@ -26,7 +26,7 @@ Note that:
 * the fourth for hotfix
 * the first for new API or to go from pre-release to release (from 0 to 1)
 
-* [Basic usage](#basic-usage)
+* [Basicusage](#basic-usage)
 * [Use the result builder](#result-builder)
 * [Enforce type of fields](#enforce-fields-type)
 * [Apply converters before hydration or extraction](#converters)
