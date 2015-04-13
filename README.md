@@ -27,8 +27,8 @@ Note that:
 * the first for new API or to go from pre-release to release (from 0 to 1)
 
 * [Basicusage](#basic-usage)
-* [Use the result builder](#result-builder)
-* [Enforce type of fields](#enforce-fields-type)
+* [ResultBuilder](#result-builder)
+* [Enforcetypeoffields](#enforce-fields-type)
 * [Apply converters before hydration or extraction](#converters)
   - [Converter](#converter)
   - [Date converter](#date-converter)
