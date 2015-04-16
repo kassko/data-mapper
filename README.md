@@ -100,9 +100,6 @@ class Person
 {
     use LoadableTrait;
 
-    /**
-     * @DM\RefSource(id="personSource")
-     */
     private $id;
     /**
      * @DM\RefSource(id="personSource")
@@ -135,15 +132,35 @@ class Person
 
     public function getId() { return $this->id;}
     public function setId($id) { $this->id = $id; return $this; }
-    public function getFirstName() { return $this->firstName; }
+    public function getFirstName() 
+    {
+        $this->loadProperty('firstName');  
+        return $this->firstName; 
+    }
     public function setFirstName($firstName) { $this->firstName = $firstName; return $this; }
-    public function getName() { return $this->name; }
+    public function getName() 
+    {
+        $this->loadProperty('name');  
+        return $this->name; 
+    }
     public function setName($name) { $this->name = $name; return $this; }
-    public function getEmail() { return $this->email; }
+    public function getEmail() 
+    {
+        $this->loadProperty('email');  
+        return $this->email; 
+    }
     public function setEmail($email) { $this->email = $email; return $this; }
-    public function getPhone() { return $this->phone; }
+    public function getPhone() 
+    {
+        $this->loadProperty('phone');  
+        return $this->phone; 
+    }
     public function setPhone($phone) { $this->phone = $phone; return $this; }
-    public function getCar() { return $this->car; }
+    public function getCar() 
+    {
+        $this->loadProperty('car'); 
+        return $this->car; 
+    }
     public function setCar($car) { $this->car = $car; return $this; }
 }
 ```
