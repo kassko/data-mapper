@@ -25,7 +25,7 @@ $entityManager->getRepository('Person')->findById($id);
 $person->getName();
 ```
 
-The access logic is in the configuration in object with annotations (note that the configuration also could be in a separed yaml or php file or in the object with inner php or inner yaml).
+With DataMapper, the access logic is in the configuration in object with annotations (note that the configuration also could be in a separed yaml or php file or in the object with inner php or inner yaml).
 
 ```php
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
