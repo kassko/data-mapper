@@ -150,7 +150,7 @@ class Person
 
 ```php
 /**
- * CarProvider is a Doctrine source that feed property $car.
+ * CarProvider is a Doctrine source that feed the property $car.
  */
 class CarProvider
 {
