@@ -21,8 +21,25 @@ class LazyLoader
     }
 
     /**
+     * Load an object.
+     * Some properties can be loaded only when needed for performance reason.
+     *
+     * @param array $object The object for wich we have to load property
+     * @param array $propertyName The property to load
+     */
+    public function load($object)
+    {
+        if (get_class($object) !== $this->objectClass) {
+            throw new \LogicException(sprintf('Invalid object type. Expected "%s" but got "%s".', $this->objectClass, get_class($object)));
+        }
+
+        $hydrator = $this->objectManager->getHydratorFor($this->objectClass);
+        $hydrator->loadProperty($object);
+    }
+
+    /**
      * Load an object property.
-     * Property can be loaded only when needed for performance reason.
+     * This property can be loaded only if needed for performance reason.
      *
      * @param array $object The object for wich we have to load property
      * @param array $propertyName The property to load

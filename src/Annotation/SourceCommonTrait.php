@@ -55,6 +55,13 @@ trait SourceCommonTrait
     public $supplySeveralFields = false;
 
     /**
+     * Indicate if the source is bound to all fields (true) or none (false).
+     *
+     * @var bool
+     */
+    public $bindToAllFields = false;
+
+    /**
      * @var string
      *
      * @Enum({"checkReturnValue", "checkException"})

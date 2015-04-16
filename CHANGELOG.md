@@ -1,3 +1,7 @@
+`0.12.5.0 - 2015/04/12 - New version`:
+* `New`: Allows to chain sources. With sources chaining, we can perform some relation an relations `multidimensional`.
+* `New`: Hydrator configuration: new key in source section `bindToAllFields` which allows to bind a source to all the fields of an object. Usefull not to duplicate on all fields the section RefSource.
+
 `0.12.4.2 - 2015/04/17 - Fix version`:
 * `Fix`: Hydrator configuration: Section Field / Key type: fix inference of type, if the key `type` is not specified, an implicit conversion to the supposed good type is performed. Conversion to string was performed. 
 
@@ -9,7 +13,7 @@
 * `New`: Hydrator configuration: add processors (some methods) to do some stuff before or after a source.
 * `New`: Hydrator configuration: enhance type - allows to enforce type of fields.
 * `Fix`: Hydrator configuration: allows to invoke __call method. 
-* `Fix`: Data Mapper configuration: Fix forgotten keys `class_resolver` and `object_listener_resolver`.
+* `Fix`: Data Mapper configuration: fix forgotten keys `class_resolver` and `object_listener_resolver`.
 
 `0.12.3.0 - 2015/03/30 - New version`:
 * `New`: Allows to hydrate a property with value null.

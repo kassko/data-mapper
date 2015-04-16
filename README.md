@@ -8,15 +8,167 @@ data-mapper
 
 # Presentation #
 
-data-mapper component represents some raw data like objects as all data-mapper but it particularly allows to create complex representations.
+A php library to represent raw datas like object.
 
+## Accessing data ##
+
+Data-mapper style:
+```php
+$id = 1;
+$person = new Person($id);
+$person->getName();
+```
+
+Doctrine style:
+```php
+$entityManager->getRepository('Person')->findById($id);
+$person->getName();
+```
+
+The access logic is in the configuration in object with annotations, inner php or inner yaml ; or in a separed file configuration.
+
+```php
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+/**
+ * @DM\DataSourceStore({
+ *      @DM\DataSource(
+ *          class="Kassko\Sample\PersonDataSource", method="getData(#id)", bindToAllFields=true
+ *      )
+ * })
+ */
+class Person
+{
+    use LoadableTrait;
+
+    private $id;
+    private $firstName;
+    private $name;
+    private $email;
+    private $phone;
+
+    public function __construct($id)
+    {
+        $this->id = $id;
+        $this->load();
+    }
+
+    public function getId() { return $this->id;}
+    public function setId($id) { $this->id = $id; return $this; }
+    public function getFirstName() { return $this->firstName; }
+    public function setFirstName($firstName) { $this->firstName = $firstName; return $this; }
+    public function getName() { return $this->name; }
+    public function setName($name) { $this->name = $name; return $this; }
+    public function getEmail() { return $this->email; }
+    public function setEmail($email) { $this->email = $email; return $this; }
+    public function getPhone() { return $this->phone; }
+    public function setPhone($phone) { $this->phone = $phone; return $this; }
+}
+```
+
+```php
+class PersonDataSource
+{
+    public function getData($id)
+    {
+        $data = $this->connection->executeQuery('select firstName, name, email, phone from some_table where id = ?', [$id]);
+
+        if (isset($data)) {
+            return $data[0];
+        }
+
+        return null;
+    }
+}
+```
+
+PersonDataSource has some dependencies (the connection), it is instantiated with a resolver named class-resolver. We'll see class-resolver details later.
+
+Data-mapper is not an ORM so it cannot generate for you some sql statement. But you can use it with an ORM like Doctrine ORM.
+
+```php
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+/**
+ * @DM\DataSourceStore({
+ *      @DM\DataSource(
+ *          id="personSource", class="Kassko\Sample\PersonDataSource", method="getData(#id)", bindToAllFields=true
+ *      )
+ * })
+ */
+class Person
+{
+    use LoadableTrait;
+
+    /**
+     * @DM\RefSource(id="personSource")
+     */
+    private $id;
+    /**
+     * @DM\RefSource(id="personSource")
+     */
+    private $firstName;
+    /**
+     * @DM\RefSource(id="personSource")
+     */
+    private $name;
+    /**
+     * @DM\RefSource(id="personSource")
+     */
+    private $email;
+    /**
+     * @DM\RefSource(id="personSource")
+     */
+    private $phone;
+    /**
+     * @DM\Provider(
+     *   class="Kassko\Sample\CarProvider", method="getData(#car)", involvedSource="personSource"
+     * )
+     */
+    private $car;
+
+    public function __construct($id)
+    {
+        $this->id = $id;
+        $this->load();
+    }
+
+    public function getId() { return $this->id;}
+    public function setId($id) { $this->id = $id; return $this; }
+    public function getFirstName() { return $this->firstName; }
+    public function setFirstName($firstName) { $this->firstName = $firstName; return $this; }
+    public function getName() { return $this->name; }
+    public function setName($name) { $this->name = $name; return $this; }
+    public function getEmail() { return $this->email; }
+    public function setEmail($email) { $this->email = $email; return $this; }
+    public function getPhone() { return $this->phone; }
+    public function setPhone($phone) { $this->phone = $phone; return $this; }
+    public function getCar() { return $this->car; }
+    public function setCar($car) { $this->car = $car; return $this; }
+}
+```
+
+```php
+/**
+ * CarProvider is a Doctrine source that feed property $car.
+ */
+class CarProvider
+{
+    public function findCarById($id)
+    {
+        return $this->entityManager->getRepository('Car')->find($id);
+    }
+}
+```
+
+CarProvider has some dependencies too (the entity manager), it is instantiated with class-resolver too. We'll see class-resolver details later.
 
 # Installation #
 
 Add to your composer.json:
 ```json
 "require": {
-        "kassko/data-mapper": "~0.12.4"
+    "kassko/data-mapper": "~0.12.4"
 }
 ```
 

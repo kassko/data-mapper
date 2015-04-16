@@ -135,11 +135,39 @@ class ClassMetadata
         $this->normalizeDataSourcesStore();
         $this->normalizeProvidersStore();
 
+        $this->resolveRefSource();
+        $this->resolveSourceToBindToAllFields();
+    }
+
+    private function resolveRefSource()
+    {
+        //Resolve ref sources. Put them in the good sources (data source, provider).
         foreach ($this->refSources as $mappedFieldName => $refSource) {
             if (! isset($this->dataSources[$mappedFieldName]) && null !== $dataSource = $this->findDataSourceByIdBeforeCompilation($refSource)) {
                 $this->dataSources[$mappedFieldName] = $dataSource;
             } elseif (! isset($this->providers[$mappedFieldName]) && null !== $provider = $this->findProviderByIdBeforeCompilation($refSource)) {
                 $this->providers[$mappedFieldName] = $providers;
+            }
+        }
+    }
+
+    private function resolveSourceToBindToAllFields()
+    {
+        $source = $this->findProviderByCriterionBeforeCompilation('bindToAllFields', true);
+        if (null !== $source) {
+            $this->providers = [];
+            foreach ($this->mappedFieldNames as $mappedFieldName) {
+                $this->providers[$mappedFieldName] = $source;
+            }
+
+            return;
+        }
+
+        $source = $this->findDataSourceByCriterionBeforeCompilation('bindToAllFields', true);
+        if (null !== $source) {
+            $this->dataSources = [];
+            foreach ($this->mappedFieldNames as $mappedFieldName) {
+                $this->dataSources[$mappedFieldName] = $source;
             }
         }
     }
@@ -1043,14 +1071,24 @@ class ClassMetadata
 
     private function findDataSourceByIdBeforeCompilation($id)
     {
+        return $this->findDataSourceByCriterionBeforeCompilation('id', $id);
+    }
+
+    private function findProviderByIdBeforeCompilation($id)
+    {
+        return $this->findProviderByCriterionBeforeCompilation('id', $id);
+    }
+
+    private function findDataSourceByCriterionBeforeCompilation($key, $value)
+    {
         foreach ($this->dataSourcesStore as $dataSource) {
-            if ($dataSource['id'] === $id) {
+            if ($dataSource[$key] === $value) {
                 return $dataSource;
             }
         }
 
         foreach ($this->dataSources as $dataSource) {
-            if ($dataSource['id'] === $id) {
+            if ($dataSource[$key] === $value) {
                 return $dataSource;
             }
         }
@@ -1058,16 +1096,16 @@ class ClassMetadata
         return null;
     }
 
-    private function findProviderByIdBeforeCompilation($id)
+    private function findProviderByCriterionBeforeCompilation($key, $value)
     {
         foreach ($this->providersStore as $provider) {
-            if ($provider['id'] === $id) {
+            if ($provider[$key] === $key) {
                 return $provider;
             }
         }
 
         foreach ($this->providers as $provider) {
-            if ($provider['id'] === $id) {
+            if ($provider[$key] === $key) {
                 return $provider;
             }
         }

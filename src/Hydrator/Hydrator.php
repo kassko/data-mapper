@@ -253,6 +253,11 @@ class Hydrator extends AbstractHydrator
         return $object;
     }
 
+    public function load($object)
+    {
+        $this->hydrate([], $object);
+    }
+
     public function loadProperty($object, $mappedFieldName)
     {
         $this->prepare($object);
@@ -365,65 +370,6 @@ class Hydrator extends AbstractHydrator
         $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);
 
         return true;
-    }
-
-    protected function findFromSource(SourcePropertyMetadata $sourceMetadata)
-    {
-        if (! isset($sourceMetadata->fallbackSourceId)) {
-            return $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
-        }
-
-        if (SourcePropertyMetadata::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->onFail) {
-            
-            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
-            if ($sourceMetadata->areDataInvalid($data)) {
-                $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
-                return $this->findFromSource($sourceMetadata);
-            }
-
-            return $data;
-        } 
-
-        //Else SourcePropertyMetadata::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->onFail.
-        try {
-            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
-        } catch (Exception $e) {
-            if (! $e instanceof $sourceMetadata->exceptionClass) {
-                throw $e;
-            }
-            $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
-            return $this->findFromSource($sourceMetadata);
-        }
-
-        return $data;  
-    }
-
-    private function executePreprocessors(SourcePropertyMetadata $sourceMetadata, $object)
-    {
-        foreach ($sourceMetadata->preprocessors as $preprocessor) {
-            if ('##this' === $preprocessor->class) {
-                $preprocessorInstance = $object;
-            } else {
-                $preprocessorInstance = $this->classResolver ? $this->classResolver->resolve($preprocessor->class) : new $preprocessor->class;
-            }
-
-            $this->resolveMethodArgs($preprocessor->args, $object);
-            call_user_func_array([$preprocessorInstance, $preprocessor->method], $preprocessor->args);
-        }
-    }
-
-    private function executeProcessors(SourcePropertyMetadata $sourceMetadata, $object)
-    {
-        foreach ($sourceMetadata->processors as $processor) {
-            if ('##this' === $processor->class) {
-                $processorInstance = $object;
-            } else {
-                $processorInstance = $this->classResolver ? $this->classResolver->resolve($processor->class) : new $processor->class;
-            }
-
-            $this->resolveMethodArgs($processor->args, $object);
-            call_user_func_array([$processorInstance, $processor->method], $processor->args);
-        }
     }
 
     protected function walkHydrationByDataSource($mappedFieldName, $object, $enforceLoading)
@@ -567,6 +513,65 @@ class Hydrator extends AbstractHydrator
         } 
         
         return $objectClass . $sourceId . $sourceClass . $sourceMethod;
+    }
+
+    protected function findFromSource(SourcePropertyMetadata $sourceMetadata)
+    {
+        if (! isset($sourceMetadata->fallbackSourceId)) {
+            return $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+        }
+
+        if (SourcePropertyMetadata::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->onFail) {
+            
+            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+            if ($sourceMetadata->areDataInvalid($data)) {
+                $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
+                return $this->findFromSource($sourceMetadata);
+            }
+
+            return $data;
+        } 
+
+        //Else SourcePropertyMetadata::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->onFail.
+        try {
+            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+        } catch (Exception $e) {
+            if (! $e instanceof $sourceMetadata->exceptionClass) {
+                throw $e;
+            }
+            $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
+            return $this->findFromSource($sourceMetadata);
+        }
+
+        return $data;  
+    }
+
+    private function executePreprocessors(SourcePropertyMetadata $sourceMetadata, $object)
+    {
+        foreach ($sourceMetadata->preprocessors as $preprocessor) {
+            if ('##this' === $preprocessor->class) {
+                $preprocessorInstance = $object;
+            } else {
+                $preprocessorInstance = $this->classResolver ? $this->classResolver->resolve($preprocessor->class) : new $preprocessor->class;
+            }
+
+            $this->resolveMethodArgs($preprocessor->args, $object);
+            call_user_func_array([$preprocessorInstance, $preprocessor->method], $preprocessor->args);
+        }
+    }
+
+    private function executeProcessors(SourcePropertyMetadata $sourceMetadata, $object)
+    {
+        foreach ($sourceMetadata->processors as $processor) {
+            if ('##this' === $processor->class) {
+                $processorInstance = $object;
+            } else {
+                $processorInstance = $this->classResolver ? $this->classResolver->resolve($processor->class) : new $processor->class;
+            }
+
+            $this->resolveMethodArgs($processor->args, $object);
+            call_user_func_array([$processorInstance, $processor->method], $processor->args);
+        }
     }
 
     protected function pushRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResource, $voResourceType)
