@@ -24,12 +24,6 @@ trait LazyLoadableTrait
 
     private function getLazyLoader()
     {
-        static $lazyLoader;
-
-        if (null !== $lazyLoader) {
-            return $lazyLoader;
-        }
-
         $registry = Registry::getInstance();
         if (isset($registry[Registry::KEY_LAZY_LOADER_FACTORY])) {
             $lazyLoader = $registry[Registry::KEY_LAZY_LOADER_FACTORY]->getInstance(get_called_class());

@@ -1,3 +1,6 @@
+`0.12.4.1 - 2015/04/16 - Fix version`:
+* `Fix`: Fix lazyloading in inheritance context. Between two properties in the same hierarchy, only one was loaded and an error occured when we tried to load the second.
+
 `0.12.4.0 - 2015/04/12 - New version`:
 * `New`: Hydrator configuration: add expression language for methods arguments.
 * `New`: Hydrator configuration: add processors (some methods) to do some stuff before or after a source.
