@@ -25,7 +25,7 @@ $entityManager->getRepository('Person')->findById($id);
 $person->getName();
 ```
 
-With DataMapper, the access logic is in the configuration in object with annotations (note that the configuration also could be in a separed yaml or php file or in the object with inner php or inner yaml).
+With data-mapper, the access logic is in the configuration in object with annotations (note that the configuration also could be in a separed yaml or php file or in the object with inner php or inner yaml).
 
 ```php
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
@@ -119,7 +119,7 @@ class Person
     private $phone;
     /**
      * @DM\Provider(
-     *   class="Kassko\Sample\CarProvider", method="getData(#car)", involvedSource="personSource"
+     *   class="Kassko\Sample\CarRepository", method="find(#car)", involvedSource="personSource"
      * )
      */
     private $car;
@@ -166,15 +166,13 @@ class Person
 ```
 
 ```php
+use Doctrine\ORM\EntityRepository;
+
 /**
- * CarProvider is a Doctrine source that feed the property $car.
+ * CarRepository is a Doctrine source that feed the property $car.
  */
-class CarProvider
+class CarRepository extends EntityRepository
 {
-    public function findCarById($id)
-    {
-        return $this->entityManager->getRepository('Car')->find($id);
-    }
 }
 ```
 
@@ -185,7 +183,7 @@ CarProvider has some dependencies too (the entity manager), it is instantiated w
 Add to your composer.json:
 ```json
 "require": {
-    "kassko/data-mapper": "~0.12.4"
+    "kassko/data-mapper": "~0.12.5"
 }
 ```
 
