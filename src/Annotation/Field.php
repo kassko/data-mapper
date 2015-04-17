@@ -18,9 +18,9 @@ final class Field
     public $name;
 
     /**
-    * @var mixed
+    * @var string
     */
-    public $type = 'string';
+    public $type = null;
 
     /**
     * @var string
