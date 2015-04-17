@@ -1,3 +1,6 @@
+`0.12.4.2 - 2015/04/17 - Fix version`:
+* `Fix`: Hydrator configuration: Section Field / Key type: fix inference of type, if the key `type` is not specified, an implicit conversion to the supposed good type is performed. Conversion to string was performed. 
+
 `0.12.4.1 - 2015/04/16 - Fix version`:
 * `Fix`: Fix lazyloading in inheritance context. Between two properties in the same hierarchy, only one was loaded and an error occured when we tried to load the second.
 
