@@ -161,7 +161,7 @@ class ClassMetadata
 
     private function resolveDefaultSource()
     {
-        $defaultSource = $this->findProviderByIdBeforeCompilation($this->defaultSourceId);
+        $defaultSource = $this->findProviderByIdBeforeCompilation($this->refDefaultSource);
         if (null === $defaultSource) {
             $defaultSource = each($this->providersStore);  
         }
@@ -174,14 +174,14 @@ class ClassMetadata
             return;
         }
 
-        $defaultSource = $this->findDataSourceByIdBeforeCompilation($this->defaultSourceId);
+        $defaultSource = $this->findDataSourceByIdBeforeCompilation($this->refDefaultSource);
         if (null === $defaultSource) {
             $defaultSource = each($this->dataSourcesStore);  
         }
         $defaultSource = each($this->dataSourcesStore);
         if (false !== $defaultSource) {
             foreach ($this->mappedFieldNames as $mappedFieldName) {
-                if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName] && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
+                if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
                     $this->dataSources[$mappedFieldName] = $defaultSource;
                 }
             }

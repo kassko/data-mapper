@@ -44,12 +44,14 @@ trait LoadableTrait
         }
 
         //If loader factory availability is not evaluated yet.
+        
         $registry = Registry::getInstance();
-        if (isset($registry[Registry::KEY_LAZY_LOADER_FACTORY])) {
-            $loaderFactory = $registry[Registry::KEY_LAZY_LOADER_FACTORY];
-        } else {
+        if (! isset($registry[Registry::KEY_LAZY_LOADER_FACTORY])) {
             $loaderFactory = false;
-        }
+            return false;
+        } 
+
+        $loaderFactory = $registry[Registry::KEY_LAZY_LOADER_FACTORY];
 
         return $loaderFactory->getInstance(get_called_class());
     }

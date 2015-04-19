@@ -55,7 +55,7 @@ namespace Kassko\Sample;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 /**
- * @DM\DataSourceStore({
+ * @DM\DataSourcesStore({
  *      @DM\DataSource(
  *          id="personSource", class="Kassko\Sample\PersonDataSource", method="getData", args="#id",
  *          supplySeveralFields=true
@@ -161,10 +161,16 @@ namespace Kassko\Sample;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 /**
- * @DM\DataSourceStore({
+ * @DM\DataSourcesStore({
  *      @DM\DataSource(
  *          id="personSource", class="Kassko\Sample\PersonDataSource", method="getData", args="#id", 
  *          supplySeveralFields=true, relationFields={"car"}
+ *      )
+ * })
+ *
+ * @DM\ProvidersStore({
+ *      @DM\Provider(
+ *          id="carSource", class="Kassko\Sample\CarRepository", method="find(#car), depends={"personSource"}"
  *      )
  * })
  */
@@ -182,9 +188,7 @@ class Person
     private $phone;
 
     /**
-     * @DM\Provider(
-     *   class="Kassko\Sample\CarRepository", method="find(#car), depends={"personSource"}"
-     * )
+     * @DM\RefSource(id="carSource")
      */
     private $car;
 
@@ -1201,7 +1205,7 @@ namespace Kassko\Sample;
 use Kassko\DataMapper\Annotation as DM;
 
 /**
- * @DM\DataSourceStore({
+ * @DM\DataSourcesStore({
  *      @DM\DataSource(
  *          id="some_source", class="Kassko\Sample\PersonDataSource", method="getData", lazyLoading=true
  *      )
@@ -1241,7 +1245,7 @@ namespace Kassko\Sample;
 use Kassko\DataMapper\Annotation as DM;
 
 /**
- * @DM\DataSourceStore({
+ * @DM\DataSourcesStore({
  *      @DM\DataSource(
  *          id="sourceA", class="Kassko\Sample\ShopDataSource", method="getData", lazyLoading=true,
  *          fallbackSourceId="sourceB", onFail="checkException", exceptionClass="Kassko\Sample\NotStableSourceException"
@@ -1261,7 +1265,7 @@ namespace Kassko\Sample;
 use Kassko\DataMapper\Annotation as DM;
 
 /**
- * @DM\DataSourceStore({
+ * @DM\DataSourcesStore({
  *      @DM\DataSource(
  *          id="sourceA", class="Kassko\Sample\ShopDataSource", method="getData", lazyLoading=true,
  *          fallbackSourceId="sourceB", onFail="checkReturnValue", badReturnValue="null"

@@ -21,26 +21,6 @@ trait SourceCommonTrait
     public $id;
 
     /**
-     * @var \Kassko\DataMapper\Annotation\Method
-     */
-    public $preprocessor = null;
-
-    /**
-     * @var \Kassko\DataMapper\Annotation\Method
-     */
-    public $processor = null;
-
-    /**
-     * @var \Kassko\DataMapper\Annotation\Methods
-     */
-    public $preprocessors = [];
-
-    /**
-     * @var \Kassko\DataMapper\Annotation\Methods
-     */
-    public $processors = [];
-
-    /**
      * Loading strategy to use for this provider.
      *
      * @var bool
@@ -55,11 +35,9 @@ trait SourceCommonTrait
     public $supplySeveralFields = false;
 
     /**
-     * Indicate if the source is bound to all fields (true) or none (false).
-     *
-     * @var bool
+     * @var array
      */
-    public $bindToAllFields = false;
+    public $relationFields;
 
     /**
      * @var string
@@ -84,4 +62,24 @@ trait SourceCommonTrait
      * @var string
      */
     public $fallbackSourceId;
+
+    /**
+     * @var \Kassko\DataMapper\Annotation\Method
+     */
+    public $preprocessor = null;
+
+    /**
+     * @var \Kassko\DataMapper\Annotation\Method
+     */
+    public $processor = null;
+
+    /**
+     * @var \Kassko\DataMapper\Annotation\Methods
+     */
+    public $preprocessors = [];
+
+    /**
+     * @var \Kassko\DataMapper\Annotation\Methods
+     */
+    public $processors = [];
 }
