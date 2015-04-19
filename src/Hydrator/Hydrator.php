@@ -28,14 +28,19 @@ class Hydrator extends AbstractHydrator
     const SUFFIXE_EXTRACTION_RELATION = '_';//<= A revoir !
 
     /**
-    * @var bool
-    */
+     * @var bool
+     */
     protected $isPropertyAccessStrategyOn = true;
 
     /**
-    * @var \Kassko\DataMapper\Hydrator\MemberAccessStrategy\MemberAccessStrategyInterface
-    */
+     * @var \Kassko\DataMapper\Hydrator\MemberAccessStrategy\MemberAccessStrategyInterface
+     */
     protected $memberAccessStrategy;
+
+    /**
+     * @var \Kassko\DataMapper\Hydrator\MemberAccessStrategy\MemberAccessStrategyInterface
+     */
+    protected $propertyAccessStrategy;
 
     /**
      * Track properties already hydrated. Only properties hydrated by data sources.
@@ -335,7 +340,7 @@ class Hydrator extends AbstractHydrator
         return $this->extractValue($mappedFieldName, $value, $object, $data);
     }
 
-    protected function walkHydration($mappedFieldName, $object, $value, $data, $lastSource = true)
+    protected function walkHydration($mappedFieldName, $object, $value, $data, $relationField = false)
     {
         if ($this->metadata->isNotManaged($mappedFieldName)) {
             return false;
@@ -348,12 +353,6 @@ class Hydrator extends AbstractHydrator
         if (null === $value) {
             $this->memberAccessStrategy->setValue(null, $object, $mappedFieldName);
             return true;
-        }
-
-        if ($lastSource) {
-            $memberAccessStrategy = $this->memberAccessStrategy;
-        } else {
-            $memberAccessStrategy = $this->getPropertyAccessStrategy($object);
         }
 
         if ($fieldClass = $this->metadata->getClassOfMappedField($mappedFieldName)) {
@@ -412,9 +411,24 @@ class Hydrator extends AbstractHydrator
             }
         }
 
-        $memberAccessStrategy->setValue($value, $object, $mappedFieldName);
+        $this->resolveMemberAccessStrategy($relationField)->setValue($value, $object, $mappedFieldName);    
 
         return true;
+    }
+
+    private function resolveMemberAccessStrategy($relationField)
+    {
+        if (! $relationField) {
+            return $this->memberAccessStrategy;    
+        } 
+
+        /*
+        Set in an object a value that will be modified by a next source.
+        When several sources are are involved, we cannot use the setter to put a value 
+        because maybe it casts on the type of the definitive value 
+        and maybe the temporary value has a different type.
+        */
+        return $this->propertyAccessStrategy;    
     }
 
     protected function walkHydrationByDataSource($mappedFieldName, $object, $enforceLoading)
@@ -447,27 +461,36 @@ class Hydrator extends AbstractHydrator
         $this->executePreprocessors($sourceMetadata, $object);
 
         if (! $sourceMetadata->supplySeveralFields) {
-            $this->walkHydration($mappedFieldName, $object, $data, $data, ! isset($sourceMetadata->involvedSourceId));
+            $this->walkHydration(
+                $mappedFieldName, 
+                $object, 
+                $data, 
+                $data, 
+                in_array($mappedFieldName, $sourceMetadata->relationFields)
+            );
         } else {
             $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameDataSource($mappedFieldName));
             foreach ($data as $originalFieldName => $value) {
         
                 $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
-                
-                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
+                $relationField = ! in_array($otherMappedFieldName, $sourceMetadata->relationFields);
+
+                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate) && ! $relationField) {
                     continue;
                 }
 
-                $this->walkHydration($otherMappedFieldName, $object, $value, $data, ! isset($sourceMetadata->involvedSourceId));                    
+                $this->walkHydration($otherMappedFieldName, $object, $value, $data, $relationField);                    
             }
         }
 
-        if (isset($sourceMetadata->involvedSourceId)) {
-            $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->involvedSourceId);
-            if ($sourceMetadata->isDataSource) {
-                $this->walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
-            } else {
-                $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+        if (isset($sourceMetadata->depends)) {
+            foreach ($sourceMetadata->depends as $depend) {
+                $sourceMetadata = $this->metadata->findSourceById($depend);
+                if ($sourceMetadata->isDataSource) {
+                    $this->walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+                } else {
+                    $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+                }
             }
         }
 
@@ -502,34 +525,34 @@ class Hydrator extends AbstractHydrator
         $data = $this->findFromSource($sourceMetadata);
 
         $this->executePreprocessors($sourceMetadata, $object);
-
-        if (! isset($sourceMetadata->involvedSourceId)) {
-            $memberAccessStrategy = $this->memberAccessStrategy;
-        } else {
-            $memberAccessStrategy = $this->getPropertyAccessStrategy($object);
-        }
         
         if (! $sourceMetadata->supplySeveralFields) {
-            $memberAccessStrategy->setValue($data, $object, $mappedFieldName);  
+            $relationField = ! in_array($otherMappedFieldName, $sourceMetadata->relationFields);
+            $this->resolveMemberAccessStrategy($relationField)->setValue($data, $object, $mappedFieldName);
         } else {
             $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameProvider($mappedFieldName));
+
             foreach ($data as $originalFieldName => $value) {
             
                 $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
-                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
+                $relationField = ! in_array($otherMappedFieldName, $sourceMetadata->relationFields);
+            
+                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate) && ! $relationField) {
                     continue;
                 }
 
-                $memberAccessStrategy->setValue($value, $object, $mappedFieldName);                   
+                $this->resolveMemberAccessStrategy($relationField)->setValue($value, $object, $mappedFieldName);                 
             }
         }
 
-        if (isset($sourceMetadata->involvedSourceId)) {
-            $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->involvedSourceId);
-            if ($sourceMetadata->isDataSource) {
-                $this->walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
-            } else {
-                $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+        if ($sourceMetadata->hasDepends()) {
+            foreach ($sourceMetadata->depends as $depend) {
+                $sourceMetadata = $this->metadata->findSourceById($depend);
+                if ($sourceMetadata->isDataSource) {
+                    $this->walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+                } else {
+                    $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+                }
             }
         }
 
@@ -667,38 +690,21 @@ class Hydrator extends AbstractHydrator
         $this->objectManager->getConfiguration()->popRuntimeConfiguration();
     }
 
-    /**
-     * Set in an object a value that will be modified by a next source.
-     *
-     * When several sources are are involved, we cannot use the setter to put a value 
-     * because maybe it casts on the type of the definitive value 
-     * and maybe the temporary value has a different type.
-     */
-    protected function setTemporaryValue($value, $object, $mappedFieldName)
-    {
-        if (! $this->memberAccessStrategy instanceof MemberAccessStrategy\PropertyAccessStrategy) {
-            $memberAccessStrategy = $this->createPropertyAccessStrategy($object);
-        } else {
-            $memberAccessStrategy = $this->memberAccessStrategy;
-        }
-
-        $memberAccessStrategy->setValue($value, $object, $mappedFieldName);
-    }
-
     protected function doPrepare($object, ObjectKey $objectKey = null)
     {
         if (isset($object)) {
-            $this->memberAccessStrategy = $this->createMemberAccessStrategy($object); 
+            $this->propertyAccessStrategy = $this->createPropertyAccessStrategy($object);
+            $this->memberAccessStrategy = $this->createMemberAccessStrategy($object, $this->propertyAccessStrategy); 
             $this->methodArgumentResolver = new MethodArgumentResolver($this, $this->metadata, $this->classResolver);
         }
     }
 
-    private function createMemberAccessStrategy($object)
+    private function createMemberAccessStrategy($object, MemberAccessStrategy\PropertyAccessStrategy $propertyAccessStrategy)
     {
         $memberAccessStrategy = 
         $this->isPropertyAccessStrategyOn ? 
-        new MemberAccessStrategy\PropertyAccessStrategy : 
-        new MemberAccessStrategy\GetterSetterAccessStrategy(new MemberAccessStrategy\PropertyAccessStrategy)
+        $propertyAccessStrategy : 
+        new MemberAccessStrategy\GetterSetterAccessStrategy($propertyAccessStrategy)
         ;
         
         $memberAccessStrategy->prepare($object, $this->metadata);
@@ -708,18 +714,9 @@ class Hydrator extends AbstractHydrator
 
     private function createPropertyAccessStrategy($object)
     {
-        $memberAccessStrategy = new MemberAccessStrategy\PropertyAccessStrategy;
-        $memberAccessStrategy->prepare($object, $this->metadata);
+        $propertyAccessStrategy = new MemberAccessStrategy\PropertyAccessStrategy;
+        $propertyAccessStrategy->prepare($object, $this->metadata);
 
-        return $memberAccessStrategy;
-    }
-
-    private function getPropertyAccessStrategy($object)
-    {
-        if (! $this->memberAccessStrategy instanceof MemberAccessStrategy\PropertyAccessStrategy) {
-            retrun $this->createPropertyAccessStrategy($object);
-        } 
-
-        return $this->memberAccessStrategy;
+        return $propertyAccessStrategy;
     }
 }

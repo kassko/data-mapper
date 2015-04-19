@@ -29,7 +29,7 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
         $this->classMethods = get_class_methods($object);
         $this->classMetadata = $classMetadata;
 
-        $this->propertyAccessStrategy->prepare($object, $classMetadata);
+        //$this->propertyAccessStrategy->prepare($object, $classMetadata);
     }
 
     public function getValue($object, $fieldName)

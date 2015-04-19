@@ -162,8 +162,10 @@ class ClassMetadata
     private function resolveDefaultSource()
     {
         $defaultSource = $this->findProviderByIdBeforeCompilation($this->refDefaultSource);
+        
         if (null === $defaultSource) {
-            $defaultSource = each($this->providersStore);  
+            reset($this->providersStore);
+            $defaultSource = current($this->providersStore);
         }
         if (false !== $defaultSource) {
             foreach ($this->mappedFieldNames as $mappedFieldName) {
@@ -176,9 +178,9 @@ class ClassMetadata
 
         $defaultSource = $this->findDataSourceByIdBeforeCompilation($this->refDefaultSource);
         if (null === $defaultSource) {
-            $defaultSource = each($this->dataSourcesStore);  
+            reset($this->dataSourcesStore);
+            $defaultSource = current($this->dataSourcesStore);  
         }
-        $defaultSource = each($this->dataSourcesStore);
         if (false !== $defaultSource) {
             foreach ($this->mappedFieldNames as $mappedFieldName) {
                 if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
@@ -842,7 +844,7 @@ class ClassMetadata
     private function createSourcePropertyMetadataFromArrayData(array $source, $isDataSource)
     {
         $sourcePropertyMetadata = new SourcePropertyMetadata;
-
+        
         $sourcePropertyMetadata->id = $source['id'];
         $sourcePropertyMetadata->class = $source['class'];
         $sourcePropertyMetadata->method = $source['method'];
@@ -888,7 +890,7 @@ class ClassMetadata
             }
         }
 
-        $sourcePropertyMetadata->involvedSourceId = $source['involvedSourceId'];
+        $sourcePropertyMetadata->depends = $source['depends'];
         $sourcePropertyMetadata->isDataSource = $isDataSource;
 
         return $sourcePropertyMetadata;
@@ -1011,7 +1013,7 @@ class ClassMetadata
 
     public function getProviderInfo($mappedFieldName)
     {
-        return $this->createSourcePropertyMetadataFromArrayData($this->providers[$mappedFieldName]);
+        return $this->createSourcePropertyMetadataFromArrayData($this->providers[$mappedFieldName], false);
     }
 
     /**
@@ -1045,13 +1047,13 @@ class ClassMetadata
     {//@todo: optimize it.
         foreach ($this->providersStore as $provider) {
             if ($provider['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($provider);
+                return $this->createSourcePropertyMetadataFromArrayData($provider, false);
             }
         }
 
         foreach ($this->providers as $provider) {
             if ($provider['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($provider);
+                return $this->createSourcePropertyMetadataFromArrayData($provider, false);
             }
         }
 

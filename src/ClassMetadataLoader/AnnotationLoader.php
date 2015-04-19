@@ -97,6 +97,7 @@ class AnnotationLoader extends AbstractLoader
                     break;
 
                 case self::$dataSourcesStoreAnnotationName:
+
                     foreach ($annotation->items as &$item) {
                         $item = (array)$item;
                     }
@@ -104,6 +105,10 @@ class AnnotationLoader extends AbstractLoader
                     break;
 
                 case self::$providersStoreAnnotationName:
+
+                    foreach ($annotation->items as &$item) {
+                        $item = (array) $item;
+                    }
                     $this->classMetadata->setProvidersStore($annotation->items);
                     break;
 

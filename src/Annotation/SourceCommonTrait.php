@@ -35,11 +35,18 @@ trait SourceCommonTrait
     public $supplySeveralFields = false;
 
     /**
-     * A source involved.
+     * Ids of sources which provide an intermediate value for a field.
      *
      * @var array
      */
-    public $involvedSourceId = null;
+    public $depends = [];
+
+    /**
+     * Fields which contains an intermediate value which be modified or finalized by the next source in the chain.
+     *
+     * @var array
+     */
+    public $relationFields = [];
 
     /**
      * @var string
