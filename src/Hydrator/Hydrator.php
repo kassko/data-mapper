@@ -131,7 +131,7 @@ class Hydrator extends AbstractHydrator
     protected function doExtract($object)
     {
         $originalFieldNames = $this->metadata->getOriginalFieldNames();
-        $methods = get_class_methods($object);
+
         /*
         $filter = $object instanceof FilterProviderInterface
             ? $object->getFilter()
@@ -148,6 +148,10 @@ class Hydrator extends AbstractHydrator
                     continue;
                 }
 
+                if ($this->metadata->isValueObject($mappedFieldName)) {
+                    continue;
+                }
+
                 /*if ($filter && !$filter->filter($mappedFieldName)) {
                     continue;
                 }*/
@@ -158,8 +162,43 @@ class Hydrator extends AbstractHydrator
                     continue;
                 }
 
-                $value = $this->extractValue($mappedFieldName, $value, $object, $data);
-                $data[$originalFieldName] = $value;    
+                if (null === $value) {
+                    $data[$originalFieldName] = null;
+                    continue;
+                }
+
+                if ($fieldClass = $this->metadata->getClassOfMappedField($mappedFieldName)) {
+                    $fieldHydrator = $this->objectManager->createHydratorFor($fieldClass);
+                    $fieldValue = $value;
+
+                    /*if (! is_array($fieldValue)) {
+                        throw new ObjectMappingException(
+                            sprintf(
+                                'Cannot hydrate field "%s" of class "%s" from raw data.'
+                                . ' Raw data should be an array but got "%s".', 
+                                $mappedFieldName,
+                                $fieldClass,
+                                is_object($fieldValue) ? get_class($fieldValue) : gettype($fieldValue)
+                                )
+                        );
+                    }   */
+                    
+                    reset($fieldValue);
+                    if (0 !== count($fieldValue) && ! is_numeric(key($fieldValue))) {
+                        $fieldRawData = $fieldHydrator->extract($fieldValue);
+                        $data[$originalFieldName] = $fieldRawData;                              
+                    } else {
+
+                        $fieldRawData = [];
+                        foreach ($fieldValue as $itemFieldValue) {              
+                            $fieldRawData[] = $fieldHydrator->extract($itemFieldValue);                
+                        }
+                        $data[$originalFieldName] = $fieldRawData;
+                    }   
+                } else {
+                    $value = $this->extractValue($mappedFieldName, $value, $object, $data);
+                    $data[$originalFieldName] = $value;    
+                }
             }
         } else {
 
@@ -331,8 +370,8 @@ class Hydrator extends AbstractHydrator
                     );
             }
 
-            reset($value);
             $fieldHydrator = $this->objectManager->createHydratorFor($fieldClass);
+            reset($value);
 
             if (0 !== count($value) && ! is_numeric(key($value))) {
                 $field = new $fieldClass;

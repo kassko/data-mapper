@@ -1,6 +1,8 @@
 `0.12.5.0 - 2015/04/12 - New version`:
 * `New`: Allows to chain sources. With sources chaining, we can perform some relation an relations `multidimensional`.
 * `New`: Hydrator configuration: new key in source section `bindToAllFields` which allows to bind a source to all the fields of an object. Usefull not to duplicate on all fields the section RefSource.
+* `Fix`: Fix bug on extraction. Members with no getters were never extracted.
+* `Fix`: Fix bug on extraction. Properties which are objects were not extracted.
 
 `0.12.4.2 - 2015/04/17 - Fix version`:
 * `Fix`: Hydrator configuration: Section Field / Key type: fix inference of type, if the key `type` is not specified, an implicit conversion to the supposed good type is performed. Conversion to string was performed. 
