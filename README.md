@@ -6,9 +6,24 @@ data-mapper
 [![Total Downloads](https://poser.pugx.org/kassko/data-mapper/downloads.png)](https://packagist.org/packages/kassko/data-mapper)
 [![Latest Unstable Version](https://poser.pugx.org/kassko/data-mapper/v/unstable.png)](https://packagist.org/packages/kassko/data-mapper)
 
-# Presentation #
+# A php library to represent raw datas like object #
 
-A php library to represent raw datas like object.
+# Installation #
+
+Add to your composer.json:
+```json
+"require": {
+    "kassko/data-mapper": "~0.12.5"
+}
+```
+
+Note that:
+* the second version number is used when compatibility is broken
+* the third for new feature
+* the fourth for hotfix
+* the first for new API or to go from pre-release to release (from 0 to 1)
+
+# Usage #
 
 ## Accessing existing datas ##
 
@@ -256,20 +271,7 @@ CarProvider has some dependencies too (the entity manager), it is instantiated w
 * `relationFields`. Fields for which the source provide an intermediated value. The given source is in a chain in which a source provide a value from the value of the previous source in the chain. And the last source provide the definitive value.
 * `depends`. Sources of which depends an other source. Generally, this applies to a source in a chain and the value of depends usually contains the previous source in this chain.
 
-# Installation #
-
-Add to your composer.json:
-```json
-"require": {
-    "kassko/data-mapper": "~0.12.5"
-}
-```
-
-Note that:
-* the second version number is used when compatibility is broken
-* the third for new feature
-* the fourth for hotfix
-* the first for new API or to go from pre-release to release (from 0 to 1)
+# Installation: precisions #
 
 If you use annotations format, register the autoloader:
 ```php
@@ -291,6 +293,8 @@ Run environment with class-resolver:
 ;
 ```
 To create $classResolver, you can see more details [here](https://github.com/kassko/class-resolver) 
+
+# Usage: details #
 
 * [Basic usage](#basic-usage)
 * [Use the Result builder](#use-the-result-builder)
