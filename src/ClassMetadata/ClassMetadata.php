@@ -55,6 +55,14 @@ class ClassMetadata
     private $providers = [];
     private $providersStore = [];
     private $refSources = [];
+    /**
+     * @var string
+     */
+    private $refDefaultSource;
+    /**
+     * @var array Fields not to bind implicitly to a source. 
+     */
+    private $fieldsWithSourcesForbidden = [];
     
     private $getters = [];
     private $setters = [];
@@ -135,11 +143,11 @@ class ClassMetadata
         $this->normalizeDataSourcesStore();
         $this->normalizeProvidersStore();
 
-        $this->resolveRefSource();
-        $this->resolveSourceToBindToAllFields();
+        $this->resolveSource();
+        $this->resolveDefaultSource();
     }
 
-    private function resolveRefSource()
+    private function resolveSource()
     {
         //Resolve ref sources. Put them in the good sources (data source, provider).
         foreach ($this->refSources as $mappedFieldName => $refSource) {
@@ -151,23 +159,31 @@ class ClassMetadata
         }
     }
 
-    private function resolveSourceToBindToAllFields()
+    private function resolveDefaultSource()
     {
-        $source = $this->findProviderByCriterionBeforeCompilation('bindToAllFields', true);
-        if (null !== $source) {
-            $this->providers = [];
+        $defaultSource = $this->findProviderByIdBeforeCompilation($this->defaultSourceId);
+        if (null === $defaultSource) {
+            $defaultSource = each($this->providersStore);  
+        }
+        if (false !== $defaultSource) {
             foreach ($this->mappedFieldNames as $mappedFieldName) {
-                $this->providers[$mappedFieldName] = $source;
+                if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
+                    $this->providers[$mappedFieldName] = $defaultSource;
+                }
             }
-
             return;
         }
 
-        $source = $this->findDataSourceByCriterionBeforeCompilation('bindToAllFields', true);
-        if (null !== $source) {
-            $this->dataSources = [];
+        $defaultSource = $this->findDataSourceByIdBeforeCompilation($this->defaultSourceId);
+        if (null === $defaultSource) {
+            $defaultSource = each($this->dataSourcesStore);  
+        }
+        $defaultSource = each($this->dataSourcesStore);
+        if (false !== $defaultSource) {
             foreach ($this->mappedFieldNames as $mappedFieldName) {
-                $this->dataSources[$mappedFieldName] = $source;
+                if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName] && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
+                    $this->dataSources[$mappedFieldName] = $defaultSource;
+                }
             }
         }
     }
@@ -1013,6 +1029,54 @@ class ClassMetadata
     public function setRefSources(array $refSources)
     {
         $this->refSources = $refSources;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of fieldsWithSourcesForbidden.
+     *
+     * @return array Fields not to bind implicitly to a source
+     */
+    public function getFieldsWithSourcesForbidden()
+    {
+        return $this->fieldsWithSourcesForbidden;
+    }
+
+    /**
+     * Sets the value of fieldsWithSourcesForbidden.
+     *
+     * @param array Fields not to bind implicitly to a source $fieldsWithSourcesForbidden the fields without source
+     *
+     * @return self
+     */
+    public function setFieldsWithSourcesForbidden($fieldsWithSourcesForbidden)
+    {
+        $this->fieldsWithSourcesForbidden = $fieldsWithSourcesForbidden;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of refDefaultSource.
+     *
+     * @return string
+     */
+    public function getRefDefaultSource()
+    {
+        return $this->refDefaultSource;
+    }
+
+    /**
+     * Sets the value of refDefaultSource.
+     *
+     * @param string $refDefaultSource the ref default source
+     *
+     * @return self
+     */
+    public function setRefDefaultSource($refDefaultSource)
+    {
+        $this->refDefaultSource = $refDefaultSource;
 
         return $this;
     }

@@ -35,6 +35,8 @@ class AnnotationLoader extends AbstractLoader
     private static $refSourceAnnotationName = DM\RefSource::class;
     private static $dataSourcesStoreAnnotationName = DM\DataSourcesStore::class;
     private static $providersStoreAnnotationName = DM\ProvidersStore::class;
+    private static $noSourceAnnotationName = DM\NoSource::class;
+    private static $defaultSourceAnnotationName = DM\RefDefaultSource::class;
     
     private static $getterAnnotationName = DM\Getter::class;
     private static $setterAnnotationName = DM\Setter::class;
@@ -105,6 +107,10 @@ class AnnotationLoader extends AbstractLoader
                     $this->classMetadata->setProvidersStore($annotation->items);
                     break;
 
+                case self::$defaultSourceAnnotationName:
+                    $this->classMetadata->setRefDefaultSource($annotation->id);
+                    break;
+
                 case self::$customHydratorAnnotationName:
                     $this->classMetadata->setCustomHydrator((array)$annotation);
                     break;
@@ -140,7 +146,8 @@ class AnnotationLoader extends AbstractLoader
         $toMapped = [];
         $dataSources = [];
         $providers = [];
-        $refSources = [];  
+        $refSources = []; 
+        $fieldsWithSourcesForbidden = []; 
         $mappedIdFieldName = null;
         $mappedIdCompositePartFieldName = [];
         $mappedVersionFieldName = null;
@@ -248,7 +255,12 @@ class AnnotationLoader extends AbstractLoader
                         //ref is deprecated, it should be removed in the next significant release. 
                         $data = (array)$annotation;
                         $refSources[$mappedFieldName] = isset($annotation->id) ? $annotation->id : $annotation->ref;
-                        break;          
+                        break; 
+
+                    case self::$noSourceAnnotationName:
+
+                        $fieldsWithSourcesForbidden[$mappedFieldName] = true;
+                        break;             
 
                     case self::$valueObjectAnnotationName:
 
@@ -326,6 +338,10 @@ class AnnotationLoader extends AbstractLoader
 
         if (count($refSources)) {
             $this->classMetadata->setRefSources($refSources);
+        }
+
+        if (count($fieldsWithSourcesForbidden)) {
+            $this->classMetadata->setFieldsWithSourcesForbidden($fieldsWithSourcesForbidden);
         }
 
         if (isset($mappedIdFieldName)) {

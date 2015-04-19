@@ -51,6 +51,6 @@ trait LoadableTrait
             $loaderFactory = false;
         }
 
-        return $loaderFactory;
+        return $loaderFactory->getInstance(get_called_class());
     }
 }
