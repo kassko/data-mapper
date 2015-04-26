@@ -491,16 +491,16 @@ class Hydrator extends AbstractHydrator
             }
         }
 
-        /*if ($sourceMetadata->hasDepends()) {
-            foreach ($sourceMetadata->depends as $depend) {
-                $sourceMetadata = $this->metadata->findSourceById($depend);
+        if ($sourceMetadata->hasDepends()) {
+            foreach ($sourceMetadata->depends as $dependFieldName) {
+                $sourceMetadata = $this->metadata->getSourceInfo($dependFieldName);
                 if ($sourceMetadata->isDataSource) {
-                    $this->walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+                    $this->walkHydrationByDataSourceMetadata($sourceMetadata, $dependFieldName, $object, $enforceLoading);
                 } else {
-                    $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+                    $this->walkHydrationByProviderMetadata($sourceMetadata, $dependFieldName, $object, $enforceLoading);
                 }
             }
-        }*/
+        }
 
         $this->executeProcessors($sourceMetadata, $object);
     }
@@ -551,17 +551,17 @@ class Hydrator extends AbstractHydrator
             }
         }
 
-        /*if ($sourceMetadata->hasDepends()) {
-            foreach ($sourceMetadata->depends as $depend) {
-                $sourceMetadata = $this->metadata->findSourceById($depend);
+        if ($sourceMetadata->hasDepends()) {
+            foreach ($sourceMetadata->depends as $dependFieldName) {
+                $sourceMetadata = $this->metadata->getSourceInfo($dependFieldName);
                 if ($sourceMetadata->isDataSource) {
-                    $this->walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+                    $this->walkHydrationByDataSourceMetadata($sourceMetadata, $dependFieldName, $object, $enforceLoading);
                 } else {
-                    $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
+                    $this->walkHydrationByProviderMetadata($sourceMetadata, $dependFieldName, $object, $enforceLoading);
                 }
             }
-        }*/
-        
+        }
+
         $this->executeProcessors($sourceMetadata, $object);
     }
 

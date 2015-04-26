@@ -325,6 +325,7 @@ To create $classResolver, you can see more details [here](https://github.com/kas
   - [Source store](#source-store)
   - [Fallback source](#fallback-source)
   - [Processor](#processor)
+  - [Depends](#depends)
 * [Work with relations](#work-with-relations)
 * [How to have DataMapper/ResultBuilder ignorance in the client code](#how-to-have-datamapper-resultbuilder-ignorance-in-the-client-code)
 * [Use expression language](#use-expression-language)
@@ -1389,6 +1390,11 @@ class Key
     }
 }
 ```
+### Depends
+
+`depends` contains sources of which depends an other source. It's usefull when you need to ensures that a property is already available in a zone.
+
+This section will be completed later.
 
 Work with relations
 -----------

@@ -1075,6 +1075,15 @@ class ClassMetadata
 
     //========================= Providers : end
 
+    public function getSourceInfo($mappedFieldName)
+    {
+        if ($this->hasDataSource($mappedFieldName)) {
+            return $this->createSourcePropertyMetadataFromArrayData($this->dataSources[$mappedFieldName], true);    
+        }
+
+        return $this->createSourcePropertyMetadataFromArrayData($this->providers[$mappedFieldName], false);
+    }
+
     public function setRefSources(array $refSources)
     {
         $this->refSources = $refSources;
