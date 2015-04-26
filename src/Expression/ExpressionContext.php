@@ -30,8 +30,10 @@ class ExpressionContext implements ArrayAccess, IteratorAggregate
     }
 
     /**
-     * Return all the context variables.
-     * @return array
+     * Add a variable in the context.
+     *
+     * @param string $key A key to store the variable.
+     * @param mixed $value The variable to store.
      */
     public function addVariable($key, $value)
     {

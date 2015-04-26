@@ -58,12 +58,20 @@ class MethodArgumentResolver
     public function resolveFieldValue($fieldName)
     {
         $argsMappedFieldName = $this->metadata->getMappedFieldName($fieldName);
+
         return $this->hydrator->extractProperty($this->object, $argsMappedFieldName);
     }
 
     public function resolveClass($class)
     {
         return $this->classResolver ? $this->classResolver->resolve($class) : new $class; 
+    }
+
+    public function resolveSourceResult($id)
+    {
+        $sourceMetadata = $this->metadata->findSourceById($id);
+        
+        return $this->hydrator->findFromSource($sourceMetadata);
     }
 
     private function resolveService($serviceId)

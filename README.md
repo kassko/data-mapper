@@ -72,7 +72,10 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 /**
  * @DM\DataSourcesStore({
  *      @DM\DataSource(
- *          id="personSource", class="Kassko\Sample\PersonDataSource", method="getData", args="#id",
+ *          id="personSource", 
+ *          class="Kassko\Sample\PersonDataSource", 
+ *          method="getData", 
+ *          args="#id",
  *          supplySeveralFields=true
  *      )
  * })
@@ -82,10 +85,10 @@ class Person
     use LoadableTrait;
 
     /**
-     * @DM\NoSource
+     * @DM\ExcludeDefaultSource
      */
-    private $id;
-    private $firstName;
+    private $id;//Not linked to the default source because of the annotation ExcludeDefaultSource.
+    private $firstName;//Linked to the default source idem for name, email and phone.
     private $name;
     private $email;
     private $phone;
@@ -133,9 +136,9 @@ class PersonDataSource
 * `id`. An arbitrary id for the source. Optional but necessary if you need to mentionned the source in another annotation.
 * `class`. The class of the source that return datas. If the source has some dependencies (above `PersonDataSource` has a dependency `$connection`), its instanciation can be performed by a resolver named class-resolver. See more details [here](#work-with-object-complex-to-create-like-service).
 * `method`. The name of the method that return datas. 
-* `args`. Arguments of the method that return datas. We use the prefix `#` to specify a field (`#id`) as parameter. See more details [here](#method-arguments)
-* `supplySeveralFields`. Whether the source returns the data directly or put them in a key of an array and return the array. If the source supply only one field, it can return directly the data, these data will be bound to the good property. Else the source should return an array with as keys as property to supply. The key is named like the property or a mapping is done in the annotation Field: 
-```
+* `args`. Arguments of the method that return datas. You can send a raw value, a field value with the prefix `#` (ex: `#id`), an expression and more ... See more details [here](#method-arguments)
+* `supplySeveralFields`. Whether the source returns the data directly or put them in a key of an array and return the array. If the source supply only one field, it can return directly the data, these data will be bound to the good property. Else the source should return an array with as keys as property to supply. The key is named like the property or a mapping is done in the annotation Field. 
+```php
 namespace Kassko\Sample;
 
 class Person
@@ -178,23 +181,31 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 /**
  * @DM\DataSourcesStore({
  *      @DM\DataSource(
- *          id="personSource", class="Kassko\Sample\PersonDataSource", method="getData", args="#id", 
- *          supplySeveralFields=true, relationFields={"car"}
+ *          id="personSource", 
+ *          class="Kassko\Sample\PersonDataSource", 
+ *          method="getData", 
+ *          args="#id", 
+ *          supplySeveralFields=true
  *      )
  * })
  *
  * @DM\ProvidersStore({
  *      @DM\Provider(
- *          id="carSource", class="Kassko\Sample\CarRepository", method="find(#car), depends={"personSource"}"
+ *          id="carSource", 
+ *          class="Kassko\Sample\CarRepository", 
+ *          method="find", 
+ *          args="expr(source('personSource')['car'])"
  *      )
  * })
+ *
+ * @DM\RefDefaultSource(id="personSource")
  */
 class Person
 {
     use LoadableTrait;
 
     /**
-     * @DM\NoSource
+     * @DM\ExcludeDefaultSource
      */
     private $id;
     private $firstName;
@@ -225,11 +236,7 @@ class Person
     public function setEmail($email) { $this->email = $email; return $this; }
     public function getPhone() { return $this->phone; }
     public function setPhone($phone) { $this->phone = $phone; return $this; }
-    public function getCar() 
-    {
-        $this->loadProperty('car'); 
-        return $this->car; 
-    }
+    public function getCar();
     public function setCar($car) { $this->car = $car; return $this; }
 }
 ```
@@ -267,9 +274,6 @@ class CarRepository extends EntityRepository
 
 CarProvider has some dependencies too (the entity manager), it is instantiated with a resolver class-resolver. Reminder: you can see more details [here](#work-with-object-complex-to-create-like-service).
 
-### Source other annotation details ###
-* `relationFields`. Fields for which the source provide an intermediated value. The given source is in a chain in which a source provide a value from the value of the previous source in the chain. And the last source provide the definitive value.
-* `depends`. Sources of which depends an other source. Generally, this applies to a source in a chain and the value of depends usually contains the previous source in this chain.
 
 # Installation: precisions #
 

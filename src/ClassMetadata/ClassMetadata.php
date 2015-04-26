@@ -154,38 +154,50 @@ class ClassMetadata
             if (! isset($this->dataSources[$mappedFieldName]) && null !== $dataSource = $this->findDataSourceByIdBeforeCompilation($refSource)) {
                 $this->dataSources[$mappedFieldName] = $dataSource;
             } elseif (! isset($this->providers[$mappedFieldName]) && null !== $provider = $this->findProviderByIdBeforeCompilation($refSource)) {
-                $this->providers[$mappedFieldName] = $providers;
+                $this->providers[$mappedFieldName] = $provider;
             }
         }
     }
 
     private function resolveDefaultSource()
     {
-        $defaultSource = $this->findProviderByIdBeforeCompilation($this->refDefaultSource);
-        
-        if (null === $defaultSource) {
+        if (isset($this->refDefaultSource)) {
+         
+            $defaultSource = $this->findProviderByIdBeforeCompilation($this->refDefaultSource);   
+            if (null !== $defaultSource) {
+                $this->resolveDefaultSourceById($defaultSource, $this->providers);
+                return;
+            }
+
+            $defaultSource = $this->findDataSourceByIdBeforeCompilation($this->refDefaultSource);
+            if (null !== $defaultSource) {
+                $this->resolveDefaultSourceById($defaultSource, $this->dataSources);
+                return;
+            }
+        }
+
+        if (count($this->providersStore)) {
             reset($this->providersStore);
             $defaultSource = current($this->providersStore);
-        }
-        if (false !== $defaultSource) {
-            foreach ($this->mappedFieldNames as $mappedFieldName) {
-                if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
-                    $this->providers[$mappedFieldName] = $defaultSource;
-                }
-            }
+            $this->resolveDefaultSourceById($defaultSource, $this->providers);
+
             return;
         }
 
-        $defaultSource = $this->findDataSourceByIdBeforeCompilation($this->refDefaultSource);
-        if (null === $defaultSource) {
+        if (count($this->dataSourcesStore)) {
             reset($this->dataSourcesStore);
-            $defaultSource = current($this->dataSourcesStore);  
+            $defaultSource = current($this->dataSourcesStore);
+            $this->resolveDefaultSourceById($defaultSource, $this->dataSources);  
+
+            return;
         }
-        if (false !== $defaultSource) {
-            foreach ($this->mappedFieldNames as $mappedFieldName) {
-                if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
-                    $this->dataSources[$mappedFieldName] = $defaultSource;
-                }
+    }
+
+    private function resolveDefaultSourceById($defaultSource, &$sources)
+    {
+        foreach ($this->mappedFieldNames as $mappedFieldName) {
+            if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
+                $sources[$mappedFieldName] = $defaultSource;
             }
         }
     }
@@ -1200,13 +1212,13 @@ class ClassMetadata
     private function findProviderByCriterionBeforeCompilation($key, $value)
     {
         foreach ($this->providersStore as $provider) {
-            if ($provider[$key] === $key) {
+            if ($provider[$key] === $value) {
                 return $provider;
             }
         }
 
         foreach ($this->providers as $provider) {
-            if ($provider[$key] === $key) {
+            if ($provider[$key] === $value) {
                 return $provider;
             }
         }

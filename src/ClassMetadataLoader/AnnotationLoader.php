@@ -35,7 +35,7 @@ class AnnotationLoader extends AbstractLoader
     private static $refSourceAnnotationName = DM\RefSource::class;
     private static $dataSourcesStoreAnnotationName = DM\DataSourcesStore::class;
     private static $providersStoreAnnotationName = DM\ProvidersStore::class;
-    private static $noSourceAnnotationName = DM\NoSource::class;
+    private static $noSourceAnnotationName = DM\ExcludeDefaultSource::class;
     private static $defaultSourceAnnotationName = DM\RefDefaultSource::class;
     
     private static $getterAnnotationName = DM\Getter::class;

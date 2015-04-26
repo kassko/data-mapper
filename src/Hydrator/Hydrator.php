@@ -340,7 +340,38 @@ class Hydrator extends AbstractHydrator
         return $this->extractValue($mappedFieldName, $value, $object, $data);
     }
 
-    protected function walkHydration($mappedFieldName, $object, $value, $data, $relationField = false)
+    public function findFromSource(SourcePropertyMetadata $sourceMetadata)
+    {
+        if (! isset($sourceMetadata->fallbackSourceId)) {
+            return $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+        }
+
+        if (SourcePropertyMetadata::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->onFail) {
+            
+            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+            if ($sourceMetadata->areDataInvalid($data)) {
+                $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
+                return $this->findFromSource($sourceMetadata);
+            }
+
+            return $data;
+        } 
+
+        //Else SourcePropertyMetadata::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->onFail.
+        try {
+            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+        } catch (Exception $e) {
+            if (! $e instanceof $sourceMetadata->exceptionClass) {
+                throw $e;
+            }
+            $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
+            return $this->findFromSource($sourceMetadata);
+        }
+
+        return $data;  
+    }
+
+    protected function walkHydration($mappedFieldName, $object, $value, $data)
     {
         if ($this->metadata->isNotManaged($mappedFieldName)) {
             return false;
@@ -411,24 +442,9 @@ class Hydrator extends AbstractHydrator
             }
         }
 
-        $this->resolveMemberAccessStrategy($relationField)->setValue($value, $object, $mappedFieldName);    
+        $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);    
 
         return true;
-    }
-
-    private function resolveMemberAccessStrategy($relationField)
-    {
-        if (! $relationField) {
-            return $this->memberAccessStrategy;    
-        } 
-
-        /*
-        Set in an object a value that will be modified by a next source.
-        When several sources are are involved, we cannot use the setter to put a value 
-        because maybe it casts on the type of the definitive value 
-        and maybe the temporary value has a different type.
-        */
-        return $this->propertyAccessStrategy;    
     }
 
     protected function walkHydrationByDataSource($mappedFieldName, $object, $enforceLoading)
@@ -461,29 +477,21 @@ class Hydrator extends AbstractHydrator
         $this->executePreprocessors($sourceMetadata, $object);
 
         if (! $sourceMetadata->supplySeveralFields) {
-            $this->walkHydration(
-                $mappedFieldName, 
-                $object, 
-                $data, 
-                $data, 
-                in_array($mappedFieldName, $sourceMetadata->relationFields)
-            );
+            $this->walkHydration($mappedFieldName, $object, $data, $data);
         } else {
             $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameDataSource($mappedFieldName));
             foreach ($data as $originalFieldName => $value) {
         
                 $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
-                $relationField = ! in_array($otherMappedFieldName, $sourceMetadata->relationFields);
-
-                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate) && ! $relationField) {
+                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
                     continue;
                 }
 
-                $this->walkHydration($otherMappedFieldName, $object, $value, $data, $relationField);                    
+                $this->walkHydration($otherMappedFieldName, $object, $value, $data);                    
             }
         }
 
-        if (isset($sourceMetadata->depends)) {
+        /*if ($sourceMetadata->hasDepends()) {
             foreach ($sourceMetadata->depends as $depend) {
                 $sourceMetadata = $this->metadata->findSourceById($depend);
                 if ($sourceMetadata->isDataSource) {
@@ -492,7 +500,7 @@ class Hydrator extends AbstractHydrator
                     $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
                 }
             }
-        }
+        }*/
 
         $this->executeProcessors($sourceMetadata, $object);
     }
@@ -527,25 +535,23 @@ class Hydrator extends AbstractHydrator
         $this->executePreprocessors($sourceMetadata, $object);
         
         if (! $sourceMetadata->supplySeveralFields) {
-            $relationField = ! in_array($otherMappedFieldName, $sourceMetadata->relationFields);
-            $this->resolveMemberAccessStrategy($relationField)->setValue($data, $object, $mappedFieldName);
+            $this->memberAccessStrategy->setValue($data, $object, $mappedFieldName);
         } else {
             $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameProvider($mappedFieldName));
 
             foreach ($data as $originalFieldName => $value) {
             
                 $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
-                $relationField = ! in_array($otherMappedFieldName, $sourceMetadata->relationFields);
-            
-                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate) && ! $relationField) {
+
+                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
                     continue;
                 }
 
-                $this->resolveMemberAccessStrategy($relationField)->setValue($value, $object, $mappedFieldName);                 
+                $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);                 
             }
         }
 
-        if ($sourceMetadata->hasDepends()) {
+        /*if ($sourceMetadata->hasDepends()) {
             foreach ($sourceMetadata->depends as $depend) {
                 $sourceMetadata = $this->metadata->findSourceById($depend);
                 if ($sourceMetadata->isDataSource) {
@@ -554,8 +560,8 @@ class Hydrator extends AbstractHydrator
                     $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
                 }
             }
-        }
-
+        }*/
+        
         $this->executeProcessors($sourceMetadata, $object);
     }
 
@@ -611,37 +617,6 @@ class Hydrator extends AbstractHydrator
         } 
 
         return $objectClass . $sourceId . $sourceClass . $sourceMethod;
-    }
-
-    protected function findFromSource(SourcePropertyMetadata $sourceMetadata)
-    {
-        if (! isset($sourceMetadata->fallbackSourceId)) {
-            return $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
-        }
-
-        if (SourcePropertyMetadata::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->onFail) {
-            
-            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
-            if ($sourceMetadata->areDataInvalid($data)) {
-                $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
-                return $this->findFromSource($sourceMetadata);
-            }
-
-            return $data;
-        } 
-
-        //Else SourcePropertyMetadata::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->onFail.
-        try {
-            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
-        } catch (Exception $e) {
-            if (! $e instanceof $sourceMetadata->exceptionClass) {
-                throw $e;
-            }
-            $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
-            return $this->findFromSource($sourceMetadata);
-        }
-
-        return $data;  
     }
 
     private function executePreprocessors(SourcePropertyMetadata $sourceMetadata, $object)

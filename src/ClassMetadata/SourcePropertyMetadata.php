@@ -53,13 +53,9 @@ class SourcePropertyMetadata
      */
     public $depends = [];
 
-    /**
-     * @var array
-     */
-    public $relationFields = [];
-
     public $preprocessors = [];
     public $processors = [];
+
 
     public function areDataInvalid($data) 
     {
@@ -84,6 +80,6 @@ class SourcePropertyMetadata
 
     public function hasDepends()
     {
-        return count($depends) > 0;
+        return count($this->depends) > 0;
     }
 }
