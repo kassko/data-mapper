@@ -194,7 +194,7 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
  *          id="carSource", 
  *          class="Kassko\Sample\CarRepository", 
  *          method="find", 
- *          args="expr(source('personSource')['car'])"
+ *          args="expr(source('personSource')['car_id'])"
  *      )
  * })
  *
@@ -248,7 +248,7 @@ class PersonDataSource
 {
     public function getData($id)
     {
-        $data = $this->connection->executeQuery('select firstName, name, email, phone, car_id as car from some_table where id = ?', [$id]);
+        $data = $this->connection->executeQuery('select firstName, name, email, phone, car_id from some_table where id = ?', [$id]);
 
         if (! isset($data[0])) {
             return null;            
