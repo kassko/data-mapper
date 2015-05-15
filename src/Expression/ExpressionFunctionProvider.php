@@ -31,7 +31,16 @@ class ExpressionFunctionProvider implements ExpressionFunctionProviderInterface
                 function (array $context, $value) {
                     return $context['arg_resolver']->resolveFieldValue($value);
                 }
-            )
+            ),
+            new ExpressionFunction(
+                'source',
+                function ($arg) {
+                    return sprintf('arg_resolver.resolveSourceResult(%s)', $arg);
+                }, 
+                function (array $context, $value) {
+                    return $context['arg_resolver']->resolveSourceResult($value);
+                }
+            ),
         ];
     }
 }

@@ -34,7 +34,7 @@ class LazyLoader
         }
 
         $hydrator = $this->objectManager->getHydratorFor($this->objectClass);
-        $hydrator->loadProperty($object);
+        $hydrator->load($object);
     }
 
     /**

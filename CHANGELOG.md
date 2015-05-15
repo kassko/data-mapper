@@ -1,6 +1,11 @@
 `0.12.5.0 - 2015/04/12 - New version`:
-* `New`: Allows to chain sources. With sources chaining, we can perform some relation an relations `multidimensional`.
-* `New`: Hydrator configuration: new key in source section `bindToAllFields` which allows to bind a source to all the fields of an object. Usefull not to duplicate on all fields the section RefSource.
+* `New`: Hydrator configuration: allows to perform relations between severals sources. Relations can be between more than two sources and can also be between differents DBMS.
+* `New`: Hydrator configuration: new config item `RefDefaultSource` which allows to bind a default source to all the fields of an object. That's usefull not to duplicate on all fields the config item RefSource. It's possible to exclude some fields to be bound with another new config item `ExcludeDefaultSource`.
+* `New`: Source loading: new trait `LoadableTrait` with a method `load` which load all properties (except properties marked to be lazy loaded). That's usefull in combination with the new config items `RefDefaultSource` and `ExcludeDefaultSource`. It's also fix an inconsistency: only the mode `lazyloading enabled` worked. We were not able to load immediately properties.
+* `New`: Hydrator configuration: new key `depends` in source config item that allows to specify some sources as dependencies. These sources will always be loaded before the dependant source.
+* `Fix`: Fix bug on extraction. Members with no getters were never extracted.
+* `Fix`: Fix bug on extraction. Properties which are objects were not extracted.
+* `Depr`: Trait `LazyLoadableTrait` is deprecated. Use `LoadableTrait` instead. It will be removed in the next significant release.
 
 `0.12.4.2 - 2015/04/17 - Fix version`:
 * `Fix`: Hydrator configuration: Section Field / Key type: fix inference of type, if the key `type` is not specified, an implicit conversion to the supposed good type is performed. Conversion to string was performed. 
@@ -10,7 +15,7 @@
 
 `0.12.4.0 - 2015/04/12 - New version`:
 * `New`: Hydrator configuration: add expression language for methods arguments.
-* `New`: Hydrator configuration: add processors (some methods) to do some stuff before or after a source.
+* `New`: Hydrator configuration: add processors (some methods) to do some stuff before or after the invocation of a source.
 * `New`: Hydrator configuration: enhance type - allows to enforce type of fields.
 * `Fix`: Hydrator configuration: allows to invoke __call method. 
 * `Fix`: Data Mapper configuration: fix forgotten keys `class_resolver` and `object_listener_resolver`.

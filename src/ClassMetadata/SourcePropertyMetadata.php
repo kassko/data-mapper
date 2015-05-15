@@ -23,9 +23,7 @@ class SourcePropertyMetadata
 	public $args;
 	public $lazyLoading;
 	public $supplySeveralFields;
-    public $preprocessors = [];
-    public $processors = [];
-
+    
 	/**
      * @var string
      *
@@ -50,6 +48,15 @@ class SourcePropertyMetadata
      */
     public $fallbackSourceId;
 
+    /**
+     * @var array
+     */
+    public $depends = [];
+
+    public $preprocessors = [];
+    public $processors = [];
+
+
     public function areDataInvalid($data) 
     {
     	switch ($this->badReturnValue) {
@@ -69,5 +76,10 @@ class SourcePropertyMetadata
     		default:
     			throw new DomainException(sprintf('The bad return value "%s" is not allowed.'));
     	}
+    }
+
+    public function hasDepends()
+    {
+        return count($this->depends) > 0;
     }
 }

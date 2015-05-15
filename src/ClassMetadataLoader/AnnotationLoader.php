@@ -35,6 +35,8 @@ class AnnotationLoader extends AbstractLoader
     private static $refSourceAnnotationName = DM\RefSource::class;
     private static $dataSourcesStoreAnnotationName = DM\DataSourcesStore::class;
     private static $providersStoreAnnotationName = DM\ProvidersStore::class;
+    private static $noSourceAnnotationName = DM\ExcludeDefaultSource::class;
+    private static $defaultSourceAnnotationName = DM\RefDefaultSource::class;
     
     private static $getterAnnotationName = DM\Getter::class;
     private static $setterAnnotationName = DM\Setter::class;
@@ -95,6 +97,7 @@ class AnnotationLoader extends AbstractLoader
                     break;
 
                 case self::$dataSourcesStoreAnnotationName:
+
                     foreach ($annotation->items as &$item) {
                         $item = (array)$item;
                     }
@@ -102,7 +105,15 @@ class AnnotationLoader extends AbstractLoader
                     break;
 
                 case self::$providersStoreAnnotationName:
+
+                    foreach ($annotation->items as &$item) {
+                        $item = (array) $item;
+                    }
                     $this->classMetadata->setProvidersStore($annotation->items);
+                    break;
+
+                case self::$defaultSourceAnnotationName:
+                    $this->classMetadata->setRefDefaultSource($annotation->id);
                     break;
 
                 case self::$customHydratorAnnotationName:
@@ -140,7 +151,8 @@ class AnnotationLoader extends AbstractLoader
         $toMapped = [];
         $dataSources = [];
         $providers = [];
-        $refSources = [];  
+        $refSources = []; 
+        $fieldsWithSourcesForbidden = []; 
         $mappedIdFieldName = null;
         $mappedIdCompositePartFieldName = [];
         $mappedVersionFieldName = null;
@@ -158,22 +170,20 @@ class AnnotationLoader extends AbstractLoader
 
             $existsFieldAnnotation = false;
 
+            $toOriginal[$mappedFieldName] = $mappedFieldName;
+            $toMapped[$mappedFieldName] = $mappedFieldName;
+            $originalFieldNames[$mappedFieldName] = $mappedFieldName;//Todo: remove it. It's useless now.
+
             foreach ($annotations as $annotation) {
                 $annotationName = get_class($annotation);
 
                 switch ($annotationName) {
                     case self::$fieldAnnotationName:
 
-                        if (! isset($annotation->name)) {
-
-                            $toOriginal[$mappedFieldName] = $mappedFieldName;
-                            $toMapped[$mappedFieldName] = $mappedFieldName;
-                            $originalFieldNames[] = $mappedFieldName;
-                        } else {
-
+                        if (! empty($annotation->name)) {
                             $toOriginal[$mappedFieldName] = $annotation->name;
                             $toMapped[$annotation->name] = $mappedFieldName;
-                            $originalFieldNames[] = $annotation->name;
+                            $originalFieldNames[$mappedFieldName] = $annotation->name;
                         }
 
                         if ('date' === $annotation->type) {
@@ -248,7 +258,12 @@ class AnnotationLoader extends AbstractLoader
                         //ref is deprecated, it should be removed in the next significant release. 
                         $data = (array)$annotation;
                         $refSources[$mappedFieldName] = isset($annotation->id) ? $annotation->id : $annotation->ref;
-                        break;          
+                        break; 
+
+                    case self::$noSourceAnnotationName:
+
+                        $fieldsWithSourcesForbidden[$mappedFieldName] = true;
+                        break;             
 
                     case self::$valueObjectAnnotationName:
 
@@ -326,6 +341,10 @@ class AnnotationLoader extends AbstractLoader
 
         if (count($refSources)) {
             $this->classMetadata->setRefSources($refSources);
+        }
+
+        if (count($fieldsWithSourcesForbidden)) {
+            $this->classMetadata->setFieldsWithSourcesForbidden($fieldsWithSourcesForbidden);
         }
 
         if (isset($mappedIdFieldName)) {

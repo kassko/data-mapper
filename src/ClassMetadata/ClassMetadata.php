@@ -55,6 +55,14 @@ class ClassMetadata
     private $providers = [];
     private $providersStore = [];
     private $refSources = [];
+    /**
+     * @var string
+     */
+    private $refDefaultSource;
+    /**
+     * @var array Fields not to bind implicitly to a source. 
+     */
+    private $fieldsWithSourcesForbidden = [];
     
     private $getters = [];
     private $setters = [];
@@ -135,39 +143,61 @@ class ClassMetadata
         $this->normalizeDataSourcesStore();
         $this->normalizeProvidersStore();
 
-        $this->resolveRefSource();
-        $this->resolveSourceToBindToAllFields();
+        $this->resolveSource();
+        $this->resolveDefaultSource();
     }
 
-    private function resolveRefSource()
+    private function resolveSource()
     {
         //Resolve ref sources. Put them in the good sources (data source, provider).
         foreach ($this->refSources as $mappedFieldName => $refSource) {
             if (! isset($this->dataSources[$mappedFieldName]) && null !== $dataSource = $this->findDataSourceByIdBeforeCompilation($refSource)) {
                 $this->dataSources[$mappedFieldName] = $dataSource;
             } elseif (! isset($this->providers[$mappedFieldName]) && null !== $provider = $this->findProviderByIdBeforeCompilation($refSource)) {
-                $this->providers[$mappedFieldName] = $providers;
+                $this->providers[$mappedFieldName] = $provider;
             }
         }
     }
 
-    private function resolveSourceToBindToAllFields()
+    private function resolveDefaultSource()
     {
-        $source = $this->findProviderByCriterionBeforeCompilation('bindToAllFields', true);
-        if (null !== $source) {
-            $this->providers = [];
-            foreach ($this->mappedFieldNames as $mappedFieldName) {
-                $this->providers[$mappedFieldName] = $source;
+        if (isset($this->refDefaultSource)) {
+         
+            $defaultSource = $this->findProviderByIdBeforeCompilation($this->refDefaultSource);   
+            if (null !== $defaultSource) {
+                $this->resolveDefaultSourceById($defaultSource, $this->providers);
+                return;
             }
+
+            $defaultSource = $this->findDataSourceByIdBeforeCompilation($this->refDefaultSource);
+            if (null !== $defaultSource) {
+                $this->resolveDefaultSourceById($defaultSource, $this->dataSources);
+                return;
+            }
+        }
+
+        if (count($this->providersStore)) {
+            reset($this->providersStore);
+            $defaultSource = current($this->providersStore);
+            $this->resolveDefaultSourceById($defaultSource, $this->providers);
 
             return;
         }
 
-        $source = $this->findDataSourceByCriterionBeforeCompilation('bindToAllFields', true);
-        if (null !== $source) {
-            $this->dataSources = [];
-            foreach ($this->mappedFieldNames as $mappedFieldName) {
-                $this->dataSources[$mappedFieldName] = $source;
+        if (count($this->dataSourcesStore)) {
+            reset($this->dataSourcesStore);
+            $defaultSource = current($this->dataSourcesStore);
+            $this->resolveDefaultSourceById($defaultSource, $this->dataSources);  
+
+            return;
+        }
+    }
+
+    private function resolveDefaultSourceById($defaultSource, &$sources)
+    {
+        foreach ($this->mappedFieldNames as $mappedFieldName) {
+            if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
+                $sources[$mappedFieldName] = $defaultSource;
             }
         }
     }
@@ -395,12 +425,10 @@ class ClassMetadata
         return $this;
     }
 
-    /*
     public function isValueObject($mappedFieldName)
     {
         return array_key_exists($mappedFieldName, $this->valueObjects);
     }
-    */
 
     public function getFieldsWithValueObjects()
     {
@@ -799,39 +827,36 @@ class ClassMetadata
         return $this->fieldsDataByKey[$mappedFieldName][$columnDataName];
     }
 
+    //========================= Sources : begin
+
+    public function hasSource($mappedFieldName)
+    {
+        if ($this->hasDataSource($mappedFieldName)) {
+            return true;
+        }
+        
+        return $this->hasProvider($mappedFieldName);
+    }
+
     public function findSourceById($id)
     {//@todo: optimize it.
-        foreach ($this->dataSourcesStore as $dataSource) {
-            if ($dataSource['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($dataSource);
-            }
+        $result = $this->findDataSourceById($id);
+        if (null !== $result) {
+            return $result;
         }
 
-        foreach ($this->dataSources as $dataSource) {
-            if ($dataSource['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($dataSource);
-            }
-        }
-
-        foreach ($this->providersStore as $provider) {
-            if ($provider['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($provider);
-            }
-        }
-
-        foreach ($this->providers as $provider) {
-            if ($provider['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($provider);
-            }
+        $result = $this->findProviderById($id);
+        if (null !== $result) {
+            return $result;
         }
 
         throw new ObjectMappingException(sprintf('No source found for the given id "%s".', $id));
     }
 
-    private function createSourcePropertyMetadataFromArrayData(array $source)
+    private function createSourcePropertyMetadataFromArrayData(array $source, $isDataSource)
     {
         $sourcePropertyMetadata = new SourcePropertyMetadata;
-
+        
         $sourcePropertyMetadata->id = $source['id'];
         $sourcePropertyMetadata->class = $source['class'];
         $sourcePropertyMetadata->method = $source['method'];
@@ -877,8 +902,13 @@ class ClassMetadata
             }
         }
 
+        $sourcePropertyMetadata->depends = $source['depends'];
+        $sourcePropertyMetadata->isDataSource = $isDataSource;
+
         return $sourcePropertyMetadata;
     }
+
+    //========================= Sources : end
 
     //========================= Data sources : begin
 
@@ -913,7 +943,7 @@ class ClassMetadata
 
     public function getDataSourceInfo($mappedFieldName)
     {
-        return $this->createSourcePropertyMetadataFromArrayData($this->dataSources[$mappedFieldName]);
+        return $this->createSourcePropertyMetadataFromArrayData($this->dataSources[$mappedFieldName], true);
     }
 
     /**
@@ -941,6 +971,23 @@ class ClassMetadata
         }
 
         return $propLoadedTogether;
+    }
+
+    public function findDataSourceById($id)
+    {//@todo: optimize it.
+        foreach ($this->dataSourcesStore as $dataSource) {
+            if ($dataSource['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($dataSource, true);
+            }
+        }
+
+        foreach ($this->dataSources as $dataSource) {
+            if ($dataSource['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($dataSource, true);
+            }
+        }
+
+        return null;
     }
 
     //========================= Data sources : end
@@ -978,7 +1025,7 @@ class ClassMetadata
 
     public function getProviderInfo($mappedFieldName)
     {
-        return $this->createSourcePropertyMetadataFromArrayData($this->providers[$mappedFieldName]);
+        return $this->createSourcePropertyMetadataFromArrayData($this->providers[$mappedFieldName], false);
     }
 
     /**
@@ -1008,11 +1055,86 @@ class ClassMetadata
         return $propLoadedTogether;
     }
 
+    public function findProviderById($id)
+    {//@todo: optimize it.
+        foreach ($this->providersStore as $provider) {
+            if ($provider['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($provider, false);
+            }
+        }
+
+        foreach ($this->providers as $provider) {
+            if ($provider['id'] === $id) {
+                return $this->createSourcePropertyMetadataFromArrayData($provider, false);
+            }
+        }
+
+        return null;
+    }
+
+
     //========================= Providers : end
+
+    public function getSourceInfo($mappedFieldName)
+    {
+        if ($this->hasDataSource($mappedFieldName)) {
+            return $this->createSourcePropertyMetadataFromArrayData($this->dataSources[$mappedFieldName], true);    
+        }
+
+        return $this->createSourcePropertyMetadataFromArrayData($this->providers[$mappedFieldName], false);
+    }
 
     public function setRefSources(array $refSources)
     {
         $this->refSources = $refSources;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of fieldsWithSourcesForbidden.
+     *
+     * @return array Fields not to bind implicitly to a source
+     */
+    public function getFieldsWithSourcesForbidden()
+    {
+        return $this->fieldsWithSourcesForbidden;
+    }
+
+    /**
+     * Sets the value of fieldsWithSourcesForbidden.
+     *
+     * @param array Fields not to bind implicitly to a source $fieldsWithSourcesForbidden the fields without source
+     *
+     * @return self
+     */
+    public function setFieldsWithSourcesForbidden($fieldsWithSourcesForbidden)
+    {
+        $this->fieldsWithSourcesForbidden = $fieldsWithSourcesForbidden;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of refDefaultSource.
+     *
+     * @return string
+     */
+    public function getRefDefaultSource()
+    {
+        return $this->refDefaultSource;
+    }
+
+    /**
+     * Sets the value of refDefaultSource.
+     *
+     * @param string $refDefaultSource the ref default source
+     *
+     * @return self
+     */
+    public function setRefDefaultSource($refDefaultSource)
+    {
+        $this->refDefaultSource = $refDefaultSource;
 
         return $this;
     }
@@ -1099,13 +1221,13 @@ class ClassMetadata
     private function findProviderByCriterionBeforeCompilation($key, $value)
     {
         foreach ($this->providersStore as $provider) {
-            if ($provider[$key] === $key) {
+            if ($provider[$key] === $value) {
                 return $provider;
             }
         }
 
         foreach ($this->providers as $provider) {
-            if ($provider[$key] === $key) {
+            if ($provider[$key] === $value) {
                 return $provider;
             }
         }
