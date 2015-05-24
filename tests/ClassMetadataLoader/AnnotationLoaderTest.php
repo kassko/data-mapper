@@ -36,15 +36,17 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
     {
         $this->reader = new AnnotationReader();
         $this->loader = new ClassMetadataLoader\AnnotationLoader($this->reader);
+
+        AnnotationRegistry::registerLoader('class_exists');
     }
 
     /**
-     * @test
+     * @param string $className
+     * @return ClassMetadata\ClassMetadata
      */
-    public function dataSourcesStoreValidateResult()
+    public function loadAnnotationMetadata($className)
     {
-        $className = '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\DataSourcesStore';
-        $resourcePath = '/tmp/resourcePath';
+        $resourcePath = sys_get_temp_dir();
         $resourceType = '';
         $resourceClass = '';
         $resourceMethod = '';
@@ -57,8 +59,17 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         );
 
         $loader = new ClassMetadataLoader\AnnotationLoader(new AnnotationReader());
-        AnnotationRegistry::registerLoader('class_exists');
-        $metadata = $loader->loadClassMetadata($classMetadata, $loadingCriteria, new Configuration());
+        return $loader->loadClassMetadata($classMetadata, $loadingCriteria, new Configuration());
+    }
+
+    /**
+     * @test
+     */
+    public function dataSourcesStoreValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\DataSourcesStore'
+        );
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
         /**
@@ -85,23 +96,9 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
      */
     public function objectValidateResult()
     {
-        $className = '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\Object';
-        $resourcePath = '/tmp/resourcePath';
-        $resourceType = '';
-        $resourceClass = '';
-        $resourceMethod = '';
-        $classMetadata = new ClassMetadata\ClassMetadata($className);
-        $loadingCriteria = ClassMetadataLoader\LoadingCriteria::create(
-            $resourcePath,
-            $resourceType,
-            $resourceClass,
-            $resourceMethod
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\Object'
         );
-
-        $loader = new ClassMetadataLoader\AnnotationLoader(new AnnotationReader());
-        AnnotationRegistry::registerLoader('class_exists');
-        $metadata = $loader->loadClassMetadata($classMetadata, $loadingCriteria, new Configuration());
-
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
 
         $this->assertEquals('exclude_all', $metadata->getFieldExclusionPolicy());
@@ -111,5 +108,131 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('testFieldMappingExtensionClass', $metadata->getPropertyMetadataExtensionClass());
         $this->assertEquals('testClassMappingExtensionClass', $metadata->getClassMetadataExtensionClass());
         $this->assertTrue($metadata->isPropertyAccessStrategyEnabled());
+    }
+
+    /**
+     * @test
+     */
+    public function providersStoreValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\ProvidersStore'
+        );
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        //TODO: Validate: multiple depends, 'preprocessor', 'preprocessors' and 'processor'.
+        /**
+         * @var $provider
+         */
+        $provider = $metadata->findProviderById('providers#1');
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\SourcePropertyMetadata', $provider);
+        $this->assertEquals('providers#1', $provider->id);
+        $this->assertTrue($provider->lazyLoading);
+        $this->assertTrue($provider->supplySeveralFields);
+        $this->assertInternalType('array', $provider->depends);
+        $this->assertEquals(1, count($provider->depends));
+        foreach ($provider->depends as $dependency) {
+            $this->assertEquals('depend#1', $dependency);
+        }
+        $this->assertEquals('\RuntimeException', $provider->exceptionClass);
+        $this->assertEquals('emptyArray', $provider->badReturnValue);
+        $this->assertEquals('fallbackSourceId#1', $provider->fallbackSourceId);
+        $this->assertEquals('class', $provider->class);
+        $this->assertEquals('method', $provider->method);
+        $this->assertEquals(array('arg#1'), $provider->args);
+    }
+
+    /**
+     * @test
+     */
+    public function refDefaultSourceValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\RefDefaultSource'
+        );
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('refDefaultSourceId', $metadata->getRefDefaultSource());
+    }
+
+    /**
+     * @test
+     */
+    public function customHydratorValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\CustomHydrator'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+
+        $customHydrationInfo = $metadata->getCustomHydratorInfo();
+        $this->assertInternalType('array', $customHydrationInfo);
+        $this->assertEquals('CustomHydratorClassName', $customHydrationInfo[0]);
+        $this->assertEquals('hydrateMethod', $customHydrationInfo[1]);
+        $this->assertEquals('extractMethod', $customHydrationInfo[2]);
+    }
+
+    /**
+     * @test
+     */
+    public function preExtractValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\PreExtract'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('methodName', $metadata->getOnBeforeExtract());
+    }
+
+    /**
+     * @test
+     */
+    public function postExtractValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\PostExtract'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('postExtractMethodName', $metadata->getOnAfterExtract());
+    }
+
+    /**
+     * @test
+     */
+    public function preHydrateValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\PreHydrate'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('preHydrateMethodName', $metadata->getOnBeforeHydrate());
+    }
+
+    /**
+     * @test
+     */
+    public function postHydrateValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\PostHydrate'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('postHydrateMethodName', $metadata->getOnAfterHydrate());
+    }
+
+    /**
+     * @test
+     */
+    public function objectListenersValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\ObjectListeners'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals(array('classList#1'), $metadata->getObjectListenerClasses());
     }
 }
