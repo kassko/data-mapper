@@ -5,7 +5,7 @@ namespace Kassko\DataMapper\ClassMetadata;
 /**
  * @author kko
  */
-class MethodMetadata
+class Method
 {
 	/**
      * @var string

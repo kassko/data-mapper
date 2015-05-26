@@ -63,9 +63,24 @@ class SettingsValidator implements ConfigurationInterface
 
                 ->variableNode('logger')->end()
 
-                ->variableNode('class_resolver')->defaultNull()->end()
+                ->variableNode('class_resolver')
+                    ->defaultNull()
+                    ->ifTrue(function ($v) {
+                        return null !== $v && ! $v instanceof \Kassko\ClassResolver\ClassResolverInterface && ! is_callable($v);
+                    })
+                    ->then(function ($v) {
+                        return new \Kassko\ClassResolver\CallableClassResolver($v);
+                    })
+                ->end()
 
-                ->variableNode('object_listener_resolver')->defaultNull()->end()
+                ->variableNode('object_listener_resolver')
+                ->ifTrue(function ($v) {
+                        return null !== $v && ! $v instanceof \Kassko\DataMapper\Listener\ObjectListenerResolverInterface && ! is_callable($v);
+                    })
+                ->then(function ($v) {
+                    return new \Kassko\DataMapper\Listener\CallableObjectListenerResolver($v);
+                })
+                ->end()
 
                 ->arrayNode('cache')->addDefaultsIfNotSet()
                     ->append($this->addCacheNode('metadata'))

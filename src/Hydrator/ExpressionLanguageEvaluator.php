@@ -2,7 +2,7 @@
 namespace Kassko\DataMapper\Hydrator;
 
 use Kassko\DataMapper\Expression\ExpressionContext;
-use Kassko\DataMapper\Hydrator\Exception\UnexpectedMethodArgumentException;
+use Kassko\DataMapper\Hydrator\Exception\NotResolvableValueException;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 /**
@@ -34,7 +34,7 @@ class ExpressionLanguageEvaluator
         $expressionDetected = preg_match('/expr\((.+)\)/', $arg, $matches);
 
         if (1 !== $expressionDetected) {
-            throw new UnexpectedMethodArgumentException($arg);
+            throw new NotResolvableValueException($arg);
         }
 
         return $this->expressionLanguage->evaluate($matches[1], $this->expressionContext->getData());

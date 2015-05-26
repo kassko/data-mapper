@@ -3,6 +3,8 @@
 namespace Kassko\DataMapper;
 
 use Doctrine\Common\Annotations\AnnotationReader;
+use Kassko\DataMapper\Cache\ArrayCache;
+use Kassko\DataMapper\Cache\CacheProfile;
 use Kassko\DataMapper\ClassMetadataLoader\AnnotationLoader;
 use Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader;
 use Kassko\DataMapper\ClassMetadataLoader\InnerPhpLoader;
@@ -19,6 +21,7 @@ use Kassko\DataMapper\Expression\ExpressionFunctionProvider;
 use Kassko\DataMapper\Expression\ExpressionLanguageConfigurator;
 use Kassko\DataMapper\Hydrator\ExpressionLanguageEvaluator;
 use Kassko\DataMapper\LazyLoader\LazyLoaderFactory;
+use Kassko\DataMapper\MethodExecutor\MagicMethodInvoker;
 use Kassko\DataMapper\ObjectManager;
 use Kassko\DataMapper\Registry\Registry;
 use Psr\Log\LoggerInterface;
@@ -144,8 +147,8 @@ class DataMapperBuilder
         $defaultResourceDir = isset($settings['mapping']['default_resource_dir']) ? $settings['mapping']['default_resource_dir'] : null;
         $defaultClassMetadataProviderMethod = isset($settings['mapping']['default_provider_method']) ? $settings['mapping']['default_provider_method'] : null;
 
-        $classResolver = isset($settings['class_resolver']) ? isset($settings['class_resolver']) : null;
-        $objectListenerResolver = isset($settings['object_listener_resolver']) ? isset($settings['object_listener_resolver']) : null;
+        $classResolver = isset($settings['class_resolver']) ? $settings['class_resolver'] : null;
+        $objectListenerResolver = isset($settings['object_listener_resolver']) ? $settings['object_listener_resolver'] : null;
 
         $loaders = [
             //TODO: instantiate only the loaders that are required in the settings.
@@ -287,6 +290,10 @@ class DataMapperBuilder
 
         $objectManager->setExpressionLanguageEvaluator($expressionLanguageEvaluator);
         $objectManager->setExpressionContext($expressionContext);
+
+        $objectManager->setCacheProfile(new CacheProfile(new ArrayCache));
+
+        $objectManager->setMethodInvoker(new MagicMethodInvoker);
 
         return $objectManager;
     }

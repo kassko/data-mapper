@@ -38,4 +38,24 @@ final class Object
 	* @var boolean
 	*/
     public $readOnly = false;
+
+    /**
+     * @var \Kassko\DataMapper\Annotation\Method
+     */
+    public $preHydrate = null;
+
+    /**
+     * @var \Kassko\DataMapper\Annotation\Method
+     */
+    public $postHydrate = null;
+
+    /**
+     * @var \Kassko\DataMapper\Annotation\Method
+     */
+    public $preExtract = null;
+
+    /**
+     * @var \Kassko\DataMapper\Annotation\Method
+     */
+    public $postExtract = null;
 }

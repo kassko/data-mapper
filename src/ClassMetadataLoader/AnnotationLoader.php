@@ -5,6 +5,7 @@ namespace Kassko\DataMapper\ClassMetadataLoader;
 use Doctrine\Common\Annotations\Reader as ReaderInterface;
 use Kassko\DataMapper\Annotation as DM;
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
+use Kassko\DataMapper\ClassMetadata\Method;
 use Kassko\DataMapper\Configuration\Configuration;
 
 /**
@@ -26,6 +27,7 @@ class AnnotationLoader extends AbstractLoader
     private static $idCompositePartAnnotationName = DM\IdCompositePart::class;
     private static $versionAnnotationName = DM\Version::class;
     private static $transientAnnotationName = DM\Transient::class;
+    private static $configAnnotationName = DM\Config::class;
     private static $valueObjectAnnotationName = DM\ValueObject::class;
     private static $customHydratorAnnotationName = DM\CustomHydrator::class;
     private static $objectListenersAnnotationName = DM\ObjectListeners::class;
@@ -40,6 +42,7 @@ class AnnotationLoader extends AbstractLoader
     
     private static $getterAnnotationName = DM\Getter::class;
     private static $setterAnnotationName = DM\Setter::class;
+    private static $variablesAnnotationName = DM\Variables::class;
     private static $preExtractAnnotationName = DM\PreExtract::class;
     private static $postExtractAnnotationName = DM\PostExtract::class;
     private static $preHydrateAnnotationName = DM\PreHydrate::class;
@@ -90,6 +93,11 @@ class AnnotationLoader extends AbstractLoader
                     $this->classMetadata->setPropertyAccessStrategyEnabled($annotation->propertyAccessStrategy);
                     $this->classMetadata->setPropertyMetadataExtensionClass($annotation->fieldMappingExtensionClass);
                     $this->classMetadata->setClassMetadataExtensionClass($annotation->classMappingExtensionClass);
+
+                    $this->classMetadata->setPreHydrateMethod(new Method($annotation->preHydrate->class, $annotation->preHydrate->method, $annotation->preHydrate->args));
+                    $this->classMetadata->setPostHydrateMethod(new Method($annotation->postHydrate->class, $annotation->postHydrate->method, $annotation->postHydrate->args));
+                    $this->classMetadata->setPreExtractMethod(new Method($annotation->preExtract->class, $annotation->preExtract->method, $annotation->preExtract->args));
+                    $this->classMetadata->setPostExtractMethod(new Method($annotation->postExtract->class, $annotation->postExtract->method, $annotation->postExtract->args));
                     break;
 
                 case self::$objectListenersAnnotationName:
@@ -161,6 +169,7 @@ class AnnotationLoader extends AbstractLoader
         $fieldsWithHydrationStrategy = [];
         $getters = [];
         $setters = [];
+        $variables = [];
 
         foreach ($this->objectReflectionClass->getProperties() as $reflectionProperty) {
             $mappedFieldNames[] = $mappedFieldName = $reflectionProperty->getName();
@@ -213,6 +222,10 @@ class AnnotationLoader extends AbstractLoader
                         $annotationsByKey['field'] = (array)$annotation;
                         break;
 
+                    case self::$variablesAnnotationName:
+                        $variables[$mappedFieldName] = (array)$annotation;
+                        break;
+
                     case self::$includeAnnotationName:
                         $includedFields[$mappedFieldName] = true;
                         break;
@@ -222,11 +235,20 @@ class AnnotationLoader extends AbstractLoader
                         break;
 
                     case self::$dataSourceAnnotationName:
-                        $dataSources[$mappedFieldName] = $this->dataSourceAnnotationToArray($annotation);
+
+                        $dataSource = new DataSource();
+                        $this->loadDataSource($dataSource, $annotation);
+
+                        $dataSources[$mappedFieldName] = $dataSource;
                         break;
 
                     case self::$providerAnnotationName:
-                        $providers[$mappedFieldName] = $this->providerAnnotationToArray($annotation);
+                        //Provider is a data source now.
+                        //This section should be refactored on the next significant release with "provider" removing.
+                        $dataSource = new DataSource();
+                        $this->loadDataSource($dataSource, $annotation);
+
+                        $providers[$mappedFieldName] = $dataSource;
                         break;
 
                     case self::$refSourceAnnotationName:
@@ -241,6 +263,7 @@ class AnnotationLoader extends AbstractLoader
                         $fieldsWithSourcesForbidden[$mappedFieldName] = true;
                         break;             
 
+                    case self::$configAnnotationName:
                     case self::$valueObjectAnnotationName:
 
                         $valueObjects[$mappedFieldName] = [];
@@ -358,49 +381,70 @@ class AnnotationLoader extends AbstractLoader
         if (count($setters)) {
             $this->classMetadata->setSetters($setters);
         }
+
+        if (count($variables)) {
+            $this->classMetadata->setVariables($variables);
+        }
     }
 
-    private function dataSourceAnnotationToArray(DM\DataSource $annotation)
+    private function loadDataSource($dataSource, $annotation)
     {
-        $annotation->preprocessor = (array)$annotation->preprocessor;
-        $annotation->processor = (array)$annotation->processor;      
-        
-        if (! empty($annotation->preprocessors)) {
-            $annotation->preprocessors = (array)$annotation->preprocessors;
-            foreach ($annotation->preprocessors['items'] as &$preprocessor) {
-                $preprocessor = (array)$preprocessor;
-            }
-        }
-        
-        if (! empty($annotation->processors)) {
-            $annotation->processors = (array)$annotation->processors;
-            foreach ($annotation->processors['items'] as &$processor) {
-                $processor = (array)$processor;
+        $dataSource
+        ->setId($annotation->id)
+        ->setMethod(new Method($annotation->class, $annotation->method, $annotation->args))
+        ->setLazyLoading($annotation->lazyLoading)
+        ->setSupplySeveralFields($annotation->supplySeveralFields)
+        ->setOnFail($annotation->onFail)
+        ->setExeptionClass($annotation->exceptionClass)
+        ->setBadReturnValue($annotation->badReturnValue)
+        ->setFallbackSourceId($annotation->fallbackSourceId)
+        ->setDepends($annotation->depends);
+        ->setIsDataSource(true);
+        ;
+
+        if (isset($annotation->preprocessor->method)) {
+            $dataSource->setPreprocessors(
+                new Method(
+                    $annotation->preprocessor->method->class,
+                    $annotation->preprocessor->method->method,
+                    $annotation->preprocessor->method->args
+                )
+            );
+        } elseif (isset($annotation->preprocessor->items)) {
+            foreach ($annotation->preprocessor->items as $preprocessor) {
+                $dataSource->addPreprocessor(
+                    new Method(
+                        $preprocessor->method->class,
+                        $preprocessor->method->method,
+                        $preprocessor->method->args
+                    )
+                );
             }
         }
 
-        return (array)$annotation;
+        if (isset($annotation->processor->method)) {
+            $dataSource->setProcessors(
+                new Method(
+                    $annotation->processor->method->class,
+                    $annotation->processor->method->method,
+                    $annotation->processor->method->args
+                )
+            );
+        } elseif (isset($annotation->processor->items)) {
+            foreach ($annotation->processor->items as $processor) {
+                $dataSource->addProcessor(
+                    new Method(
+                        $processor->method->class,
+                        $processor->method->method,
+                        $processor->method->args
+                    )
+                );
+            }
+        }
     }
 
-    private function providerAnnotationToArray(DM\Provider $annotation)
-    {//NOTE: Provider concept will be removed in the next significant release, So this duplicated code will be removed to.
-        $annotation->preprocessor = (array)$annotation->preprocessor;
-        $annotation->processor = (array)$annotation->processor;      
+    private function loadProvider($annotation)
+    {
         
-        if (! empty($annotation->preprocessors)) {
-            $annotation->preprocessors = (array)$annotation->preprocessors;
-            foreach ($annotation->preprocessors['items'] as &$preprocessor) {
-                $preprocessor = (array)$preprocessor;
-            }
-        }
-        
-        if (! empty($annotation->processors)) {
-            $annotation->processors = (array)$annotation->processors;
-            foreach ($annotation->processors['items'] as &$processor) {
-                $processor = (array)$processor;
-            }
-        }
-
-        return (array)$annotation;
     }
 }

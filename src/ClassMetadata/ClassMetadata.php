@@ -66,6 +66,10 @@ class ClassMetadata
     
     private $getters = [];
     private $setters = [];
+    /**
+     * @var array
+     */
+    private $variables = [];
 
     private $objectListenerClasses = [];
     private $idGetter;
@@ -77,6 +81,11 @@ class ClassMetadata
     private $onAfterExtract;
     private $onBeforeHydrate;
     private $onAfterHydrate;
+
+    private $preHydrateMethod;
+    private $postHydrateMethod;
+    private $preExtractMethod;
+    private $postExtractMethod;
 
     /**
      * @var array class methods
@@ -870,14 +879,14 @@ class ClassMetadata
         
         $sourcePropertyMetadata->preprocessors = [];
         if (isset($source['preprocessor']['method'])) {
-            $sourcePropertyMetadata->preprocessors[] = new MethodMetadata(
+            $sourcePropertyMetadata->preprocessors[] = new Method(
                 $source['preprocessor']['class'],
                 $source['preprocessor']['method'],
                 $source['preprocessor']['args']
             );
         } elseif (isset($source['preprocessors']['items'])) {
             foreach ($source['preprocessors']['items'] as $preprocessor) {
-                $sourcePropertyMetadata->preprocessors[] = new MethodMetadata(
+                $sourcePropertyMetadata->preprocessors[] = new Method(
                     $preprocessor['class'],
                     $preprocessor['method'],
                     $preprocessor['args']
@@ -887,14 +896,14 @@ class ClassMetadata
 
         $sourcePropertyMetadata->processors = [];
         if (isset($source['processor']['method'])) {
-            $sourcePropertyMetadata->processors[] = new MethodMetadata(
+            $sourcePropertyMetadata->processors[] = new Method(
                 $source['processor']['class'],
                 $source['processor']['method'],
                 $source['processor']['args']
             );
         } elseif (isset($source['processors']['items'])) {
             foreach ($source['processors']['items'] as $processor) {
-                $sourcePropertyMetadata->processors[] = new MethodMetadata(
+                $sourcePropertyMetadata->processors[] = new Method(
                     $processor['class'],
                     $processor['method'],
                     $processor['args']
@@ -1233,5 +1242,152 @@ class ClassMetadata
         }
 
         return null;
+    }
+
+    /**
+     * Gets the value of methods.
+     *
+     * @return array class methods
+     */
+    public function getMethods()
+    {
+        return $this->methods;
+    }
+
+    public function getFieldDefaultValue($mappedFieldName)
+    {
+        $data = $this->getDataForField($mappedFieldName, $this->columnDataName);
+
+        return isset($data['defaultValue']) ? $data['defaultValue'] : null;
+    }
+
+    /**
+     * Gets the value of variables.
+     *
+     * @return array
+     */
+    public function fieldHasVariables($mappedFieldName)
+    {
+        return isset($this->variables[$mappedFieldName]);
+    }
+
+    /**
+     * Gets the value of variables.
+     *
+     * @return array
+     */
+    public function getVariablesByField($mappedFieldName)
+    {
+        return $this->variables[$mappedFieldName];
+    }
+
+    /**
+     * Sets the value of variables.
+     *
+     * @param array $variables the variables
+     *
+     * @return self
+     */
+    public function setVariables(array $variables)
+    {
+        $this->variables = $variables;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of preHydrateMethod.
+     *
+     * @return Method
+     */
+    public function getPreHydrateMethod()
+    {
+        return $this->preHydrateMethod;
+    }
+
+    /**
+     * Sets the value of preHydrateMethod.
+     *
+     * @param Method $preHydrateMethod the pre hydrate method
+     *
+     * @return self
+     */
+    public function setPreHydrateMethod($preHydrateMethod)
+    {
+        $this->preHydrateMethod = $preHydrateMethod;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of postHydrateMethod.
+     *
+     * @return Method
+     */
+    public function getPostHydrateMethod()
+    {
+        return $this->postHydrateMethod;
+    }
+
+    /**
+     * Sets the value of postHydrateMethod.
+     *
+     * @param Method $postHydrateMethod the post hydrate method
+     *
+     * @return self
+     */
+    public function setPostHydrateMethod($postHydrateMethod)
+    {
+        $this->postHydrateMethod = $postHydrateMethod;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of preExtractMethod.
+     *
+     * @return Method
+     */
+    public function getPreExtractMethod()
+    {
+        return $this->preExtractMethod;
+    }
+
+    /**
+     * Sets the value of preExtractMethod.
+     *
+     * @param Method $preExtractMethod the pre extract method
+     *
+     * @return self
+     */
+    public function setPreExtractMethod($preExtractMethod)
+    {
+        $this->preExtractMethod = $preExtractMethod;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of postExtractMethod.
+     *
+     * @return Method
+     */
+    public function getPostExtractMethod()
+    {
+        return $this->postExtractMethod;
+    }
+
+    /**
+     * Sets the value of postExtractMethod.
+     *
+     * @param Method $postExtractMethod the post extract method
+     *
+     * @return self
+     */
+    public function setPostExtractMethod($postExtractMethod)
+    {
+        $this->postExtractMethod = $postExtractMethod;
+
+        return $this;
     }
 }

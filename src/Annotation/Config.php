@@ -6,12 +6,9 @@ namespace Kassko\DataMapper\Annotation;
 * @Annotation
 * @Target("PROPERTY")
 *
-* @deprecated
-* @see Config
-*
 * @author kko
 */
-final class ValueObject
+final class Config
 {
 	/**
 	* @var string

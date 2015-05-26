@@ -12,8 +12,8 @@ use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
 {
     private $propertyAccessStrategy;
-    private $classMethods;
     private $classMetadata;
+    private $classMethods;
 
     public function __construct(PropertyAccessStrategy $propertyAccessStrategy)
     {
@@ -26,10 +26,8 @@ class GetterSetterAccessStrategy implements MemberAccessStrategyInterface
             throw new \InvalidArgumentException(sprintf('Invalid object. An object was expecting but value [%s] given.', is_array($object)?'array':$object));
         }
 
-        $this->classMethods = get_class_methods($object);
         $this->classMetadata = $classMetadata;
-
-        //$this->propertyAccessStrategy->prepare($object, $classMetadata);
+        $this->classMethods = $this->classMetadata->getMethods();
     }
 
     public function getValue($object, $fieldName)

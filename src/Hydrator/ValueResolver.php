@@ -4,62 +4,71 @@ namespace Kassko\DataMapper\Hydrator;
 use Kassko\ClassResolver\ClassResolverInterface;
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 use Kassko\DataMapper\Exception\ObjectMappingException;
-use Kassko\DataMapper\Hydrator\AbstractHydrator;
-use Kassko\DataMapper\Hydrator\Exception\UnexpectedMethodArgumentException;
+use Kassko\DataMapper\Hydrator\Exception\NotResolvableValueException;
+use Kassko\DataMapper\Hydrator\Hydrator;
 
 /**
-* MethodArgumentResolver
+* ValueResolver
 *
 * @author kko
 */
-class MethodArgumentResolver
+class ValueResolver
 {
     private static $serviceMarker = '@';
     private static $serviceMarkerSize = 1;
     private static $fieldMarker = '#';
     private static $fieldMarkerSize = 1;
     
-    private $object;
+    private $object;//TODO: check if this attribute is still usefull an remove it if function resolveObject() can replaces it.
     private $hydrator;
     private $metadata;
     private $classResolver;
 
-    public function __construct(AbstractHydrator $hydrator, ClassMetadata $metadata, ClassResolverInterface $classResolver = null)
+    public function __construct(Hydrator $hydrator, ClassMetadata $metadata, ClassResolverInterface $classResolver = null)
     {        
         $this->hydrator = $hydrator;
         $this->metadata = $metadata;
         $this->classResolver = $classResolver;
     }
 
-    public function handle($arg, $object)
+    public function handle($value, $object)
     {
         $this->object = $object;
 
-        if ('##this' === $arg) {
+        if ('##this' === $value) {
             return $this->object; 
         } 
 
-        if (self::$fieldMarker === $arg[0]) {
-            return $this->resolveFieldValue(substr($arg, self::$fieldMarkerSize));
+        if ('##data' === $value) {
+            return $this->resolveRawData(); 
         } 
 
-        if (self::$serviceMarker === $arg[0]) {
-            return $this->resolveService($arg);
+        if (self::$fieldMarker === $value[0]) {
+            return $this->resolveFieldValue(substr($value, self::$fieldMarkerSize));
+        } 
+
+        if (self::$serviceMarker === $value[0]) {
+            return $this->resolveService($value);
         }
 
-        throw new UnexpectedMethodArgumentException($arg);
+        throw new NotResolvableValueException($value);
+    }
+
+    public function resolveRawData()
+    {
+        return $this->hydrator->getCurrentRawData();
     }
 
     public function resolveObject()
     {
-        return $this->object;
+        return $this->hydrator->getCurrentObject();
     }
 
     public function resolveFieldValue($fieldName)
     {
-        $argsMappedFieldName = $this->metadata->getMappedFieldName($fieldName);
+        $fieldToResolve = $this->metadata->getMappedFieldName($fieldName);
 
-        return $this->hydrator->extractProperty($this->object, $argsMappedFieldName);
+        return $this->hydrator->extractProperty($this->object, $fieldToResolve);
     }
 
     public function resolveClass($class)
@@ -72,6 +81,11 @@ class MethodArgumentResolver
         $sourceMetadata = $this->metadata->findSourceById($id);
         
         return $this->hydrator->findFromSource($sourceMetadata);
+    }
+
+    public function resolveVariable($variableName)
+    {
+        return $this->hydrator->getCurrentConfigVariableByName($variableName);
     }
 
     private function resolveService($serviceId)

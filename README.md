@@ -6,7 +6,21 @@ data-mapper
 [![Total Downloads](https://poser.pugx.org/kassko/data-mapper/downloads.png)](https://packagist.org/packages/kassko/data-mapper)
 [![Latest Unstable Version](https://poser.pugx.org/kassko/data-mapper/v/unstable.png)](https://packagist.org/packages/kassko/data-mapper)
 
-# A php library to represent raw datas like object #
+# A php mapper very tunable, cross-orm and cross-DBMS #
+
+* Objects do not extends a base entity class
+* Map nested objects
+* Support entities with value objects
+* Builder to facilitate to hydrate an object (or a collection) or to extract it
+* Abstract databases
+* Support relationship between all types of sources (relational databases, non relational, caches ...)
+* Can chain some fallbacks sources while a source is unavailable or instable
+* Can evaluate the good source to use from an expression or cancel a source (usefull with ACL)
+* Supports dynamic configuration with expression language
+* Lazy loading
+* Eager loading
+* Various mapping configuration format
+* Builder to configure at a high level the component
 
 # Installation #
 
@@ -28,9 +42,32 @@ Note that:
 
 # Usage #
 
-## Accessing existing datas ##
+* [Installation: precisions](#installation-precisions)
+* [Accessing existing datas](#accessing-existing-datas)
+* [Example with a relation with a Doctrine source](#example-with-a-relation-with-a-doctrine-source)
+* [Example with inline sources](#example-with-inline-sources)
+* [Example with conditional sources](#example-with-conditional-sources)
+* [Example using the hydrator](#example-using-the-hydrator)
+* [Component building: precisions](#component-building-precisions)
 
-### Data-mapper style ###
+
+### Installation: precisions ###
+
+If you use annotations format, register the autoloader:
+```php
+$loader = require 'vendor/autoload.php';
+
+Doctrine\Common\Annotations\AnnotationRegistry::registerLoader($loader);
+```
+
+And run the environment:
+```php
+(new Kassko\DataMapper\DataMapperBuilder)->run();
+```
+
+### Accessing existing datas ###
+
+#### Data-mapper style ####
 ```php
 $id = 1;
 //Construct a person, set an id to it and implicitly load person from the given id fetching all sources configured.
@@ -39,7 +76,7 @@ $person = new Kassko\Sample\Person($id);
 echo $person->getName();
 ```
 
-### Doctrine style ###
+#### Doctrine style ####
 ```php
 //Here some stuff to retrieve the entityManager.
 
@@ -53,7 +90,7 @@ With data-mapper, the access logic is in the configuration in object with annota
 
 Maybe you need to create an object you don't know if it already persisted or new.
 
-### Data-mapper style (explicit loading from sources configured) ###
+#### Data-mapper style (explicit loading from sources configured) ####
 ```php
 $dataMapper = (new Kassko\DataMapper\DataMapperBuilder)->instance();
 
@@ -66,7 +103,7 @@ echo $person->getName();
 
 The variant above allows not to load automatically the object if parameters are not send by the constructor but by the setters. If the client code always create already persisted object, the first version is good. If this client code sometimes create new objects (objects that are not already persisted), you should use the second version which will not attempt to load your objects that are not already existing in your storage.
 
-### Example ###
+#### Example ####
 ```php
 namespace Kassko\Sample;
 
@@ -135,7 +172,7 @@ class PersonDataSource
 }
 ```
 
-### Source annotation details ###
+#### Source annotation details ####
 * `id`. An arbitrary id for the source. Optional but necessary if you need to mentionned the source in another annotation.
 * `class`. The class of the source that return datas. If the source has some dependencies (above `PersonDataSource` has a dependency `$connection`), its instanciation can be performed by a resolver named class-resolver. See more details [here](#work-with-object-complex-to-create-like-service).
 * `method`. The name of the method that return datas. 
@@ -189,17 +226,15 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
  *          method="getData", 
  *          args="#id", 
  *          supplySeveralFields=true
- *      )
- * })
- *
- * @DM\ProvidersStore({
- *      @DM\Provider(
+ *      ),
+ *      @DM\DataSource(
  *          id="carSource", 
  *          class="Kassko\Sample\CarRepository", 
  *          method="find", 
  *          args="expr(source('personSource')['car_id'])"
  *      )
  * })
+ *
  *
  * @DM\RefDefaultSource(id="personSource")
  */
@@ -249,6 +284,13 @@ namespace Kassko\Sample;
 
 class PersonDataSource
 {
+    private $connection;
+
+    public function __construct($connection)
+    {
+        $this->connection = $connection;
+    }
+
     public function getData($id)
     {
         $data = $this->connection->executeQuery('select firstName, name, email, phone, car_id from some_table where id = ?', [$id]);
@@ -275,22 +317,10 @@ class CarRepository extends EntityRepository
 }
 ```
 
-CarProvider has some dependencies too (the entity manager), it is instantiated with a resolver class-resolver. Reminder: you can see more details [here](#work-with-object-complex-to-create-like-service).
+CarRepository has some dependencies too (the entity manager), it is instantiated with a resolver class-resolver. Reminder: you can see more details [here](#work-with-object-complex-to-create-like-service).
 
 
-# Installation: precisions #
-
-If you use annotations format, register the autoloader:
-```php
-$loader = require 'vendor/autoload.php';
-
-Doctrine\Common\Annotations\AnnotationRegistry::registerLoader($loader);
-```
-
-Run environment:
-```php
-(new Kassko\DataMapper\DataMapperBuilder)->run();
-```
+### Component building: precisions ###
 
 Run environment with class-resolver:
 ```php
@@ -299,9 +329,23 @@ Run environment with class-resolver:
     ->run()
 ;
 ```
-To create $classResolver, you can see more details [here](https://github.com/kassko/class-resolver) 
 
-# Usage: details #
+But before, create your class-resolver (example of basic resolver):
+```php
+$classResolver = function ($class, & $supported = true) {
+    if ('Kassko\Sample\PersonDataSource' === $class) {
+        return new Kassko\Sample\PersonDataSource(new Kassko\Sample\Connection);
+    }
+
+    return null;
+};
+```
+
+The settings key `class_resolver` accepts either a callable (a closure / an array like `[$class, $method]` / an invocable class) or an instance of `Kassko\ClassResolver\ClassResolverInterface`.
+
+You can see more details about `class-resolver` [here](https://github.com/kassko/class-resolver). 
+
+# Features: details #
 
 * [Basic usage](#basic-usage)
 * [Use the Result builder](#use-the-result-builder)
@@ -321,7 +365,6 @@ To create $classResolver, you can see more details [here](https://github.com/kas
 * [Choose a mapping configuration at runtime](#choose-a-mapping-configuration-at-runtime)
 * [Bind a mapping configuration to a property especially](#bind-a-mapping-configuration-to-a-property-especially)
 * [Bind a source to a property or a set of properties / hydrate object from multi-sources, multi-orm](#bind-a-source-to-a-property-or-a-set-of-properties-hydrate-object-from-multi-sources-multi-orm)
-  - [Provider](#provider)
   - [Data source](#data-source)
   - [Method arguments](#method-arguments)
   - [Lazy loading](#lazy-loading)
@@ -937,14 +980,14 @@ class Customer
         private $id;
 
         /**
-         * @DM\Field
-         * @DM\ValueObject(class="Kassko\Sample\Address", mappingResourceType="yaml", mappingResourceName="billing_address.yml")
+         * @DM\Field(class="Kassko\Sample\Address")
+         * @DM\Config(mappingResourceType="yaml", mappingResourceName="billing_address.yml")
          */
         private $billingAddress;//$billingAddress is a value object.
 
         /**
-         * @DM\Field
-         * @DM\ValueObject(class="Kassko\Sample\Address", mappingResourceType="yaml", mappingResourceName="shipping_address.yml")
+         * @DM\Field(class="Kassko\Sample\Address")
+         * @DM\Config(mappingResourceType="yaml", mappingResourceName="shipping_address.yml")
          */
         private $shippingAddress;//$shippingAddress is a value object too.
 }
@@ -1010,9 +1053,6 @@ Note that you can have value objects which contains value objects and so on. And
 
 Bind a source to a property or a set of properties / hydrate object from multi-sources, multi-orm
 -----------
-
-### Provider
-This section will be written later.
 
 ### Data source
 
@@ -1551,8 +1591,7 @@ This section will be written later.
 * [`Use a data source for a set of properties`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/data_source.md)
 * [`Hydrate nested object or nested collections`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/nested_object_hydration.md)
 * [`Use fallback data sources`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/fallback_source.md)
-* [`Use a provider`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/provider.md)
-* [`Use value objects`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/value_objects.md)
+* [`Use local config`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/value_objects.md)
 * [`Select the fields to map`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/field_exclusion_policy.md)
 * [`Getters, isser, hasser and more get methods`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/getter_setter.md)
 * [`Choose or change an object mapping configurations at runtime`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/runtime_configuration.md)

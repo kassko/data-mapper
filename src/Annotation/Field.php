@@ -30,6 +30,11 @@ final class Field
     /**
     * @var string
     */
+    public $defaultValue = null;
+
+    /**
+    * @var string
+    */
     public $readConverter;
 
     /**

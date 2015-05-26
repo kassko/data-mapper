@@ -1,11 +1,18 @@
-`0.12.5.0 - 2015/04/12 - New version`:
-* `New`: Hydrator configuration: allows to perform relations between severals sources. Relations can be between more than two sources and can also be between differents DBMS.
-* `New`: Hydrator configuration: new config item `RefDefaultSource` which allows to bind a default source to all the fields of an object. That's usefull not to duplicate on all fields the config item RefSource. It's possible to exclude some fields to be bound with another new config item `ExcludeDefaultSource`.
+`0.12.5.0 - 2015/05/24 - New version`:
+* `New`: Allows to perform relations between severals sources.
+* `New`: New config item `RefDefaultSource` which allows to bind a default source to all the fields of an object. That's usefull not to duplicate on all fields the config item RefSource. It's possible to exclude some fields to be bound with another new config item `ExcludeDefaultSource`.
 * `New`: Source loading: new trait `LoadableTrait` with a method `load` which load all properties (except properties marked to be lazy loaded). That's usefull in combination with the new config items `RefDefaultSource` and `ExcludeDefaultSource`. It's also fix an inconsistency: only the mode `lazyloading enabled` worked. We were not able to load immediately properties.
-* `New`: Hydrator configuration: new key `depends` in source config item that allows to specify some sources as dependencies. These sources will always be loaded before the dependant source.
+* `New`: Hydrator configuration: new key `depends` in source config item that allows to specify some sources as dependencies. These sources will always be triggered before the dependant source.
+* `New`: Allows variables in configuration. Variables are send from an object to another nested object and are availables in the configuration via expression language. 
+* `New`: Allows to initialize properties from configuration and expression language with the new key `defaultValue` in config item `Field`.
+* `New`: New config item `Config`. It replaces `ValueObject config` which is deprecated now.
+* `New`: Merge Provider to DataSource concept. So just use DataSource instead of Provider. Provider concept will be removed in the next significant release.
+* `New`: key config `class_resolver`: make invisible the use of `class-resolver`. You can just send a closure which is internally convert to a `Kassko\ClassResolver\CallableClassResolver`. 
+* `New`: key config `object_listener_resolver`: like for `class_resolver`, now you can just send a closure. 
+* `Fix`: Fix bug on class-resolver. We were not able to set a class-resolver. A boolean value "true" was set instead.
 * `Fix`: Fix bug on extraction. Members with no getters were never extracted.
 * `Fix`: Fix bug on extraction. Properties which are objects were not extracted.
-* `Depr`: Trait `LazyLoadableTrait` is deprecated. Use `LoadableTrait` instead. It will be removed in the next significant release.
+* `Enhanc`: Add a default cache for data sources. An array / request cache.
 
 `0.12.4.2 - 2015/04/17 - Fix version`:
 * `Fix`: Hydrator configuration: Section Field / Key type: fix inference of type, if the key `type` is not specified, an implicit conversion to the supposed good type is performed. Conversion to string was performed. 
@@ -30,7 +37,7 @@
 * `Fix`: Fix Doctrine entity incompatibility.
 
 `0.12.2.0 - 2015/03/25 - New version`:
-* `New`: Add data source key "id" which replaces the key "ref". "ref" is kept but marked deprecated. This key should be removed in the next significant release.
+* `New`: Add data source key "id" which replaces the key "ref".
 
 `0.12.1.1 - 2015/03/25 - Fix version`:
 * `Fix`: Fix bug on hydration of more than 2 nested objects from a DataSource.

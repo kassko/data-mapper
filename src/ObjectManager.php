@@ -16,6 +16,8 @@ use Kassko\DataMapper\Hydrator\HydrationStrategy\DateHydrationStrategy;
 use Kassko\DataMapper\LazyLoader\LazyLoaderFactoryInterface;
 use Kassko\DataMapper\Listener\Events;
 use Kassko\DataMapper\Listener\ObjectListenerResolverInterface;
+use Kassko\DataMapper\Cache\CacheProfile;
+use Kassko\DataMapper\MethodInvoker\MethodInvoker;
 use Kassko\DataMapper\Query\CacheConfig;
 use Kassko\DataMapper\Query\ResultManager;
 use Psr\Log\LoggerInterface;
@@ -44,8 +46,18 @@ class ObjectManager
      */
     private $expressionContext;
     private $hydratorInstances = [];
-    private static $objectLoaded = [];
-    private $identityMap = [];
+    /**
+     * @var array
+     */
+    private static $identityMap = [];
+    /**
+     * @var MethodInvoker
+     */
+    private $methodInvoker;
+    /**
+     * @var CacheProfile
+     */
+    private $cacheProfile;
 
     private static $eventToRegisterData = [
         Events::OBJECT_PRE_CREATE => 'preCreate',
@@ -73,34 +85,54 @@ class ObjectManager
         return new static;
     }
 
+    private function fixObjectInIdentityMap($object, $objectHash)
+    {
+        //Checks if hash is orphan.
+        //This is possible because when a object dead, it's hash is reused on another object. 
+        
+        if (false === $object->__isRegistered) {
+            unset(self::$identityMap[$objectHash]); 
+        }
+    }
+
+    private function registerObjectToIdentityMap($object, $objectHash)
+    {
+        if (! isset(self::$identityMap[$objectHash])) {
+            self::$identityMap[$objectHash] = [];
+            $object->__isRegistered = true;
+        }
+    }
+
     public function isPropertyLoaded($object, $propertyName)
     {
         $objectHash = spl_object_hash($object);
-        if (false === $object->__isRegistered) {//Checks if hash is orphan.
-        //This is possible because when a object dead, it's hash is reused on another object. 
-            unset(self::$objectLoaded[$objectHash]); 
-        }
+        $this->fixObjectInIdentityMap($object, $objectHash);
 
-        return isset(self::$objectLoaded[$objectHash][$propertyName]);
+        return isset(self::$identityMap[$objectHash][$propertyName]);
     }
 
     public function markPropertyLoaded($object, $propertyName)
     {
         $objectHash = spl_object_hash($object);
 
-        if (! isset(self::$objectLoaded[$objectHash])) {
-            self::$objectLoaded[$objectHash] = [];
-            $object->__isRegistered = true;
-        }
-        self::$objectLoaded[$objectHash][$propertyName] = true;
+        $this->registerObjectToIdentityMap($object, $objectHash);
+        self::$identityMap[$objectHash][$propertyName] = true;
 
         //Properties which has the same provider as $propertyName are marked loaded.
         $metadata = $this->getMetadata(get_class($object));
         foreach ($metadata->getFieldsWithSameDataSource($propertyName) as $otherLoadedPropertyName) {
-            self::$objectLoaded[$objectHash][$otherLoadedPropertyName] = true;
+            self::$identityMap[$objectHash][$otherLoadedPropertyName] = true;
         }
     }
 
+    public function addVariables($object, array $variables)
+    {
+        $objectHash = spl_object_hash($object);
+
+        $this->registerObjectToIdentityMap($object, $objectHash);
+        self::$identityMap[$objectHash]->variables = $variables;
+    }
+   
     /**
      * Retrieve other properties loaded when $propertyName is loaded.
      *
@@ -205,72 +237,17 @@ class ObjectManager
         return $hydrator;
     }
 
-    /**
-     * Find an object from a FQCN and an identity.
-     *
-     * @param string $objectClass FQCN of object to find.
-     * @param mixed $id Identity of object to find.
-     * @param mixed $findMethod Method witch find object.
-     *
-     * @return object|null Return the object or null if it's not found.
-     */
-    /*public function find($objectClass, $id, $findMethod, $repositoryClass)
+    public function findFromSource($sourceId, $sourceClass, $sourceMethod, $methodArgs)
     {
-        if (! isset($repositoryClass)) {
-            $repo = $this->getRepository($objectClass);
-        } else {
-            $repo = $this->classResolver ? $this->classResolver->resolve($repositoryClass) : new $repositoryClass;
-        }
+        $source = $this->classResolver ? $this->classResolver->resolve($sourceClass) : new $sourceClass;
+        $cacheKey = $sourceId . $sourceClass . $sourceMethod;
 
-        if (! method_exists($repo, $findMethod) || ! is_callable([$repo, $findMethod])) {
-            throw new \BadMethodCallException(
-                sprintf(
-                    "Error on method call %s::%s",
-                    get_class($repo), $findMethod
-                )
-            );
-        }
-
-        return $repo->$findMethod($id);
-    }*/
-
-    /**
-     * Find a collection from a FQCN.
-     *
-     * @param string $objectClass FQCN of object to find.
-     * @param mixed $findMethod Method witch find collection.
-     *
-     * @return object|null Renvoi the collection or null if it's not found.
-     */
-    /*public function findCollection($objectClass, $findMethod, $repositoryClass)
-    {
-        if (! isset($repositoryClass)) {
-            $repo = $this->getRepository($objectClass);
-        } else {
-            $repo = $this->classResolver ? $this->classResolver->resolve($repositoryClass) : new $repositoryClass;
-        }
-
-        if (! method_exists($repo, $findMethod) || ! is_callable([$repo, $findMethod])) {
-            throw new \BadMethodCallException(
-                sprintf(
-                    "Error on method call %s::%s",
-                    get_class($repo), $findMethod
-                )
-            );
-        }
-
-        return $repo->$findMethod();
-    }*/
-
-    public function findFromSource($customSourceClass, $customSourceMethod, $args)
-    {
-        $customSource = $this->classResolver ? $this->classResolver->resolve($customSourceClass) : new $customSourceClass;
-
-        if (! method_exists($customSource, '__call') && ! (method_exists($customSource, $customSourceMethod) && is_callable([$customSource, $customSourceMethod]))) {
-            throw new \BadMethodCallException(sprintf('Failure on call method "%s::%s".', get_class($customSource), $customSourceMethod));
-        }
-
-        return call_user_func_array([$customSource, $customSourceMethod], $args);
+        return $this->methodInvoker->invoke(
+            $source, 
+            $sourceMethod, 
+            $methodArgs, 
+            $this->cacheProfile->setKey($cacheKey)->derive()
+        );
     }
 
     public function getRepository($objectClass)
@@ -439,6 +416,54 @@ class ObjectManager
     public function setExpressionContext(ExpressionContext $expressionContext)
     {
         $this->expressionContext = $expressionContext;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of methodInvoker.
+     *
+     * @return MethodInvoker
+     */
+    public function getMethodInvoker()
+    {
+        return $this->methodInvoker;
+    }
+
+    /**
+     * Sets the value of methodInvoker.
+     *
+     * @param MethodInvoker $methodInvoker the method invoker
+     *
+     * @return self
+     */
+    public function setMethodInvoker(MethodInvoker $methodInvoker)
+    {
+        $this->methodInvoker = $methodInvoker;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of cacheProfile.
+     *
+     * @return CacheProfile
+     */
+    public function getCacheProfile()
+    {
+        return $this->cacheProfile;
+    }
+
+    /**
+     * Sets the value of cacheProfile.
+     *
+     * @param CacheProfile $cacheProfile the cache manager
+     *
+     * @return self
+     */
+    public function setCacheProfile(CacheProfile $cacheProfile)
+    {
+        $this->cacheProfile = $cacheProfile;
 
         return $this;
     }

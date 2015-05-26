@@ -9,7 +9,7 @@ use Kassko\DataMapper\Configuration\ObjectKey;
 use Kassko\DataMapper\Configuration\RuntimeConfiguration;
 use Kassko\DataMapper\Exception\NotFoundMemberException;
 use Kassko\DataMapper\Exception\ObjectMappingException;
-use Kassko\DataMapper\Hydrator\Exception\UnexpectedMethodArgumentException;
+use Kassko\DataMapper\Hydrator\Exception\NotResolvableValueException;
 use Kassko\DataMapper\Hydrator\ExpressionLanguageEvaluator;
 use Kassko\DataMapper\Hydrator\MemberAccessStrategy;
 use Kassko\DataMapper\Hydrator\MethodArgumentResolver;
@@ -64,7 +64,7 @@ class Hydrator extends AbstractHydrator
      * Retrieve an object instance from it's class name.
      * @var MethodArgumentResolver
      */
-    private $methodArgumentResolver;
+    private $valueResolver;
 
     /**
      * Evaluate expression language.
@@ -79,6 +79,23 @@ class Hydrator extends AbstractHydrator
     private $expressionContext;
 
     /**
+     * All the variables used in a object mapping configuration.
+     * @var array
+     */
+    private $currentConfigVariables = [];
+
+    /**
+     * The context of the current hydration.
+     * @var HydratorContext
+     */
+    private $currentHydrationContext;
+
+    /**
+     * @var MethodInvoker
+     */
+    private $methodInvoker;
+
+    /**
     * Constructor
     *
     * @param ObjectManager $objectManager The ObjectManager to use
@@ -91,6 +108,7 @@ class Hydrator extends AbstractHydrator
         $this->isPropertyAccessStrategyOn = $isPropertyAccessStrategyOn;
         $this->expressionLanguageEvaluator = $this->objectManager->getExpressionLanguageEvaluator();
         $this->expressionContext = $this->objectManager->getExpressionContext();
+        $this->methodInvoker = $this->objectManager->getMethodInvoker();
     }
 
     public function setClassResolver(ClassResolverInterface $classResolver)
@@ -145,6 +163,10 @@ class Hydrator extends AbstractHydrator
 
         $data = [];
         if (! $this->metadata->hasCustomHydrator()) {
+
+            if ($method = $this->metadata->getPreExtractMethod()) {
+                $this->executeMethod($object, $method->class, $method->method, $method->args);
+            }
 
             foreach ($originalFieldNames as $originalFieldName) {
                 $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
@@ -235,6 +257,10 @@ class Hydrator extends AbstractHydrator
             $data = array_merge($data, $valueObjectData);
         }
 
+        if ($method = $this->metadata->getPostExtractMethod()) {
+            $this->executeMethod($object, $method->class, $method->method, $method->args);
+        }
+
         return $data;
     }
 
@@ -243,12 +269,27 @@ class Hydrator extends AbstractHydrator
     *
     * @param array $data
     * @param object $object
-    * @throws RuntimeException
     * @return object
     */
     protected function doHydrate(array $data, $object)
     {
+        $previousHydrationContext = $this->currentHydrationContext;
+        $this->currentHydrationContext = new CurrentHydrationContext($data, $object);
+
+        foreach ($this->getMappedFieldNames() as $mappedFieldName) {
+            $defaultValue = $this->metadata->getFieldDefaultValue($mappedFieldName);
+
+            if (null !== $defaultValue) {
+                $this->resolveValue($defaultValue, $object);
+                $this->memberAccessStrategy->setValue($defaultValue, $object, $mappedFieldName);   
+            }
+        }
+
         if (! $this->metadata->hasCustomHydrator()) {
+
+            if ($method = $this->metadata->getPreHydrateMethod()) {
+                $this->executeMethod($object, $method->class, $method->method, $method->args);
+            }
 
             foreach ($data as $originalFieldName => $value) {
                 $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
@@ -293,6 +334,12 @@ class Hydrator extends AbstractHydrator
         foreach ($this->metadata->getFieldsWithValueObjects() as $mappedFieldName) {
             $this->walkValueObjectHydration($mappedFieldName, $object, $data);
         }
+
+        if ($method = $this->metadata->getPostHydrateMethod()) {
+            $this->executeMethod($object, $method->class, $method->method, $method->args);
+        }
+
+        $this->currentHydrationContext = $previousHydrationContext;
 
         return $object;
     }
@@ -343,12 +390,12 @@ class Hydrator extends AbstractHydrator
     public function findFromSource(SourcePropertyMetadata $sourceMetadata)
     {
         if (! isset($sourceMetadata->fallbackSourceId)) {
-            return $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+            return $this->objectManager->findFromSource($sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
         }
 
         if (SourcePropertyMetadata::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->onFail) {
             
-            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+            $data = $this->objectManager->findFromSource($sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
             if ($sourceMetadata->areDataInvalid($data)) {
                 $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
                 return $this->findFromSource($sourceMetadata);
@@ -359,7 +406,7 @@ class Hydrator extends AbstractHydrator
 
         //Else SourcePropertyMetadata::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->onFail.
         try {
-            $data = $this->objectManager->findFromSource($sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+            $data = $this->objectManager->findFromSource($sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
         } catch (Exception $e) {
             if (! $e instanceof $sourceMetadata->exceptionClass) {
                 throw $e;
@@ -388,19 +435,40 @@ class Hydrator extends AbstractHydrator
 
         if ($fieldClass = $this->metadata->getClassOfMappedField($mappedFieldName)) {
 
-            if (! is_array($value)) {
-                throw new ObjectMappingException(
+            if (is_object($value) {
+                if (! $value instanceof $fieldClass) {
+                    throw new ObjectMappingException(
                         sprintf(
-                            'Cannot hydrate field "%s" of class "%s" from raw data.'
-                            . ' Raw data should be an array but got "%s".', 
+                            'The class of field "%s::%s" is "%s".'
+                            . ' Cannot cast "%s" to "%s".', 
+                            get_class($object),
                             $mappedFieldName,
-                            $fieldClass,
-                            is_object($value) ? get_class($value) : gettype($value)
+                            get_class($value),
+                            get_class($value),
+                            $fieldClass
                         )
                     );
+                }
+                 
+                $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);
+                return true;
             }
 
-            $fieldHydrator = $this->objectManager->createHydratorFor($fieldClass);
+            if (! is_array($value)) {
+                throw new ObjectMappingException(
+                    sprintf(
+                        'Cannot hydrate field "%s::%s" from raw data.'
+                        . ' Raw data should be an array but got "%s".', 
+                        $fieldClass,
+                        $mappedFieldName,
+                        is_object($value) ? get_class($value) : gettype($value)
+                    )
+                );
+            }
+
+            $hasConfig = $this->metadata->isValueObject($mappedFieldName);
+            $fieldHydrator = $this->createFieldHydrator($fieldClass, $object, $mappedFieldName, $hasConfig);
+
             reset($value);
 
             if (0 !== count($value) && ! is_numeric(key($value))) {
@@ -414,7 +482,11 @@ class Hydrator extends AbstractHydrator
                     $fieldResult[] = $fieldHydrator->hydrate($record, $field);                   
                 }
                 $this->memberAccessStrategy->setValue($fieldResult, $object, $mappedFieldName);
-            }     
+            }    
+
+            if ($hasConfig) {
+                $this->popRuntimeConfiguration(); 
+            }
 
             return true;       
         } 
@@ -447,6 +519,25 @@ class Hydrator extends AbstractHydrator
         return true;
     }
 
+    protected function createFieldHydrator($fieldClass, $object, $mappedFieldName, $hasConfig)
+    {
+        if (! $hasConfig) {
+            $fieldHydrator = $this->objectManager->createHydratorFor($fieldClass);
+        } else {
+            list($voClassName, $voResourceName, $voResourceType) = $this->metadata->getValueObjectInfo($mappedFieldName);
+            $objectKey = $this->pushRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResourceName, $voResourceType);
+            $fieldHydrator = $this->objectManager->createHydratorFor($objectKey);
+        }
+
+        if ($this->metadata->fieldHasVariables($mappedFieldName)) {
+            $fieldHydratorConfigVariables = $this->metadata->getVariablesByField($mappedFieldName);
+            $this->resolveValues($fieldHydratorConfigVariables, $object);
+            $fieldHydrator->setCurrentConfigVariables(array_merge($this->currentConfigVariables, $fieldHydratorConfigVariables));    
+        }
+
+        return $fieldHydrator;
+    }
+
     protected function walkHydrationByDataSource($mappedFieldName, $object, $enforceLoading)
     {
         if ($this->metadata->isNotManaged($mappedFieldName)) {
@@ -471,7 +562,7 @@ class Hydrator extends AbstractHydrator
 
     protected function walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading)
     {
-        $this->resolveMethodArgs($sourceMetadata->args, $object);
+        $this->resolveValues($sourceMetadata->args, $object);
         $data = $this->findFromSource($sourceMetadata);
             
         $this->executePreprocessors($sourceMetadata, $object);
@@ -486,7 +577,7 @@ class Hydrator extends AbstractHydrator
                 if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
                     continue;
                 }
-
+                
                 $this->walkHydration($otherMappedFieldName, $object, $value, $data);                    
             }
         }
@@ -529,7 +620,7 @@ class Hydrator extends AbstractHydrator
 
     protected function walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading)
     {
-        $this->resolveMethodArgs($sourceMetadata->args, $object);
+        $this->resolveValues($sourceMetadata->args, $object);
         $data = $this->findFromSource($sourceMetadata);
 
         $this->executePreprocessors($sourceMetadata, $object);
@@ -584,27 +675,27 @@ class Hydrator extends AbstractHydrator
         return $result;
     }
 
-    protected function resolveMethodArgs(array &$args, $object)
+    protected function resolveValues(array &$args, $object)
     {
         if (0 === count($args)) {
             return;
         }
 
-        $this->expressionContext['arg_resolver'] = $this->methodArgumentResolver;
+        $this->expressionContext['value_resolver'] = $this->valueResolver;
         $this->expressionContext['this'] = $object;
 
         foreach ($args as &$arg) {
             try {
-                $arg = $this->methodArgumentResolver->handle($arg, $object);
+                $arg = $this->valueResolver->handle($arg, $object);
                 continue;//$arg is resolved because no exception is thrown. So next loop.
-            } catch (UnexpectedMethodArgumentException $e) {              
+            } catch (NotResolvableValueException $e) {              
             }
             
             //$arg is not resolved, we try to resolve it with another resolver.
             try {
-                $arg = $this->expressionLanguageEvaluator->handle($arg, $object);
+                $arg = $this->expressionLanguageEvaluator->handle($arg);
                 //$arg is resolved with the second resolver.
-            } catch (UnexpectedMethodArgumentException $e) {
+            } catch (NotResolvableValueException $e) {
                 //$arg is not resolved. We assumes it doesn't need to be resolved. Next loop.
             }
         }
@@ -622,29 +713,27 @@ class Hydrator extends AbstractHydrator
     private function executePreprocessors(SourcePropertyMetadata $sourceMetadata, $object)
     {
         foreach ($sourceMetadata->preprocessors as $preprocessor) {
-            if ('##this' === $preprocessor->class) {
-                $preprocessorInstance = $object;
-            } else {
-                $preprocessorInstance = $this->classResolver ? $this->classResolver->resolve($preprocessor->class) : new $preprocessor->class;
-            }
-
-            $this->resolveMethodArgs($preprocessor->args, $object);
-            call_user_func_array([$preprocessorInstance, $preprocessor->method], $preprocessor->args);
+            $this->executeMethod($object, $preprocessor->class, $preprocessor->method, $preprocessor->args);
         }
     }
 
     private function executeProcessors(SourcePropertyMetadata $sourceMetadata, $object)
     {
         foreach ($sourceMetadata->processors as $processor) {
-            if ('##this' === $processor->class) {
-                $processorInstance = $object;
-            } else {
-                $processorInstance = $this->classResolver ? $this->classResolver->resolve($processor->class) : new $processor->class;
-            }
-
-            $this->resolveMethodArgs($processor->args, $object);
-            call_user_func_array([$processorInstance, $processor->method], $processor->args);
+            $this->executeMethod($object, $processor->class, $processor->method, $processor->args);
         }
+    }
+
+    private function executeMethod($object, $class, $method, $args)
+    {
+        if ('##this' === $class) {
+            $instance = $object;
+        } else {
+            $instance = $this->classResolver ? $this->classResolver->resolve($class) : new $class;
+        }
+
+        $this->resolveValues($args, $object);
+        $this->methodInvoker->invoke($instance, $method, $args);
     }
 
     protected function pushRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResource, $voResourceType)
@@ -670,7 +759,7 @@ class Hydrator extends AbstractHydrator
         if (isset($object)) {
             $this->propertyAccessStrategy = $this->createPropertyAccessStrategy($object);
             $this->memberAccessStrategy = $this->createMemberAccessStrategy($object, $this->propertyAccessStrategy); 
-            $this->methodArgumentResolver = new MethodArgumentResolver($this, $this->metadata, $this->classResolver);
+            $this->valueResolver = new MethodArgumentResolver($this, $this->metadata, $this->classResolver);
         }
     }
 
@@ -693,5 +782,59 @@ class Hydrator extends AbstractHydrator
         $propertyAccessStrategy->prepare($object, $this->metadata);
 
         return $propertyAccessStrategy;
+    }
+
+    /**
+     * Gets all the variables used in a object mapping configuration.
+     *
+     * @return array
+     */
+    public function getCurrentConfigVariableByName($variableKey)
+    {
+        if (! isset($this->currentConfigVariables[$variableKey])) {
+            throw new ObjectMappingException(
+                sprintf(
+                    'The current config variables do not contains key "%s". Availables keys are "[%s]".',
+                    $variableKey,
+                    implode(',', array_keys($this->currentConfigVariables))
+                )
+            );
+        }
+        
+        return $this->currentConfigVariables[$variableKey];
+    }
+
+    /**
+     * Sets all the variables used in a object mapping configuration.
+     *
+     * @param array $currentConfigVariables the current config variables
+     *
+     * @return self
+     */
+    public function setCurrentConfigVariables(array $currentConfigVariables)
+    {
+        $this->currentConfigVariables = $currentConfigVariables;
+
+        return $this;
+    }
+
+    /**
+     * Gets the raw data currently hydrated.
+     *
+     * @return array
+     */
+    public function getCurrentRawData()
+    {
+        return $this->currentHydrationContext->getData();
+    }
+
+    /**
+     * Gets the raw data currently hydrated.
+     *
+     * @return array
+     */
+    public function getCurrentObject()
+    {
+        return $this->currentHydrationContext->getObject();
     }
 }
