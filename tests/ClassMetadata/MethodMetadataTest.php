@@ -5,7 +5,7 @@ use Kassko\DataMapper\ClassMetadata;
 
 /**
  * Class MethodMetadataTest
- * @package Kassko\DataMapperTest\ClassMetadata
+ * 
  * @author Alexey Rusnak
  */
 class MethodMetadataTest extends \PHPUnit_Framework_TestCase

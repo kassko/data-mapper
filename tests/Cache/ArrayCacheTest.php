@@ -5,7 +5,7 @@ use Kassko\DataMapper\Cache;
 
 /**
  * Class ArrayCache
- * @package Kassko\DataMapperTest\Cache
+ *
  * @author Alexey Rusnak
  */
 class ArrayCache extends \PHPUnit_Framework_TestCase

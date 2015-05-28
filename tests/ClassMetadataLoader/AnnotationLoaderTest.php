@@ -9,7 +9,7 @@ use Kassko\DataMapper\Configuration\Configuration;
 
 /**
  * Class AbstractLoaderTest
- * @package Kassko\DataMapperTest\ClassMetadataLoader
+ * 
  * @author Alexey Rusnak
  */
 class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase

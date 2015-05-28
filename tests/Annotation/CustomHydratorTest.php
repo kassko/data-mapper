@@ -5,7 +5,7 @@ use Kassko\DataMapper\Annotation;
 
 /**
  * Class CustomHydratorTest
- * @package Kassko\DataMapperTest\Annotation
+ *
  * @author Alexey Rusnak
  */
 class CustomHydratorTest extends \PHPUnit_Framework_TestCase

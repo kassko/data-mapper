@@ -9,7 +9,7 @@ use Symfony\Component\EventDispatcher;
 
 /**
  * Class ClassMetadataFactoryTest
- * @package Kassko\DataMapperTest\ClassMetadata
+ * 
  * @author Alexey Rusnak
  */
 class ClassMetadataFactoryTest extends \PHPUnit_Framework_TestCase

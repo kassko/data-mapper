@@ -6,7 +6,7 @@ use Kassko\DataMapper\ClassMetadataLoader\Exception\NotFoundLoaderException;
 
 /**
  * Class NotFoundLoaderExceptionTest
- * @package Kassko\DataMapperTest\ClassMetadataLoader\Exception
+ * 
  * @author Alexey Rusnak
  */
 class NotFoundLoaderExceptionTest extends \PHPUnit_Framework_TestCase

@@ -6,7 +6,7 @@ use Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Loader;
 
 /**
  * Class AbstractLoaderTest
- * @package Kassko\DataMapperTest\ClassMetadataLoader
+ * 
  * @author Alexey Rusnak
  */
 class AbstractLoaderTest extends \PHPUnit_Framework_TestCase
