@@ -8,7 +8,7 @@ use Kassko\DataMapper\ClassMetadata;
 use Kassko\DataMapper\Configuration\Configuration;
 
 /**
- * Class AbstractLoaderTest
+ * Class AnnotationLoaderTest
  * 
  * @author Alexey Rusnak
  */

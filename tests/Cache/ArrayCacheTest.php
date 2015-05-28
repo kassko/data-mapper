@@ -4,11 +4,11 @@ namespace Kassko\DataMapperTest\Cache;
 use Kassko\DataMapper\Cache;
 
 /**
- * Class ArrayCache
+ * Class ArrayCacheTest
  *
  * @author Alexey Rusnak
  */
-class ArrayCache extends \PHPUnit_Framework_TestCase
+class ArrayCacheTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @var Cache\ArrayCache
