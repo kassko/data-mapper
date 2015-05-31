@@ -131,7 +131,6 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedExceptionMessage Argument 1 passed to Kassko\DataMapper\ClassMetadata\ClassMetadata::setOriginalFieldNames() must be of the type array, object given
      * @expectedException \PHPUnit_Framework_Error
      */
     public function setOriginalFieldNamesValidateTypeHinting()
@@ -169,7 +168,6 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedExceptionMessage Argument 1 passed to Kassko\DataMapper\ClassMetadata\ClassMetadata::setMappedDateFieldNames() must be of the type array, object given
      * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedDateFieldNamesValidateTypeHinting()
@@ -199,7 +197,6 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedExceptionMessage Argument 1 passed to Kassko\DataMapper\ClassMetadata\ClassMetadata::setMappedFieldNames() must be of the type array, object given
      * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedFieldNamesValidateTypeHinting()
@@ -221,7 +218,6 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedExceptionMessage Argument 1 passed to Kassko\DataMapper\ClassMetadata\ClassMetadata::setFieldsDataByKey() must be of the type array, object given
      * @expectedException \PHPUnit_Framework_Error
      */
     public function setFieldsDataByKeyValidateTypeHinting()
@@ -271,7 +267,6 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedExceptionMessage Argument 1 passed to Kassko\DataMapper\ClassMetadata\ClassMetadata::setMappedIdCompositePartFieldName() must be of the type array, object given
      * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedIdCompositePartFieldNameValidateTypeHinting()
@@ -321,7 +316,6 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedExceptionMessage Argument 1 passed to Kassko\DataMapper\ClassMetadata\ClassMetadata::setToOriginal() must be of the type array, object given
      * @expectedException \PHPUnit_Framework_Error
      */
     public function setToOriginalValidateTypeHinting()
@@ -351,7 +345,6 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedExceptionMessage Argument 1 passed to Kassko\DataMapper\ClassMetadata\ClassMetadata::setToMapped() must be of the type array, object given
      * @expectedException \PHPUnit_Framework_Error
      */
     public function setToMappedValidateTypeHinting()
@@ -487,7 +480,6 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedExceptionMessage Argument 1 passed to Kassko\DataMapper\ClassMetadata\ClassMetadata::setValueObjects() must be of the type array, object given
      * @expectedException \PHPUnit_Framework_Error
      */
     public function setValueObjectsValidateTypeHinting()
