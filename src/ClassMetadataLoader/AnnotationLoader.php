@@ -99,7 +99,7 @@ class AnnotationLoader extends AbstractLoader
                 case self::$dataSourcesStoreAnnotationName:
 
                     foreach ($annotation->items as &$item) {
-                        $item = (array)$item;
+                        $item = $this->dataSourceAnnotationToArray($item);
                     }
                     $this->classMetadata->setDataSourcesStore($annotation->items);
                     break;
@@ -222,19 +222,8 @@ class AnnotationLoader extends AbstractLoader
                         break;
 
                     case self::$dataSourceAnnotationName:
-                        $annotation->preprocessor = (array)$annotation->preprocessor;
-                        $annotation->processor = (array)$annotation->processor;      
-                        
-                        $annotation->preprocessors = (array)$annotation->preprocessors;
-                        foreach ($annotation->preprocessors['items'] as &$preprocessor) {
-                            $preprocessor = (array)$preprocessor;
-                        }
-                        
-                        foreach ($annotation->processors as &$processor) {
-                            $processor = (array)$processor;
-                        }
 
-                        $dataSources[$mappedFieldName] = (array)$annotation;
+                        $dataSources[$mappedFieldName] = $this->dataSourceAnnotationToArray($annotation);
                         break;
 
                     case self::$providerAnnotationName:
@@ -382,5 +371,27 @@ class AnnotationLoader extends AbstractLoader
         if (count($setters)) {
             $this->classMetadata->setSetters($setters);
         }
+    }
+
+    private function dataSourceAnnotationToArray(DM\DataSource $annotation)
+    {
+        $annotation->preprocessor = (array)$annotation->preprocessor;
+        $annotation->processor = (array)$annotation->processor;      
+        
+        if (! empty($annotation->preprocessors)) {
+            $annotation->preprocessors = (array)$annotation->preprocessors;
+            foreach ($annotation->preprocessors['items'] as &$preprocessor) {
+                $preprocessor = (array)$preprocessor;
+            }
+        }
+        
+        if (! empty($annotation->processors)) {
+            $annotation->processors = (array)$annotation->processors;
+            foreach ($annotation->processors['items'] as &$processor) {
+                $processor = (array)$processor;
+            }
+        }
+
+        return (array)$annotation;
     }
 }

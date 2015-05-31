@@ -20,23 +20,10 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
     protected $className = '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotations';
 
     /**
-     * @var ClassMetadataLoader\AnnotationLoader
-     */
-    protected $loader;
-
-    /**
-     * @var AnnotationReader
-     */
-    protected $reader;
-
-    /**
      * @return void
      */
     public function setUp()
     {
-        $this->reader = new AnnotationReader();
-        $this->loader = new ClassMetadataLoader\AnnotationLoader($this->reader);
-
         AnnotationRegistry::registerLoader('class_exists');
     }
 
@@ -85,10 +72,48 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('emptyString', $dataSource->badReturnValue);
         $this->assertEquals('testFallbackSourceId', $dataSource->fallbackSourceId);
         $this->assertEquals(array('#id'), $dataSource->args);
-        //TODO: Validate: multiple depends, 'preprocessor' and 'processor'.
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\MethodMetadata', $dataSource->preprocessors[0]);
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\MethodMetadata', $dataSource->processors[0]);
+       
         $this->assertEquals(array('#dependsFirst'), $dataSource->depends);
         $this->assertTrue($dataSource->supplySeveralFields);
         $this->assertTrue($dataSource->lazyLoading);
+    }
+
+    /**
+     * @test
+     */
+    public function dataSourcesStoreMultiplesDependsValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\DataSourcesStoreMultiplesDepends'
+        );
+
+        /**
+         * @var ClassMetadata\SourcePropertyMetadata $dataSource
+         */
+        $dataSource = $metadata->findDataSourceById('personSource');
+
+        $this->assertEquals(array('#dependsFirst', '#dependsSecond', '#dependsThird'),  $dataSource->depends);
+    }
+
+    /**
+     * @test
+     */
+    public function dataSourcesStoreMultiplesProcessorsValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\DataSourcesStoreMultiplesProcessors'
+        );
+
+        /**
+         * @var ClassMetadata\SourcePropertyMetadata $dataSource
+         */
+        $dataSource = $metadata->findDataSourceById('personSource');
+
+        $this->assertContainsOnlyInstancesOf('\Kassko\DataMapper\ClassMetadata\MethodMetadata', $dataSource->preprocessors);
+        $this->assertContainsOnlyInstancesOf('\Kassko\DataMapper\ClassMetadata\MethodMetadata', $dataSource->processors);
     }
 
     /**

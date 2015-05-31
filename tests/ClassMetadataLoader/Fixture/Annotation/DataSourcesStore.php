@@ -16,7 +16,10 @@ use Kassko\DataMapper\Annotation as DM;
  *          exceptionClass="\RuntimeException",
  *          badReturnValue="emptyString",
  *          fallbackSourceId="testFallbackSourceId",
- *          depends="#dependsFirst"
+ *          depends="#dependsFirst",
+ *
+ *          preprocessor = @DM\Method(method="somePreprocessor"),
+ *          processor = @DM\Method(method="someProcessor"),
  *      )
  * })
  */
