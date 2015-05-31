@@ -557,7 +557,6 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedExceptionMessage Argument 1 passed to Kassko\DataMapper\ClassMetadata\ClassMetadata::setMappedTransientFieldNames() must be of the type array, object given
      * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedTransientFieldNamesValidateTypeHinting()
