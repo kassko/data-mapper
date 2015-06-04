@@ -1,4 +1,6 @@
 /vendor/
+/bin
 composer.lock
 composer.phar
 composer
+/.idea

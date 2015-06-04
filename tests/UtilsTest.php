@@ -1,7 +1,14 @@
 <?php
 
+namespace Kassko\DataMapperTest;
+
 use Kassko\DataMapper\Utils;
 
+/**
+ * Class UtilsTest
+ * 
+ * @author kko
+ */
 class UtilsTest extends \PHPUnit_Framework_TestCase
 {
     /**

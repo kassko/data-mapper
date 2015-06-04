@@ -23,6 +23,9 @@ Note that:
 * the fourth for hotfix
 * the first for new API or to go from pre-release to release (from 0 to 1)
 
+# Run tests #
+./bin/phpunit
+
 # Usage #
 
 ## Accessing existing datas ##
