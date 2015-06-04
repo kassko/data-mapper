@@ -7,7 +7,7 @@ use Kassko\DataMapper\Annotation as DM;
  * @DM\ProvidersStore({
  *      @DM\Provider(
  *          id="personSource",
- *			depends={"#dependsFirst", "#dependsSecond", "#dependsThird"},
+ *          depends={"#dependsFirst", "#dependsSecond", "#dependsThird"},
  *      )
  * })
  */
