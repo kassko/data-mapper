@@ -74,7 +74,7 @@ class SourcePropertyMetadata
     			return empty($data);
     		
     		default:
-    			throw new DomainException(sprintf('The bad return value "%s" is not allowed.'));
+    			throw new DomainException(sprintf('The bad return value "%s" is not allowed.', $data));
     	}
     }
 

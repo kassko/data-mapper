@@ -169,6 +169,41 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
+    public function providersStoreMultiplesDependsValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\ProvidersStoreMultiplesDepends'
+        );
+
+        /**
+         * @var ClassMetadata\SourcePropertyMetadata $dataSource
+         */
+        $provider = $metadata->findProviderById('personSource');
+
+        $this->assertEquals(array('#dependsFirst', '#dependsSecond', '#dependsThird'),  $provider->depends);
+    }
+
+    /**
+     * @test
+     */
+    public function providersStoreMultiplesProcessorsValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\ProvidersStoreMultiplesProcessors'
+        );
+
+        /**
+         * @var ClassMetadata\SourcePropertyMetadata $provider
+         */
+        $provider = $metadata->findProviderById('personSource');
+
+        $this->assertContainsOnlyInstancesOf('\Kassko\DataMapper\ClassMetadata\MethodMetadata', $provider->preprocessors);
+        $this->assertContainsOnlyInstancesOf('\Kassko\DataMapper\ClassMetadata\MethodMetadata', $provider->processors);
+    }
+
+    /**
+     * @test
+     */
     public function refDefaultSourceValidateResult()
     {
         $metadata = $this->loadAnnotationMetadata(
