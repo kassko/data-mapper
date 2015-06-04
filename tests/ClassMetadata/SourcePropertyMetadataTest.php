@@ -63,7 +63,7 @@ class SourcePropertyMetadataTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @TODO: Fix source code
+     * @test
      * @expectedException \DomainException
      */
     public function areDataInvalidValidateDomainException()

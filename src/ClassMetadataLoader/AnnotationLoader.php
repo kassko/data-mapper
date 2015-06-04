@@ -107,7 +107,7 @@ class AnnotationLoader extends AbstractLoader
                 case self::$providersStoreAnnotationName:
 
                     foreach ($annotation->items as &$item) {
-                        $item = (array) $item;
+                        $item = $this->providerAnnotationToArray($item);
                     }
                     $this->classMetadata->setProvidersStore($annotation->items);
                     break;
@@ -222,24 +222,11 @@ class AnnotationLoader extends AbstractLoader
                         break;
 
                     case self::$dataSourceAnnotationName:
-
                         $dataSources[$mappedFieldName] = $this->dataSourceAnnotationToArray($annotation);
                         break;
 
                     case self::$providerAnnotationName:
-                        $annotation->preprocessor = (array)$annotation->preprocessor;
-                        $annotation->processor = (array)$annotation->processor;
-                        
-                        $annotation->preprocessors = (array)$annotation->preprocessors;
-                        foreach ($annotation->preprocessors['items'] as &$preprocessor) {
-                            $preprocessor = (array)$preprocessor;
-                        }
-                        
-                        foreach ($annotation->processors as &$processor) {
-                            $processor = (array)$processor;
-                        }
-
-                        $providers[$mappedFieldName] = (array)$annotation;
+                        $providers[$mappedFieldName] = $this->providerAnnotationToArray($annotation);
                         break;
 
                     case self::$refSourceAnnotationName:
@@ -375,6 +362,28 @@ class AnnotationLoader extends AbstractLoader
 
     private function dataSourceAnnotationToArray(DM\DataSource $annotation)
     {
+        $annotation->preprocessor = (array)$annotation->preprocessor;
+        $annotation->processor = (array)$annotation->processor;      
+        
+        if (! empty($annotation->preprocessors)) {
+            $annotation->preprocessors = (array)$annotation->preprocessors;
+            foreach ($annotation->preprocessors['items'] as &$preprocessor) {
+                $preprocessor = (array)$preprocessor;
+            }
+        }
+        
+        if (! empty($annotation->processors)) {
+            $annotation->processors = (array)$annotation->processors;
+            foreach ($annotation->processors['items'] as &$processor) {
+                $processor = (array)$processor;
+            }
+        }
+
+        return (array)$annotation;
+    }
+
+    private function providerAnnotationToArray(DM\Provider $annotation)
+    {//NOTE: Provider concept will be removed in the next significant release, So this duplicated code will be removed to.
         $annotation->preprocessor = (array)$annotation->preprocessor;
         $annotation->processor = (array)$annotation->processor;      
         
