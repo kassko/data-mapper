@@ -297,4 +297,84 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
         $this->assertEquals(array('classList#1'), $metadata->getObjectListenerClasses());
     }
+
+    /**
+     * @test
+     */
+    public function fieldValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\Field'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals(
+            array(
+                'fieldOne'  => array(
+                    'field' => array(
+                        'name'                       => 'FirstField',
+                        'type'                       => 'string',
+                        'class'                      => 'stdClass',
+                        'readConverter'              => 'readConvertFirstField',
+                        'writeConverter'             => 'writeConvertFirstField',
+                        'readDateConverter'          => '',
+                        'writeDateConverter'         => '',
+                        'fieldMappingExtensionClass' => 'ExtensionClass'
+                    )
+                ),
+                'fieldTwo'  => array(
+                    'field' => array(
+                        'name'                       => 'SecondField',
+                        'type'                       => 'integer',
+                        'class'                      => '\DateTime',
+                        'readConverter'              => '',
+                        'writeConverter'             => '',
+                        'readDateConverter'          => 'readDateConvertSecondField',
+                        'writeDateConverter'         => 'writeDateConvertSecondField',
+                        'fieldMappingExtensionClass' => 'ExtensionClass'
+                    )
+                ),
+                'dateField'  => array(
+                    'field' => array(
+                        'name'                       => 'DateField',
+                        'type'                       => 'date',
+                        'class'                      => '',
+                        'readConverter'              => '',
+                        'writeConverter'             => '',
+                        'readDateConverter'          => '',
+                        'writeDateConverter'         => '',
+                        'fieldMappingExtensionClass' => ''
+                    )
+                )
+            ),
+            $metadata->getFieldsDataByKey()
+        );
+        $this->assertEquals(array('dateField'), $metadata->getMappedDateFieldNames());
+        // @TODO: Need to verify INDEX_EXTENSION_CLASS. Possibly error, unknown attribute 'mappingExtensionClass' used.
+        $this->assertEquals(
+            array(
+                'fieldOne'  => array(
+                    ClassMetadata\ClassMetadata::INDEX_EXTRACTION_STRATEGY  => 'writeConvertFirstField',
+                    ClassMetadata\ClassMetadata::INDEX_HYDRATION_STRATEGY   => 'readConvertFirstField',
+                    ClassMetadata\ClassMetadata::INDEX_EXTENSION_CLASS      => ''
+                )
+            ),
+            $metadata->getFieldsWithHydrationStrategy()
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function excludeValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\Exclude'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('include_all', $metadata->getFieldExclusionPolicy());
+        $this->assertTrue($metadata->isNotManaged('excludedField'));
+        $this->assertFalse($metadata->isNotManaged('field'));
+    }
 }
