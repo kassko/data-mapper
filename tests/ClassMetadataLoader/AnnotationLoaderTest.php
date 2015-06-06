@@ -520,4 +520,57 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
         $this->assertEquals(array('firstField', 'secondField'), $metadata->getMappedIdCompositePartFieldName());
     }
+
+    /**
+     * @test
+     */
+    public function versionValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\Version'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('firstField', $metadata->getMappedVersionFieldName());
+    }
+
+    /**
+     * @test
+     */
+    public function transientValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\Transient'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertTrue($metadata->isTransient('firstField'));
+        $this->assertFalse($metadata->isTransient('secondField'));
+    }
+
+    /**
+     * @test
+     */
+    public function getterValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\Getter'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('getterName', $metadata->getterise('firstField'));
+    }
+
+    /**
+     * @test
+     */
+    public function setterValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\Setter'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('setterName', $metadata->setterise('firstField'));
+    }
 }
