@@ -464,8 +464,6 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array(), $metadata->getDataSources());
     }
 
-
-
     /**
      * @test
      */
@@ -477,5 +475,49 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
         $this->assertEquals(array('excludeDefaultSourceField' => true), $metadata->getFieldsWithSourcesForbidden());
+    }
+
+    /**
+     * @test
+     */
+    public function valueObjectValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\ValueObject'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals(
+            array(
+                '\ValueObjectClass', 'valueObjectResourcePath/valueObjectResourceName', 'valueObjectResourceType'
+            ),
+            $metadata->getValueObjectInfo('firstField')
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function idValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\Id'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('firstField', $metadata->getMappedIdFieldName());
+    }
+
+    /**
+     * @test
+     */
+    public function idCompositePartValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\IdCompositePart'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals(array('firstField', 'secondField'), $metadata->getMappedIdCompositePartFieldName());
     }
 }
