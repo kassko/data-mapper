@@ -375,4 +375,107 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($metadata->isNotManaged('excludedField'));
         $this->assertFalse($metadata->isNotManaged('field'));
     }
+
+    /**
+     * @test
+     */
+    public function dataSourceValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\DataSource'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+
+        $this->assertEquals(
+            array(
+                'firstField' => array(
+                    'id'                  => 'firstFieldId',
+                    'lazyLoading'         => 1,
+                    'supplySeveralFields' => 1,
+                    'depends'             => array('depend#1', 'depend#2'),
+                    'onFail'              => 'checkException',
+                    'exceptionClass'      => '\RuntimeException',
+                    'badReturnValue'      => 'emptyString',
+                    'fallbackSourceId'    => 'firstFieldFallbackSourceId',
+                    'preprocessor'        => array(
+                        'class'  => '##this',
+                        'method' => 'fooPreprocessor',
+                        'args'   => array()
+                    ),
+                    'processor'           => array(
+                        'class'  => '##this',
+                        'method' => 'barProcessor',
+                        'args'   => array()
+                    ),
+                    'preprocessors'       => array(),
+                    'processors'          => array(),
+                    'class'               => '\stdClass',
+                    'method'              => 'someMethod',
+                    'args'                => array('argument#1', 'argument#2')
+                )
+            ),
+            $metadata->getDataSources()
+        );
+        $this->assertEquals(array(), $metadata->getProviders());
+    }
+
+    /**
+     * @test
+     */
+    public function providerValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\Provider'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+
+        $this->assertEquals(
+            array(
+                'providerField' => array(
+                    'id'                  => 'providerFieldId',
+                    'lazyLoading'         => 1,
+                    'supplySeveralFields' => 1,
+                    'depends'             => array('depend#1', 'depend#2'),
+                    'onFail'              => 'checkException',
+                    'exceptionClass'      => '\RuntimeException',
+                    'badReturnValue'      => 'emptyString',
+                    'fallbackSourceId'    => 'firstFieldFallbackSourceId',
+                    'preprocessor'        => array(
+                        'class'  => '##this',
+                        'method' => 'fooPreprocessor',
+                        'args'   => array()
+                    ),
+                    'processor'           => array(
+                        'class'  => '##this',
+                        'method' => 'barProcessor',
+                        'args'   => array()
+                    ),
+                    'preprocessors'       => array(),
+                    'processors'          => array(),
+                    'class'               => '\stdClass',
+                    'method'              => 'someMethod',
+                    'args'                => array('argument#1', 'argument#2')
+                )
+            ),
+            $metadata->getProviders()
+        );
+        $this->assertEquals(array(), $metadata->getDataSources());
+    }
+
+
+
+    /**
+     * @test
+     */
+    public function excludeDefaultSourceValidateResult()
+    {
+        $metadata = $this->loadAnnotationMetadata(
+            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation\ExcludeDefaultSource'
+        );
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals(array('excludeDefaultSourceField' => true), $metadata->getFieldsWithSourcesForbidden());
+    }
 }
