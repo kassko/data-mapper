@@ -1,5 +1,5 @@
 <?php
-namespace Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Annotation;
+namespace Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Metadata;
 
 use Kassko\DataMapper\Annotation as DM;
 
@@ -12,4 +12,13 @@ class Setter
      * )
      */
     protected $firstField;
+
+    /**
+     * @return array
+     */
+    public static function loadInnerPhpMetadata()
+    {
+        return [
+        ];
+    }
 }
