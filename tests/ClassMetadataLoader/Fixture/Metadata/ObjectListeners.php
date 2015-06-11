@@ -23,4 +23,14 @@ class ObjectListeners
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+objectListeners: [classList#1]
+EOF;
+    }
 }

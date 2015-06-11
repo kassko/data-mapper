@@ -29,4 +29,17 @@ class Transient
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+transient: [firstField]
+fields:
+  firstField:
+    name: firstFieldName
+EOF;
+    }
 }

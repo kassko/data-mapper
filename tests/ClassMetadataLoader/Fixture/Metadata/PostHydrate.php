@@ -24,4 +24,15 @@ class PostHydrate
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+interceptors:
+  postHydrate: [CustomHydratorClassName, postHydrateMethodName]
+EOF;
+    }
 }

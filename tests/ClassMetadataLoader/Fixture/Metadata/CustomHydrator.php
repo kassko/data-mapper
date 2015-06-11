@@ -29,4 +29,18 @@ class CustomHydrator
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+object:
+  customHydrator:
+    class: CustomHydratorClassName
+    hydrateMethod: hydrateMethod
+    extractMethod: extractMethod
+EOF;
+    }
 }

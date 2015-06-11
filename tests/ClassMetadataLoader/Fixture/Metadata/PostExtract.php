@@ -24,4 +24,15 @@ class PostExtract
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+interceptors:
+  postExtract: [CustomHydratorClassName, postExtractMethodName]
+EOF;
+    }
 }

@@ -34,4 +34,19 @@ class Exclude
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+exclude: [excludedField]
+fields:
+  excludedField:
+    name: originalFieldName
+  field:
+    name: field
+EOF;
+    }
 }

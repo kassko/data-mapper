@@ -26,4 +26,13 @@ class Getter
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+EOF;
+    }
 }

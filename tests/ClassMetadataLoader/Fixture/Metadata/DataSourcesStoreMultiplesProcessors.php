@@ -76,4 +76,42 @@ class DataSourcesStoreMultiplesProcessors
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+object:
+  dataSourcesStore:
+   - id: personSource
+     class: "Kassko\\\Sample\\\PersonDataSource"
+     method: getData
+     args: [#id]
+     lazyLoading: true
+     supplySeveralFields: true
+     onFail: checkException
+     exceptionClass: \RuntimeException
+     badReturnValue: emptyString
+     fallbackSourceId: testFallbackSourceId
+     depends: [#dependsFirst, #dependsSecond, #dependsThird]
+     preprocessors:
+       items:
+         - class: "##this"
+           method: somePrepocessorA
+           args: []
+         - class: "##this"
+           method: somePrepocessorB
+           args: []
+     processors:
+       items:
+         - class: "##this"
+           method: someProcessorA
+           args: []
+         - class: "##this"
+           method: someProcessorB
+           args: []
+EOF;
+    }
 }

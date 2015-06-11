@@ -62,4 +62,38 @@ class DataSource
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+fields:
+  firstField:
+    name: originalFieldName
+    dataSource:
+      id: firstFieldId
+      lazyLoading: true
+      supplySeveralFields: true
+      depends: [depend#1, depend#2]
+      onFail: checkException
+      exceptionClass: "\\\RuntimeException"
+      badReturnValue: emptyString
+      fallbackSourceId: firstFieldFallbackSourceId
+      preprocessor:
+        class: "##this"
+        method: fooPreprocessor
+        args: []
+      processor:
+        class: "##this"
+        method: barProcessor
+        args: []
+      preprocessors: []
+      processors: []
+      class: "\\\stdClass"
+      method: someMethod
+      args: [argument#1, argument#2]
+EOF;
+    }
 }

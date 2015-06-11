@@ -21,4 +21,13 @@ class Setter
         return [
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+EOF;
+    }
 }

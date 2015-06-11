@@ -33,4 +33,21 @@ class Object
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+object:
+  fieldExclusionPolicy: exclude_all
+  providerClass: testProviderClass
+  readDateConverter: testReadDateConverter
+  writeDateConverter: testWriteDateConverter
+  propertyAccessStrategy: true
+  fieldMappingExtensionClass: testFieldMappingExtensionClass
+  classMappingExtensionClass: testClassMappingExtensionClass
+EOF;
+    }
 }
