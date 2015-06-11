@@ -50,4 +50,28 @@ class ProvidersStore
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+fields:
+  mockField:
+    name: mockFieldName
+    provider:
+      id: providers#1
+      class: class
+      method: method
+      args: [arg#1]
+      lazyLoading: true
+      supplySeveralFields: true
+      depends: [depend#1]
+      onFail: checkException
+      exceptionClass: "\\\RuntimeException"
+      badReturnValue: emptyArray
+      fallbackSourceId: fallbackSourceId#1
+EOF;
+    }
 }

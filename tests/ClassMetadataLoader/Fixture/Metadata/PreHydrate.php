@@ -24,4 +24,15 @@ class PreHydrate
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+interceptors:
+  preHydrate: [CustomHydratorClassName, preHydrateMethodName]
+EOF;
+    }
 }

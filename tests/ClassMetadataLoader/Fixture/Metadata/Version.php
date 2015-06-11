@@ -24,4 +24,17 @@ class Version
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+version: firstField
+fields:
+  firstField:
+    name: firstFieldName
+EOF;
+    }
 }

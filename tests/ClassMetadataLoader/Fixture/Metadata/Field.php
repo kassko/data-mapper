@@ -77,4 +77,41 @@ class Field
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+fields:
+  fieldOne:
+    name: FirstField
+    type: string
+    class: stdClass
+    readConverter: readConvertFirstField
+    writeConverter: writeConvertFirstField
+    readDateConverter:
+    writeDateConverter:
+    fieldMappingExtensionClass: ExtensionClass
+  fieldTwo:
+    name: SecondField
+    type: integer
+    class: "\\\DateTime"
+    readConverter: null
+    writeConverter: null
+    readDateConverter: readDateConvertSecondField
+    writeDateConverter: writeDateConvertSecondField
+    fieldMappingExtensionClass: ExtensionClass
+  dateField:
+    name: DateField
+    type: date
+    class:
+    readConverter: null
+    writeConverter: null
+    readDateConverter:
+    writeDateConverter:
+    fieldMappingExtensionClass:
+EOF;
+    }
 }

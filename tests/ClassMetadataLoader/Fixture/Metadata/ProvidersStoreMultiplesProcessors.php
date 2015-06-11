@@ -75,4 +75,44 @@ class ProvidersStoreMultiplesProcessors
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+fields:
+  mockField:
+    name: mockFieldName
+    provider:
+      id: personSource
+      class: class
+      method: method
+      args: [arg#1]
+      lazyLoading: true
+      supplySeveralFields: true
+      depends: []
+      onFail: checkException
+      exceptionClass: "\\\RuntimeException"
+      badReturnValue: emptyArray
+      fallbackSourceId: fallbackSourceId#1
+      preprocessors:
+        items:
+          - method: somePrepocessorA
+            class: "##this"
+            args: []
+          - method: somePrepocessorB
+            class: "##this"
+            args: []
+      processors:
+        items:
+          - method: someProcessorA
+            class: "##this"
+            args: []
+          - method: someProcessorB
+            class: "##this"
+            args: []
+EOF;
+    }
 }

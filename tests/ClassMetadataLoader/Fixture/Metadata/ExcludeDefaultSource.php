@@ -18,4 +18,13 @@ class ExcludeDefaultSource
         return [
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+EOF;
+    }
 }

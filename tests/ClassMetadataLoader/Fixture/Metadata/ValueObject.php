@@ -36,4 +36,23 @@ class ValueObject
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+fields:
+  firstField:
+    name: firstFieldName
+  mockField:
+    valueObjects:
+      firstField:
+        class: "\\\ValueObjectClass"
+        mappingResourceName: valueObjectResourceName
+        mappingResourcePath: valueObjectResourcePath
+        mappingResourceType: valueObjectResourceType
+EOF;
+    }
 }

@@ -24,4 +24,15 @@ class PreExtract
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+interceptors:
+  preExtract: [CustomHydratorClassName, preExtractMethodName]
+EOF;
+    }
 }

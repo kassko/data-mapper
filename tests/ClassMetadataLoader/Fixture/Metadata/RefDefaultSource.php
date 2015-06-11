@@ -24,4 +24,17 @@ class RefDefaultSource
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+fields:
+  mockField:
+    name: mockFieldName
+    refSource: refDefaultSourceId
+EOF;
+    }
 }

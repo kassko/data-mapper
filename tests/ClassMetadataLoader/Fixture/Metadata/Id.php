@@ -24,4 +24,17 @@ class Id
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+id: firstField
+fields:
+  firstField:
+    name: firstFieldName
+EOF;
+    }
 }

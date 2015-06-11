@@ -32,4 +32,19 @@ class IdCompositePart
             ]
         ];
     }
+
+    /**
+     * @return string
+     */
+    public static function loadInnerYamlMetadata()
+    {
+        return <<<EOF
+idComposite: [firstField, secondField]
+fields:
+  firstField:
+    name: firstFieldName
+  secondField:
+    name: secondFieldName
+EOF;
+    }
 }
