@@ -1,3 +1,6 @@
+`0.12.4.3 - 2015/06/15 - Fix version`:
+* `Fix`: Fix sources loading (only the first source was loaded sometimes) and simplify the code related to the sources loaded tracking.
+
 `0.12.4.2 - 2015/04/17 - Fix version`:
 * `Fix`: Hydrator configuration: Section Field / Key type: fix inference of type, if the key `type` is not specified, an implicit conversion to the supposed good type is performed. Conversion to string was performed. 
 

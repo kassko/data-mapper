@@ -38,18 +38,6 @@ class Hydrator extends AbstractHydrator
     protected $memberAccessStrategy;
 
     /**
-     * Track properties already hydrated. Only properties hydrated by data sources.
-     * @var bool[]
-     */
-    private $dataSourceLoadingDone;
-
-    /**
-     * Track properties already hydrated. Only properties hydrated by providers.
-     * @var bool[]
-     */
-    private $providerLoadingDone;
-
-    /**
      * Retrieve an object instance from it's class name.
      * @var ClassResolverInterface
      */
@@ -228,7 +216,6 @@ class Hydrator extends AbstractHydrator
         }
 
         //DataSources hydration.
-        $this->dataSourceLoadingDone = [];
         foreach ($this->metadata->getFieldsWithDataSources() as $mappedFieldName) {
 
             if ($this->metadata->hasDataSource($mappedFieldName)) {//<= Is this test usefull ?
@@ -237,7 +224,6 @@ class Hydrator extends AbstractHydrator
         }
 
         //Providers hydration.
-        $this->providerLoadingDone = [];
         foreach ($this->metadata->getFieldsWithProviders() as $mappedFieldName) {
 
             if ($this->metadata->hasProvider($mappedFieldName)) {//<= Is this test usefull ?
@@ -429,90 +415,80 @@ class Hydrator extends AbstractHydrator
     protected function walkHydrationByDataSource($mappedFieldName, $object, $enforceLoading)
     {
         if ($this->metadata->isNotManaged($mappedFieldName)) {
-            return false;
+            return;
+        }
+
+        if ($this->objectManager->isPropertyLoaded($object, $mappedFieldName)) {
+            return;
         }
 
         $sourceMetadata = $this->metadata->getDataSourceInfo($mappedFieldName);
-        
-        $key = $this->computeSourceKey(get_class($object), $sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method) . spl_object_hash($object);
 
-        //Checks if hash is orphan.
-        //This is possible because when a object dead, it's hash is reused on another object. 
-        if (false === $object->__isRegistered) {    
-            unset($this->dataSourceLoadingDone[$key]); 
+        if (! $enforceLoading && $sourceMetadata->lazyLoading) {
+            return;
         }
 
-        if (! isset($this->dataSourceLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
+        $this->resolveMethodArgs($sourceMetadata->args, $object);
+        $data = $this->findFromSource($sourceMetadata);
+        
+        $this->executePreprocessors($sourceMetadata, $object);
 
-            $this->resolveMethodArgs($sourceMetadata->args, $object);
-            $data = $this->findFromSource($sourceMetadata);
-            
-            $this->executePreprocessors($sourceMetadata, $object);
-
-            if (! $sourceMetadata->supplySeveralFields) {
-                $this->walkHydration($mappedFieldName, $object, $data, $data);
-            } else {
-                $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameDataSource($mappedFieldName));
-                foreach ($data as $originalFieldName => $value) {
-            
-                    $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
-                    
-                    if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
-                        continue;
-                    }
-
-                    $this->walkHydration($otherMappedFieldName, $object, $value, $data);                    
+        if (! $sourceMetadata->supplySeveralFields) {
+            $this->walkHydration($mappedFieldName, $object, $data, $data);
+        } else {
+            $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameDataSource($mappedFieldName));
+            foreach ($data as $originalFieldName => $value) {
+        
+                $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
+                
+                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
+                    continue;
                 }
+
+                $this->walkHydration($otherMappedFieldName, $object, $value, $data);                    
             }
+        }
 
-            $this->executeProcessors($sourceMetadata, $object);
-
-            $this->dataSourceLoadingDone[$key] = true;
-        }            
+        $this->executeProcessors($sourceMetadata, $object);            
     }
 
     protected function walkHydrationByProvider($mappedFieldName, $object, $enforceLoading)
     {
         if ($this->metadata->isNotManaged($mappedFieldName)) {
-            return false;
+            return;
+        }
+
+        if ($this->objectManager->isPropertyLoaded($object, $mappedFieldName)) {
+            return;
         }
 
         $sourceMetadata = $this->metadata->getProviderInfo($mappedFieldName);
-        
-        $key = $this->computeSourceKey(get_class($object), $sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method) . spl_object_hash($object);
 
-        //Checks if hash is orphan.
-        //This is possible because when a object dead, it's hash is reused on another object. 
-        if (false === $object->__isRegistered) {
-            unset($this->providerLoadingDone[$key]); 
+        if (! $enforceLoading || $sourceMetadata->lazyLoading) {
+            return;
         }
 
-        if (! isset($this->providerLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
+        $this->resolveMethodArgs($sourceMetadata->args, $object);
+        $data = $this->findFromSource($sourceMetadata);
 
-            $this->resolveMethodArgs($sourceMetadata->args, $object);
-            $data = $this->findFromSource($sourceMetadata);
-
-            $this->executePreprocessors($sourceMetadata, $object);
+        $this->executePreprocessors($sourceMetadata, $object);
+        
+        if (! $sourceMetadata->supplySeveralFields) {
+            $this->memberAccessStrategy->setValue($data, $object, $mappedFieldName);  
+        } else {
+            $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameProvider($mappedFieldName));
+            foreach ($data as $originalFieldName => $value) {
             
-            if (! $sourceMetadata->supplySeveralFields) {
-                $this->memberAccessStrategy->setValue($data, $object, $mappedFieldName);  
-            } else {
-                $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameProvider($mappedFieldName));
-                foreach ($data as $originalFieldName => $value) {
-                
-                    $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
-                    if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
-                        continue;
-                    }
-
-                    $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);                   
+                $otherMappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
+                if (! in_array($otherMappedFieldName, $mappedFieldsToHydrate)) {
+                    continue;
                 }
-            }      
 
-            $this->executeProcessors($sourceMetadata, $object);
+                $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);                   
+            }
+        }      
 
-            $this->providerLoadingDone[$key] = true;
-        }            
+        $this->executeProcessors($sourceMetadata, $object);            
     }
 
     protected function walkValueObjectHydration($mappedFieldName, $object, $data)
