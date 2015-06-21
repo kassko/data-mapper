@@ -22,7 +22,7 @@ class CacheProfile
 
     public function execute(callable $callable)
     {
-        if (null === $this->cacheImpl || null === $key || -1 === $this->lifetime) {
+        if (null === $this->cacheImpl || null === $this->key || -1 === $this->lifetime) {
             return $callable->__invoke(); 
         }
 

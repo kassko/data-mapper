@@ -862,61 +862,6 @@ class ClassMetadata
         throw new ObjectMappingException(sprintf('No source found for the given id "%s".', $id));
     }
 
-    private function createSourcePropertyMetadataFromArrayData(array $source, $isDataSource)
-    {
-        $sourcePropertyMetadata = new SourcePropertyMetadata;
-        
-        $sourcePropertyMetadata->id = $source['id'];
-        $sourcePropertyMetadata->class = $source['class'];
-        $sourcePropertyMetadata->method = $source['method'];
-        $sourcePropertyMetadata->args = $source['args'];
-        $sourcePropertyMetadata->lazyLoading = $source['lazyLoading'];
-        $sourcePropertyMetadata->supplySeveralFields = $source['supplySeveralFields'];
-        $sourcePropertyMetadata->onFail = $source['onFail'];
-        $sourcePropertyMetadata->exceptionClass = $source['exceptionClass'];
-        $sourcePropertyMetadata->badReturnValue = $source['badReturnValue'];
-        $sourcePropertyMetadata->fallbackSourceId = $source['fallbackSourceId'];
-        
-        $sourcePropertyMetadata->preprocessors = [];
-        if (isset($source['preprocessor']['method'])) {
-            $sourcePropertyMetadata->preprocessors[] = new Method(
-                $source['preprocessor']['class'],
-                $source['preprocessor']['method'],
-                $source['preprocessor']['args']
-            );
-        } elseif (isset($source['preprocessors']['items'])) {
-            foreach ($source['preprocessors']['items'] as $preprocessor) {
-                $sourcePropertyMetadata->preprocessors[] = new Method(
-                    $preprocessor['class'],
-                    $preprocessor['method'],
-                    $preprocessor['args']
-                );
-            }
-        }
-
-        $sourcePropertyMetadata->processors = [];
-        if (isset($source['processor']['method'])) {
-            $sourcePropertyMetadata->processors[] = new Method(
-                $source['processor']['class'],
-                $source['processor']['method'],
-                $source['processor']['args']
-            );
-        } elseif (isset($source['processors']['items'])) {
-            foreach ($source['processors']['items'] as $processor) {
-                $sourcePropertyMetadata->processors[] = new Method(
-                    $processor['class'],
-                    $processor['method'],
-                    $processor['args']
-                );
-            }
-        }
-
-        $sourcePropertyMetadata->depends = $source['depends'];
-        $sourcePropertyMetadata->isDataSource = $isDataSource;
-
-        return $sourcePropertyMetadata;
-    }
-
     //========================= Sources : end
 
     //========================= Data sources : begin
@@ -952,7 +897,7 @@ class ClassMetadata
 
     public function getDataSourceInfo($mappedFieldName)
     {
-        return $this->createSourcePropertyMetadataFromArrayData($this->dataSources[$mappedFieldName], true);
+        return $this->dataSources[$mappedFieldName];
     }
 
     /**
@@ -968,13 +913,17 @@ class ClassMetadata
             throw new ObjectMappingException(sprintf('A "data source" metadata is expected for the field "%s".', $mappedFieldNameRef));
         }
 
-        $class = $this->dataSources[$mappedFieldNameRef]['class'];
-        $method = $this->dataSources[$mappedFieldNameRef]['method'];
+        $id = $this->dataSources[$mappedFieldNameRef]->getId();
+        $method = $this->dataSources[$mappedFieldNameRef]->getMethod();
 
         $propLoadedTogether = [];
         foreach ($this->dataSources as $mappedFieldName => $value) {
 
-            if ($mappedFieldName !== $mappedFieldNameRef && $value['class'] === $class && $value['method'] === $method) {
+            if (
+                $mappedFieldName !== $mappedFieldNameRef 
+                && 
+                ((null === $id && $value->getMethod()->isEquals($method)) || $id === $value->getId())
+            ) {
                 $propLoadedTogether[] = $mappedFieldName;
             }
         }
@@ -985,14 +934,14 @@ class ClassMetadata
     public function findDataSourceById($id)
     {//@todo: optimize it.
         foreach ($this->dataSourcesStore as $dataSource) {
-            if ($dataSource['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($dataSource, true);
+            if ($dataSource->getId() === $id) {
+                return $dataSource;
             }
         }
 
         foreach ($this->dataSources as $dataSource) {
-            if ($dataSource['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($dataSource, true);
+            if ($dataSource->getId() === $id) {
+                return $dataSource;
             }
         }
 
@@ -1034,7 +983,7 @@ class ClassMetadata
 
     public function getProviderInfo($mappedFieldName)
     {
-        return $this->createSourcePropertyMetadataFromArrayData($this->providers[$mappedFieldName], false);
+        return $this->providers[$mappedFieldName];
     }
 
     /**
@@ -1067,14 +1016,14 @@ class ClassMetadata
     public function findProviderById($id)
     {//@todo: optimize it.
         foreach ($this->providersStore as $provider) {
-            if ($provider['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($provider, false);
+            if ($provider->getId() === $id) {
+                return $provider;
             }
         }
 
         foreach ($this->providers as $provider) {
-            if ($provider['id'] === $id) {
-                return $this->createSourcePropertyMetadataFromArrayData($provider, false);
+            if ($provider->getId() === $id) {
+                return $provider;
             }
         }
 
@@ -1084,13 +1033,18 @@ class ClassMetadata
 
     //========================= Providers : end
 
+    /**
+     * @param $mappedFieldName A field name
+     * 
+     * @return Kassko\DataMapper\ClassMetadata\Model\DataSource[]
+     */
     public function getSourceInfo($mappedFieldName)
     {
         if ($this->hasDataSource($mappedFieldName)) {
-            return $this->createSourcePropertyMetadataFromArrayData($this->dataSources[$mappedFieldName], true);    
+            return $this->dataSources[$mappedFieldName];    
         }
 
-        return $this->createSourcePropertyMetadataFromArrayData($this->providers[$mappedFieldName], false);
+        return $this->providers[$mappedFieldName];
     }
 
     public function setRefSources(array $refSources)
@@ -1189,37 +1143,27 @@ class ClassMetadata
     private function normalizeDataSourcesStore()
     {
         foreach ($this->dataSourcesStore as $dataSource) {
-            $dataSource['supplySeveralFields'] = false;
+            $dataSource->setSupplySeveralFields(false);
         }
     }
 
     private function normalizeProvidersStore()
     {
         foreach ($this->providersStore as $provider) {
-            $provider['supplySeveralFields'] = false;
+            $provider->setSupplySeveralFields(false);
         }
     }
 
     private function findDataSourceByIdBeforeCompilation($id)
     {
-        return $this->findDataSourceByCriterionBeforeCompilation('id', $id);
-    }
-
-    private function findProviderByIdBeforeCompilation($id)
-    {
-        return $this->findProviderByCriterionBeforeCompilation('id', $id);
-    }
-
-    private function findDataSourceByCriterionBeforeCompilation($key, $value)
-    {
         foreach ($this->dataSourcesStore as $dataSource) {
-            if ($dataSource[$key] === $value) {
+            if ($dataSource->getId() === $id) {
                 return $dataSource;
             }
         }
 
         foreach ($this->dataSources as $dataSource) {
-            if ($dataSource[$key] === $value) {
+            if ($dataSource->getId() === $id) {
                 return $dataSource;
             }
         }
@@ -1227,16 +1171,16 @@ class ClassMetadata
         return null;
     }
 
-    private function findProviderByCriterionBeforeCompilation($key, $value)
+    private function findProviderByIdBeforeCompilation($id)
     {
         foreach ($this->providersStore as $provider) {
-            if ($provider[$key] === $value) {
+            if ($provider->getId() === $id) {
                 return $provider;
             }
         }
 
         foreach ($this->providers as $provider) {
-            if ($provider[$key] === $value) {
+            if ($provider->getId() === $id) {
                 return $provider;
             }
         }

@@ -12,6 +12,8 @@
 * `Fix`: Fix bug on class-resolver. We were not able to set a class-resolver. A boolean value "true" was set instead.
 * `Fix`: Fix bug on extraction. Members with no getters were never extracted.
 * `Fix`: Fix bug on extraction. Properties which are objects were not extracted.
+* `Fix`: Fix identification of fields with same source when sources have same class/method but differents method arguments.  Now, use the Id to process the identification instead of the pair class/method
+* `Enhanc`: Add some hydrator tests
 * `Enhanc`: Add a default cache for data sources. An array / request cache.
 
 `0.12.4.2 - 2015/04/17 - Fix version`:

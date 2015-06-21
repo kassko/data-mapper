@@ -1,13 +1,15 @@
 <?php
 
-namespace Kassko\DataMapper\ClassMetadata;
-
-use Kassko\DataMapper\ClassMetadata\Method;
+namespace Kassko\DataMapper\ClassMetadata\Model;
 
 /**
+ * This class should not be maintained. Use DataSource instead if you need the next new features.
+ *
+ * @deprecated
+ * @see Provider
  * @author kko
  */
-class DataSource
+class Provider extends Source
 {
     const ON_FAIL_CHECK_RETURN_VALUE = 'checkReturnValue';
     const ON_FAIL_CHECK_EXCEPTION = 'checkException';
@@ -18,28 +20,28 @@ class DataSource
     const BAD_RETURN_VALUE_EMPTY_ARRAY = 'emptyArray';
 
     /**
-     * @var \Kassko\DataMapper\ClassMetadata\Method
-     */
-    private $method;
-
-    /**
      * @var string
      */
     private $id;
+
+    /**
+     * @var \Kassko\DataMapper\ClassMetadata\Method
+     */
+    private $method;
 
     /**
      * Loading strategy to use for this provider.
      *
      * @var bool
      */
-    private $lazyLoading = false;
+    private $lazyLoading;
 
     /**
      * How so data contains data for one or severals fields.
      *
      * @var bool
      */
-    private $supplySeveralFields = false;
+    private $supplySeveralFields;
 
     /**
      * Ids of sources which provide an intermediate value for a field.
@@ -53,19 +55,19 @@ class DataSource
      *
      * @Enum({"checkReturnValue", "checkException"})
      */
-    private $onFail = 'checkReturnValue';
+    private $onFail;
 
     /**
      * @var string
      */
-    private $exceptionClass = '\Exception';
+    private $exceptionClass;
 
     /**
      * @var string
      *
      * @Enum({"null", "false", "emptyString", "emptyArray"})
      */
-    private $badReturnValue = 'null';
+    private $badReturnValue;
 
     /**
      * @var string
@@ -81,30 +83,6 @@ class DataSource
      * @var \Kassko\DataMapper\ClassMetadata\Methods
      */
     private $processors = [];
-
-    /**
-     * Gets the value of method.
-     *
-     * @return \Kassko\DataMapper\ClassMetadata\Method
-     */
-    public function getMethod()
-    {
-        return $this->method;
-    }
-
-    /**
-     * Sets the value of method.
-     *
-     * @param \Kassko\DataMapper\ClassMetadata\Method $method the method
-     *
-     * @return self
-     */
-    public function setMethod(Method $method)
-    {
-        $this->method = $method;
-
-        return $this;
-    }
 
     /**
      * Gets the value of id.
@@ -126,6 +104,30 @@ class DataSource
     public function setId($id)
     {
         $this->id = $id;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of method.
+     *
+     * @return \Kassko\DataMapper\ClassMetadata\Method
+     */
+    public function getMethod()
+    {
+        return $this->method;
+    }
+
+    /**
+     * Sets the value of method.
+     *
+     * @param \Kassko\DataMapper\ClassMetadata\Method $method the method
+     *
+     * @return self
+     */
+    public function setMethod(Method $method)
+    {
+        $this->method = $method;
 
         return $this;
     }
@@ -200,6 +202,11 @@ class DataSource
         $this->depends = $depends;
 
         return $this;
+    }
+
+    public function hasDepends()
+    {
+        return count($this->depends) > 0;
     }
 
     /**
@@ -372,5 +379,26 @@ class DataSource
         $this->processor[] = $processor; 
         
         return $this;
+    }
+
+    public function areDataInvalid($data) 
+    {
+        switch ($this->badReturnValue) {
+
+            case self::BAD_RETURN_VALUE_NULL:
+                return null === $data;
+
+            case self::BAD_RETURN_VALUE_FALSE:
+                return false === $data;
+
+            case self::BAD_RETURN_VALUE_EMPTY_STRING:
+                return '' === $data;
+
+            case self::BAD_RETURN_VALUE_EMPTY_ARRAY:
+                return empty($data);
+            
+            default:
+                throw new \DomainException(sprintf('The bad return value "%s" is not allowed.', $data));
+        }
     }
 }

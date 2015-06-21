@@ -3,8 +3,11 @@
 namespace Kassko\DataMapper;
 
 use Kassko\ClassResolver\ClassResolverInterface;
+use Kassko\DataMapper\Cache\ArrayCache;
+use Kassko\DataMapper\Cache\CacheProfile;
 use Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria;
 use Kassko\DataMapper\ClassMetadata\ClassMetadataFactoryInterface;
+use Kassko\DataMapper\ClassMetadata\Model\Source;
 use Kassko\DataMapper\Configuration\Configuration;
 use Kassko\DataMapper\Configuration\ObjectKey;
 use Kassko\DataMapper\Exception\ObjectMappingException;
@@ -16,7 +19,6 @@ use Kassko\DataMapper\Hydrator\HydrationStrategy\DateHydrationStrategy;
 use Kassko\DataMapper\LazyLoader\LazyLoaderFactoryInterface;
 use Kassko\DataMapper\Listener\Events;
 use Kassko\DataMapper\Listener\ObjectListenerResolverInterface;
-use Kassko\DataMapper\Cache\CacheProfile;
 use Kassko\DataMapper\MethodInvoker\MethodInvoker;
 use Kassko\DataMapper\Query\CacheConfig;
 use Kassko\DataMapper\Query\ResultManager;
@@ -74,6 +76,7 @@ class ObjectManager
     protected function __construct()
     {
         $this->resultManager = new ResultManager($this);
+        $this->cacheProfile = new CacheProfile(new ArrayCache);
     }
 
     /**
@@ -85,21 +88,22 @@ class ObjectManager
         return new static;
     }
 
-    private function fixObjectInIdentityMap($object, $objectHash)
+    public function checkIfIsLoadable($object)
     {
-        //Checks if hash is orphan.
-        //This is possible because when a object dead, it's hash is reused on another object. 
-        
-        if (false === $object->__isRegistered) {
-            unset(self::$identityMap[$objectHash]); 
-        }
-    }
+        $classUses = class_uses(get_class($object));
 
-    private function registerObjectToIdentityMap($object, $objectHash)
-    {
-        if (! isset(self::$identityMap[$objectHash])) {
-            self::$identityMap[$objectHash] = [];
-            $object->__isRegistered = true;
+        if (
+            ! in_array('Kassko\\DataMapper\\ObjectExtension\\LoadableTrait', $classUses)
+            &&
+            ! in_array('Kassko\\DataMapper\\ObjectExtension\\LazyLoadableTrait', $classUses)
+        ) {
+            throw new ObjectMappingException(
+                sprintf(
+                    'To work with DataSource, the class "%s" must use the trait "Kassko\\DataMapper\\ObjectExtension\\LoadableTrait"'
+                    . ' or "Kassko\\DataMapper\\ObjectExtension\\LazyLoadableTrait"', 
+                    get_class($object)
+                ) 
+            );
         }
     }
 
@@ -122,6 +126,26 @@ class ObjectManager
         $metadata = $this->getMetadata(get_class($object));
         foreach ($metadata->getFieldsWithSameDataSource($propertyName) as $otherLoadedPropertyName) {
             self::$identityMap[$objectHash][$otherLoadedPropertyName] = true;
+        }
+    }
+
+    private function fixObjectInIdentityMap($object, $objectHash)
+    {
+        //Checks if hash is orphan.
+        //This is possible because when a object dead, it's hash is reused on another object. 
+
+        $this->checkIfIsLoadable($object);   
+        if (false === $object->__isRegistered) {
+            unset(self::$identityMap[$objectHash]); 
+        }
+    }
+
+    private function registerObjectToIdentityMap($object, $objectHash)
+    {
+        if (! isset(self::$identityMap[$objectHash])) {
+            self::$identityMap[$objectHash] = [];
+            $this->checkIfIsLoadable($object);
+            $object->__isRegistered = true;
         }
     }
 
@@ -237,15 +261,16 @@ class ObjectManager
         return $hydrator;
     }
 
-    public function findFromSource($sourceId, $sourceClass, $sourceMethod, $methodArgs)
+    public function findFromSource(Source $sourceMetadata)
     {
-        $source = $this->classResolver ? $this->classResolver->resolve($sourceClass) : new $sourceClass;
-        $cacheKey = $sourceId . $sourceClass . $sourceMethod;
+        $class = $sourceMetadata->getMethod()->getClass();
+        $source = $this->classResolver ? $this->classResolver->resolve($class) : new $class;
+        $cacheKey = $sourceMetadata->getId() . $class . $sourceMetadata->getMethod()->getFunction();
 
         return $this->methodInvoker->invoke(
             $source, 
-            $sourceMethod, 
-            $methodArgs, 
+            $sourceMetadata->getMethod()->getFunction(), 
+            $sourceMetadata->getMethod()->getArgs(), 
             $this->cacheProfile->setKey($cacheKey)->derive()
         );
     }
@@ -442,16 +467,6 @@ class ObjectManager
         $this->methodInvoker = $methodInvoker;
 
         return $this;
-    }
-
-    /**
-     * Gets the value of cacheProfile.
-     *
-     * @return CacheProfile
-     */
-    public function getCacheProfile()
-    {
-        return $this->cacheProfile;
     }
 
     /**

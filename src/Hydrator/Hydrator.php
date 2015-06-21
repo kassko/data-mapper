@@ -4,16 +4,16 @@ namespace Kassko\DataMapper\Hydrator;
 
 use Exception;
 use Kassko\ClassResolver\ClassResolverInterface;
+use Kassko\DataMapper\ClassMetadata\Model\Source;
 use Kassko\DataMapper\ClassMetadata\SourcePropertyMetadata;
 use Kassko\DataMapper\Configuration\ObjectKey;
 use Kassko\DataMapper\Configuration\RuntimeConfiguration;
 use Kassko\DataMapper\Exception\NotFoundMemberException;
 use Kassko\DataMapper\Exception\ObjectMappingException;
+use Kassko\DataMapper\Expression\ExpressionLanguage;
 use Kassko\DataMapper\Hydrator\Exception\NotResolvableValueException;
 use Kassko\DataMapper\Hydrator\ExpressionLanguageEvaluator;
 use Kassko\DataMapper\Hydrator\MemberAccessStrategy;
-use Kassko\DataMapper\Hydrator\MethodArgumentResolver;
-use Kassko\DataMapper\Expression\ExpressionLanguage;
 use Kassko\DataMapper\ObjectManager;
 use Zend\Stdlib\Hydrator\Filter\FilterProviderInterface;
 use \DateTimeInterface;
@@ -62,7 +62,7 @@ class Hydrator extends AbstractHydrator
 
     /**
      * Retrieve an object instance from it's class name.
-     * @var MethodArgumentResolver
+     * @var ValueResolver
      */
     private $valueResolver;
 
@@ -276,7 +276,7 @@ class Hydrator extends AbstractHydrator
         $previousHydrationContext = $this->currentHydrationContext;
         $this->currentHydrationContext = new CurrentHydrationContext($data, $object);
 
-        foreach ($this->getMappedFieldNames() as $mappedFieldName) {
+        foreach ($this->metadata->getMappedFieldNames() as $mappedFieldName) {
             $defaultValue = $this->metadata->getFieldDefaultValue($mappedFieldName);
 
             if (null !== $defaultValue) {
@@ -313,7 +313,6 @@ class Hydrator extends AbstractHydrator
         }
 
         //DataSources hydration.
-        $this->dataSourceLoadingDone = [];
         foreach ($this->metadata->getFieldsWithDataSources() as $mappedFieldName) {
 
             if ($this->metadata->hasDataSource($mappedFieldName)) {//<= Is this test usefull ?
@@ -322,7 +321,6 @@ class Hydrator extends AbstractHydrator
         }
 
         //Providers hydration.
-        $this->providerLoadingDone = [];
         foreach ($this->metadata->getFieldsWithProviders() as $mappedFieldName) {
 
             if ($this->metadata->hasProvider($mappedFieldName)) {//<= Is this test usefull ?
@@ -387,17 +385,17 @@ class Hydrator extends AbstractHydrator
         return $this->extractValue($mappedFieldName, $value, $object, $data);
     }
 
-    public function findFromSource(SourcePropertyMetadata $sourceMetadata)
+    public function findFromSource(Source $sourceMetadata)
     {
-        if (! isset($sourceMetadata->fallbackSourceId)) {
-            return $this->objectManager->findFromSource($sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+        if (null === $sourceMetadata->getFallbackSourceId()) {
+            return $this->objectManager->findFromSource($sourceMetadata);
         }
 
         if (SourcePropertyMetadata::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->onFail) {
             
-            $data = $this->objectManager->findFromSource($sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+            $data = $this->objectManager->findFromSource($sourceMetadata);
             if ($sourceMetadata->areDataInvalid($data)) {
-                $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
+                $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->getFallbackSourceId());
                 return $this->findFromSource($sourceMetadata);
             }
 
@@ -406,12 +404,12 @@ class Hydrator extends AbstractHydrator
 
         //Else SourcePropertyMetadata::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->onFail.
         try {
-            $data = $this->objectManager->findFromSource($sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method, $sourceMetadata->args);
+            $data = $this->objectManager->findFromSource($sourceMetadata);
         } catch (Exception $e) {
             if (! $e instanceof $sourceMetadata->exceptionClass) {
                 throw $e;
             }
-            $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->fallbackSourceId);
+            $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->getFallbackSourceId());
             return $this->findFromSource($sourceMetadata);
         }
 
@@ -435,7 +433,7 @@ class Hydrator extends AbstractHydrator
 
         if ($fieldClass = $this->metadata->getClassOfMappedField($mappedFieldName)) {
 
-            if (is_object($value) {
+            if (is_object($value)) {
                 if (! $value instanceof $fieldClass) {
                     throw new ObjectMappingException(
                         sprintf(
@@ -544,30 +542,29 @@ class Hydrator extends AbstractHydrator
             return false;
         }
 
-        $sourceMetadata = $this->metadata->getDataSourceInfo($mappedFieldName);
-        
-        $key = $this->computeSourceKey(get_class($object), $sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method) . spl_object_hash($object);
-
-        //Checks if hash is orphan.
-        //This is possible because when a object dead, it's hash is reused on another object. 
-        if (false === $object->__isRegistered) {    
-            unset($this->dataSourceLoadingDone[$key]); 
+        if ($this->objectManager->isPropertyLoaded($object, $mappedFieldName)) {
+            return;
         }
 
-        if (! isset($this->dataSourceLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
-            $this->walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
-            $this->dataSourceLoadingDone[$key] = true;
-        }            
+        $sourceMetadata = $this->metadata->getDataSourceInfo($mappedFieldName);
+
+        if (! $enforceLoading && $sourceMetadata->getLazyLoading()) {
+            return;
+        }
+
+        $this->walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);            
     }
 
     protected function walkHydrationByDataSourceMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading)
     {
-        $this->resolveValues($sourceMetadata->args, $object);
+        $args = $sourceMetadata->getMethod()->getArgs();
+        $this->resolveValues($args, $object);
+        $sourceMetadata->getMethod()->setArgs($args);
         $data = $this->findFromSource($sourceMetadata);
             
         $this->executePreprocessors($sourceMetadata, $object);
 
-        if (! $sourceMetadata->supplySeveralFields) {
+        if (! $sourceMetadata->getSupplySeveralFields()) {
             $this->walkHydration($mappedFieldName, $object, $data, $data);
         } else {
             $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameDataSource($mappedFieldName));
@@ -602,30 +599,29 @@ class Hydrator extends AbstractHydrator
             return false;
         }
 
-        $sourceMetadata = $this->metadata->getProviderInfo($mappedFieldName);
-        
-        $key = $this->computeSourceKey(get_class($object), $sourceMetadata->id, $sourceMetadata->class, $sourceMetadata->method) . spl_object_hash($object);
-
-        //Checks if hash is orphan.
-        //This is possible because when a object dead, it's hash is reused on another object. 
-        if (false === $object->__isRegistered) {
-            unset($this->providerLoadingDone[$key]); 
+        if ($this->objectManager->isPropertyLoaded($object, $mappedFieldName)) {
+            return;
         }
 
-        if (! isset($this->providerLoadingDone[$key]) && ($enforceLoading || ! $sourceMetadata->lazyLoading)) {
-            $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
-            $this->providerLoadingDone[$key] = true;
-        }            
+        $sourceMetadata = $this->metadata->getProviderInfo($mappedFieldName);
+        
+        if (! $enforceLoading && $sourceMetadata->getLazyLoading()) {
+            return;
+        }
+
+        $this->walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading);
     }
 
     protected function walkHydrationByProviderMetadata($sourceMetadata, $mappedFieldName, $object, $enforceLoading)
     {
-        $this->resolveValues($sourceMetadata->args, $object);
+        $args = $sourceMetadata->getMethod()->getArgs();
+        $this->resolveValues($args, $object);
+        $sourceMetadata->getMethod()->setArgs($args);
         $data = $this->findFromSource($sourceMetadata);
 
         $this->executePreprocessors($sourceMetadata, $object);
         
-        if (! $sourceMetadata->supplySeveralFields) {
+        if (! $sourceMetadata->getSupplySeveralFields()) {
             $this->memberAccessStrategy->setValue($data, $object, $mappedFieldName);
         } else {
             $mappedFieldsToHydrate = array_merge([$mappedFieldName], $this->metadata->getFieldsWithSameProvider($mappedFieldName));
@@ -681,8 +677,10 @@ class Hydrator extends AbstractHydrator
             return;
         }
 
-        $this->expressionContext['value_resolver'] = $this->valueResolver;
-        $this->expressionContext['this'] = $object;
+        if (null !== $this->expressionContext) {
+            $this->expressionContext['value_resolver'] = $this->valueResolver;
+            $this->expressionContext['this'] = $object;
+        }
 
         foreach ($args as &$arg) {
             try {
@@ -692,35 +690,37 @@ class Hydrator extends AbstractHydrator
             }
             
             //$arg is not resolved, we try to resolve it with another resolver.
-            try {
-                $arg = $this->expressionLanguageEvaluator->handle($arg);
-                //$arg is resolved with the second resolver.
-            } catch (NotResolvableValueException $e) {
-                //$arg is not resolved. We assumes it doesn't need to be resolved. Next loop.
+            if (null !== $this->expressionLanguageEvaluator) {
+                try {
+                    $arg = $this->expressionLanguageEvaluator->handle($arg);
+                    //$arg is resolved with the second resolver.
+                } catch (NotResolvableValueException $e) {
+                    //$arg is not resolved. We assumes it doesn't need to be resolved. Next loop.
+                }
             }
         }
     }
 
-    protected function computeSourceKey($objectClass, $sourceId, $sourceClass, $sourceMethod)
+    protected function computeSourceKey($objectClass, Source $sourceMetadata)
     {
-        if (null === $sourceId) {
-            return $objectClass . $sourceClass . $sourceMethod;
+        if (null === $sourceMetadata->getId()) {
+            return $objectClass . $sourceMetadata->getMethod()->getClass() . $sourceMetadata->getMethod()->getFunction();
         } 
 
-        return $objectClass . $sourceId . $sourceClass . $sourceMethod;
+        return $objectClass . $sourceMetadata->getId() . $sourceMetadata->getMethod()->getClass() . $sourceMetadata->getMethod()->getFunction();
     }
 
-    private function executePreprocessors(SourcePropertyMetadata $sourceMetadata, $object)
+    private function executePreprocessors(Source $sourceMetadata, $object)
     {
-        foreach ($sourceMetadata->preprocessors as $preprocessor) {
-            $this->executeMethod($object, $preprocessor->class, $preprocessor->method, $preprocessor->args);
+        foreach ($sourceMetadata->getPreprocessors() as $preprocessor) {
+            $this->executeMethod($object, $preprocessor->getClass(), $preprocessor->getFunction(), $preprocessor->getArgs());
         }
     }
 
-    private function executeProcessors(SourcePropertyMetadata $sourceMetadata, $object)
+    private function executeProcessors(Source $sourceMetadata, $object)
     {
-        foreach ($sourceMetadata->processors as $processor) {
-            $this->executeMethod($object, $processor->class, $processor->method, $processor->args);
+        foreach ($sourceMetadata->getProcessors() as $processor) {
+            $this->executeMethod($object, $processor->getClass(), $processor->getFunction(), $processor->getArgs());
         }
     }
 
@@ -759,7 +759,7 @@ class Hydrator extends AbstractHydrator
         if (isset($object)) {
             $this->propertyAccessStrategy = $this->createPropertyAccessStrategy($object);
             $this->memberAccessStrategy = $this->createMemberAccessStrategy($object, $this->propertyAccessStrategy); 
-            $this->valueResolver = new MethodArgumentResolver($this, $this->metadata, $this->classResolver);
+            $this->valueResolver = new ValueResolver($this, $this->metadata, $this->classResolver);
         }
     }
 

@@ -3,7 +3,6 @@
 namespace Kassko\DataMapper;
 
 use Doctrine\Common\Annotations\AnnotationReader;
-use Kassko\DataMapper\Cache\ArrayCache;
 use Kassko\DataMapper\Cache\CacheProfile;
 use Kassko\DataMapper\ClassMetadataLoader\AnnotationLoader;
 use Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader;
@@ -290,8 +289,6 @@ class DataMapperBuilder
 
         $objectManager->setExpressionLanguageEvaluator($expressionLanguageEvaluator);
         $objectManager->setExpressionContext($expressionContext);
-
-        $objectManager->setCacheProfile(new CacheProfile(new ArrayCache));
 
         $objectManager->setMethodInvoker(new MagicMethodInvoker);
 

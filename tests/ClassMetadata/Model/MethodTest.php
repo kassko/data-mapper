@@ -8,10 +8,10 @@ use Kassko\DataMapper\ClassMetadata;
  * 
  * @author Alexey Rusnak
  */
-class MethodMetadataTest extends \PHPUnit_Framework_TestCase
+class MethodTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * @var ClassMetadata\MethodMetadata
+     * @var ClassMetadata\Method
      */
     protected $methodMetadata;
 
@@ -35,7 +35,7 @@ class MethodMetadataTest extends \PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->methodMetadata = new ClassMetadata\MethodMetadata($this->className, $this->method, $this->arguments);
+        $this->methodMetadata = new ClassMetadata\Model\Method($this->className, $this->method, $this->arguments);
     }
 
     /**
@@ -43,8 +43,8 @@ class MethodMetadataTest extends \PHPUnit_Framework_TestCase
      */
     public function validateConstructor()
     {
-        $this->assertSame($this->className, $this->methodMetadata->class);
-        $this->assertSame($this->method, $this->methodMetadata->method);
-        $this->assertSame($this->arguments, $this->methodMetadata->args);
+        $this->assertSame($this->className, $this->methodMetadata->getClass());
+        $this->assertSame($this->method, $this->methodMetadata->getFunction());
+        $this->assertSame($this->arguments, $this->methodMetadata->getArgs());
     }
 }
