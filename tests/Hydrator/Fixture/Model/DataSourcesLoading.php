@@ -19,7 +19,7 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
  *      )
  * })
  */
-class PersonWithDataSources
+class DataSourcesLoading
 {
     use LoadableTrait;
 

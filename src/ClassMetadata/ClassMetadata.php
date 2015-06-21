@@ -1071,7 +1071,7 @@ class ClassMetadata
      *
      * @return self
      */
-    public function setFieldsWithSourcesForbidden($fieldsWithSourcesForbidden)
+    public function setFieldsWithSourcesForbidden(array $fieldsWithSourcesForbidden)
     {
         $this->fieldsWithSourcesForbidden = $fieldsWithSourcesForbidden;
 

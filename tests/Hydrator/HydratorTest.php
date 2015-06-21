@@ -8,8 +8,6 @@ use Kassko\ClassResolver\CallableClassResolver;
 use Kassko\DataMapper\Cache\ArrayCache;
 use Kassko\DataMapper\ClassMetadata;
 use Kassko\DataMapper\ClassMetadataLoader\AnnotationLoader;
-use Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader;
-use Kassko\DataMapper\ClassMetadataLoader\LoaderResolver;
 use Kassko\DataMapper\ClassMetadata\ClassMetadataFactory;
 use Kassko\DataMapper\Configuration\CacheConfiguration;
 use Kassko\DataMapper\Configuration\ClassMetadataFactoryConfigurator;
@@ -53,7 +51,7 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
          * and to use a resource loader (like AnnotationLoader).
          */
 
-        $loader = new DelegatingLoader(new LoaderResolver([new AnnotationLoader(new AnnotationReader)]));
+        $loader = new AnnotationLoader(new AnnotationReader);
         $cmFactory = (new ClassMetadataFactory)->setClassMetadataLoader($loader);
         $configuration = (new Configuration)
         ->setDefaultClassMetadataResourceType('annotations')
@@ -88,7 +86,66 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('3 street of bars', $person->getAddress());
     }
 
-    public function hydrateValidateNestedObject()
+    /**
+     * @test
+     * @dataProvider hydrateFieldTypeProvider
+     */
+    public function hydrateFieldTypeValidateResult(
+        $type,
+        $expected, 
+        $got
+    ) {
+        $data = [$type => $got];
+        $fieldType = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\FieldType;
+        $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\FieldType');
+        $hydrator->hydrate($data, $fieldType);
+
+        $this->assertSame($expected, $fieldType->{'get' . ucfirst($type)}());
+    }
+
+    /**
+     * @test
+     * @expectedException \PHPUnit_Framework_Error
+     */
+    public function hydrateFieldTypeValidateBehaviorOnBadType() 
+    {
+        $data = ['someType' => '3'];
+        $fieldType = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\BadFieldType;
+        $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\BadFieldType');
+        $hydrator->hydrate($data, $fieldType);
+    }
+
+    /**
+     * @return array
+     */
+    public function hydrateFieldTypeProvider()
+    {
+        return [
+            ['someBool', true, true],
+            ['someBool', false, false],
+            ['someBool', true, 1],
+            ['someBool', false, 0],
+
+            ['someInt', 3, 3],
+            ['someInt', 3, 3.0],
+            ['someInt', 3, '3'],
+            ['someInt', 3, '3.0'],
+
+            ['someFloat', 3.0, 3.0],
+            ['someFloat', 3.0, 3],
+            ['someFloat', 3.0, '3.0'],
+            ['someFloat', 3.0, '3'],
+
+            ['someString', 'some string', 'some string'],
+            ['someString', '3', 3],
+            ['someString', '3', 3.0],
+            ['someString', 'true', 'true'],
+
+            ['someArray', [3], [3]],//If property is an array, it will not be changed.
+        ];
+    }
+
+    public function hydrateDeepValidateResult()
     {
     }
 
@@ -104,8 +161,8 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
         ;
         $dataSource->expects($this->once())->method('getData');
         
-        $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\PersonWithDataSources', $dataSource, $dataSourceOriginalClass);
-        $person = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\PersonWithDataSources;
+        $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading', $dataSource, $dataSourceOriginalClass);
+        $person = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading;
         $hydrator->hydrate([], $person);
     }
 
@@ -121,8 +178,8 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
         ;
         $dataSource->expects($this->never())->method('getLazyLoadedData');
         
-        $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\PersonWithDataSources', $dataSource, $dataSourceOriginalClass);
-        $person = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\PersonWithDataSources;
+        $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading', $dataSource, $dataSourceOriginalClass);
+        $person = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading;
         $hydrator->hydrate([], $person);
     }
 
@@ -131,8 +188,8 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
      */
     public function hydrateValidateDataSourceDataLoaded()
     {        
-        $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\PersonWithDataSources');
-        $person = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\PersonWithDataSources;
+        $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading');
+        $person = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading;
         $hydrator->hydrate([], $person);
 
         $this->assertEquals('name', $person->getName());

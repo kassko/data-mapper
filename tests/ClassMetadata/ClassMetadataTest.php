@@ -577,4 +577,35 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
         }
         $this->assertFalse($this->classMetadata->isTransient('someInvalidValue'));
     }
+
+    /**
+     * @test
+     */
+    public function getFieldsWithSourcesForbiddenValidateDefaultValue()
+    {
+        $result = $this->classMetadata->getFieldsWithSourcesForbidden();
+
+        $this->assertEquals(array(), $result);
+    }
+
+    /**
+     * @test
+     * @expectedException \PHPUnit_Framework_Error
+     */
+    public function setFieldsWithSourcesForbiddenValidateTypeHinting()
+    {
+        $this->classMetadata->setFieldsWithSourcesForbidden($this);
+    } 
+
+    /**
+     * @test
+     */
+    public function setFieldsWithSourcesForbiddenValidateResult()
+    {
+        $fieldsWithSourcesForbidden = ['fieldA', 'fieldB', 'fieldC'];
+        $result = $this->classMetadata->setFieldsWithSourcesForbidden($fieldsWithSourcesForbidden);
+
+        $this->assertSame($this->classMetadata, $result);
+        $this->assertEquals($fieldsWithSourcesForbidden, $this->classMetadata->getFieldsWithSourcesForbidden());
+    }
 }
