@@ -12,6 +12,7 @@ use Kassko\DataMapper\ClassMetadata\ClassMetadataFactory;
 use Kassko\DataMapper\Configuration\CacheConfiguration;
 use Kassko\DataMapper\Configuration\ClassMetadataFactoryConfigurator;
 use Kassko\DataMapper\Configuration\Configuration;
+use Kassko\DataMapper\Exception\ObjectMappingException;
 use Kassko\DataMapper\Hydrator\Hydrator;
 use Kassko\DataMapper\LazyLoader\LazyLoaderFactory;
 use Kassko\DataMapper\MethodInvoker\MagicMethodInvoker;
@@ -19,7 +20,7 @@ use Kassko\DataMapper\ObjectManager;
 use Kassko\DataMapper\Registry\Registry;
 
 /**
- * Class Hydrator
+ * Class HydratorTest
  * 
  * @author kko
  */
@@ -33,43 +34,19 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
     /**
      * @return void
      */
-    public static function setUpBeforeClass()
-    {
-        AnnotationRegistry::reset();
-        AnnotationRegistry::registerLoader('class_exists');
-    }
-
-    /**
-     * @return void
-     */
     public function setUp()
     {
+        AnnotationRegistry::registerLoader('class_exists');
+
         /**
-         * @todo: when it will be ready, use directly the ClassMetadataBuilder. All loaders will use it to create the metadata.
+         * @todo: when available, use directly the ClassMetadataBuilder. All loaders will use it to create the metadata at a high level.
          *
          * For the moment, to build these metadata, we need to create a lot of resources (like Kassko\DataMapperTest\Hydrator\Fixture\PersonDataSource) 
          * and to use a resource loader (like AnnotationLoader).
          */
-
-        $loader = new AnnotationLoader(new AnnotationReader);
-        $cmFactory = (new ClassMetadataFactory)->setClassMetadataLoader($loader);
-        $configuration = (new Configuration)
-        ->setDefaultClassMetadataResourceType('annotations')
-        ->setClassMetadataCacheConfig((new CacheConfiguration)->setCache(new ArrayCache))
-        ->setResultCacheConfig((new CacheConfiguration)->setCache(new ArrayCache))
-        ;
-
-        $cmConfigurator = new ClassMetadataFactoryConfigurator($configuration);
-        $cmConfigurator->configure($cmFactory);
-
-        $this->objectManager = ObjectManager::getInstance()
-        ->setConfiguration($configuration)
-        ->setClassMetadataFactory($cmFactory)
-        ->setMethodInvoker(new MagicMethodInvoker)
-        ;
-
-        $lazyLoaderFactory = new LazyLoaderFactory($this->objectManager);
-        Registry::getInstance()[Registry::KEY_LAZY_LOADER_FACTORY] = $lazyLoaderFactory;
+        
+        $this->createObjectManager();
+        $this->registerLazyLoader();
     }
 
     /**
@@ -105,7 +82,8 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
+     * @expectedException \Kassko\DataMapper\Exception\ObjectMappingException
+     * @expectedExceptionCode \Kassko\DataMapper\Exception\ObjectMappingException::BAD_CONVERSION_TYPE
      */
     public function hydrateFieldTypeValidateBehaviorOnBadType() 
     {
@@ -141,12 +119,25 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
             ['someString', '3', 3.0],
             ['someString', 'true', 'true'],
 
-            ['someArray', [3], [3]],//If property is an array, it will not be changed.
+            ['someArray', [3], [3]],//If property is an array, it's value will not be converted.
         ];
     }
 
+    /**
+     * @test
+     */
     public function hydrateDeepValidateResult()
     {
+        $street = '3 street of bars';
+        $postalCode = '54000';
+
+        $data = ['address' => ['street' => $street, 'postalCode' => $postalCode]];
+        $person = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\PersonB;
+        $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\PersonB');
+        $hydrator->hydrate($data, $person);
+
+        $this->assertEquals($street, $person->address->street);
+        $this->assertEquals($postalCode, $person->address->postalCode);
     }
 
     /**
@@ -156,13 +147,16 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
     {
         $dataSourceOriginalClass = 'Kassko\DataMapperTest\Hydrator\Fixture\PersonDataSource';
         $dataSource = $this->getMockBuilder($dataSourceOriginalClass)
-                           ->setMethods(['getData'])
+                           ->setMethods(['getData', 'getLazyLoadedData'])
                            ->getMock()
         ;
         $dataSource->expects($this->once())->method('getData');
+        $dataSource->expects($this->never())->method('getLazyLoadedData');
         
         $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading', $dataSource, $dataSourceOriginalClass);
         $person = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading;
+        
+        //Should not trigger address loading (so no "getLazyLoadedData" call) since this property is configured to be lazyloaded.
         $hydrator->hydrate([], $person);
     }
 
@@ -176,24 +170,84 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
                            ->setMethods(['getLazyLoadedData'])
                            ->getMock()
         ;
-        $dataSource->expects($this->never())->method('getLazyLoadedData');
+        $dataSource->expects($this->once())->method('getLazyLoadedData');
         
         $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading', $dataSource, $dataSourceOriginalClass);
         $person = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading;
+
         $hydrator->hydrate([], $person);
+
+        //Should trigger address lazyloading (so "getLazyLoadedData" call).
+        $person->getAddress();
+
+        //Should not trigger address lazyloading for a second time (because data are already loaded).
+        $person->getAddress();
     }
 
     /**
      * @test
      */
     public function hydrateValidateDataSourceDataLoaded()
-    {        
+    {
         $hydrator = $this->createHydrator('Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading');
         $person = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesLoading;
         $hydrator->hydrate([], $person);
 
         $this->assertEquals('name', $person->getName());
-        $this->assertEquals('address', $person->getAddress());//Trigger lazy loading.
+        $this->assertNull($person->address);//Check the default value of address.
+        $this->assertEquals('address', $person->getAddress());//Check the lazy loaded value.
+    }
+
+    public function hydrateValidateAdvancedNestedObject()
+    {//array of objects
+    }
+
+    public function hydrateValidateSupplySeveralFields()
+    {
+    }
+
+    public function hydrateValidateParametersResolution()
+    {
+    }
+
+    public function hydrateValidateProcessorsTriggering()
+    {
+    }
+
+    public function hydrateValidateOnFail()
+    {
+    }
+
+    public function hydrateValidateExeptionClass()
+    {
+    }
+
+    public function hydrateValidateBadReturnValue()
+    {
+    }
+
+    public function hydrateValidateFallbackSources()
+    {
+    }
+
+    public function hydrateValidateDepends()
+    {
+    }
+
+    public function hydrateValidateClassResolution()
+    {
+    }
+
+    public function hydrateValidateExpressionLanguageMethods()
+    {
+    }
+
+    public function hydrateValidateSmartFieldDefaultValue()
+    {
+    }
+
+    public function hydrateValidateConfigurationVariables()
+    {
     }
 
     /**
@@ -201,19 +255,45 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
      */
     private function createHydrator($objectClass, $dataSource = null, $dataSourceOriginalClass = null)
     {
-        $classResolver = new CallableClassResolver(
-            function ($class) use ($dataSource, $dataSourceOriginalClass) {
-                if (null !== $dataSource && $dataSourceOriginalClass === $class) {
-                    return $dataSource;
+        if (null !== $dataSource && null !== $dataSourceOriginalClass) {
+            $classResolver = new CallableClassResolver(
+                function ($class) use ($dataSource, $dataSourceOriginalClass) {
+                    if ($dataSourceOriginalClass === $class) {
+                        return $dataSource;
+                    }
+                    return new $class;
                 }
-                return new $class;
-            }
-        );
+            );
 
-        return 
-        $this->objectManager
-        ->setClassResolver($classResolver)
-        ->createHydratorFor($objectClass)
+            $this->objectManager->setClassResolver($classResolver);
+        }
+
+        return $this->objectManager->createHydratorFor($objectClass);
+    }
+
+    private function createObjectManager()
+    {
+        $loader = new AnnotationLoader(new AnnotationReader);
+        $cmFactory = (new ClassMetadataFactory)->setClassMetadataLoader($loader);
+        $configuration = (new Configuration)
+        ->setDefaultClassMetadataResourceType('annotations')
+        ->setClassMetadataCacheConfig((new CacheConfiguration)->setCache(new ArrayCache))
+        ->setResultCacheConfig((new CacheConfiguration)->setCache(new ArrayCache))
         ;
+
+        $cmConfigurator = new ClassMetadataFactoryConfigurator($configuration);
+        $cmConfigurator->configure($cmFactory);
+
+        $this->objectManager = ObjectManager::getInstance()
+        ->setConfiguration($configuration)
+        ->setClassMetadataFactory($cmFactory)
+        ->setMethodInvoker(new MagicMethodInvoker)
+        ;
+    }
+
+    private function registerLazyLoader()
+    {
+        $lazyLoaderFactory = new LazyLoaderFactory($this->objectManager);
+        Registry::getInstance()[Registry::KEY_LAZY_LOADER_FACTORY] = $lazyLoaderFactory;
     }
 }

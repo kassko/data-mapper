@@ -26,12 +26,12 @@ class DataSourcesLoading
     /**
      * @DM\RefSource(id="dataSource")
      */
-    private $name;
+    public $name;
 
     /**
      * @DM\RefSource(id="lazyLoadedDataSource")
      */
-    private $address;
+    public $address;
 
     /**
      * Gets the value of name.

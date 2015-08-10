@@ -11,6 +11,8 @@ use Exception;
  */
 class ObjectMappingException extends Exception
 {
+    const BAD_CONVERSION_TYPE = 1;
+
     public static function annotationNotFound($annotationName, $fieldName)
     {
         return new self(sprintf("Annotation [%s] not found for object field [%s].", $annotationName, $fieldName));
@@ -110,7 +112,7 @@ class ObjectMappingException extends Exception
         $originalFieldNames,
         $mappedFieldNames
     ) {
-        return new ObjectMappingException(
+        return new self(
             sprintf(
                 'In domain object "%s", the data source "%s::%s" return the forbidden key "%s".'
                 . ' Maybe you have provided too many keys or some numerical keys, allowed keys are "%s".'
@@ -124,6 +126,20 @@ class ObjectMappingException extends Exception
                 '[ ' . implode(', ', $originalFieldNames) . ' ]',
                 '[ ' . implode(', ', $mappedFieldNames) . ' ]'
             )
+        );
+    }
+
+    public static function badConversionType($type, array $allowedTypes, $objectClass, $mappedFieldName) 
+    {
+        return new self(
+            sprintf(
+                'Cannot convert value of "%s::%s" to type "%s". Allowed types are "[%s]"', 
+                $objectClass, 
+                $mappedFieldName, 
+                $type,
+                implode(', ', $allowedTypes)
+            ),
+            self::BAD_CONVERSION_TYPE
         );
     }
 }

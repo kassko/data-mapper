@@ -51,7 +51,7 @@ class ObjectManager
     /**
      * @var array
      */
-    private static $identityMap = [];
+    private $identityMap = [];
     /**
      * @var MethodInvoker
      */
@@ -112,7 +112,7 @@ class ObjectManager
         $objectHash = spl_object_hash($object);
         $this->fixObjectInIdentityMap($object, $objectHash);
 
-        return isset(self::$identityMap[$objectHash][$propertyName]);
+        return isset($this->identityMap[$objectHash][$propertyName]);
     }
 
     public function markPropertyLoaded($object, $propertyName)
@@ -120,12 +120,12 @@ class ObjectManager
         $objectHash = spl_object_hash($object);
 
         $this->registerObjectToIdentityMap($object, $objectHash);
-        self::$identityMap[$objectHash][$propertyName] = true;
+        $this->identityMap[$objectHash][$propertyName] = true;
 
         //Properties which has the same provider as $propertyName are marked loaded.
         $metadata = $this->getMetadata(get_class($object));
         foreach ($metadata->getFieldsWithSameDataSource($propertyName) as $otherLoadedPropertyName) {
-            self::$identityMap[$objectHash][$otherLoadedPropertyName] = true;
+            $this->identityMap[$objectHash][$otherLoadedPropertyName] = true;
         }
     }
 
@@ -136,14 +136,14 @@ class ObjectManager
 
         $this->checkIfIsLoadable($object);   
         if (false === $object->__isRegistered) {
-            unset(self::$identityMap[$objectHash]); 
+            unset($this->identityMap[$objectHash]); 
         }
     }
 
     private function registerObjectToIdentityMap($object, $objectHash)
     {
-        if (! isset(self::$identityMap[$objectHash])) {
-            self::$identityMap[$objectHash] = [];
+        if (! isset($this->identityMap[$objectHash])) {
+            $this->identityMap[$objectHash] = [];
             $this->checkIfIsLoadable($object);
             $object->__isRegistered = true;
         }
@@ -154,7 +154,7 @@ class ObjectManager
         $objectHash = spl_object_hash($object);
 
         $this->registerObjectToIdentityMap($object, $objectHash);
-        self::$identityMap[$objectHash]->variables = $variables;
+        $this->identityMap[$objectHash]->variables = $variables;
     }
    
     /**

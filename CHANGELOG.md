@@ -3,8 +3,8 @@
 * `New`: New config item `RefDefaultSource` which allows to bind a default source to all the fields of an object. That's usefull not to duplicate on all fields the config item RefSource. It's possible to exclude some fields to be bound with another new config item `ExcludeDefaultSource`.
 * `New`: Source loading: new trait `LoadableTrait` with a method `load` which load all properties (except properties marked to be lazy loaded). That's usefull in combination with the new config items `RefDefaultSource` and `ExcludeDefaultSource`. It's also fix an inconsistency: only the mode `lazyloading enabled` worked. We were not able to load immediately properties.
 * `New`: Hydrator configuration: new key `depends` in source config item that allows to specify some sources as dependencies. These sources will always be triggered before the dependant source.
-* `New`: Allows variables in configuration. Variables are send from an object to another nested object and are availables in the configuration via expression language. 
-* `New`: Allows to initialize properties from configuration and expression language with the new key `defaultValue` in config item `Field`.
+* `New`: Allows variables in configuration. Variables are send from an object to another nested object and are availables in the configuration via an expression language. 
+* `New`: New key `defaultValue` (a smart default value) in config item `Field` usefull to initialize properties from configuration and expression language.
 * `New`: New config item `Config`. It replaces `ValueObject config` which is deprecated now.
 * `New`: Merge Provider to DataSource concept. So just use DataSource instead of Provider. Provider concept will be removed in the next significant release.
 * `New`: key config `class_resolver`: make invisible the use of `class-resolver`. You can just send a closure which is internally convert to a `Kassko\ClassResolver\CallableClassResolver`. 
@@ -13,6 +13,7 @@
 * `Fix`: Fix bug on extraction. Members with no getters were never extracted.
 * `Fix`: Fix bug on extraction. Properties which are objects were not extracted.
 * `Fix`: Fix identification of fields with same source when sources have same class/method but differents method arguments.  Now, use the Id to process the identification instead of the pair class/method
+* `Fix`: Fix bug when working whith several object managers. The lazy loader didn't retrieve the good one.
 * `Enhanc`: Add some hydrator tests
 * `Enhanc`: Add a default cache for data sources. An array / request cache.
 

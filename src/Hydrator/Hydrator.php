@@ -406,7 +406,8 @@ class Hydrator extends AbstractHydrator
         try {
             $data = $this->objectManager->findFromSource($sourceMetadata);
         } catch (Exception $e) {
-            if (! $e instanceof $sourceMetadata->exceptionClass) {
+            $exceptionClass = $sourceMetadata->getExceptionClass();
+            if (! $e instanceof $exceptionClass) {
                 throw $e;
             }
             $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->getFallbackSourceId());
@@ -496,10 +497,10 @@ class Hydrator extends AbstractHydrator
             
             if (null !== $type) {
                 if (! is_array($value)) {
-                    settype($value, $type);    
+                    $this->setType($value, $type, $this->metadata->getName(), $mappedFieldName);    
                 } /*else {
                     foreach ($value as &$itemValue) {
-                        settype($itemValue, $type);    
+                         $this->setType($itemValue, $type);    
                     }
                 }*/
             }
@@ -515,6 +516,16 @@ class Hydrator extends AbstractHydrator
         $this->memberAccessStrategy->setValue($value, $object, $mappedFieldName);    
 
         return true;
+    }
+
+    private function setType(&$value, $type, $objectClass, $mappedFieldName)
+    {
+        static $allowedTypes = ['boolean', 'bool', 'int', 'integer', 'float', 'string'];
+        if (! in_array($type, $allowedTypes)) {
+            throw ObjectMappingException::badConversionType($type, $allowedTypes, $objectClass, $mappedFieldName);
+        }
+
+        \settype($value, $type);
     }
 
     protected function createFieldHydrator($fieldClass, $object, $mappedFieldName, $hasConfig)
@@ -561,7 +572,7 @@ class Hydrator extends AbstractHydrator
         $this->resolveValues($args, $object);
         $sourceMetadata->getMethod()->setArgs($args);
         $data = $this->findFromSource($sourceMetadata);
-            
+        
         $this->executePreprocessors($sourceMetadata, $object);
 
         if (! $sourceMetadata->getSupplySeveralFields()) {
@@ -580,9 +591,9 @@ class Hydrator extends AbstractHydrator
         }
 
         if ($sourceMetadata->hasDepends()) {
-            foreach ($sourceMetadata->depends as $dependFieldName) {
+            foreach ($sourceMetadata->getDepends() as $dependFieldName) {
                 $sourceMetadata = $this->metadata->getSourceInfo($dependFieldName);
-                if ($sourceMetadata->isDataSource) {
+                if ($sourceMetadata instanceof \Kassko\DataMapper\ClassMetadata\Model\DataSource) {
                     $this->walkHydrationByDataSourceMetadata($sourceMetadata, $dependFieldName, $object, $enforceLoading);
                 } else {
                     $this->walkHydrationByProviderMetadata($sourceMetadata, $dependFieldName, $object, $enforceLoading);
@@ -639,9 +650,9 @@ class Hydrator extends AbstractHydrator
         }
 
         if ($sourceMetadata->hasDepends()) {
-            foreach ($sourceMetadata->depends as $dependFieldName) {
+            foreach ($sourceMetadata->getDepends() as $dependFieldName) {
                 $sourceMetadata = $this->metadata->getSourceInfo($dependFieldName);
-                if ($sourceMetadata->isDataSource) {
+                if ($sourceMetadata instanceof \Kassko\DataMapper\ClassMetadata\Model\DataSource) {
                     $this->walkHydrationByDataSourceMetadata($sourceMetadata, $dependFieldName, $object, $enforceLoading);
                 } else {
                     $this->walkHydrationByProviderMetadata($sourceMetadata, $dependFieldName, $object, $enforceLoading);
