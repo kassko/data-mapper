@@ -13,7 +13,7 @@ trait LoadableTrait
 {
     public $__isRegistered = false;
 
-    private function load()
+    protected function load()
     {
         if (false === $lazyLoader = $this->__getLoader()) {
             return; 
@@ -22,7 +22,7 @@ trait LoadableTrait
         $lazyLoader->load($this);
     }
 
-    private function loadProperty($propertyName)
+    protected function loadProperty($propertyName)
     {
         if (false === $lazyLoader = $this->__getLoader()) {
             return; 
@@ -33,21 +33,8 @@ trait LoadableTrait
 
     private function __getLoader()
     {
-        static $loaderFactory;
-
-        if (false === $loaderFactory) {//If loader factory is not available.
-            return false;
-        } 
-
-        if (null !== $loaderFactory) {//If loader factory is available.
-            return $loaderFactory->getInstance(get_called_class());
-        }
-
-        //If loader factory availability is not evaluated yet.
-        
         $registry = Registry::getInstance();
         if (! isset($registry[Registry::KEY_LAZY_LOADER_FACTORY])) {
-            $loaderFactory = false;
             return false;
         } 
 

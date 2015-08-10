@@ -88,7 +88,7 @@ class ValueResolver
         return $this->hydrator->getCurrentConfigVariableByName($variableName);
     }
 
-    private function resolveService($serviceId)
+    protected function resolveService($serviceId)
     {
         if ($this->classResolver) {
             return $this->classResolver->resolve($serviceId);

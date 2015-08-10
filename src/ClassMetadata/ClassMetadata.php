@@ -149,11 +149,11 @@ class ClassMetadata
             unset($fieldDataByKey);
         }
 
-        $this->normalizeDataSourcesStore();
-        $this->normalizeProvidersStore();
+        /*$this->normalizeDataSourcesStore();
+        $this->normalizeProvidersStore();*/
 
         $this->resolveSource();
-        $this->resolveDefaultSource();
+        //$this->resolveDefaultSource(); /* Is not backward compatible ! */
     }
 
     private function resolveSource()
@@ -174,13 +174,13 @@ class ClassMetadata
          
             $defaultSource = $this->findProviderByIdBeforeCompilation($this->refDefaultSource);   
             if (null !== $defaultSource) {
-                $this->resolveDefaultSourceById($defaultSource, $this->providers);
+                $this->resolveDefaultProviderById($defaultSource);
                 return;
             }
 
             $defaultSource = $this->findDataSourceByIdBeforeCompilation($this->refDefaultSource);
             if (null !== $defaultSource) {
-                $this->resolveDefaultSourceById($defaultSource, $this->dataSources);
+                $this->resolveDefaultDataSourceById($defaultSource);
                 return;
             }
         }
@@ -188,7 +188,7 @@ class ClassMetadata
         if (count($this->providersStore)) {
             reset($this->providersStore);
             $defaultSource = current($this->providersStore);
-            $this->resolveDefaultSourceById($defaultSource, $this->providers);
+            $this->resolveDefaultProviderById($defaultSource);
 
             return;
         }
@@ -196,17 +196,26 @@ class ClassMetadata
         if (count($this->dataSourcesStore)) {
             reset($this->dataSourcesStore);
             $defaultSource = current($this->dataSourcesStore);
-            $this->resolveDefaultSourceById($defaultSource, $this->dataSources);  
+            $this->resolveDefaultDataSourceById($defaultSource);  
 
             return;
         }
     }
 
-    private function resolveDefaultSourceById($defaultSource, &$sources)
+    private function resolveDefaultDataSourceById($defaultSource)
     {
         foreach ($this->mappedFieldNames as $mappedFieldName) {
             if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
-                $sources[$mappedFieldName] = $defaultSource;
+                $this->dataSources[$mappedFieldName] = $defaultSource;
+            }
+        }
+    }
+
+    private function resolveDefaultProviderById($defaultSource, &$sources)
+    {
+        foreach ($this->mappedFieldNames as $mappedFieldName) {
+            if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
+                $this->providers[$mappedFieldName] = $defaultSource;
             }
         }
     }

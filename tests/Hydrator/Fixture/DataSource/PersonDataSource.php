@@ -1,5 +1,5 @@
 <?php
-namespace Kassko\DataMapperTest\Hydrator\Fixture;
+namespace Kassko\DataMapperTest\Hydrator\Fixture\DataSource;
 
 use Kassko\DataMapper\Annotation as DM;
 
