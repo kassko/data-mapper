@@ -8,12 +8,12 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
  * @DM\DataSourcesStore({
  *      @DM\DataSource(
  *          id="dataSource",
- *          class="Kassko\DataMapperTest\Hydrator\Fixture\PersonDataSource",
+ *          class="Kassko\DataMapperTest\Hydrator\Fixture\DataSource\PersonDataSource",
  *          method="getData"
  *      ),
  *      @DM\DataSource(
  *          id="lazyLoadedDataSource",
- *          class="Kassko\DataMapperTest\Hydrator\Fixture\PersonDataSource",
+ *          class="Kassko\DataMapperTest\Hydrator\Fixture\DataSource\PersonDataSource",
  *          method="getLazyLoadedData",
  *          lazyLoading=true
  *      )
