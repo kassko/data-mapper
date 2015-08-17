@@ -1,3 +1,6 @@
+`0.12.4.4 - 2015/08/17 - Fix version`:
+* `Fix`: Fix `loadProperty()` access in inheritance context (make this method protected).
+
 `0.12.4.3 - 2015/06/15 - Fix version`:
 * `Fix`: Fix sources loading (only the first source was loaded sometimes) and simplify the code related to the sources loaded tracking.
 
