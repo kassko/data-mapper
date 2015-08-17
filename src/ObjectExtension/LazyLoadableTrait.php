@@ -13,7 +13,7 @@ trait LazyLoadableTrait
 {
     public $__isRegistered = false;
 
-    private function loadProperty($propertyName)
+    protected function loadProperty($propertyName)
     {
         if (false === $lazyLoader = $this->getLazyLoader()) {
             return; 
