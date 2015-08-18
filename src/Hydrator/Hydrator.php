@@ -111,9 +111,28 @@ class Hydrator extends AbstractHydrator
         $this->methodInvoker = $this->objectManager->getMethodInvoker();
     }
 
+    /**
+     * Sets a class resolver.
+     *
+     * @param ClassResolverInterface $classResolver A class resolver 
+     *
+     * @return self
+     */
     public function setClassResolver(ClassResolverInterface $classResolver)
     {
         $this->classResolver = $classResolver;
+
+        return $this;
+    }
+
+    /**
+     * Unsets the class resolver.
+     *
+     * @return self
+     */
+    public function unsetClassResolver()
+    {
+        $this->classResolver = null;
 
         return $this;
     }
@@ -391,7 +410,7 @@ class Hydrator extends AbstractHydrator
             return $this->objectManager->findFromSource($sourceMetadata);
         }
 
-        if (SourcePropertyMetadata::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->onFail) {
+        if (SourcePropertyMetadata::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->getOnFail()) {
             
             $data = $this->objectManager->findFromSource($sourceMetadata);
             if ($sourceMetadata->areDataInvalid($data)) {
@@ -402,7 +421,7 @@ class Hydrator extends AbstractHydrator
             return $data;
         } 
 
-        //Else SourcePropertyMetadata::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->onFail.
+        //Else SourcePropertyMetadata::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->getOnFail().
         try {
             $data = $this->objectManager->findFromSource($sourceMetadata);
         } catch (Exception $e) {

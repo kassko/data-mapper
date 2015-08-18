@@ -5,7 +5,7 @@ use Kassko\DataMapper\Annotation as DM;
 
 class NestedClass
 {
-	public $propertyA;
-	public $propertyB;
-	public $collectionProperty;
+    public $propertyA;
+    public $propertyB;
+    public $collectionProperty;
 }

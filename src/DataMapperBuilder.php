@@ -3,7 +3,6 @@
 namespace Kassko\DataMapper;
 
 use Doctrine\Common\Annotations\AnnotationReader;
-use Kassko\DataMapper\Cache\CacheProfile;
 use Kassko\DataMapper\ClassMetadataLoader\AnnotationLoader;
 use Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader;
 use Kassko\DataMapper\ClassMetadataLoader\InnerPhpLoader;

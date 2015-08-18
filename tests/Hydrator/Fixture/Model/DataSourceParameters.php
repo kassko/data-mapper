@@ -14,7 +14,7 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
  *      )
  * })
  */
-class DataSourcesParameters
+class DataSourceParameters
 {
     use LoadableTrait;
 
@@ -22,7 +22,7 @@ class DataSourcesParameters
      * @DM\RefSource(id="dataSource")
      */
     private $propertyA;
-    private $propertyB = 'property_b_value';
+    private $propertyB = 'propertyBValue';
 
     /**
      * Gets the value of propertyA.

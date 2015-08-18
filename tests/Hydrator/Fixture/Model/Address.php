@@ -4,6 +4,6 @@ namespace Kassko\DataMapperTest\Hydrator\Fixture\Model;
 
 class Address
 {
-	public $street;
-	public $postalCode;
+    public $street;
+    public $postalCode;
 }

@@ -1,11 +1,11 @@
 <?php
 namespace Kassko\DataMapperTest\Hydrator\Fixture\DataSource;
 
-use Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourcesParameters;
+use Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceParameters;
 
 class ParametersDataSource
 {
-    public function getData(DataSourcesParameters $object, array $data, $propertyValue, $valueInt, $valueString)
+    public function getData(DataSourceParameters $object, array $data, $propertyValue, $valueInt, $valueString)
     {
         return '123';
     }

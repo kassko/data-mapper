@@ -90,12 +90,12 @@ class ObjectManager
 
     public function checkIfIsLoadable($object)
     {
-        $classUses = class_uses(get_class($object));
+        $traitsUses = $this->getClassUsesDeeply(get_class($object));
 
         if (
-            ! in_array('Kassko\\DataMapper\\ObjectExtension\\LoadableTrait', $classUses)
+            ! in_array('Kassko\\DataMapper\\ObjectExtension\\LoadableTrait', $traitsUses)
             &&
-            ! in_array('Kassko\\DataMapper\\ObjectExtension\\LazyLoadableTrait', $classUses)
+            ! in_array('Kassko\\DataMapper\\ObjectExtension\\LazyLoadableTrait', $traitsUses)
         ) {
             throw new ObjectMappingException(
                 sprintf(
@@ -105,6 +105,34 @@ class ObjectManager
                 ) 
             );
         }
+    }
+
+    private function getClassUsesDeeply($class, $autoload = true)
+    {
+        /**
+         * @todo Add a cache with all traits uses for each classes.
+         */
+
+        $traits = [];
+
+        // Get traits of all parent classes
+        do {
+            $traits = array_merge(class_uses($class, $autoload), $traits);
+        } while ($class = get_parent_class($class));
+
+        // Get traits of all parent traits
+        $traitsToSearch = $traits;
+        while (! empty($traitsToSearch)) {
+            $newTraits = class_uses(array_pop($traitsToSearch), $autoload);
+            $traits = array_merge($newTraits, $traits);
+            $traitsToSearch = array_merge($newTraits, $traitsToSearch);
+        };
+
+        foreach ($traits as $trait => $same) {
+            $traits = array_merge(class_uses($trait, $autoload), $traits);
+        }
+
+        return array_unique($traits);
     }
 
     public function isPropertyLoaded($object, $propertyName)
@@ -271,7 +299,7 @@ class ObjectManager
             $source, 
             $sourceMetadata->getMethod()->getFunction(), 
             $sourceMetadata->getMethod()->getArgs(), 
-            $this->cacheProfile->setKey($cacheKey)->derive()
+            $this->cacheProfile ? $this->cacheProfile->setKey($cacheKey)->derive() : null
         );
     }
 
@@ -339,9 +367,28 @@ class ObjectManager
         return $this;
     }
 
+    /**
+     * Sets a class resolver.
+     *
+     * @param ClassResolverInterface $classResolver A class resolver 
+     *
+     * @return self
+     */
     public function setClassResolver(ClassResolverInterface $classResolver)
     {
         $this->classResolver = $classResolver;
+
+        return $this;
+    }
+
+    /**
+     * Unsets the class resolver.
+     *
+     * @return self
+     */
+    public function unsetClassResolver()
+    {
+        $this->classResolver = null;
 
         return $this;
     }
@@ -476,9 +523,21 @@ class ObjectManager
      *
      * @return self
      */
-    public function setCacheProfile(CacheProfile $cacheProfile)
+    public function setCacheProfile(CacheProfile $cacheProfile = null)
     {
         $this->cacheProfile = $cacheProfile;
+
+        return $this;
+    }
+
+    /**
+     * Unsets the cacheProfile.
+     *
+     * @return self
+     */
+    public function unsetCacheProfile()
+    {
+        $this->cacheProfile = null;
 
         return $this;
     }

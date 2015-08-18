@@ -6,8 +6,8 @@ use Kassko\DataMapper\Annotation as DM;
 
 class PersonB
 {
-	/**
-	 * @DM\Field(class="Kassko\DataMapperTest\Hydrator\Fixture\Model\Address")
-	 */
-	public $address;
+    /**
+     * @DM\Field(class="Kassko\DataMapperTest\Hydrator\Fixture\Model\Address")
+     */
+    public $address;
 }

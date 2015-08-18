@@ -423,8 +423,8 @@ class AnnotationLoader extends AbstractLoader
                     $annotation->preprocessor->args
                 )
             );
-        } elseif (isset($annotation->preprocessor->items)) {
-            foreach ($annotation->preprocessor->items as $preprocessor) {
+        } elseif (isset($annotation->preprocessors->items)) {
+            foreach ($annotation->preprocessors->items as $preprocessor) {
                 $dataSource->addPreprocessor(
                     new Model\Method(
                         $preprocessor->class,
@@ -443,8 +443,8 @@ class AnnotationLoader extends AbstractLoader
                     $annotation->processor->args
                 )
             );
-        } elseif (isset($annotation->processor->items)) {
-            foreach ($annotation->processor->items as $processor) {
+        } elseif (isset($annotation->processors->items)) {
+            foreach ($annotation->processors->items as $processor) {
                 $dataSource->addProcessor(
                     new Model\Method(
                         $processor->class,
@@ -475,40 +475,40 @@ class AnnotationLoader extends AbstractLoader
         ;
 
         if (isset($annotation->preprocessor->method)) {
-            $provider->setPreprocessors(
+            $provider->addPreprocessor(
                 new Model\Method(
-                    $annotation->preprocessor->method->class,
-                    $annotation->preprocessor->method->method,
-                    $annotation->preprocessor->method->args
+                    $annotation->preprocessor->class,
+                    $annotation->preprocessor->method,
+                    $annotation->preprocessor->args
                 )
             );
-        } elseif (isset($annotation->preprocessor->items)) {
-            foreach ($annotation->preprocessor->items as $preprocessor) {
+        } elseif (isset($annotation->preprocessors->items)) {
+            foreach ($annotation->preprocessors->items as $preprocessor) {
                 $provider->addPreprocessor(
                     new Model\Method(
-                        $preprocessor->method->class,
-                        $preprocessor->method->method,
-                        $preprocessor->method->args
+                        $preprocessor->class,
+                        $preprocessor->method,
+                        $preprocessor->args
                     )
                 );
             }
         }
 
         if (isset($annotation->processor->method)) {
-            $provider->setProcessors(
+            $provider->addProcessor(
                 new Model\Method(
-                    $annotation->processor->method->class,
-                    $annotation->processor->method->method,
-                    $annotation->processor->method->args
+                    $annotation->processor->class,
+                    $annotation->processor->method,
+                    $annotation->processor->args
                 )
             );
-        } elseif (isset($annotation->processor->items)) {
-            foreach ($annotation->processor->items as $processor) {
+        } elseif (isset($annotation->processors->items)) {
+            foreach ($annotation->processors->items as $processor) {
                 $provider->addProcessor(
                     new Model\Method(
-                        $processor->method->class,
-                        $processor->method->method,
-                        $processor->method->args
+                        $processor->class,
+                        $processor->method,
+                        $processor->args
                     )
                 );
             }

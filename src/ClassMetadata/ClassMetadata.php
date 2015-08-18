@@ -149,8 +149,8 @@ class ClassMetadata
             unset($fieldDataByKey);
         }
 
-        $this->normalizeDataSourcesStore();
-        $this->normalizeProvidersStore();
+        /*$this->normalizeDataSourcesStore();
+        $this->normalizeProvidersStore();*/
 
         $this->resolveSource();
         //$this->resolveDefaultSource(); /* Is not backward compatible ! */

@@ -9,11 +9,15 @@
 * `New`: Merge Provider to DataSource concept. So just use DataSource instead of Provider. Provider concept will be removed in the next significant release.
 * `New`: key config `class_resolver`: make invisible the use of `class-resolver`. You can just send a closure which is internally convert to a `Kassko\ClassResolver\CallableClassResolver`. 
 * `New`: key config `object_listener_resolver`: like for `class_resolver`, now you can just send a closure. 
+* `New`: add a new method `unsetClassResolver()` to unset the class resolver from ObjectManager.
+* `New`: add a new method `unsetClassResolver()` to unset the class resolver from Hydrator\Hydrator.
+* `New`: add a new method `unsetCacheProfile()` to unset the cache profile from ObjectManager. By default, data sources results are cached in an `array` cache to be reused during all the hydration process. Results are cached because they can be used by others data sources as parameter/input). Unsetting the cache profile allows to disable data sources result caching. Usefull in unit tests to really call data sources and to expect a number of calls.
 * `Fix`: Fix bug on class-resolver. We were not able to set a class-resolver. A boolean value "true" was set instead.
 * `Fix`: Fix bug on extraction. Members with no getters were never extracted.
 * `Fix`: Fix bug on extraction. Properties which are objects were not extracted.
 * `Fix`: Fix identification of fields with same source when sources have same class/method but differents method arguments.  Now, use the Id to process the identification instead of the pair class/method
 * `Fix`: Fix bug when working whith several object managers. The lazy loader didn't retrieve the good one.
+* `Fix`: Hydrator configuration: Fix key `processors` in annotation configuration. Processors specified was ignored. 
 * `Enhanc`: Add some hydrator tests
 * `Enhanc`: Add a default cache for data sources. An array / request cache.
 
