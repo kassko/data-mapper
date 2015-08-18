@@ -5,6 +5,6 @@ class FallbackDataSource
 {
     public function getData()
     {
-        return 'some data';
+        return 'some fallback data';
     }
 }

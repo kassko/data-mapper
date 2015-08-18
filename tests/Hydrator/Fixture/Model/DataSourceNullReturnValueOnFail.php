@@ -8,11 +8,11 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
  * @DM\DataSourcesStore({
  *      @DM\DataSource(
  *          id="source",
- *          class="Kassko\DataMapperTest\Hydrator\Fixture\DataSource\SomeDataSource",
+ *          class="NullSource",
  *          method="getData",
  *          lazyLoading=false,
- *          onFail="checkException",
- *          exceptionClass="\RuntimeException",
+ *          onFail="checkReturnValue",
+ *          badReturnValue="null",
  *          fallbackSourceId="sourceFallback"
  *      ),
  *      @DM\DataSource(
@@ -23,7 +23,7 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
  *      )
  * })
  */
-class DataSourceExceptionOnFail
+class DataSourceNullReturnValueOnFail
 {
     use LoadableTrait;
 

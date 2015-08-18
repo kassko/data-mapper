@@ -405,63 +405,157 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
+     *
+     * Test if the fallback data source is used if the main data source is not stable (throws an Exception).
      */
-    public function hydrateValidateDataSourceExceptionOnFail()
+    public function hydrateValidateDataSourceExceptionOnFail_Call()
     {
         $objectClass = 'Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceExceptionOnFail';
         $dataSourceRealClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\SomeDataSource';
+        $fallbackDataSourceClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\FallbackDataSource';
+
         $dataSource = $this->getMockBuilder($dataSourceRealClass)
                            ->setMethods(['getData'])
                            ->getMock();
         $dataSource->method('getData')->will($this->throwException(new \RuntimeException));
-        $hydrator = $this->createHydrator($objectClass, [$dataSourceRealClass => $dataSource]);
+
+        $fallbackDataSourceMock = $this->getMockBuilder($fallbackDataSourceClass)
+                                       ->setMethods(['getData'])
+                                       ->getMock();
+        $fallbackDataSourceMock->expects($this->once())
+                               ->method('getData');
+
+        $hydrator = $this->createHydrator($objectClass, [$dataSourceRealClass => $dataSource, $fallbackDataSourceClass => $fallbackDataSourceMock]);
         $object = new $objectClass;
         $hydrator->hydrate([], $object);
     }
 
     /**
      * @test
+     *
+     * Test if object is hydrated from the fallback data source if the main one is not stable (throws an Exception).
      */
-    public function hydrateValidateDataSourceBadReturnValueOnFail()
+    public function hydrateValidateDataSourceExceptionOnFail_Result()
     {
-        $objectClass = 'Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceBadReturnValueOnFail';
+        $objectClass = 'Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceExceptionOnFail';
         $dataSourceRealClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\SomeDataSource';
         $fallbackDataSourceClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\FallbackDataSource';
 
-        $mapDataSourceClassToDataSourceMockedObject = [];
-        $badReturnValues = $this->dataSourceBadReturnValueProvider();
-        foreach ($badReturnValues as $dataSourceClass => $badReturnValue) {
-            $dataSource = $this->getMockBuilder($dataSourceRealClass)
-                           ->setMockClassName($dataSourceClass)
+        $dataSource = $this->getMockBuilder($dataSourceRealClass)
                            ->setMethods(['getData'])
                            ->getMock();
-            $dataSource->method('getData')->willReturn($badReturnValue);
+        $dataSource->method('getData')->will($this->throwException(new \RuntimeException));
 
-            $mapDataSourceClassToDataSourceMockedObject[$dataSourceClass] = $dataSource;
-        } 
+        $hydrator = $this->createHydrator($objectClass, [$dataSourceRealClass => $dataSource]);
+        $object = new $objectClass;
+        $hydrator->hydrate([], $object);
 
-        $fallbackSource = $this->getMockBuilder($fallbackDataSourceClass)
+        $fallbackDataSource = new $fallbackDataSourceClass;
+        $this->assertEquals($fallbackDataSource->getData(), $object->property);
+    }
+
+    /**
+     * @test
+     *
+     * Test if the fallback data source is not used if the main data source is stable (doesn't throw an Exception).
+     */
+    public function hydrateValidateDataSourceExceptionOnFail_NoCall()
+    {
+        $objectClass = 'Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceExceptionOnFail';
+        $fallbackDataSourceClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\FallbackDataSource';
+
+        $fallbackDataSourceMock = $this->getMockBuilder($fallbackDataSourceClass)
+                                       ->setMethods(['getData'])
+                                       ->getMock();
+        $fallbackDataSourceMock->expects($this->never())
+                               ->method('getData');
+
+        $hydrator = $this->createHydrator($objectClass, [$fallbackDataSourceClass => $fallbackDataSourceMock]);
+        $object = new $objectClass;
+        $hydrator->hydrate([], $object);
+    }
+
+    /**
+     * @test
+     * @dataProvider dataSourceBadReturnValueProvider
+     *
+     * Test if fallback data source is called on bad return value.
+     */
+    public function hydrateValidateCallDataSourceBadReturnValueOnFail($objectClass, $dataSourceClass, $returnValue, $isBadReturnValue)
+    {
+        $dataSourceRealClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\SomeDataSource';
+        $fallbackDataSourceClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\FallbackDataSource';
+
+        $dataSourceMock = $this->getMockBuilder($dataSourceRealClass)
+                               ->setMockClassName($dataSourceClass)
                                ->setMethods(['getData'])
                                ->getMock();
-        $fallbackSource->expects($this->exactly(count($badReturnValues)))
-                       ->method('getData');
+        $dataSourceMock->method('getData')->willReturn($returnValue);
+
+        $fallbackDataSourceMock = $this->getMockBuilder($fallbackDataSourceClass)
+                                       ->setMethods(['getData'])
+                                       ->getMock();
+        if ($isBadReturnValue) {
+            $fallbackDataSourceMock->expects($this->once())
+                                   ->method('getData');
+        } else {
+            $fallbackDataSourceMock->expects($this->never())
+                                   ->method('getData');
+        }
         
-        $mapDataSourceClassToDataSourceMockedObject[$fallbackDataSourceClass] = $fallbackSource;
         $hydrator = $this->createHydrator(
             $objectClass, 
-            $mapDataSourceClassToDataSourceMockedObject
+            [$dataSourceClass => $dataSourceMock, $fallbackDataSourceClass => $fallbackDataSourceMock]
         );
         $object = new $objectClass;
         $hydrator->hydrate([], $object);
     }
 
+    /**
+     * @test
+     * @dataProvider dataSourceBadReturnValueProvider
+     *
+     * Test if object is hydrated from a fallback data source.
+     */
+    public function hydrateValidateResultDataSourceBadReturnValueOnFail($objectClass, $dataSourceClass, $returnValue, $isBadReturnValue)
+    {
+        $expectedReturnValue = '123';
+
+        $dataSourceRealClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\SomeDataSource';
+        $fallbackDataSourceClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\FallbackDataSource';
+
+        $dataSourceMock = $this->getMockBuilder($dataSourceRealClass)
+                               ->setMockClassName($dataSourceClass)
+                               ->setMethods(['getData'])
+                               ->getMock();
+        $dataSourceMock->method('getData')->willReturn($returnValue);
+
+        $fallbackDataSourceMock = $this->getMockBuilder($fallbackDataSourceClass)
+                                       ->setMethods(['getData'])
+                                       ->getMock();
+        $fallbackDataSourceMock->method('getData')->willReturn($expectedReturnValue);
+        
+        $hydrator = $this->createHydrator($objectClass, [$dataSourceClass => $dataSourceMock, $fallbackDataSourceClass => $fallbackDataSourceMock]);
+        $object = new $objectClass;
+        $hydrator->hydrate([], $object);
+
+        $this->assertEquals($expectedReturnValue, $object->property);
+    }
+
     public function dataSourceBadReturnValueProvider()
     {
         return [
-            'NullSource' => null, 
-            'FalseSource' => false, 
-            'EmptyStringSource' => '', 
-            'EmptyArraySource' => [],
+            //Bad return values.
+            ['Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceNullReturnValueOnFail', 'NullSource', null, true], 
+            ['Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceFalseReturnValueOnFail', 'FalseSource', false, true], 
+            ['Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceEmptyStringReturnValueOnFail', 'EmptyStringSource', '', true], 
+            ['Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceEmptyArrayReturnValueOnFail', 'EmptyArraySource', [], true], 
+
+            //Good return values.
+            ['Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceNullReturnValueOnFail', 'NullSource', '123', false], 
+            ['Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceFalseReturnValueOnFail', 'FalseSource', '123', false], 
+            ['Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceEmptyStringReturnValueOnFail', 'EmptyStringSource', '123', false], 
+            ['Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceEmptyArrayReturnValueOnFail', 'EmptyArraySource', '123', false], 
         ];
     }
 
