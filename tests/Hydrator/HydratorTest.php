@@ -1,5 +1,5 @@
 <?php
-namespace Kassko\DataMapperTest\ClassMetadata;
+namespace Kassko\DataMapperTest\Hydrator;
 
 use Closure;
 use Doctrine\Common\Annotations\AnnotationReader;
@@ -143,6 +143,72 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
+    public function hydrateValidateFieldClassNullResult()
+    {
+        $propertyClass = 'Kassko\DataMapperTest\Hydrator\Fixture\Model\NestedClass';
+
+        $hydrator = $this->createHydrator($propertyClass);
+        $object = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\FieldClass;
+        $hydrator->hydrate([], $object);
+
+        $this->assertNull($object->property);
+    }
+
+    /**
+     * @test
+     */
+    public function hydrateValidateFieldClassResult()
+    {
+        $propertyClass = 'Kassko\DataMapperTest\Hydrator\Fixture\Model\NestedClass';
+
+        $hydrator = $this->createHydrator($propertyClass);
+        $object = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\FieldClass;
+        $nestedObject = new $propertyClass;
+
+        $hydrator->hydrate(
+            [
+                'property' => [
+                    'propertyA' => 'aaa', 
+                    'propertyB' => 'bbb',
+                ],
+                'alreadyHydratedProperty' => $nestedObject,
+                'collectionProperty' => [
+                    [
+                        'propertyA' => 'aaa', 
+                        'propertyB' => 'bbb',
+                    ],
+                    [
+                        'propertyA' => 'ccc', 
+                        'propertyB' => 'ddd',
+                    ],
+                    //$nestedObject, <= Should work, fix it.
+                ]
+            ], 
+            $object
+        );
+        
+        $this->assertInstanceOf($propertyClass, $object->property);
+        $this->assertEquals('aaa', $object->property->propertyA);
+        $this->assertEquals('bbb', $object->property->propertyB);
+
+        $this->assertSame($nestedObject, $object->alreadyHydratedProperty);
+
+        $this->assertInternalType('array', $object->collectionProperty);
+        $this->assertEquals('aaa', $object->collectionProperty[0]->propertyA);
+        $this->assertEquals('bbb', $object->collectionProperty[0]->propertyB);
+        $this->assertEquals('ccc', $object->collectionProperty[1]->propertyA);
+        $this->assertEquals('ddd', $object->collectionProperty[1]->propertyB);
+        //$this->assertInstanceOf($propertyClass, $object->collectionProperty[2]);//<= Should work, fix it.
+
+        $this->markTestIncomplete(
+          'This use case should be handled: object collection with some entries represented by raw results'
+          . ' and other entries represented by already hydrated objects.'
+        );
+    }
+
+    /**
+     * @test
+     */
     public function hydrateValidateDataSourceLoadingTriggering()
     {
         $dataSourceRealClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\PersonDataSource';
@@ -192,66 +258,6 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('name', $object->getName());
         $this->assertNull($object->address);//Check the default value of address.
         $this->assertEquals('address', $object->getAddress());//Check the lazy loaded value.
-    }
-
-    /**
-     * @test
-     */
-    public function hydrateValidateFieldClassNullResult()
-    {
-        $propertyClass = 'Kassko\DataMapperTest\Hydrator\Fixture\Model\NestedClass';
-
-        $hydrator = $this->createHydrator($propertyClass);
-        $object = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\FieldClass;
-        $hydrator->hydrate([], $object);
-
-        $this->assertNull($object->property);
-    }
-
-    /**
-     * @test
-     */
-    public function hydrateValidateFieldClassResult()
-    {
-        $propertyClass = 'Kassko\DataMapperTest\Hydrator\Fixture\Model\NestedClass';
-
-        $hydrator = $this->createHydrator($propertyClass);
-        $object = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\FieldClass;
-        $nestedObject = new $propertyClass;
-
-        $hydrator->hydrate(
-            [
-                'property' => [
-                    'propertyA' => 'aaa', 
-                    'propertyB' => 'bbb',
-                ],
-                'alreadyHydratedProperty' => $nestedObject,
-                'collectionProperty' => [
-                    [
-                        'propertyA' => 'aaa', 
-                        'propertyB' => 'bbb',
-                    ],
-                    [
-                        'propertyA' => 'ccc', 
-                        'propertyB' => 'ddd',
-                    ],
-                    //$nestedObject, <= Should work, fix it.
-                ]
-            ], 
-            $object
-        );
-
-        $this->assertInstanceOf($propertyClass, $object->property);
-
-        $this->assertInstanceOf($propertyClass, $object->alreadyHydratedProperty);
-        
-        $this->assertEquals('aaa', $object->property->propertyA);
-        $this->assertEquals('bbb', $object->property->propertyB);
-        $this->assertEquals('aaa', $object->collectionProperty[0]->propertyA);
-        $this->assertEquals('bbb', $object->collectionProperty[0]->propertyB);
-        $this->assertEquals('ccc', $object->collectionProperty[1]->propertyA);
-        $this->assertEquals('ddd', $object->collectionProperty[1]->propertyB);
-        //$this->assertInstanceOf($propertyClass, $object->collectionProperty[2]);//<= Should work, fix it.
     }
 
     /**
@@ -559,24 +565,86 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
         ];
     }
 
-    public function hydrateValidateDepends()
+    /**
+     * @test
+     *
+     * Test if a dependant source is called in addition to the main source.
+     */
+    public function hydrateValidateNumberCallsDataSourceDepends()
     {
+        $dependantDataSourceClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\DependantDataSource';
+        $dependencyDataSourceClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\DependencyDataSource';
+
+        $dependantDataSourceMock = $this->getMockBuilder($dependantDataSourceClass)
+                               ->setMethods(['getData'])
+                               ->getMock();
+        $dependantDataSourceMock->expects($this->once())
+                       ->method('getData');
+
+        $dependencyDataSourceMock = $this->getMockBuilder($dependencyDataSourceClass)
+                               ->setMethods(['getData'])
+                               ->getMock();
+        $dependencyDataSourceMock->expects($this->once())
+                       ->method('getData');
+
+        $classResolver = $this->createClassResolver([$dependantDataSourceClass => $dependantDataSourceMock, $dependencyDataSourceClass => $dependencyDataSourceMock]);
+        $this->configureObjectManager($classResolver);
+
+        $object = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceDepends;
+        $object->getPropertyB();
+
+        /**
+         * The data source of propertyA (DependencyDataSource) should be called in addition to 
+         * the data source of the propertyB. 
+         */
     }
 
-    public function hydrateValidateClassResolution()
+    /**
+     * @test
+     *
+     * Test if the dependency source is the first source called.
+     */
+    public function hydrateValidateOrderCallsDataSourceDepends()
     {
+        $dependencyDataSourceClass = 'Kassko\DataMapperTest\Hydrator\Fixture\DataSource\DependencyDataSource';
+
+        $dependencyDataSourceMock = $this->getMockBuilder($dependencyDataSourceClass)
+                               ->setMethods(['getData'])
+                               ->getMock();
+        $dependencyDataSourceMock->expects($this->once())
+                       ->method('getData');
+
+        $classResolver = $this->createClassResolver([$dependencyDataSourceClass => $dependencyDataSourceMock]);
+        $this->configureObjectManager($classResolver);
+
+        $object = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceDepends;
+        $object->getPropertyB();
+
+        /**
+         * The data source of propertyA (DependencyDataSource) should be called before the data source of the propertyB (DependantDataSource).
+         * So we check if DependencyDataSource is the first source called 
+         * because propertyB is dependant of propertyA. 
+         */
     }
 
-    public function hydrateValidateExpressionLanguageMethods()
+    /**
+     * @test
+     *
+     * Test if the dependency source is the first source called.
+     */
+    public function hydrateValidateResultDataSourceDepends()
     {
-    }
+        $object = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\DataSourceDepends;
+        $object->getPropertyB();
 
-    public function hydrateValidateSmartFieldDefaultValue()
-    {
-    }
+        $dataSource = new \Kassko\DataMapperTest\Hydrator\Fixture\DataSource\DependencyDataSource;
+        $this->assertEquals($dataSource->getData(), $object->propertyA);
 
-    public function hydrateValidateConfigurationVariables()
-    {
+        /**
+         * The data source of propertyA (DependencyDataSource) should be called before the data source of the propertyB (DependantDataSource).
+         * So we check if DependencyDataSource is the first source called 
+         * because propertyB is dependant of propertyA. 
+         */
     }
 
     /**
