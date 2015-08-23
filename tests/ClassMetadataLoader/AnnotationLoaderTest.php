@@ -131,22 +131,22 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
          * @var \Kassko\DataMapper\ClassMetadata\Model\Method $methodMetadata
          */
         $methodMetadata = $preprocessors[0];
-        $this->assertEquals('somePrepocessorA', $methodMetadata->getMethod());
+        $this->assertEquals('somePrepocessorA', $methodMetadata->getFunction());
         $this->assertEquals('##this', $methodMetadata->getClass());
         $this->assertEquals(array(), $methodMetadata->getArgs());
 
         $methodMetadata = $preprocessors[1];
-        $this->assertEquals('somePrepocessorB', $methodMetadata->getMethod());
+        $this->assertEquals('somePrepocessorB', $methodMetadata->getFunction());
         $this->assertEquals('##this', $methodMetadata->getClass());
         $this->assertEquals(array(), $methodMetadata->getArgs());
 
         $methodMetadata = $processors[0];
-        $this->assertEquals('someProcessorA', $methodMetadata->getMethod());
+        $this->assertEquals('someProcessorA', $methodMetadata->getFunction());
         $this->assertEquals('##this', $methodMetadata->getClass());
         $this->assertEquals(array(), $methodMetadata->getArgs());
 
         $methodMetadata = $processors[1];
-        $this->assertEquals('someProcessorB', $methodMetadata->getMethod());
+        $this->assertEquals('someProcessorB', $methodMetadata->getFunction());
         $this->assertEquals('##this', $methodMetadata->getClass());
         $this->assertEquals(array(), $methodMetadata->getArgs());
     }

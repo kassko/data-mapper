@@ -211,7 +211,7 @@ class ClassMetadata
         }
     }
 
-    private function resolveDefaultProviderById($defaultSource, &$sources)
+    private function resolveDefaultProviderById($defaultSource)
     {
         foreach ($this->mappedFieldNames as $mappedFieldName) {
             if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
@@ -942,6 +942,7 @@ class ClassMetadata
 
     public function findDataSourceById($id)
     {//@todo: optimize it.
+
         foreach ($this->dataSourcesStore as $dataSource) {
             if ($dataSource->getId() === $id) {
                 return $dataSource;
