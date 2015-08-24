@@ -376,7 +376,7 @@ class Provider extends Source
      */
     public function addProcessor(Method $processor)
     {
-        $this->processor[] = $processor; 
+        $this->processors[] = $processor; 
         
         return $this;
     }

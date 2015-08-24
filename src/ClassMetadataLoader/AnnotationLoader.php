@@ -259,10 +259,10 @@ class AnnotationLoader extends AbstractLoader
                     case self::$providerAnnotationName:
                         //Provider is a data source now.
                         //This section should be refactored on the next significant release with "provider" removing.
-                        $dataSource = new Model\Provider();
-                        $this->loadDataSource($dataSource, $annotation);
+                        $provider = new Model\Provider();
+                        $this->loadProvider($provider, $annotation);
 
-                        $providers[$mappedFieldName] = $dataSource;
+                        $providers[$mappedFieldName] = $provider;
                         break;
 
                     case self::$refSourceAnnotationName:

@@ -115,7 +115,7 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $dataSource = $metadata->findDataSourceById('personSource');
 
         $preprocessors = $dataSource->getPreprocessors();
-        $processors = $dataSource->getPreprocessors();
+        $processors = $dataSource->getProcessors();
 
         $this->assertCount(2, $preprocessors);
         $this->assertCount(2, $processors);
@@ -131,12 +131,12 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
          * @var \Kassko\DataMapper\ClassMetadata\Model\Method $methodMetadata
          */
         $methodMetadata = $preprocessors[0];
-        $this->assertEquals('somePrepocessorA', $methodMetadata->getFunction());
+        $this->assertEquals('somePreprocessorA', $methodMetadata->getFunction());
         $this->assertEquals('##this', $methodMetadata->getClass());
         $this->assertEquals(array(), $methodMetadata->getArgs());
 
         $methodMetadata = $preprocessors[1];
-        $this->assertEquals('somePrepocessorB', $methodMetadata->getFunction());
+        $this->assertEquals('somePreprocessorB', $methodMetadata->getFunction());
         $this->assertEquals('##this', $methodMetadata->getClass());
         $this->assertEquals(array(), $methodMetadata->getArgs());
 
@@ -346,9 +346,10 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
                         'class'                      => 'stdClass',
                         'readConverter'              => 'readConvertFirstField',
                         'writeConverter'             => 'writeConvertFirstField',
-                        'readDateConverter'          => '',
-                        'writeDateConverter'         => '',
-                        'fieldMappingExtensionClass' => 'ExtensionClass'
+                        'readDateConverter'          => null,
+                        'writeDateConverter'         => null,
+                        'fieldMappingExtensionClass' => 'ExtensionClass',
+                        'defaultValue'               => null
                     )
                 ),
                 'fieldTwo'  => array(
@@ -356,23 +357,25 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
                         'name'                       => 'SecondField',
                         'type'                       => 'integer',
                         'class'                      => '\DateTime',
-                        'readConverter'              => '',
-                        'writeConverter'             => '',
+                        'readConverter'              => null,
+                        'writeConverter'             => null,
                         'readDateConverter'          => 'readDateConvertSecondField',
                         'writeDateConverter'         => 'writeDateConvertSecondField',
-                        'fieldMappingExtensionClass' => 'ExtensionClass'
+                        'fieldMappingExtensionClass' => 'ExtensionClass',
+                        'defaultValue'               => 12
                     )
                 ),
                 'dateField'  => array(
                     'field' => array(
                         'name'                       => 'DateField',
                         'type'                       => 'date',
-                        'class'                      => '',
-                        'readConverter'              => '',
-                        'writeConverter'             => '',
-                        'readDateConverter'          => '',
-                        'writeDateConverter'         => '',
-                        'fieldMappingExtensionClass' => ''
+                        'class'                      => null,
+                        'readConverter'              => null,
+                        'writeConverter'             => null,
+                        'readDateConverter'          => null,
+                        'writeDateConverter'         => null,
+                        'fieldMappingExtensionClass' => null,
+                        'defaultValue'               => null
                     )
                 )
             ),
@@ -407,6 +410,7 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * @TODO Test processor precedence if processor and processors are both set (idem for preprocessors)
      */
     public function dataSourceValidateResult()
     {
@@ -414,41 +418,51 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
 
-        $this->assertEquals(
-            array(
-                'firstField' => array(
-                    'id'                  => 'firstFieldId',
-                    'lazyLoading'         => 1,
-                    'supplySeveralFields' => 1,
-                    'depends'             => array('depend#1', 'depend#2'),
-                    'onFail'              => 'checkException',
-                    'exceptionClass'      => '\RuntimeException',
-                    'badReturnValue'      => 'emptyString',
-                    'fallbackSourceId'    => 'firstFieldFallbackSourceId',
-                    'preprocessor'        => array(
-                        'class'  => '##this',
-                        'method' => 'fooPreprocessor',
-                        'args'   => array()
-                    ),
-                    'processor'           => array(
-                        'class'  => '##this',
-                        'method' => 'barProcessor',
-                        'args'   => array()
-                    ),
-                    'preprocessors'       => array(),
-                    'processors'          => array(),
-                    'class'               => '\stdClass',
-                    'method'              => 'someMethod',
-                    'args'                => array('argument#1', 'argument#2')
-                )
-            ),
-            $metadata->getDataSources()
-        );
+        $dataSources = $metadata->getDataSources();
+        $this->assertCount(1, $dataSources);
+        $this->assertArrayHasKey('firstField', $dataSources);
+
+        $dataSource = $dataSources['firstField'];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\DataSource', $dataSource);
+        $this->assertEquals('firstFieldId', $dataSource->getId());
+        $this->assertTrue($dataSource->getLazyLoading());
+        $this->assertTrue($dataSource->getSupplySeveralFields());
+        $this->assertEquals(array('depend#1', 'depend#2'), $dataSource->getDepends());
+        $this->assertEquals('checkException', $dataSource->getOnFail());
+        $this->assertEquals('\RuntimeException', $dataSource->getExceptionClass());
+        $this->assertEquals('emptyString', $dataSource->getBadReturnValue());
+        $this->assertEquals('firstFieldFallbackSourceId', $dataSource->getFallbackSourceId());
+
+        $preprocessors = $dataSource->getPreprocessors();
+        $this->assertCount(1, $preprocessors);
+
+        $preprocessor = $preprocessors[0];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $preprocessor);
+        $this->assertEquals('##this', $preprocessor->getClass());
+        $this->assertEquals('fooPreprocessor', $preprocessor->getFunction());
+        $this->assertEquals(array(), $preprocessor->getArgs());
+
+        $processors = $dataSource->getProcessors();
+        $this->assertCount(1, $processors);
+        
+        $processor = $processors[0];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $processor);
+        $this->assertEquals('##this', $processor->getClass());
+        $this->assertEquals('barProcessor', $processor->getFunction());
+        $this->assertEquals(array(), $processor->getArgs());
+
+        $dataSourceMethod = $dataSource->getMethod();
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $dataSourceMethod);
+        $this->assertEquals('\stdClass', $dataSourceMethod->getClass());
+        $this->assertEquals('someMethod', $dataSourceMethod->getFunction());
+        $this->assertEquals(array('argument#1', 'argument#2'), $dataSourceMethod->getArgs());
+
         $this->assertEquals(array(), $metadata->getProviders());
     }
 
     /**
      * @test
+     * @TODO Test processor precedence if processor and processors are both set (idem for preprocessors)
      */
     public function providerValidateResult()
     {
@@ -456,36 +470,45 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
 
-        $this->assertEquals(
-            array(
-                'providerField' => array(
-                    'id'                  => 'providerFieldId',
-                    'lazyLoading'         => 1,
-                    'supplySeveralFields' => 1,
-                    'depends'             => array('depend#1', 'depend#2'),
-                    'onFail'              => 'checkException',
-                    'exceptionClass'      => '\RuntimeException',
-                    'badReturnValue'      => 'emptyString',
-                    'fallbackSourceId'    => 'firstFieldFallbackSourceId',
-                    'preprocessor'        => array(
-                        'class'  => '##this',
-                        'method' => 'fooPreprocessor',
-                        'args'   => array()
-                    ),
-                    'processor'           => array(
-                        'class'  => '##this',
-                        'method' => 'barProcessor',
-                        'args'   => array()
-                    ),
-                    'preprocessors'       => array(),
-                    'processors'          => array(),
-                    'class'               => '\stdClass',
-                    'method'              => 'someMethod',
-                    'args'                => array('argument#1', 'argument#2')
-                )
-            ),
-            $metadata->getProviders()
-        );
+        $providers = $metadata->getProviders();
+        $this->assertCount(1, $providers);
+        $this->assertArrayHasKey('providerField', $providers);
+
+        $provider = $providers['providerField'];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Provider', $provider);
+        $this->assertEquals('providerFieldId', $provider->getId());
+        $this->assertTrue($provider->getLazyLoading());
+        $this->assertTrue($provider->getSupplySeveralFields());
+        $this->assertEquals(array('depend#1', 'depend#2'), $provider->getDepends());
+        $this->assertEquals('checkException', $provider->getOnFail());
+        $this->assertEquals('\RuntimeException', $provider->getExceptionClass());
+        $this->assertEquals('emptyString', $provider->getBadReturnValue());
+        $this->assertEquals('firstFieldFallbackSourceId', $provider->getFallbackSourceId());
+
+        $preprocessors = $provider->getPreprocessors();
+        $this->assertCount(1, $preprocessors);
+
+        $preprocessor = $preprocessors[0];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $preprocessor);
+        $this->assertEquals('##this', $preprocessor->getClass());
+        $this->assertEquals('fooPreprocessor', $preprocessor->getFunction());
+        $this->assertEquals(array(), $preprocessor->getArgs());
+
+        $processors = $provider->getProcessors();
+        $this->assertCount(1, $processors);
+        
+        $processor = $processors[0];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $processor);
+        $this->assertEquals('##this', $processor->getClass());
+        $this->assertEquals('barProcessor', $processor->getFunction());
+        $this->assertEquals(array(), $processor->getArgs());
+
+        $providerMethod = $provider->getMethod();
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $providerMethod);
+        $this->assertEquals('\stdClass', $providerMethod->getClass());
+        $this->assertEquals('someMethod', $providerMethod->getFunction());
+        $this->assertEquals(array('argument#1', 'argument#2'), $providerMethod->getArgs());
+
         $this->assertEquals(array(), $metadata->getDataSources());
     }
 
@@ -569,7 +592,90 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $metadata = $this->loadMetadata('RefSource');
 
         $metadata->compile();
+
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertTrue($metadata->hasProvider('firstField'));
+
+        $providers = $metadata->getProviders();
+        $this->assertEquals(['secondField', 'firstField'], array_keys($providers));
+
+        /**
+         ********************** First item
+         */
+        $provider = $providers['secondField'];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Provider', $provider);
+        $this->assertEquals('firstFieldId', $provider->getId());
+        $this->assertTrue($provider->getLazyLoading());
+        $this->assertTrue($provider->getSupplySeveralFields());
+        $this->assertEquals(array('depend#1', 'depend#2'), $provider->getDepends());
+        $this->assertEquals('checkException', $provider->getOnFail());
+        $this->assertEquals('\RuntimeException', $provider->getExceptionClass());
+        $this->assertEquals('emptyString', $provider->getBadReturnValue());
+        $this->assertEquals('firstFieldFallbackSourceId', $provider->getFallbackSourceId());
+
+        $preprocessors = $provider->getPreprocessors();
+        $this->assertCount(1, $preprocessors);
+
+        $preprocessor = $preprocessors[0];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $preprocessor);
+        $this->assertEquals('##this', $preprocessor->getClass());
+        $this->assertEquals('fooPreprocessor', $preprocessor->getFunction());
+        $this->assertEquals(array(), $preprocessor->getArgs());
+
+        $processors = $provider->getProcessors();
+        $this->assertCount(1, $processors);
+        
+        $processor = $processors[0];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $processor);
+        $this->assertEquals('##this', $processor->getClass());
+        $this->assertEquals('barProcessor', $processor->getFunction());
+        $this->assertEquals(array(), $processor->getArgs());
+
+        $providerMethod = $provider->getMethod();
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $providerMethod);
+        $this->assertEquals('\stdClass', $providerMethod->getClass());
+        $this->assertEquals('someMethod', $providerMethod->getFunction());
+        $this->assertEquals(array('argument#1', 'argument#2'), $providerMethod->getArgs());
+
+        /**
+         ********************** Second item
+         */
+        $provider = $providers['firstField'];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Provider', $provider);
+        $this->assertEquals('firstFieldId', $provider->getId());
+        $this->assertTrue($provider->getLazyLoading());
+        $this->assertTrue($provider->getSupplySeveralFields());
+        $this->assertEquals(array('depend#1', 'depend#2'), $provider->getDepends());
+        $this->assertEquals('checkException', $provider->getOnFail());
+        $this->assertEquals('\RuntimeException', $provider->getExceptionClass());
+        $this->assertEquals('emptyString', $provider->getBadReturnValue());
+        $this->assertEquals('firstFieldFallbackSourceId', $provider->getFallbackSourceId());
+
+        $preprocessors = $provider->getPreprocessors();
+        $this->assertCount(1, $preprocessors);
+
+        $preprocessor = $preprocessors[0];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $preprocessor);
+        $this->assertEquals('##this', $preprocessor->getClass());
+        $this->assertEquals('fooPreprocessor', $preprocessor->getFunction());
+        $this->assertEquals(array(), $preprocessor->getArgs());
+
+        $processors = $provider->getProcessors();
+        $this->assertCount(1, $processors);
+        
+        $processor = $processors[0];
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $processor);
+        $this->assertEquals('##this', $processor->getClass());
+        $this->assertEquals('barProcessor', $processor->getFunction());
+        $this->assertEquals(array(), $processor->getArgs());
+
+        $providerMethod = $provider->getMethod();
+        $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\Model\Method', $providerMethod);
+        $this->assertEquals('\stdClass', $providerMethod->getClass());
+        $this->assertEquals('someMethod', $providerMethod->getFunction());
+        $this->assertEquals(array('argument#1', 'argument#2'), $providerMethod->getArgs());
+        
+        /*$this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
         $this->assertTrue($metadata->hasProvider('firstField'));
 
         $this->assertEquals(
@@ -626,7 +732,7 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
                 )
             ),
             $metadata->getProviders()
-        );
+        );*/
     }
 
     /**

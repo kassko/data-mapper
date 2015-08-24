@@ -9,8 +9,8 @@ use Kassko\DataMapper\Annotation as DM;
  *          id="personSource",
  *
  *          preprocessors = @DM\Methods({
- *              @DM\Method(method="somePrepocessorA"),
- *              @DM\Method(method="somePrepocessorB")
+ *              @DM\Method(method="somePreprocessorA"),
+ *              @DM\Method(method="somePreprocessorB")
  *          }),
  *          processors = @DM\Methods({ 
  *              @DM\Method(method="someProcessorA"),
@@ -46,12 +46,12 @@ class DataSourcesStoreMultiplesProcessors
                         'preprocessors'       => [
                             'items' => [
                                 [
-                                    'method' => 'somePrepocessorA',
+                                    'method' => 'somePreprocessorA',
                                     'class'  => '##this',
                                     'args'   => []
                                 ],
                                 [
-                                    'method' => 'somePrepocessorB',
+                                    'method' => 'somePreprocessorB',
                                     'class'  => '##this',
                                     'args'   => []
                                 ]

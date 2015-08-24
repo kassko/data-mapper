@@ -24,7 +24,8 @@ class Field
      *      class="\DateTime",
      *      readDateConverter="readDateConvertSecondField",
      *      writeDateConverter="writeDateConvertSecondField",
-     *      fieldMappingExtensionClass="ExtensionClass"
+     *      fieldMappingExtensionClass="ExtensionClass",
+     *      defaultValue="12"
      * )
      */
     protected $fieldTwo;
@@ -62,7 +63,8 @@ class Field
                     'writeConverter'             => null,
                     'readDateConverter'          => 'readDateConvertSecondField',
                     'writeDateConverter'         => 'writeDateConvertSecondField',
-                    'fieldMappingExtensionClass' => 'ExtensionClass'
+                    'fieldMappingExtensionClass' => 'ExtensionClass',
+                    'defaultValue'               => 12
                 ],
                 'dateField' => [
                     'name'                       => 'DateField',
@@ -103,6 +105,7 @@ fields:
     readDateConverter: readDateConvertSecondField
     writeDateConverter: writeDateConvertSecondField
     fieldMappingExtensionClass: ExtensionClass
+    defaultValue: 12
   dateField:
     name: DateField
     type: date
