@@ -62,45 +62,6 @@ class AbstractLoaderTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \LogicException
-     * @expectedExceptionMessage Not implemented function "Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Loader::doGetData()"
-     */
-    public function doGetDataValidateException()
-    {
-        $this->loader->loadClassMetadata(
-            $this->classMetadataMock,
-            $this->loadingCriteriaMock,
-            $this->configurationMock,
-            $this->loaderMock
-        );
-    }
-
-    /**
-     * @test
-     * @expectedException \LogicException
-     * @expectedExceptionMessage Not implemented function "AbstractLoaderMock::doLoadClassMetadata()"
-     */
-    public function doLoadClassMetadataValidateException()
-    {
-        $data = array('testData' => time());
-        $loader = $this->getMockBuilder(
-            'Kassko\DataMapper\ClassMetadataLoader\AbstractLoader'
-        )->setMethods(array('doGetData'))->setMockClassName('AbstractLoaderMock')->getMockForAbstractClass();
-        $loader->expects($this->once())
-               ->method('doGetData')
-               ->with($this->loadingCriteriaMock)
-               ->willReturn($data);
-
-        $loader->loadClassMetadata(
-            $this->classMetadataMock,
-            $this->loadingCriteriaMock,
-            $this->configurationMock,
-            $this->loaderMock
-        );
-    }
-
-    /**
-     * @test
      */
     public function loadClassMetadataValidateCalls()
     {

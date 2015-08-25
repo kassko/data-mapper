@@ -19,5 +19,4 @@ interface LoaderInterface
         LoaderInterface $loader = null
     );
     function supports(LoadingCriteriaInterface $loadingCriteria);
-    function getData(LoadingCriteriaInterface $loadingCriteria, Configuration $configuration, LoaderInterface $loader);
 }

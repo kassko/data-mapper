@@ -41,7 +41,7 @@ class DelegatingLoader extends AbstractLoader
     public function getData(
         LoadingCriteriaInterface $loadingCriteria,
         Configuration $configuration,
-        LoaderInterface $loader
+        ArrayLoaderAware $loader
     ) {
         if (false === $loader = $this->resolver->resolveLoader($loadingCriteria)) {
             throw new NotFoundLoaderException($loadingCriteria);

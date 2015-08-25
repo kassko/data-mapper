@@ -13,7 +13,7 @@ use Kassko\DataMapper\Configuration\Configuration;
  *
  * @author kko
  */
-class AnnotationLoader extends AbstractLoader
+class AnnotationLoader implements LoaderInterface
 {
     private $reader;
     private $classMetadata;

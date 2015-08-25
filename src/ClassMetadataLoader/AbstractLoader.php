@@ -5,6 +5,12 @@ namespace Kassko\DataMapper\ClassMetadataLoader;
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 use Kassko\DataMapper\Configuration\Configuration;
 
+/**
+ * Class abstract loader for loaders whose data loaded can be merged with data loaded by anothers loaders.
+ * To be renamed MergeableLoader
+ *
+ * @author kko
+ */
 abstract class AbstractLoader implements LoaderInterface
 {
     public function loadClassMetadata(
@@ -20,7 +26,7 @@ abstract class AbstractLoader implements LoaderInterface
     public function getData(
         LoadingCriteriaInterface $loadingCriteria,
         Configuration $configuration,
-        LoaderInterface $loader
+        AbstractLoader $loader
     ) {
         $data = $this->doGetData($loadingCriteria);
 
@@ -30,20 +36,14 @@ abstract class AbstractLoader implements LoaderInterface
         return $data;
     }
 
-    protected function doGetData(LoadingCriteriaInterface $loadingCriteria)
-    {//TODO: Normalize data after fetching them because the array of data obtained is different according to format yaml, php and the others.
-        throw new \LogicException(sprintf('Not implemented function "%s::doGetData()"', static::class));
-    }
+    abstract protected function doGetData(LoadingCriteriaInterface $loadingCriteria);
 
-    protected function doLoadClassMetadata(ClassMetadata $classMetadata, array $data)
-    {
-        throw new \LogicException(sprintf('Not implemented function "%s::doLoadClassMetadata()"', static::class));
-    }
+    abstract protected function doLoadClassMetadata(ClassMetadata $classMetadata, array $data);
 
     private function importResource(
         array $data,
         LoadingCriteriaInterface $loadingCriteria,
-        LoaderInterface $loader,
+        AbstractLoader $loader,
         Configuration $configuration
     ) {
         $defaultResourceDir = $configuration->getDefaultClassMetadataResourceDir();
@@ -93,7 +93,7 @@ abstract class AbstractLoader implements LoaderInterface
     private function importConfig(
         array $data,
         LoadingCriteriaInterface $loadingCriteria,
-        LoaderInterface $loader,
+        AbstractLoader $loader,
         Configuration $configuration
     ) {
         if (isset($data['imports']['config'])) {
