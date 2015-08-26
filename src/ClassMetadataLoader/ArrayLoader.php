@@ -18,15 +18,19 @@ abstract class ArrayLoader extends AbstractLoader
         $this->normalize($data);
 
         $this->classMetadata = $classMetadata;
-
-        $this->loadClassData($data);
-        $this->loadFieldData($data);
+        $this->loadData($data);
 
         return $this->classMetadata;
     }
 
     protected function normalize(array &$data)
     {
+    }
+
+    protected function loadData(array $data)
+    {
+        $this->loadClassData($data);
+        $this->loadFieldData($data);
     }
 
     private function loadClassData(array $data)

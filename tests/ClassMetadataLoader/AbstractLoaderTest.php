@@ -48,7 +48,7 @@ class AbstractLoaderTest extends \PHPUnit_Framework_TestCase
         )->disableOriginalConstructor()->getMock();
 
         $this->loadingCriteriaMock = $this->getMockBuilder(
-            'Kassko\DataMapperTest\ClassMetadataLoader\Fixture\LoadingCriteria'
+            'Kassko\DataMapper\ClassMetadataLoader\LoadingCriteriaInterface'
         )->getMock();
 
         $this->configurationMock = $this->getMockBuilder(
