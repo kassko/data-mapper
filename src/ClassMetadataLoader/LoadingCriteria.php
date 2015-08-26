@@ -35,14 +35,13 @@ class LoadingCriteria implements LoadingCriteriaInterface
 
     private function __construct()
     {
-
     }
 
     public static function createFromConfiguration(Configuration $configuration, ObjectKey $objectKey)
     {
         $key = $objectKey->getKey();
 
-        $instance = (new self)
+        $instance = (new static)
             ->setResourcePath($configuration->getClassMetadataResource($key))
             ->setResourceType($configuration->getClassMetadataResourceType($key))
             ->setResourceClass($objectKey->getClass())
@@ -58,7 +57,7 @@ class LoadingCriteria implements LoadingCriteriaInterface
 
     public static function create($resourcePath, $resourceType, $resourceClass, $resourceMethod)
     {
-        return (new self)
+        return (new static)
             ->setResourcePath($resourcePath)
             ->setResourceType($resourceType)
             ->setResourceClass($resourceClass)
@@ -67,9 +66,7 @@ class LoadingCriteria implements LoadingCriteriaInterface
     }
 
     /**
-     * Gets the value of resourcePath.
-     *
-     * @return string the resource path
+     * {@inheritdoc}
      */
     public function getResourcePath()
     {
@@ -77,9 +74,7 @@ class LoadingCriteria implements LoadingCriteriaInterface
     }
 
     /**
-     * Gets the value of resourceType.
-     *
-     * @return string the resource type
+     * {@inheritdoc}
      */
     public function getResourceType()
     {
@@ -87,9 +82,7 @@ class LoadingCriteria implements LoadingCriteriaInterface
     }
 
     /**
-     * Gets the value of resourceClass.
-     *
-     * @return string the resource class
+     * {@inheritdoc}
      */
     public function getResourceClass()
     {
@@ -97,9 +90,7 @@ class LoadingCriteria implements LoadingCriteriaInterface
     }
 
     /**
-     * Gets the value of resourceMethod.
-     *
-     * @return string the resource method
+     * {@inheritdoc}
      */
     public function getResourceMethod()
     {
@@ -107,11 +98,7 @@ class LoadingCriteria implements LoadingCriteriaInterface
     }
 
     /**
-     * Sets the value of resourcePath.
-     *
-     * @param string $resourcePath the resource path
-     *
-     * @return self
+     * {@inheritdoc}
      */
     public function setResourcePath($resourcePath)
     {
@@ -121,11 +108,7 @@ class LoadingCriteria implements LoadingCriteriaInterface
     }
 
     /**
-     * Sets the value of resourceType.
-     *
-     * @param string $resourceType the resource type
-     *
-     * @return self
+     * {@inheritdoc}
      */
     public function setResourceType($resourceType)
     {
@@ -135,11 +118,7 @@ class LoadingCriteria implements LoadingCriteriaInterface
     }
 
     /**
-     * Sets the value of resourceClass.
-     *
-     * @param string $resourceClass the resource class
-     *
-     * @return self
+     * {@inheritdoc}
      */
     public function setResourceClass($resourceClass)
     {
@@ -149,11 +128,7 @@ class LoadingCriteria implements LoadingCriteriaInterface
     }
 
     /**
-     * Sets the value of resourceMethod.
-     *
-     * @param string $resourceMethod the resource method
-     *
-     * @return self
+     * {@inheritdoc}
      */
     public function setResourceMethod($resourceMethod)
     {
