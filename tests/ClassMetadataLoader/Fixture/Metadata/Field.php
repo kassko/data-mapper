@@ -71,8 +71,8 @@ class Field
                     'name'                       => 'DateField',
                     'type'                       => 'date',
                     'class'                      => null,
-                    'readConverter'              => null,
-                    'writeConverter'             => null,
+                    //'readConverter'              => null, //(1)
+                    //'writeConverter'             => null, //(1)
                     'readDateConverter'          => null,
                     'writeDateConverter'         => null,
                     'fieldMappingExtensionClass' => null,
@@ -112,11 +112,15 @@ fields:
     name: DateField
     type: date
     class: null
-    readConverter: null
-    writeConverter: null
+    # readConverter: null # (1)
+    # writeConverter: null # (1)
     readDateConverter: ~ # Identical to null
     writeDateConverter: ~ 
     fieldMappingExtensionClass: null
 EOF;
     }
 }
+
+/**
+ * (1) The normalization process will add missing entries (readConverter, writeConverter) and set them to null.
+ */
