@@ -51,9 +51,10 @@ class Field
                     'class'                      => 'stdClass',
                     'readConverter'              => 'readConvertFirstField',
                     'writeConverter'             => 'writeConvertFirstField',
-                    'readDateConverter'          => '',
-                    'writeDateConverter'         => '',
-                    'fieldMappingExtensionClass' => 'ExtensionClass'
+                    'readDateConverter'          => null,
+                    'writeDateConverter'         => null,
+                    'fieldMappingExtensionClass' => 'ExtensionClass',
+                    //'defaultValue'               => null
                 ],
                 'fieldTwo'  => [
                     'name'                       => 'SecondField',
@@ -69,12 +70,13 @@ class Field
                 'dateField' => [
                     'name'                       => 'DateField',
                     'type'                       => 'date',
-                    'class'                      => '',
+                    'class'                      => null,
                     'readConverter'              => null,
                     'writeConverter'             => null,
-                    'readDateConverter'          => '',
-                    'writeDateConverter'         => '',
-                    'fieldMappingExtensionClass' => ''
+                    'readDateConverter'          => null,
+                    'writeDateConverter'         => null,
+                    'fieldMappingExtensionClass' => null,
+                    'defaultValue'               => null
                 ]
             ]
         ];
@@ -93,8 +95,8 @@ fields:
     class: stdClass
     readConverter: readConvertFirstField
     writeConverter: writeConvertFirstField
-    readDateConverter:
-    writeDateConverter:
+    readDateConverter: null
+    writeDateConverter: null
     fieldMappingExtensionClass: ExtensionClass
   fieldTwo:
     name: SecondField
@@ -109,12 +111,12 @@ fields:
   dateField:
     name: DateField
     type: date
-    class:
+    class: null
     readConverter: null
     writeConverter: null
-    readDateConverter:
-    writeDateConverter:
-    fieldMappingExtensionClass:
+    readDateConverter: ~ # Identical to null
+    writeDateConverter: ~ 
+    fieldMappingExtensionClass: null
 EOF;
     }
 }

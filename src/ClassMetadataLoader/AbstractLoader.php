@@ -17,21 +17,21 @@ abstract class AbstractLoader implements LoaderInterface
         ClassMetadata $classMetadata,
         LoadingCriteriaInterface $loadingCriteria,
         Configuration $configuration,
-        LoaderInterface $loader = null
+        DelegatingLoader $delegatingLoader = null
     ) {
-        $data = $this->getData($loadingCriteria, $configuration, $loader);
+        $data = $this->getData($loadingCriteria, $configuration, $delegatingLoader);
         return $this->doLoadClassMetadata($classMetadata, $data);
     }
 
     public function getData(
         LoadingCriteriaInterface $loadingCriteria,
         Configuration $configuration,
-        AbstractLoader $loader
+        DelegatingLoader $delegatingLoader
     ) {
         $data = $this->doGetData($loadingCriteria);
 
-        $data = $this->importResource($data, $loadingCriteria, $loader, $configuration);
-        $data = $this->importConfig($data, $loadingCriteria, $loader, $configuration);
+        $data = $this->importResource($data, $loadingCriteria, $delegatingLoader, $configuration);
+        $data = $this->importConfig($data, $loadingCriteria, $delegatingLoader, $configuration);
 
         return $data;
     }
@@ -43,7 +43,7 @@ abstract class AbstractLoader implements LoaderInterface
     private function importResource(
         array $data,
         LoadingCriteriaInterface $loadingCriteria,
-        AbstractLoader $loader,
+        DelegatingLoader $delegatingLoader,
         Configuration $configuration
     ) {
         $defaultResourceDir = $configuration->getDefaultClassMetadataResourceDir();
@@ -82,7 +82,8 @@ abstract class AbstractLoader implements LoaderInterface
                     $otherResourceMethod
                 );
 
-                $othersData = $loader->getData($loadingCriteria, $configuration, $loader);
+                $delegatedLoader = $delegatingLoader->getDelegatedLoader($loadingCriteria);
+                $othersData = $delegatedLoader->getData($loadingCriteria, $configuration, $delegatedLoader);
                 $data = array_merge_recursive($othersData, $data);
             }
         }
@@ -93,7 +94,7 @@ abstract class AbstractLoader implements LoaderInterface
     private function importConfig(
         array $data,
         LoadingCriteriaInterface $loadingCriteria,
-        AbstractLoader $loader,
+        DelegatingLoader $delegatingLoader,
         Configuration $configuration
     ) {
         if (isset($data['imports']['config'])) {
@@ -106,8 +107,8 @@ abstract class AbstractLoader implements LoaderInterface
                 }
 
                 $loadingCriteria = LoadingCriteria::createFromConfiguration($configuration, $objectClassConfig);
-
-                $othersData = $loader->getData($loadingCriteria, $configuration, $loader);
+                $delegatedLoader = $delegatingLoader->getDelegatedLoader($loadingCriteria);
+                $othersData = $delegatedLoader->getData($loadingCriteria, $configuration, $delegatedLoader);
                 $data = array_merge_recursive($othersData, $data);
             }
         }

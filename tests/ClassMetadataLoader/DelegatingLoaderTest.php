@@ -36,9 +36,9 @@ class DelegatingLoaderTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function instanceOfAbstractLoader()
+    public function instanceOfLoaderInterface()
     {
-        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadataLoader\AbstractLoader', $this->loader);
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadataLoader\LoaderInterface', $this->loader);
     }
 
     /**
@@ -50,11 +50,14 @@ class DelegatingLoaderTest extends \PHPUnit_Framework_TestCase
             '\Kassko\DataMapper\ClassMetadata\ClassMetadata'
         )->disableOriginalConstructor()->getMock();
         $loadingCriteriaMock = $this->getMockBuilder(
-            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\LoadingCriteria'
-        )->getMock();
+            'Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria'
+        )->disableOriginalConstructor()->getMock();
         $configurationMock = $this->getMockBuilder(
             '\Kassko\DataMapper\Configuration\Configuration'
         )->getMock();
+        $delegatingLoaderMock = $this->getMockBuilder(
+            '\Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader'
+        )->disableOriginalConstructor()->getMock();
         $loaderMock = $this->getMockBuilder(
             '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Loader'
         )->getMock();
@@ -70,7 +73,7 @@ class DelegatingLoaderTest extends \PHPUnit_Framework_TestCase
             $classMetadataMock,
             $loadingCriteriaMock,
             $configurationMock,
-            $loaderMock
+            $delegatingLoaderMock
         );
 
         $this->assertSame($classMetadataMock, $result);
@@ -86,11 +89,14 @@ class DelegatingLoaderTest extends \PHPUnit_Framework_TestCase
             '\Kassko\DataMapper\ClassMetadata\ClassMetadata'
         )->disableOriginalConstructor()->getMock();
         $loadingCriteriaMock = $this->getMockBuilder(
-            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\LoadingCriteria'
-        )->getMock();
+            'Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria'
+        )->disableOriginalConstructor()->getMock();
         $configurationMock = $this->getMockBuilder(
             '\Kassko\DataMapper\Configuration\Configuration'
         )->getMock();
+        $delegatingLoaderMock = $this->getMockBuilder(
+            '\Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader'
+        )->disableOriginalConstructor()->getMock();
         $loaderMock = $this->getMockBuilder(
             '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Loader'
         )->getMock();
@@ -102,7 +108,7 @@ class DelegatingLoaderTest extends \PHPUnit_Framework_TestCase
             $classMetadataMock,
             $loadingCriteriaMock,
             $configurationMock,
-            $loaderMock
+            $delegatingLoaderMock
         );
     }
 
@@ -115,8 +121,8 @@ class DelegatingLoaderTest extends \PHPUnit_Framework_TestCase
     public function supportsValidateCalls($returnValue, $expectedResult)
     {
         $loadingCriteriaMock = $this->getMockBuilder(
-            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\LoadingCriteria'
-        )->getMock();
+            'Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria'
+        )->disableOriginalConstructor()->getMock();
         $this->loaderResolverMock->expects($this->once())
             ->method('resolveLoader')
             ->with($loadingCriteriaMock)
@@ -143,58 +149,19 @@ class DelegatingLoaderTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     */
-    public function getDataValidateCalls()
-    {
-        $loadingCriteriaMock = $this->getMockBuilder(
-            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\LoadingCriteria'
-        )->getMock();
-        $configurationMock = $this->getMockBuilder(
-            '\Kassko\DataMapper\Configuration\Configuration'
-        )->getMock();
-        $loaderMock = $this->getMockBuilder(
-            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Loader'
-        )->getMock();
-        $this->loaderResolverMock->expects($this->once())
-                                 ->method('resolveLoader')
-                                 ->with($loadingCriteriaMock)
-                                 ->willReturn($loaderMock);
-        $loaderMock->expects($this->once())
-                   ->method('getData')
-                   ->with($loadingCriteriaMock, $configurationMock, $loaderMock)
-                   ->willReturn($loaderMock);
-        $result = $this->loader->getData(
-            $loadingCriteriaMock,
-            $configurationMock,
-            $loaderMock
-        );
-
-        $this->assertEquals($loaderMock, $result);
-    }
-
-    /**
-     * @test
      * @expectedException \Kassko\DataMapper\ClassMetadataLoader\Exception\NotFoundLoaderException
      */
-    public function getDataValidateException()
+    public function getDelegatedLoaderValidateException()
     {
         $loadingCriteriaMock = $this->getMockBuilder(
-            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\LoadingCriteria'
-        )->getMock();
-        $configurationMock = $this->getMockBuilder(
-            '\Kassko\DataMapper\Configuration\Configuration'
-        )->getMock();
-        $loaderMock = $this->getMockBuilder(
-            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Loader'
-        )->getMock();
+            'Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria'
+        )->disableOriginalConstructor()->getMock();
         $this->loaderResolverMock->expects($this->once())
                                  ->method('resolveLoader')
                                  ->with($loadingCriteriaMock)
                                  ->willReturn(false);
-        $this->loader->getData(
-            $loadingCriteriaMock,
-            $configurationMock,
-            $loaderMock
+        $this->loader->getDelegatedLoader(
+            $loadingCriteriaMock
         );
     }
 }

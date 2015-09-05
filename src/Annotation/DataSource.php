@@ -8,7 +8,6 @@ namespace Kassko\DataMapper\Annotation;
 *
 * @author kko
 */
-final class DataSource
+final class DataSource extends Source
 {
-    use SourceCommonTrait;
 }

@@ -201,8 +201,10 @@ class LoaderResolverTest extends \PHPUnit_Framework_TestCase
     public function resolveLoaderValidateDefaultResult()
     {
         $loadingCriteriaMock = $this->getMockBuilder(
-            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\LoadingCriteria'
-        )->getMock();
+            '\Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria'
+        )
+        ->disableOriginalConstructor()
+        ->getMock();
         foreach ($this->loaders as $loader) {
             $loader->expects($this->once())
                 ->method('supports')
@@ -219,8 +221,10 @@ class LoaderResolverTest extends \PHPUnit_Framework_TestCase
     public function resolveLoaderValidateResult()
     {
         $loadingCriteriaMock = $this->getMockBuilder(
-            '\Kassko\DataMapperTest\ClassMetadataLoader\Fixture\LoadingCriteria'
-        )->getMock();
+            '\Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria'
+        )
+        ->disableOriginalConstructor()
+        ->getMock();
         foreach ($this->loaders as $loader) {
             $loader->expects($this->once())
                    ->method('supports')

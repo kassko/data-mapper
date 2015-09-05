@@ -7,11 +7,17 @@ class Getter
 {
     /**
      * @DM\Getter(
-     *      prefix="getterPrefix",
      *      name="getterName"
      * )
      */
     protected $firstField;
+
+    /**
+     * @DM\Getter(
+     *      prefix="is",
+     * )
+     */
+    protected $secondField;
 
     /**
      * @return array
@@ -21,8 +27,13 @@ class Getter
         return [
             'fields'    => [
                 'firstField'    => [
-                    'name'      => 'firstFieldName'
-                ]
+                    'name'      => 'firstField',
+                    'getter'    => ['name' => 'getterName'],
+                ],
+                'secondField'    => [
+                    'name'      => 'secondField',
+                    'getter'    => ['prefix' => 'is'],
+                ],
             ]
         ];
     }
@@ -33,6 +44,15 @@ class Getter
     public static function loadInnerYamlMetadata()
     {
         return <<<EOF
+fields:
+    firstField:
+        name: firstField
+        getter: 
+            name: getterName
+    secondField:
+        name: secondField
+        getter:
+            prefix: is
 EOF;
     }
 }

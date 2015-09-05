@@ -20,7 +20,7 @@ class PostHydrate
     {
         return [
             'interceptors'  => [
-                'postHydrate'    => ['CustomHydratorClassName', 'postHydrateMethodName']
+                'postHydrate'    => 'postHydrateMethodName'
             ]
         ];
     }
@@ -32,7 +32,7 @@ class PostHydrate
     {
         return <<<EOF
 interceptors:
-  postHydrate: [CustomHydratorClassName, postHydrateMethodName]
+  postHydrate: postHydrateMethodName
 EOF;
     }
 }

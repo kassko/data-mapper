@@ -26,18 +26,21 @@ class InnerPhpLoader extends ArrayLoader
 
     protected function normalize(array &$data)
     {
+        parent::normalize($data);
+
         $normalizedFieldsData = [];
 
         $dataName = 'fields';
-        foreach ($data[$dataName] as $mappedFieldName => $fieldData) {
+        if (isset($data[$dataName])) {
+            foreach ($data[$dataName] as $mappedFieldName => $fieldData) {
 
-            if (is_numeric($mappedFieldName)) {//if $mappedFieldName is a numeric index, $fieldData contains the field.
-                $mappedFieldName = $fieldData;                
+                if (is_numeric($mappedFieldName)) {//if $mappedFieldName is a numeric index, $fieldData contains the field.
+                    $mappedFieldName = $fieldData;                
+                }
+
+                $normalizedFieldsData[$mappedFieldName] = $fieldData;
             }
-
-            $normalizedFieldsData[$mappedFieldName] = $fieldData;
+            $data[$dataName] = $normalizedFieldsData;
         }
-
-        $data[$dataName] = $normalizedFieldsData;
     }
 }

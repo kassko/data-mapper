@@ -82,12 +82,15 @@ class AbstractLoaderTest extends \PHPUnit_Framework_TestCase
         $this->configurationMock->expects($this->once())
             ->method('getDefaultClassMetadataResourceDir')
             ->willReturn('/tmp');
+        $delegatingLoaderMock = $this->getMockBuilder(
+            '\Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader'
+        )->disableOriginalConstructor()->getMock();
 
         $result = $loader->loadClassMetadata(
             $this->classMetadataMock,
             $this->loadingCriteriaMock,
             $this->configurationMock,
-            $this->loaderMock
+            $delegatingLoaderMock
         );
 
         $this->assertEquals($expectedResult, $result);

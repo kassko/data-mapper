@@ -25,12 +25,16 @@ class InnerPhpLoaderTest extends ArrayLoaderTest
             $fullClassName,
             'loadInnerPhpMetadata'
         );
+        $delegatingLoaderMock = $this->getMockBuilder(
+            '\Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader'
+        )->disableOriginalConstructor()->getMock();
+        
         $loader = new ClassMetadataLoader\InnerPhpLoader();
         return $loader->loadClassMetadata(
             new ClassMetadata\ClassMetadata($fullClassName),
             $loadingCriteria,
             new Configuration(),
-            $loader
+            $delegatingLoaderMock
         );
     }
 }

@@ -20,7 +20,7 @@ class PreHydrate
     {
         return [
             'interceptors'  => [
-                'preHydrate'    => ['CustomHydratorClassName', 'preHydrateMethodName']
+                'preHydrate'    => 'preHydrateMethodName'
             ]
         ];
     }
@@ -32,7 +32,7 @@ class PreHydrate
     {
         return <<<EOF
 interceptors:
-  preHydrate: [CustomHydratorClassName, preHydrateMethodName]
+  preHydrate: preHydrateMethodName
 EOF;
     }
 }

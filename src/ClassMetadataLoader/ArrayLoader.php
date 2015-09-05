@@ -3,6 +3,7 @@
 namespace Kassko\DataMapper\ClassMetadataLoader;
 
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
+use Kassko\DataMapper\ClassMetadata\Model;
 
 /**
  * Base for class metadata loader that parse data to array before loading them.
@@ -15,7 +16,8 @@ abstract class ArrayLoader extends AbstractLoader
 
     protected function doLoadClassMetadata(ClassMetadata $classMetadata, array $data)
     {
-        $this->normalize($data);
+        $this->normalizeFormat($data);
+        $this->normalizeData($data);
 
         $this->classMetadata = $classMetadata;
         $this->loadData($data);
@@ -23,8 +25,40 @@ abstract class ArrayLoader extends AbstractLoader
         return $this->classMetadata;
     }
 
-    protected function normalize(array &$data)
+    protected function normalizeFormat(array &$data)
     {
+        if (isset($data['listeners'])) {
+            foreach ($data['listeners'] as &$eventData) {
+                reset($eventData);
+                if (! is_array(current($eventData))) {
+                    $eventData = [$eventData];
+                }
+            }
+        }
+    }
+
+    /**
+     * Enforce undefined keys to be defined and setted to null.
+     */
+    protected function normalizeData(array &$data)
+    {
+        static $template = [
+            'name' => null,
+            'type' => null,
+            'class' => null,
+            'defaultValue' => null,
+            'readConverter' => null,  
+            'writeConverter' => null,
+            'readDateConverter' => null,
+            'writeDateConverter' => null,
+            'fieldMappingExtensionClass' => null,
+        ];
+
+        if (isset($data['fields'])) {
+            foreach ($data['fields'] as &$fieldData) {
+                $fieldData = array_merge($template, $fieldData);
+            }
+        }
     }
 
     protected function loadData(array $data)
@@ -36,9 +70,25 @@ abstract class ArrayLoader extends AbstractLoader
     private function loadClassData(array $data)
     {
         if (isset($data['object']['dataSourcesStore'])) {
-            $this->classMetadata->setDataSourcesStore($data['object']['dataSourcesStore']);
+
+            $dataSourcesStore = [];
+            foreach ($data['object']['dataSourcesStore'] as $dataSource) {
+                $sourceModel = new Model\DataSource;
+                $dataSourcesStore[] = $this->loadSource($sourceModel, $dataSource);
+            }
+            $this->classMetadata->setDataSourcesStore($dataSourcesStore);
         }
         
+        if (isset($data['object']['providersStore'])) {
+
+            $providersStore = [];
+            foreach ($data['object']['providersStore'] as $provider) {
+                $sourceModel = new Model\DataSource;
+                $providersStore[] = $this->loadSource($sourceModel, $provider);
+            }
+            $this->classMetadata->setProvidersStore($providersStore);
+        }
+
         if (isset($data['object']['fieldExclusionPolicy'])) {
             $this->classMetadata->setFieldExclusionPolicy($data['object']['fieldExclusionPolicy']);
         }
@@ -71,24 +121,80 @@ abstract class ArrayLoader extends AbstractLoader
             $this->classMetadata->setCustomHydrator($data['object']['customHydrator']);
         }
 
-        if (isset($data['objectListeners'])) {
-            $this->classMetadata->setObjectListenerClasses($data['objectListeners']);
+        if (isset($data['refDefaultSource'])) {
+            $this->classMetadata->setRefDefaultSource($data['refDefaultSource']);
         }
 
-        if (isset($data['interceptors']['postExtract'])) {
-            $this->classMetadata->setOnAfterExtract($data['interceptors']['postExtract']);
+        if (isset($data['listeners']['preHydrate'])) {
+            foreach ($data['listeners']['preHydrate'] as $listenerConfig) {
+                $args = [];
+                if (isset($listenerConfig['args'])) {
+                    $args = (array)$listenerConfig['args'];  
+                }
+
+                $this->classMetadata->addPreHydrateListener(
+                    new Model\Method($listenerConfig['class'], $listenerConfig['method'], $args)
+                );
+            }
         }
 
+        if (isset($data['listeners']['postHydrate'])) {
+            foreach ($data['listeners']['postHydrate'] as $listenerConfig) {
+                $args = [];
+                if (isset($listenerConfig['args'])) {
+                    $args = (array)$listenerConfig['args'];  
+                }
+
+                $this->classMetadata->addPostHydrateListener(
+                    new Model\Method($listenerConfig['class'], $listenerConfig['method'], $args)
+                );
+            }
+        }
+
+        if (isset($data['listeners']['preExtract'])) {
+            foreach ($data['listeners']['preExtract'] as $listenerConfig) {
+                $args = [];
+                if (isset($listenerConfig['args'])) {
+                    $args = (array)$listenerConfig['args'];  
+                }
+
+                $this->classMetadata->addPreExtractListener(
+                    new Model\Method($listenerConfig['class'], $listenerConfig['method'], $args)
+                );
+            }
+        }
+
+        if (isset($data['listeners']['postExtract'])) {
+            foreach ($data['listeners']['postExtract'] as $listenerConfig) {
+                $args = [];
+                if (isset($listenerConfig['args'])) {
+                    $args = (array)$listenerConfig['args'];  
+                }
+
+                $this->classMetadata->addPostExtractListener(
+                    new Model\Method($listenerConfig['class'], $listenerConfig['method'], $args)
+                );
+            }
+        }
+
+        /**
+         * The 'interceptor' key is to be removed because replaced by listeners.
+         */
+        if (isset($data['interceptors']['preHydrate'])) {
+            $this->classMetadata->setOnBeforeHydrate($data['interceptors']['preHydrate']);
+        }
         if (isset($data['interceptors']['postHydrate'])) {
             $this->classMetadata->setOnAfterHydrate($data['interceptors']['postHydrate']);
         }
-
         if (isset($data['interceptors']['preExtract'])) {
             $this->classMetadata->setOnBeforeExtract($data['interceptors']['preExtract']);
         }
-
-        if (isset($data['interceptors']['preHydrate'])) {
-            $this->classMetadata->setOnBeforeHydrate($data['interceptors']['preHydrate']);
+        if (isset($data['interceptors']['postExtract'])) {
+            $this->classMetadata->setOnAfterExtract($data['interceptors']['postExtract']);
+        }
+        
+        if (isset($data['objectListeners'])) {
+            $this->classMetadata->setObjectListenerClasses($data['objectListeners']);
         }
     }
 
@@ -115,6 +221,8 @@ abstract class ArrayLoader extends AbstractLoader
         $mappedVersionFieldName = null;
         $mappedTransientFieldNames = [];
         $fieldsWithHydrationStrategy = [];
+        $getters = [];
+        $setters = [];
 
         if (isset($data['id'])) {
             $mappedIdFieldName = $data['id'];
@@ -180,11 +288,13 @@ abstract class ArrayLoader extends AbstractLoader
             }
 
             if (isset($fieldData['dataSource'])) {
-                $dataSources[$mappedFieldName] = $fieldData['dataSource'];
+                $sourceModel = new Model\DataSource;
+                $dataSources[$mappedFieldName] = $this->loadSource($sourceModel, $fieldData['dataSource']);
             }
 
             if (isset($fieldData['provider'])) {
-                $providers[$mappedFieldName] = $fieldData['provider'];
+                $sourceModel = new Model\Provider;
+                $providers[$mappedFieldName] = $this->loadSource($sourceModel, $fieldData['provider']);
             }
 
             if (isset($fieldData['refSource'])) {
@@ -193,6 +303,14 @@ abstract class ArrayLoader extends AbstractLoader
 
             if (isset($fieldData['valueObjects'])) {
                 $valueObjects = $fieldData['valueObjects'];
+            }
+
+            if (isset($fieldData['getter'])) {
+                $getters[$mappedFieldName] = $fieldData['getter'];
+            }
+
+            if (isset($fieldData['setter'])) {
+                $setters[$mappedFieldName] = $fieldData['setter'];
             }
 
             $fieldsDataByKey[$mappedFieldName] = $fieldDataByKey;
@@ -277,5 +395,77 @@ abstract class ArrayLoader extends AbstractLoader
         if (count($fieldsWithHydrationStrategy)) {
             $this->classMetadata->setFieldsWithHydrationStrategy($fieldsWithHydrationStrategy);
         }
+
+        if (count($getters)) {
+            $this->classMetadata->setGetters($getters);
+        }
+
+        if (count($setters)) {
+            $this->classMetadata->setSetters($setters);
+        }
+    }
+
+    /**
+     * Hydrate a source model from raw datas.
+     * 
+     * @param Model\Source $sourceModel
+     * @param array $sourceData
+     *
+     * @return Model\Source
+     */
+    private function loadSource(Model\Source $sourceModel, array $sourceData)
+    {
+        $sourceModel->setId($sourceData['id'])
+        ->setMethod(new Model\Method($sourceData['class'], $sourceData['method'], $sourceData['args']))
+        ->setLazyLoading($sourceData['lazyLoading'])
+        ->setSupplySeveralFields($sourceData['supplySeveralFields'])
+        ->setOnFail($sourceData['onFail'])
+        ->setExceptionClass($sourceData['exceptionClass'])
+        ->setBadReturnValue($sourceData['badReturnValue'])
+        ->setFallbackSourceId($sourceData['fallbackSourceId'])
+        ->setDepends($sourceData['depends'])
+        ;
+
+        if (isset($sourceData['preprocessor']['method'])) {
+            $sourceModel->addPreprocessor(
+                new Model\Method(
+                    $sourceData['preprocessor']['class'],
+                    $sourceData['preprocessor']['method'],
+                    $sourceData['preprocessor']['args']
+                )
+            );
+        } elseif (isset($sourceData['preprocessors']['items'])) {
+            foreach ($sourceData['preprocessors']['items'] as $preprocessor) {
+                $sourceModel->addPreprocessor(
+                    new Model\Method(
+                        $preprocessor['class'],
+                        $preprocessor['method'],
+                        $preprocessor['args']
+                    )
+                );
+            }
+        }
+
+        if (isset($sourceData['processor']['method'])) {
+            $sourceModel->addProcessor(
+                new Model\Method(
+                    $sourceData['processor']['class'],
+                    $sourceData['processor']['method'],
+                    $sourceData['processor']['args']
+                )
+            );
+        } elseif (isset($sourceData['processors']['items'])) {
+            foreach ($sourceData['processors']['items'] as $processor) {
+                $sourceModel->addProcessor(
+                    new Model\Method(
+                        $processor['class'],
+                        $processor['method'],
+                        $processor['args']
+                    )
+                );
+            }
+        }
+
+        return $sourceModel;
     }
 }

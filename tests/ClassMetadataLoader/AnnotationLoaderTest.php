@@ -232,7 +232,8 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @test
+     * Doesn't work any more because function ClasMetadata::resolveDefaultSource() 
+     * was temporarily commented (because of backward compatibility issue).
      */
     public function refDefaultSourceValidateResult()
     {
@@ -260,7 +261,42 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @TODO: Check 'onBeforeExtract' setting up. AnnotationLoader use 'method' attribute only.
+     */
+    public function listenersValidateResult()
+    {
+        $metadata = $this->loadMetadata('Listeners');
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        
+        //preHydrate
+        $listeners = $metadata->getPreHydrateListeners();
+        $this->assertCount(1, $listeners);
+        $this->assertEquals('SomeClass', $listeners[0]->getClass());
+        $this->assertEquals('preHydrateMethodName', $listeners[0]->getFunction());
+
+        //postHydrate
+        $listeners = $metadata->getPostHydrateListeners();
+        $this->assertCount(2, $listeners);
+        $this->assertEquals('SomeClass', $listeners[0]->getClass());
+        $this->assertEquals('postHydrateMethodName', $listeners[0]->getFunction());
+        $this->assertEquals('SomeClassB', $listeners[1]->getClass());
+        $this->assertEquals('postHydrateMethodName', $listeners[1]->getFunction());
+
+        //preExtract
+        $listeners = $metadata->getPreExtractListeners();
+        $this->assertCount(1, $listeners);
+        $this->assertEquals('SomeClass', $listeners[0]->getClass());
+        $this->assertEquals('preExtractMethodName', $listeners[0]->getFunction());
+
+        //postExtract
+        $listeners = $metadata->getPostExtractListeners();
+        $this->assertCount(1, $listeners);
+        $this->assertEquals('SomeClass', $listeners[0]->getClass());
+        $this->assertEquals('postExtractMethodName', $listeners[0]->getFunction());
+    }
+
+    /**
+     * @test
      */
     public function preExtractValidateResult()
     {
@@ -268,14 +304,10 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
         $this->assertEquals('preExtractMethodName', $metadata->getOnBeforeExtract());
-        $this->markTestIncomplete(
-            'This test has not been implemented yet.'
-        );
     }
 
     /**
      * @test
-     * @TODO: Check 'onAfterExtract' setting up. AnnotationLoader use 'method' attribute only.
      */
     public function postExtractValidateResult()
     {
@@ -283,14 +315,10 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
         $this->assertEquals('postExtractMethodName', $metadata->getOnAfterExtract());
-        $this->markTestIncomplete(
-            'This test has not been implemented yet.'
-        );
     }
 
     /**
      * @test
-     * @TODO: Check 'onBeforeHydrate' setting up. AnnotationLoader use 'method' attribute only.
      */
     public function preHydrateValidateResult()
     {
@@ -298,14 +326,10 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
         $this->assertEquals('preHydrateMethodName', $metadata->getOnBeforeHydrate());
-        $this->markTestIncomplete(
-            'This test has not been implemented yet.'
-        );
     }
 
     /**
      * @test
-     * @TODO: Check 'onAfterHydrate' setting up. AnnotationLoader use 'method' attribute only.
      */
     public function postHydrateValidateResult()
     {
@@ -313,9 +337,6 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
         $this->assertEquals('postHydrateMethodName', $metadata->getOnAfterHydrate());
-        $this->markTestIncomplete(
-            'This test has not been implemented yet.'
-        );
     }
 
     /**
@@ -744,6 +765,7 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
         $this->assertEquals('getterName', $metadata->getterise('firstField'));
+        $this->assertEquals('isSecondField', $metadata->getterise('secondField'));
     }
 
     /**

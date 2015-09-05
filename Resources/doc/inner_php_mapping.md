@@ -7,10 +7,6 @@ class Keyboard
     public static function loadMapping()
     {
         return [
-            'interceptors' => [
-                'postExtract' => 'onAfterExtract',
-                'postHydrate' => 'onAfterHydrate',
-            ],
             'fields' => [
                 'brand' => [
                     'readConverter' => 'readBrand',
@@ -26,6 +22,7 @@ class Keyboard
                 'waterProof' => [
                     'readConverter' => 'hydrateBool',
                     'writeConverter' => 'extractBool',
+                    'getter' => ['prefix' => 'is'], //Type of getter. "get" for getter (default value), "is" for isser, "has" for hasser.
                 ],
                 'stopWatch' => [
                     'readConverter' => 'hydrateBoolFromSymbol',
@@ -35,10 +32,26 @@ class Keyboard
                 'customizable' => [
                     'readConverter': 'hydrateBool',
                     'writeConverter': 'extractBool',
-                    'getter': 'canBeCustomized',
+                    'getter': 'canBeCustomized', //Getter name for property customizable.
                 ],
             ],
-        ];
+            'processors' => [
+                'preHydrate' => [
+                    ['class'=> 'SomeClass', 'method' => 'onBeforeHydrate'],
+                ],
+                'postHydrate' => [
+                    ['class' => 'SomeClass', 'method' => 'onAfterHydrate', 'args' => ['foo', 123]],
+                ]
+                'preExtract' => [
+                    ['class' => 'SomeClassA', 'method' => 'onBeforeExtract'],
+                    ['class' => 'SomeClassB', 'method' => 'onBeforeExtract', 'args' => ['foo', 123]],
+                ],
+                'postExtract' => [
+                    ['class' => 'SomeClass', 'method' => 'onAfterExtractA'],
+                    ['class' => 'SomeClass', 'method' => 'onAfterExtractB', 'args' => ['foo', 123]], 
+                ],
+            ],
+        ],
     }
 }
 

@@ -33,8 +33,8 @@ class YamlFileLoaderTest extends \PHPUnit_Framework_TestCase
     public function supportsValidateResultAndCalls($resourceType, $expectedResult)
     {
         $loadingCriteriaMock = $this->getMockBuilder(
-            'Kassko\DataMapperTest\ClassMetadataLoader\Fixture\LoadingCriteria'
-        )->getMock();
+            'Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria'
+        )->disableOriginalConstructor()->getMock();
         $loadingCriteriaMock->expects($this->once())
             ->method('getResourceType')
             ->willReturn($resourceType);

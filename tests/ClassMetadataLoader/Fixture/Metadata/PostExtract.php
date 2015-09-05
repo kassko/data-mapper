@@ -20,7 +20,7 @@ class PostExtract
     {
         return [
             'interceptors'  => [
-                'postExtract'    => ['CustomHydratorClassName', 'postExtractMethodName']
+                'postExtract'    => 'postExtractMethodName'
             ]
         ];
     }
@@ -32,7 +32,7 @@ class PostExtract
     {
         return <<<EOF
 interceptors:
-  postExtract: [CustomHydratorClassName, postExtractMethodName]
+  postExtract: postExtractMethodName
 EOF;
     }
 }

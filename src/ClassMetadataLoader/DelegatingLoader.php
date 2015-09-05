@@ -11,7 +11,7 @@ use Kassko\DataMapper\Configuration\Configuration;
  *
  * @author kko
  */
-class DelegatingLoader extends AbstractLoader
+class DelegatingLoader implements LoaderInterface
 {
     private $resolver;
 
@@ -24,13 +24,10 @@ class DelegatingLoader extends AbstractLoader
         ClassMetadata $classMetadata,
         LoadingCriteriaInterface $loadingCriteria,
         Configuration $configuration,
-        LoaderInterface $loader = null
+        DelegatingLoader $delegatingLoader = null
     ) {
-        if (false === $loader = $this->resolver->resolveLoader($loadingCriteria)) {
-            throw new NotFoundLoaderException($loadingCriteria);
-        }
-
-        return $loader->loadClassMetadata($classMetadata, $loadingCriteria, $configuration, $this);
+        $delegatedLoader = $this->getDelegatedLoader($loadingCriteria);
+        return $delegatedLoader->loadClassMetadata($classMetadata, $loadingCriteria, $configuration, $this);
     }
 
     public function supports(LoadingCriteriaInterface $loadingCriteria)
@@ -38,15 +35,12 @@ class DelegatingLoader extends AbstractLoader
         return false !== $this->resolver->resolveLoader($loadingCriteria);
     }
 
-    public function getData(
-        LoadingCriteriaInterface $loadingCriteria,
-        Configuration $configuration,
-        ArrayLoaderAware $loader
-    ) {
-        if (false === $loader = $this->resolver->resolveLoader($loadingCriteria)) {
+    public function getDelegatedLoader(LoadingCriteriaInterface $loadingCriteria)
+    {
+        if (false === $delegatedLoader = $this->resolver->resolveLoader($loadingCriteria)) {
             throw new NotFoundLoaderException($loadingCriteria);
-        }
+        }  
 
-        return $loader->getData($loadingCriteria, $configuration, $loader);
+        return $delegatedLoader;
     }
 }

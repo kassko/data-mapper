@@ -19,6 +19,12 @@ class Setter
     public static function loadInnerPhpMetadata()
     {
         return [
+            'fields'    => [
+                'firstField'    => [
+                    'name'      => 'firstField',
+                    'setter'    => ['name' => 'setterName'],
+                ]
+            ]
         ];
     }
 
@@ -28,6 +34,11 @@ class Setter
     public static function loadInnerYamlMetadata()
     {
         return <<<EOF
+fields:
+    firstField:
+        name: firstField
+        setter: 
+            name: setterName
 EOF;
     }
 }

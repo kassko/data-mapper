@@ -99,10 +99,10 @@ object:
      preprocessors:
        items:
          - class: "##this"
-           method: somePrepocessorA
+           method: somePreprocessorA
            args: []
          - class: "##this"
-           method: somePrepocessorB
+           method: somePreprocessorB
            args: []
      processors:
        items:

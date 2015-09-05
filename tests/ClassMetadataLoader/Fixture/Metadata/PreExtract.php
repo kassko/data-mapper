@@ -7,7 +7,6 @@ use Kassko\DataMapper\Annotation as DM;
  * Class PreExtract
  * 
  * @DM\PreExtract(
- *      class="CustomHydratorClassName",
  *      method="preExtractMethodName"
  * )
  */
@@ -20,7 +19,7 @@ class PreExtract
     {
         return [
             'interceptors'  => [
-                'preExtract'    => ['CustomHydratorClassName', 'preExtractMethodName']
+                'preExtract'    => 'preExtractMethodName'
             ]
         ];
     }
@@ -32,7 +31,7 @@ class PreExtract
     {
         return <<<EOF
 interceptors:
-  preExtract: [CustomHydratorClassName, preExtractMethodName]
+  preExtract: preExtractMethodName
 EOF;
     }
 }
