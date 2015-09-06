@@ -78,6 +78,12 @@ class Hydrator extends AbstractHydrator
     private $expressionContext;
 
     /**
+     * Contains the parent of the current hydrated object.
+     * @var object
+     */
+    private $parentOfObjectCurrentlyHydrated;
+
+    /**
      * All the variables used in a object mapping configuration.
      * @var array
      */
@@ -380,10 +386,12 @@ class Hydrator extends AbstractHydrator
         $this->walkHydration($mappedFieldName, $object, $value, $data);
     }
 
-    public function extractProperty($object, $mappedFieldName, $data = null)
+    public function extractProperty($object, $mappedFieldName, $data = null, $byPassLoading = false)
     {
         $this->prepare($object);
-        $value = $this->memberAccessStrategy->getValue($object, $mappedFieldName);
+
+        $memberAccessStrategy = $this->guessMemberAccessStrategyFromLoadingStrategy($byPassLoading);
+        $value = $memberAccessStrategy->getValue($object, $mappedFieldName);
 
         return $this->extractValue($mappedFieldName, $value, $object, $data);
     }
@@ -471,8 +479,9 @@ class Hydrator extends AbstractHydrator
             $hasConfig = $this->metadata->isValueObject($mappedFieldName);
             $fieldHydrator = $this->createFieldHydrator($fieldClass, $object, $mappedFieldName, $hasConfig);
 
-            reset($value);
+            $this->parentOfObjectCurrentlyHydrated = $object;
 
+            reset($value);
             if (0 !== count($value) && ! is_numeric(key($value))) {
                 $field = new $fieldClass;
                 $fieldHydrator->hydrate($value, $field);
@@ -484,7 +493,9 @@ class Hydrator extends AbstractHydrator
                     $fieldResult[] = $fieldHydrator->hydrate($record, $field);                   
                 }
                 $this->memberAccessStrategy->setValue($fieldResult, $object, $mappedFieldName);
-            }    
+            }
+
+            $this->parentOfObjectCurrentlyHydrated = null;    
 
             if ($hasConfig) {
                 $this->popRuntimeConfiguration(); 
@@ -743,8 +754,11 @@ class Hydrator extends AbstractHydrator
     {
         $class = $method->getClass();
 
-        if ('##this' === $class) {
-            $instance = $object;
+        $classInArgs = [$class];
+        $this->resolveValues($classInArgs, $object);
+
+        if (is_object($classInArgs[0])) {//If expression present in $class is resolved to an object.
+            $instance = $classInArgs[0];
         } else {
             $instance = $this->classResolver ? $this->classResolver->resolve($class) : new $class;
         }
@@ -802,6 +816,15 @@ class Hydrator extends AbstractHydrator
         return $propertyAccessStrategy;
     }
 
+    private function guessMemberAccessStrategyFromLoadingStrategy($byPassLoading)
+    {
+        if ($byPassLoading) {
+            return $this->propertyAccessStrategy;
+        }
+
+        return $this->memberAccessStrategy;
+    }
+
     /**
      * Gets all the variables used in a object mapping configuration.
      *
@@ -854,5 +877,15 @@ class Hydrator extends AbstractHydrator
     public function getCurrentObject()
     {
         return $this->currentHydrationContext->getObject();
+    }
+
+    /**
+     * Gets the raw data currently hydrated.
+     *
+     * @return object
+     */
+    public function getParentOfObjectCurrentlyHydrated()
+    {
+        return $this->parentOfObjectCurrentlyHydrated;
     }
 }
