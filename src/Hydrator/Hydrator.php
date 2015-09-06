@@ -78,7 +78,7 @@ class Hydrator extends AbstractHydrator
     private $expressionContext;
 
     /**
-     * Contains the parent of the current hydrated object.
+     * Contains the parent of the object currently hydrated.
      * @var object
      */
     private $parentOfObjectCurrentlyHydrated;
@@ -386,11 +386,11 @@ class Hydrator extends AbstractHydrator
         $this->walkHydration($mappedFieldName, $object, $value, $data);
     }
 
-    public function extractProperty($object, $mappedFieldName, $data = null, $byPassLoading = false)
+    public function extractProperty($object, $mappedFieldName, $data = null, $bypassLoading = false)
     {
         $this->prepare($object);
 
-        $memberAccessStrategy = $this->guessMemberAccessStrategyFromLoadingStrategy($byPassLoading);
+        $memberAccessStrategy = $this->guessMemberAccessStrategyFromLoadingStrategy($bypassLoading);
         $value = $memberAccessStrategy->getValue($object, $mappedFieldName);
 
         return $this->extractValue($mappedFieldName, $value, $object, $data);

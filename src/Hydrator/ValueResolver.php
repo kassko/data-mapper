@@ -79,11 +79,11 @@ class ValueResolver
         return $this->hydrator->getParentOfObjectCurrentlyHydrated();
     }
 
-    public function resolveFieldValue($fieldName, $byPassLoading)
+    public function resolveFieldValue($fieldName, $bypassLoading)
     {
         $fieldToResolve = $this->metadata->getMappedFieldName($fieldName);
 
-        return $this->hydrator->extractProperty($this->object, $fieldToResolve, null, $byPassLoading);
+        return $this->hydrator->extractProperty($this->object, $fieldToResolve, null, $bypassLoading);
     }
 
     public function resolveClass($class)
