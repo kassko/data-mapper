@@ -23,24 +23,4 @@ class InnerPhpLoader extends ArrayLoader
         $callable = [$loadingCriteria->getResourceClass(), $loadingCriteria->getResourceMethod()];
         return $callable();
     }
-
-    protected function normalize(array &$data)
-    {
-        parent::normalize($data);
-
-        $normalizedFieldsData = [];
-
-        $dataName = 'fields';
-        if (isset($data[$dataName])) {
-            foreach ($data[$dataName] as $mappedFieldName => $fieldData) {
-
-                if (is_numeric($mappedFieldName)) {//if $mappedFieldName is a numeric index, $fieldData contains the field.
-                    $mappedFieldName = $fieldData;                
-                }
-
-                $normalizedFieldsData[$mappedFieldName] = $fieldData;
-            }
-            $data[$dataName] = $normalizedFieldsData;
-        }
-    }
 }
