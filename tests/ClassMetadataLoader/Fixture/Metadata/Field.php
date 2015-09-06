@@ -51,17 +51,12 @@ class Field
                     'class'                      => 'stdClass',
                     'readConverter'              => 'readConvertFirstField',
                     'writeConverter'             => 'writeConvertFirstField',
-                    'readDateConverter'          => null,
-                    'writeDateConverter'         => null,
                     'fieldMappingExtensionClass' => 'ExtensionClass',
-                    //'defaultValue'               => null
                 ],
                 'fieldTwo'  => [
                     'name'                       => 'SecondField',
                     'type'                       => 'integer',
                     'class'                      => '\DateTime',
-                    'readConverter'              => null,
-                    'writeConverter'             => null,
                     'readDateConverter'          => 'readDateConvertSecondField',
                     'writeDateConverter'         => 'writeDateConvertSecondField',
                     'fieldMappingExtensionClass' => 'ExtensionClass',
@@ -70,13 +65,7 @@ class Field
                 'dateField' => [
                     'name'                       => 'DateField',
                     'type'                       => 'date',
-                    'class'                      => null,
-                    //'readConverter'              => null, //(1)
-                    //'writeConverter'             => null, //(1)
-                    'readDateConverter'          => null,
-                    'writeDateConverter'         => null,
-                    'fieldMappingExtensionClass' => null,
-                    'defaultValue'               => null
+                    'readDateConverter'          => null, //We can omit this key instead of specify it with the value null.
                 ]
             ]
         ];
@@ -95,15 +84,11 @@ fields:
     class: stdClass
     readConverter: readConvertFirstField
     writeConverter: writeConvertFirstField
-    readDateConverter: null
-    writeDateConverter: null
     fieldMappingExtensionClass: ExtensionClass
   fieldTwo:
     name: SecondField
     type: integer
     class: "\\\DateTime"
-    readConverter: null
-    writeConverter: null
     readDateConverter: readDateConvertSecondField
     writeDateConverter: writeDateConvertSecondField
     fieldMappingExtensionClass: ExtensionClass
@@ -111,16 +96,13 @@ fields:
   dateField:
     name: DateField
     type: date
-    class: null
-    # readConverter: null # (1)
-    # writeConverter: null # (1)
-    readDateConverter: ~ # Identical to null
-    writeDateConverter: ~ 
-    fieldMappingExtensionClass: null
+    readDateConverter: null # We can omit this key instead of specify it with the value null.
+    writeDateConverter: ~ # Identical to null. We can omit this key too.
 EOF;
     }
 }
 
 /**
- * (1) The normalization process will add missing entries (readConverter, writeConverter) and set them to null.
+ * (1) Allows to test the normalization process. 
+ * It will add the missing entries (readConverter, writeConverter) and set them to null.
  */
