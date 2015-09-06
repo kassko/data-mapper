@@ -25,10 +25,42 @@ abstract class ArrayLoader extends AbstractLoader
         return $this->classMetadata;
     }
 
+    /**
+     * Transforms 
+     * ['fieldA', 'fieldB'] to ['fieldA' => ['name' => 'fieldA'], ['fieldB' => ['name' => 'fieldB']]
+     *
+     * If only one listener, make an array with this only one listener)
+     * So transforms
+     * ['listeners' => [preHydrate => ['class' => 'SomeClass', 'method' => someMethod]]] 
+     * to 
+     * ['listeners' => [preHydrate => [['class' => 'SomeClass', 'method' => someMethod]]]]
+     */
     protected function normalizeFormat(array &$data)
     {
-        if (isset($data['listeners'])) {
-            foreach ($data['listeners'] as &$eventData) {
+        $dataName = 'fields';
+        if (isset($data[$dataName])) {
+            $normalizedFieldsData = [];
+
+            foreach ($data[$dataName] as $mappedFieldName => $fieldData) {
+
+                if (! isset($fieldData['name'])) {
+                    if (is_scalar($fieldData)) {
+                        //if $fieldData is a scalar value and a not null value, it contains the field name.
+                        $mappedFieldName = $fieldData;
+                        $fieldData = [];
+                    } elseif (is_null($fieldData)) {
+                        $fieldData = [];  
+                    }
+                    $normalizedFieldsData[$mappedFieldName] = array_merge($fieldData, ['name' => $mappedFieldName]);
+                    $data[$dataName] = $normalizedFieldsData;
+                    //Otherwise, the key contains the good value for $mappedFieldName.
+                }   
+            }    
+        }
+
+        $dataName = 'listeners';
+        if (isset($data[$dataName])) {
+            foreach ($data[$dataName] as &$eventData) {
                 reset($eventData);
                 if (! is_array(current($eventData))) {
                     $eventData = [$eventData];
@@ -56,6 +88,9 @@ abstract class ArrayLoader extends AbstractLoader
 
         if (isset($data['fields'])) {
             foreach ($data['fields'] as &$fieldData) {
+                if (! isset($fieldData)) {
+                    continue;
+                }
                 $fieldData = array_merge($template, $fieldData);
             }
         }

@@ -83,7 +83,7 @@ abstract class AbstractLoader implements LoaderInterface
                 );
 
                 $delegatedLoader = $delegatingLoader->getDelegatedLoader($loadingCriteria);
-                $othersData = $delegatedLoader->getData($loadingCriteria, $configuration, $delegatedLoader);
+                $othersData = $delegatedLoader->getData($loadingCriteria, $configuration, $delegatingLoader);
                 $data = array_merge_recursive($othersData, $data);
             }
         }
@@ -108,7 +108,7 @@ abstract class AbstractLoader implements LoaderInterface
 
                 $loadingCriteria = LoadingCriteria::createFromConfiguration($configuration, $objectClassConfig);
                 $delegatedLoader = $delegatingLoader->getDelegatedLoader($loadingCriteria);
-                $othersData = $delegatedLoader->getData($loadingCriteria, $configuration, $delegatedLoader);
+                $othersData = $delegatedLoader->getData($loadingCriteria, $configuration, $delegatingLoader);
                 $data = array_merge_recursive($othersData, $data);
             }
         }
