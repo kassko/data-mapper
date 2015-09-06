@@ -13,13 +13,14 @@ use Kassko\DataMapper\Configuration\Configuration;
  *
  * @author kko
  */
-class AnnotationLoader extends AbstractLoader
+class AnnotationLoader implements LoaderInterface
 {
     private $reader;
     private $classMetadata;
     private $objectReflectionClass;
 
     private static $objectAnnotationName = DM\Object::class;
+    private static $listenersAnnotationName = DM\Listeners::class;
     private static $fieldAnnotationName = DM\Field::class;
     private static $includeAnnotationName = 'Kassko\\DataMapper\\Annotation\\Include';//DM\Include::class;
     private static $excludeAnnotationName = DM\Exclude::class;
@@ -57,7 +58,7 @@ class AnnotationLoader extends AbstractLoader
         ClassMetadata $classMetadata,
         LoadingCriteriaInterface $loadingCriteria,
         Configuration $configuration,
-        LoaderInterface $loader = null
+        DelegatingLoader $delegatingLoader = null
     ) {
         $this->classMetadata = $classMetadata;
         $this->objectReflectionClass = $this->classMetadata->getReflectionClass();
@@ -93,18 +94,20 @@ class AnnotationLoader extends AbstractLoader
                     $this->classMetadata->setPropertyAccessStrategyEnabled($annotation->propertyAccessStrategy);
                     $this->classMetadata->setPropertyMetadataExtensionClass($annotation->fieldMappingExtensionClass);
                     $this->classMetadata->setClassMetadataExtensionClass($annotation->classMappingExtensionClass);
+                    break;
 
-                    if (null !== $annotation->preHydrate) {
-                        $this->classMetadata->setPreHydrateMethod(new Model\Method($annotation->preHydrate->class, $annotation->preHydrate->method, $annotation->preHydrate->args));
+                case self::$listenersAnnotationName:
+                    foreach ($annotation->preHydrate->items as $listener) {
+                        $this->classMetadata->addPreHydrateListener(new Model\Method($listener->class, $listener->method, $listener->args));
                     }
-                    if (null !== $annotation->postHydrate) {
-                        $this->classMetadata->setPostHydrateMethod(new Model\Method($annotation->postHydrate->class, $annotation->postHydrate->method, $annotation->postHydrate->args));
+                    foreach ($annotation->postHydrate->items as $listener) {
+                        $this->classMetadata->addPostHydrateListener(new Model\Method($listener->class, $listener->method, $listener->args));
                     }
-                    if (null !== $annotation->preExtract) {
-                        $this->classMetadata->setPreExtractMethod(new Model\Method($annotation->preExtract->class, $annotation->preExtract->method, $annotation->preExtract->args));
+                    foreach ($annotation->preExtract->items as $listener) {
+                        $this->classMetadata->addPreExtractListener(new Model\Method($listener->class, $listener->method, $listener->args));
                     }
-                    if (null !== $annotation->postExtract) {
-                        $this->classMetadata->setPostExtractMethod(new Model\Method($annotation->postExtract->class, $annotation->postExtract->method, $annotation->postExtract->args));
+                    foreach ($annotation->postExtract->items as $listener) {
+                        $this->classMetadata->addPostExtractListener(new Model\Method($listener->class, $listener->method, $listener->args));
                     }
                     break;
 
@@ -117,7 +120,7 @@ class AnnotationLoader extends AbstractLoader
                     $dataSources = [];
                     foreach ($annotation->items as $item) {
                         $dataSource = new Model\DataSource();
-                        $this->loadDataSource($dataSource, $item);
+                        $this->loadSource($dataSource, $item);
                         $dataSources[] = $dataSource;
                     }
                     $this->classMetadata->setDataSourcesStore($dataSources);
@@ -128,7 +131,7 @@ class AnnotationLoader extends AbstractLoader
                     $providers = [];
                     foreach ($annotation->items as $item) {
                         $provider = new Model\Provider();
-                        $this->loadProvider($provider, $item);
+                        $this->loadSource($provider, $item);
                         $providers[] = $provider;
                     }
                     $this->classMetadata->setProvidersStore($providers);
@@ -251,7 +254,7 @@ class AnnotationLoader extends AbstractLoader
                     case self::$dataSourceAnnotationName:
 
                         $dataSource = new Model\DataSource();
-                        $this->loadDataSource($dataSource, $annotation);
+                        $this->loadSource($dataSource, $annotation);
 
                         $dataSources[$mappedFieldName] = $dataSource;
                         break;
@@ -259,10 +262,10 @@ class AnnotationLoader extends AbstractLoader
                     case self::$providerAnnotationName:
                         //Provider is a data source now.
                         //This section should be refactored on the next significant release with "provider" removing.
-                        $dataSource = new Model\Provider();
-                        $this->loadDataSource($dataSource, $annotation);
+                        $provider = new Model\Provider();
+                        $this->loadSource($provider, $annotation);
 
-                        $providers[$mappedFieldName] = $dataSource;
+                        $providers[$mappedFieldName] = $provider;
                         break;
 
                     case self::$refSourceAnnotationName:
@@ -401,9 +404,9 @@ class AnnotationLoader extends AbstractLoader
         }
     }
 
-    private function loadDataSource(Model\DataSource $dataSource, DM\DataSource $annotation)
+    private function loadSource(Model\Source $sourceModel, DM\Source $annotation)
     {
-        $dataSource
+        $sourceModel
         ->setId($annotation->id)
         ->setMethod(new Model\Method($annotation->class, $annotation->method, $annotation->args))
         ->setLazyLoading($annotation->lazyLoading)
@@ -416,7 +419,7 @@ class AnnotationLoader extends AbstractLoader
         ;
 
         if (isset($annotation->preprocessor->method)) {
-            $dataSource->addPreprocessor(
+            $sourceModel->addPreprocessor(
                 new Model\Method(
                     $annotation->preprocessor->class,
                     $annotation->preprocessor->method,
@@ -425,7 +428,7 @@ class AnnotationLoader extends AbstractLoader
             );
         } elseif (isset($annotation->preprocessors->items)) {
             foreach ($annotation->preprocessors->items as $preprocessor) {
-                $dataSource->addPreprocessor(
+                $sourceModel->addPreprocessor(
                     new Model\Method(
                         $preprocessor->class,
                         $preprocessor->method,
@@ -436,7 +439,7 @@ class AnnotationLoader extends AbstractLoader
         }
 
         if (isset($annotation->processor->method)) {
-            $dataSource->addProcessor(
+            $sourceModel->addProcessor(
                 new Model\Method(
                     $annotation->processor->class,
                     $annotation->processor->method,
@@ -445,66 +448,7 @@ class AnnotationLoader extends AbstractLoader
             );
         } elseif (isset($annotation->processors->items)) {
             foreach ($annotation->processors->items as $processor) {
-                $dataSource->addProcessor(
-                    new Model\Method(
-                        $processor->class,
-                        $processor->method,
-                        $processor->args
-                    )
-                );
-            }
-        }
-    }
-
-    /**
-     * @deprecated To be removed in the next significant release.
-     * @see loadDataSource
-     */
-    private function loadProvider(Model\Provider $provider, DM\Provider $annotation)
-    {
-        $provider
-        ->setId($annotation->id)
-        ->setMethod(new Model\Method($annotation->class, $annotation->method, $annotation->args))
-        ->setLazyLoading($annotation->lazyLoading)
-        ->setSupplySeveralFields($annotation->supplySeveralFields)
-        ->setOnFail($annotation->onFail)
-        ->setExceptionClass($annotation->exceptionClass)
-        ->setBadReturnValue($annotation->badReturnValue)
-        ->setFallbackSourceId($annotation->fallbackSourceId)
-        ->setDepends($annotation->depends)
-        ;
-
-        if (isset($annotation->preprocessor->method)) {
-            $provider->addPreprocessor(
-                new Model\Method(
-                    $annotation->preprocessor->class,
-                    $annotation->preprocessor->method,
-                    $annotation->preprocessor->args
-                )
-            );
-        } elseif (isset($annotation->preprocessors->items)) {
-            foreach ($annotation->preprocessors->items as $preprocessor) {
-                $provider->addPreprocessor(
-                    new Model\Method(
-                        $preprocessor->class,
-                        $preprocessor->method,
-                        $preprocessor->args
-                    )
-                );
-            }
-        }
-
-        if (isset($annotation->processor->method)) {
-            $provider->addProcessor(
-                new Model\Method(
-                    $annotation->processor->class,
-                    $annotation->processor->method,
-                    $annotation->processor->args
-                )
-            );
-        } elseif (isset($annotation->processors->items)) {
-            foreach ($annotation->processors->items as $processor) {
-                $provider->addProcessor(
+                $sourceModel->addProcessor(
                     new Model\Method(
                         $processor->class,
                         $processor->method,

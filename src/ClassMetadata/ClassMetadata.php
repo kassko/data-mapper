@@ -2,6 +2,7 @@
 
 namespace Kassko\DataMapper\ClassMetadata;
 
+use Kassko\DataMapper\ClassMetadata\Model\Method;
 use Kassko\DataMapper\Exception\ObjectMappingException;
 use Kassko\DataMapper\Hydrator\Hydrator;
 
@@ -77,15 +78,18 @@ class ClassMetadata
     private $versionGetter;
     private $versionSetter;
 
+    /**
+     * Are to be removed because replaced by listeners.
+     */
     private $onBeforeExtract;
     private $onAfterExtract;
     private $onBeforeHydrate;
     private $onAfterHydrate;
 
-    private $preHydrateMethod;
-    private $postHydrateMethod;
-    private $preExtractMethod;
-    private $postExtractMethod;
+    private $preHydrateListeners = [];
+    private $postHydrateListeners = [];
+    private $preExtractListeners = [];
+    private $postExtractListeners = [];
 
     /**
      * @var array class methods
@@ -211,7 +215,7 @@ class ClassMetadata
         }
     }
 
-    private function resolveDefaultProviderById($defaultSource, &$sources)
+    private function resolveDefaultProviderById($defaultSource)
     {
         foreach ($this->mappedFieldNames as $mappedFieldName) {
             if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
@@ -803,8 +807,8 @@ class ClassMetadata
 
             static $defaultsGettersTypes = ['get', 'is', 'has'];
             foreach ($defaultsGettersTypes as $getterType) {
-                if (in_array($getter = $getter.ucfirst($mappedFieldName), $this->methods)) {
-                    return $this->getters[$mappedFieldName]['name'] = $getter;
+                if (in_array($getterType = $getterType.ucfirst($mappedFieldName), $this->methods)) {
+                    return $this->getters[$mappedFieldName]['name'] = $getterType;
                 }
             }
         }
@@ -942,6 +946,7 @@ class ClassMetadata
 
     public function findDataSourceById($id)
     {//@todo: optimize it.
+
         foreach ($this->dataSourcesStore as $dataSource) {
             if ($dataSource->getId() === $id) {
                 return $dataSource;
@@ -1249,97 +1254,97 @@ class ClassMetadata
     }
 
     /**
-     * Gets the value of preHydrateMethod.
+     * Gets the value of preHydrateListeners.
      *
-     * @return Method
+     * @return Method[]
      */
-    public function getPreHydrateMethod()
+    public function getPreHydrateListeners()
     {
-        return $this->preHydrateMethod;
+        return $this->preHydrateListeners;
     }
 
     /**
-     * Sets the value of preHydrateMethod.
+     * Adds a preHydrateListener.
      *
-     * @param Method $preHydrateMethod the pre hydrate method
+     * @param Method $preHydrateListener the pre hydrate listener
      *
      * @return self
      */
-    public function setPreHydrateMethod($preHydrateMethod)
+    public function addPreHydrateListener(Method $preHydrateListener)
     {
-        $this->preHydrateMethod = $preHydrateMethod;
+        $this->preHydrateListeners[] = $preHydrateListener;
 
         return $this;
     }
 
     /**
-     * Gets the value of postHydrateMethod.
+     * Gets the value of postHydrateListener.
      *
-     * @return Method
+     * @return Method[]
      */
-    public function getPostHydrateMethod()
+    public function getPostHydrateListeners()
     {
-        return $this->postHydrateMethod;
+        return $this->postHydrateListeners;
     }
 
     /**
-     * Sets the value of postHydrateMethod.
+     * Adds a postHydrateListener.
      *
-     * @param Method $postHydrateMethod the post hydrate method
+     * @param Method $postHydrateListener the post hydrate listener
      *
      * @return self
      */
-    public function setPostHydrateMethod($postHydrateMethod)
+    public function addPostHydrateListener(Method $postHydrateListener)
     {
-        $this->postHydrateMethod = $postHydrateMethod;
+        $this->postHydrateListeners[] = $postHydrateListener;
 
         return $this;
     }
 
     /**
-     * Gets the value of preExtractMethod.
+     * Gets the value of preExtractListener.
      *
-     * @return Method
+     * @return Method[]
      */
-    public function getPreExtractMethod()
+    public function getPreExtractListeners()
     {
-        return $this->preExtractMethod;
+        return $this->preExtractListeners;
     }
 
     /**
-     * Sets the value of preExtractMethod.
+     * Adds a preExtractListener.
      *
-     * @param Method $preExtractMethod the pre extract method
+     * @param Method $preExtractListener the pre extract listener
      *
      * @return self
      */
-    public function setPreExtractMethod($preExtractMethod)
+    public function addPreExtractListener(Method $preExtractListener)
     {
-        $this->preExtractMethod = $preExtractMethod;
+        $this->preExtractListeners[] = $preExtractListener;
 
         return $this;
     }
 
     /**
-     * Gets the value of postExtractMethod.
+     * Gets the value of postExtractListener.
      *
-     * @return Method
+     * @return Method[]
      */
-    public function getPostExtractMethod()
+    public function getPostExtractListeners()
     {
-        return $this->postExtractMethod;
+        return $this->postExtractListeners;
     }
 
     /**
-     * Sets the value of postExtractMethod.
+     * Adds a postExtractListener.
      *
-     * @param Method $postExtractMethod the post extract method
+     * @param Method $postExtractListener the post extract listener
      *
      * @return self
      */
-    public function setPostExtractMethod($postExtractMethod)
+    public function addPostExtractListener(Method $postExtractListener)
     {
-        $this->postExtractMethod = $postExtractMethod;
+        $this->postExtractListeners[] = $postExtractListener;
 
         return $this;
     }

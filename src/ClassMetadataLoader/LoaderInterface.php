@@ -16,8 +16,7 @@ interface LoaderInterface
         ClassMetadata $classMetadata,
         LoadingCriteriaInterface $loadingCriteria,
         Configuration $configuration,
-        LoaderInterface $loader = null
+        DelegatingLoader $delegatingLoader = null
     );
     function supports(LoadingCriteriaInterface $loadingCriteria);
-    function getData(LoadingCriteriaInterface $loadingCriteria, Configuration $configuration, LoaderInterface $loader);
 }

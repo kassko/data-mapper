@@ -37,13 +37,13 @@ class MethodInvoker
                 $result = $object->$method($args[0]);
                 break;
             case 2:
-                $result = $object->$method($args[1]);
+                $result = $object->$method($args[0], $args[1]);
                 break;
             case 3:
-                $result = $object->$method($args[2]);
+                $result = $object->$method($args[0], $args[1], $args[2]);
                 break;
             case 4:
-                $result = $object->$method($args[3]);
+                $result = $object->$method($args[0], $args[1], $args[2], $args[3]);
                 break;
             default:
                 $result = call_user_func_array([$object, $method], $args);

@@ -5,45 +5,45 @@ namespace Kassko\DataMapper\ClassMetadataLoader;
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 use Kassko\DataMapper\Configuration\Configuration;
 
+/**
+ * Class abstract loader for loaders whose data loaded can be merged with data loaded by anothers loaders.
+ * To be renamed MergeableLoader
+ *
+ * @author kko
+ */
 abstract class AbstractLoader implements LoaderInterface
 {
     public function loadClassMetadata(
         ClassMetadata $classMetadata,
         LoadingCriteriaInterface $loadingCriteria,
         Configuration $configuration,
-        LoaderInterface $loader = null
+        DelegatingLoader $delegatingLoader = null
     ) {
-        $data = $this->getData($loadingCriteria, $configuration, $loader);
+        $data = $this->getData($loadingCriteria, $configuration, $delegatingLoader);
         return $this->doLoadClassMetadata($classMetadata, $data);
     }
 
     public function getData(
         LoadingCriteriaInterface $loadingCriteria,
         Configuration $configuration,
-        LoaderInterface $loader
+        DelegatingLoader $delegatingLoader
     ) {
         $data = $this->doGetData($loadingCriteria);
 
-        $data = $this->importResource($data, $loadingCriteria, $loader, $configuration);
-        $data = $this->importConfig($data, $loadingCriteria, $loader, $configuration);
+        $data = $this->importResource($data, $loadingCriteria, $delegatingLoader, $configuration);
+        $data = $this->importConfig($data, $loadingCriteria, $delegatingLoader, $configuration);
 
         return $data;
     }
 
-    protected function doGetData(LoadingCriteriaInterface $loadingCriteria)
-    {//TODO: Normalize data after fetching them because the array of data obtained is different according to format yaml, php and the others.
-        throw new \LogicException(sprintf('Not implemented function "%s::doGetData()"', static::class));
-    }
+    abstract protected function doGetData(LoadingCriteriaInterface $loadingCriteria);
 
-    protected function doLoadClassMetadata(ClassMetadata $classMetadata, array $data)
-    {
-        throw new \LogicException(sprintf('Not implemented function "%s::doLoadClassMetadata()"', static::class));
-    }
+    abstract protected function doLoadClassMetadata(ClassMetadata $classMetadata, array $data);
 
     private function importResource(
         array $data,
         LoadingCriteriaInterface $loadingCriteria,
-        LoaderInterface $loader,
+        DelegatingLoader $delegatingLoader,
         Configuration $configuration
     ) {
         $defaultResourceDir = $configuration->getDefaultClassMetadataResourceDir();
@@ -82,7 +82,8 @@ abstract class AbstractLoader implements LoaderInterface
                     $otherResourceMethod
                 );
 
-                $othersData = $loader->getData($loadingCriteria, $configuration, $loader);
+                $delegatedLoader = $delegatingLoader->getDelegatedLoader($loadingCriteria);
+                $othersData = $delegatedLoader->getData($loadingCriteria, $configuration, $delegatedLoader);
                 $data = array_merge_recursive($othersData, $data);
             }
         }
@@ -93,7 +94,7 @@ abstract class AbstractLoader implements LoaderInterface
     private function importConfig(
         array $data,
         LoadingCriteriaInterface $loadingCriteria,
-        LoaderInterface $loader,
+        DelegatingLoader $delegatingLoader,
         Configuration $configuration
     ) {
         if (isset($data['imports']['config'])) {
@@ -106,8 +107,8 @@ abstract class AbstractLoader implements LoaderInterface
                 }
 
                 $loadingCriteria = LoadingCriteria::createFromConfiguration($configuration, $objectClassConfig);
-
-                $othersData = $loader->getData($loadingCriteria, $configuration, $loader);
+                $delegatedLoader = $delegatingLoader->getDelegatedLoader($loadingCriteria);
+                $othersData = $delegatedLoader->getData($loadingCriteria, $configuration, $delegatedLoader);
                 $data = array_merge_recursive($othersData, $data);
             }
         }

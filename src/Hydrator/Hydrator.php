@@ -4,8 +4,7 @@ namespace Kassko\DataMapper\Hydrator;
 
 use Exception;
 use Kassko\ClassResolver\ClassResolverInterface;
-use Kassko\DataMapper\ClassMetadata\Model\Source;
-use Kassko\DataMapper\ClassMetadata\SourcePropertyMetadata;
+use Kassko\DataMapper\ClassMetadata;
 use Kassko\DataMapper\Configuration\ObjectKey;
 use Kassko\DataMapper\Configuration\RuntimeConfiguration;
 use Kassko\DataMapper\Exception\NotFoundMemberException;
@@ -183,9 +182,7 @@ class Hydrator extends AbstractHydrator
         $data = [];
         if (! $this->metadata->hasCustomHydrator()) {
 
-            if ($method = $this->metadata->getPreExtractMethod()) {
-                $this->executeMethod($object, $method->class, $method->method, $method->args);
-            }
+            $this->executeMethods($object, $this->metadata->getPreExtractListeners());
 
             foreach ($originalFieldNames as $originalFieldName) {
                 $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
@@ -276,9 +273,7 @@ class Hydrator extends AbstractHydrator
             $data = array_merge($data, $valueObjectData);
         }
 
-        if ($method = $this->metadata->getPostExtractMethod()) {
-            $this->executeMethod($object, $method->class, $method->method, $method->args);
-        }
+        $this->executeMethods($object, $this->metadata->getPostExtractListeners());
 
         return $data;
     }
@@ -306,9 +301,7 @@ class Hydrator extends AbstractHydrator
 
         if (! $this->metadata->hasCustomHydrator()) {
 
-            if ($method = $this->metadata->getPreHydrateMethod()) {
-                $this->executeMethod($object, $method->class, $method->method, $method->args);
-            }
+            $this->executeMethods($object, $this->metadata->getPreHydrateListeners());
 
             foreach ($data as $originalFieldName => $value) {
                 $mappedFieldName = $this->metadata->getMappedFieldName($originalFieldName);
@@ -352,9 +345,7 @@ class Hydrator extends AbstractHydrator
             $this->walkValueObjectHydration($mappedFieldName, $object, $data);
         }
 
-        if ($method = $this->metadata->getPostHydrateMethod()) {
-            $this->executeMethod($object, $method->class, $method->method, $method->args);
-        }
+        $this->executeMethods($object, $this->metadata->getPostHydrateListeners());
 
         $this->currentHydrationContext = $previousHydrationContext;
 
@@ -404,13 +395,13 @@ class Hydrator extends AbstractHydrator
         return $this->extractValue($mappedFieldName, $value, $object, $data);
     }
 
-    public function findFromSource(Source $sourceMetadata)
+    public function findFromSource(ClassMetadata\Model\Source $sourceMetadata)
     {
         if (null === $sourceMetadata->getFallbackSourceId()) {
             return $this->objectManager->findFromSource($sourceMetadata);
         }
 
-        if (SourcePropertyMetadata::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->getOnFail()) {
+        if (ClassMetadata\Model\Source::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->getOnFail()) {
             
             $data = $this->objectManager->findFromSource($sourceMetadata);
             if ($sourceMetadata->areDataInvalid($data)) {
@@ -421,7 +412,7 @@ class Hydrator extends AbstractHydrator
             return $data;
         } 
 
-        //Else SourcePropertyMetadata::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->getOnFail().
+        //Else ClassMetadata\Model\Source::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->getOnFail().
         try {
             $data = $this->objectManager->findFromSource($sourceMetadata);
         } catch (Exception $e) {
@@ -592,7 +583,7 @@ class Hydrator extends AbstractHydrator
         $sourceMetadata->getMethod()->setArgs($args);
         $data = $this->findFromSource($sourceMetadata);
         
-        $this->executePreprocessors($sourceMetadata, $object);
+        $this->executeMethods($object, $sourceMetadata->getPreprocessors());
 
         if (! $sourceMetadata->getSupplySeveralFields()) {
             $this->walkHydration($mappedFieldName, $object, $data, $data);
@@ -620,7 +611,7 @@ class Hydrator extends AbstractHydrator
             }
         }
 
-        $this->executeProcessors($sourceMetadata, $object);
+        $this->executeMethods($object, $sourceMetadata->getProcessors());
     }
 
     protected function walkHydrationByProvider($mappedFieldName, $object, $enforceLoading)
@@ -649,7 +640,7 @@ class Hydrator extends AbstractHydrator
         $sourceMetadata->getMethod()->setArgs($args);
         $data = $this->findFromSource($sourceMetadata);
 
-        $this->executePreprocessors($sourceMetadata, $object);
+        $this->executeMethods($object, $sourceMetadata->getPreprocessors());
         
         if (! $sourceMetadata->getSupplySeveralFields()) {
             $this->memberAccessStrategy->setValue($data, $object, $mappedFieldName);
@@ -679,7 +670,7 @@ class Hydrator extends AbstractHydrator
             }
         }
 
-        $this->executeProcessors($sourceMetadata, $object);
+        $this->executeMethods($object, $sourceMetadata->getProcessors());
     }
 
     protected function walkValueObjectHydration($mappedFieldName, $object, $data)
@@ -731,7 +722,7 @@ class Hydrator extends AbstractHydrator
         }
     }
 
-    protected function computeSourceKey($objectClass, Source $sourceMetadata)
+    protected function computeSourceKey($objectClass, ClassMetadata\Model\Source $sourceMetadata)
     {
         if (null === $sourceMetadata->getId()) {
             return $objectClass . $sourceMetadata->getMethod()->getClass() . $sourceMetadata->getMethod()->getFunction();
@@ -740,30 +731,34 @@ class Hydrator extends AbstractHydrator
         return $objectClass . $sourceMetadata->getId() . $sourceMetadata->getMethod()->getClass() . $sourceMetadata->getMethod()->getFunction();
     }
 
-    private function executePreprocessors(Source $sourceMetadata, $object)
+    /**
+     * @param object $object
+     * @param ClassMetadata\Model\Method[] $method
+     */
+    private function executeMethods($object, array $methods)
     {
-        foreach ($sourceMetadata->getPreprocessors() as $preprocessor) {
-            $this->executeMethod($object, $preprocessor->getClass(), $preprocessor->getFunction(), $preprocessor->getArgs());
+        foreach ($methods as $method) {
+            $this->executeMethod($object, $method);
         }
     }
 
-    private function executeProcessors(Source $sourceMetadata, $object)
+    /**
+     * @param object $object
+     * @param ClassMetadata\Model\Method $method
+     */
+    private function executeMethod($object, ClassMetadata\Model\Method $method)
     {
-        foreach ($sourceMetadata->getProcessors() as $processor) {
-            $this->executeMethod($object, $processor->getClass(), $processor->getFunction(), $processor->getArgs());
-        }
-    }
+        $class = $method->getClass();
 
-    private function executeMethod($object, $class, $method, $args)
-    {
         if ('##this' === $class) {
             $instance = $object;
         } else {
             $instance = $this->classResolver ? $this->classResolver->resolve($class) : new $class;
         }
 
+        $args = $method->getArgs();
         $this->resolveValues($args, $object);
-        $this->methodInvoker->invoke($instance, $method, $args);
+        $this->methodInvoker->invoke($instance, $method->getFunction(), $args);
     }
 
     protected function pushRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResource, $voResourceType)

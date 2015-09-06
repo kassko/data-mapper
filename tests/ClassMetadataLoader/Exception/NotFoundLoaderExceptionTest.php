@@ -17,7 +17,7 @@ class NotFoundLoaderExceptionTest extends \PHPUnit_Framework_TestCase
         protected $exception;
 
         /**
-         * @var Fixture\LoadingCriteria|\PHPUnit_Framework_MockObject_MockObject
+         * @var Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria|\PHPUnit_Framework_MockObject_MockObject
          */
         protected $loadingCriteriaMock;
 
@@ -27,8 +27,8 @@ class NotFoundLoaderExceptionTest extends \PHPUnit_Framework_TestCase
         public function setUp()
         {
                 $this->loadingCriteriaMock = $this->getMockBuilder(
-                        'Kassko\DataMapperTest\ClassMetadataLoader\Fixture\LoadingCriteria'
-                )->getMock();
+                        'Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria'
+                )->disableOriginalConstructor()->getMock();
 
                 $resourcePath = 'testResourcePath';
                 $resourceType = 'testResourceType';

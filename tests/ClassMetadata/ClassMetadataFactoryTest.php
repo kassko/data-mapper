@@ -58,7 +58,9 @@ class ClassMetadataFactoryTest extends \PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->getMock();
         $this->loadingCriteriaMock = $this->getMockBuilder(
-            'Kassko\DataMapperTest\ClassMetadataLoader\Fixture\LoadingCriteria')->getMock();
+            'Kassko\DataMapper\ClassMetadataLoader\LoadingCriteria')
+            ->disableOriginalConstructor()
+            ->getMockForAbstractClass();
         $this->configurationMock = $this->getMockBuilder('Kassko\DataMapper\Configuration\Configuration')->getMock();
         $this->cacheMock = $this->getMockBuilder('Kassko\DataMapper\Cache\ArrayCache')->getMock();
         $this->eventDispatcherMock = $this->getMockBuilder('Symfony\Component\EventDispatcher\EventDispatcher')

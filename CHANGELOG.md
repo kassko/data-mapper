@@ -18,6 +18,8 @@
 * `Fix`: Fix identification of fields with same source when sources have same class/method but differents method arguments.  Now, use the Id to process the identification instead of the pair class/method
 * `Fix`: Fix bug when working whith several object managers. The lazy loader didn't retrieve the good one.
 * `Fix`: Hydrator configuration: Fix key `processors` in annotation configuration. Processors specified was ignored. 
+* `Fix`: Hydrator configuration: Fix key `interceptors` in yaml configuration format
+* `Fix`: Hydrator configuration: Fix key `interceptors` in php configuration format
 * `Enhanc`: Add some hydrator tests
 * `Enhanc`: Add a default cache for data sources. An array / request cache.
 
