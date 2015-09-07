@@ -19,7 +19,7 @@ class ValueResolver
     private $fieldMarker = '#';
     private $fieldMarkerSize = 1;
     private $directFieldMarker = '#!';
-     private $directFieldMarkerSize = 2;
+    private $directFieldMarkerSize = 2;
     
     private $object;//TODO: check if this attribute is still usefull an remove it if function resolveObject() can replaces it.
     private $hydrator;

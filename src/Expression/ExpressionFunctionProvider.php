@@ -33,11 +33,11 @@ class ExpressionFunctionProvider implements ExpressionFunctionProviderInterface
                 }
             ),
             new ExpressionFunction(
-                'fieldUnload',
+                'rawField',
                 function ($arg) {
                     return sprintf('value_resolver.resolveFieldValue(%s, true)', $arg);
                 }, 
-                function (array $context, $value, $bypassLoading) {
+                function (array $context, $value) {
                     return $context['value_resolver']->resolveFieldValue($value, true);
                 }
             ),
