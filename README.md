@@ -382,11 +382,30 @@ You can see more details about `class-resolver` [here](https://github.com/kassko
 * [Inherit mapping configuration](#inherit-mapping-configuration)
 * [Component configuration reference](#component-configuration-reference)
 * [Mapping configuration reference](#mapping-configuration-reference)
-  - [Annotations mapping config](#annotations-mapping-config)
-  - [Yaml mapping config](#yaml-mapping-config)
-  - [Php mapping config](#php-mapping-config)
-
-
+  - [CustomHydrator config](#customhydrator-config)
+  - [DataSource config](#datasource-config)
+  - [DataSourceStore config](#datasourcestore-config)
+  - [Exclude config](#exclude-config)
+  - [ExcludeDefaultSource config](#excludedefaultsource-config)
+  - [Field config](#field-config)
+  - [Getter config](#getter-config)
+  - [Id config](#id-config)
+  - [IdCompositePart config](#idcompositepart-config)
+  - [Listeners config](#listeners-config)
+  - [Object config](#object-config)
+  - [ObjectListeners config](#object-listeners-config)
+  - [PostExtract config](#postextract-config)
+  - [PostHydrate config](#posthydrate-config)
+  - [PreExtract config](#preextract-config)
+  - [PreHydrate config](#prehydrate-config)
+  - [Provider config](#provider-config)
+  - [ProviderStore config](#providerstore-config)
+  - [RefDefaultSource config](#refdefaultsource-config)
+  - [RefSource config](#refsource-config)
+  - [Setter config](#setter-config)
+  - [Transient config](#transient-config)
+  - [ValueObject config](#valueobject-config)
+  - [Version config](#version-config)
 
 
 =======================================================================================================
@@ -1570,16 +1589,1082 @@ And maybe others if you add some custom mapping loaders.
 
 Mapping configuration reference
 -----------
-This section will be written later.
 
-### Annotations mapping config
-This section will be written later.
+### Config config
 
-### Yaml mapping config
-This section will be written later.
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
 
-### Php mapping config
-This section will be written later.
+class SomeClass
+{
+    /**
+     * @DM\Config(
+     *      class="\ValueObjectClass",
+     *      mappingResourceName="valueObjectResourceName",
+     *      mappingResourcePath="valueObjectResourcePath",
+     *      mappingResourceType="valueObjectResourceType"
+     * )
+     */
+    protected $firstField;
+```
+
+Yaml format:
+```yml
+fields: [firstField]
+config:
+    firstField:
+        class: "\\\ValueObjectClass"
+        mappingResourceName: valueObjectResourceName
+        mappingResourcePath: valueObjectResourcePath
+        mappingResourceType: valueObjectResourceType
+```
+
+Php format:
+```php
+[
+    'fields' => ['firstField'],
+    'config' => [
+        'firstField'    => [
+            'class' => '\ValueObjectClass',
+            'mappingResourceName' => 'valueObjectResourceName',
+            'mappingResourcePath' => 'valueObjectResourcePath',
+            'mappingResourceType' => 'valueObjectResourceType'
+        ]
+    ]
+];
+```
+
+### CustomHydrator config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * Class SomeClass
+ * 
+ * @DM\CustomHydrator(
+ *      class="SomeClassHydrator",
+ *      hydrateMethod="hydrateMethod",
+ *      extractMethod="extractMethod"
+ * )
+ */
+class SomeClass
+{
+}
+```
+
+Yaml format:
+```yml
+object:
+  customHydrator:
+    class: SomeClassHydrator
+    hydrateMethod: hydrateMethod
+    extractMethod: extractMethod
+```
+
+Php format:
+```php
+[
+    'object'    => [
+        'customHydrator'    => [
+            'class' => 'SomeClassHydrator',
+            'hydrateMethod' => 'hydrateMethod',
+            'extractMethod' => 'extractMethod'
+        ]
+    ]
+];
+```
+
+The methods prototype:
+```php
+class SomeClassHydrator
+{
+    /**
+     * Hydrate a SomeClass object from raw data $data.
+     *
+     * @param array The raw data
+     * @return SomeClass
+     */
+    public function hydrateMethod(array $data)
+    {
+    }
+
+    /**
+     * Extract data from a SomeClass instance $object.
+     *
+     * @param SomeClass The object
+     * @return array
+     */
+    public function extractMethod(SomeClass $object)
+    {
+    }
+}
+```
+
+### DataSource config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+class SomeClass
+{
+    /**
+     * @DM\DataSource(
+     *      id="firstFieldId",
+     *      lazyLoading=true,
+     *      supplySeveralFields=true,
+     *      depends={"depend#1","depend#2"},
+     *      onFail="checkException",
+     *      exceptionClass="\RuntimeException",
+     *      badReturnValue="emptyString",
+     *      fallbackSourceId="firstFieldFallbackSourceId",
+     *      preprocessor=@DM\Method(method="fooPreprocessor"),
+     *      processors = @DM\Methods({
+     *          @DM\Method(method="barProcessor"),
+     *          @DM\Method(method="bazProcessor")
+     *      })
+     *      class="\stdClass",
+     *      method="someMethod",
+     *      args={"argument#1", "argument#2"}
+     * )
+     */
+     protected $firstField;
+}
+```
+
+Yaml format:
+```yml
+fields:
+    firstField:
+        name: originalFieldName
+        dataSource:
+            id: firstFieldId
+            lazyLoading: true
+            supplySeveralFields: true
+            depends: [depend#1, depend#2]
+            onFail: checkException
+            exceptionClass: "\\\RuntimeException"
+            badReturnValue: emptyString
+            fallbackSourceId: firstFieldFallbackSourceId
+            preprocessor:
+                class: "##this"
+                method: fooPreprocessor
+                args: []
+            processor: ~
+            preprocessors: []
+            processors: 
+                - {method: barProcessor}
+                - {method: bazProcessor}
+            class: "\\\stdClass"
+            method: someMethod
+            args: [argument#1, argument#2]
+```
+
+Php format:
+```php
+[
+    'fields' => [
+        'firstField' => [
+            'name'       => 'originalFieldName',
+            'dataSource' => [
+                'id'                  => 'firstFieldId',
+                'lazyLoading'         => true,
+                'supplySeveralFields' => true,
+                'depends'             => ['depend#1', 'depend#2'],
+                'onFail'              => 'checkException',
+                'exceptionClass'      => '\RuntimeException',
+                'badReturnValue'      => 'emptyString',
+                'fallbackSourceId'    => 'firstFieldFallbackSourceId',
+                'preprocessor'        => [
+                    'class'  => '##this',
+                    'method' => 'fooPreprocessor',
+                    'args'   => []
+                ],
+                'processor'           => [],
+                'preprocessors'       => [],
+                'processors'          => [
+                    ['method' => 'barProcessor'],
+                    ['method' => 'bazProcessor'],
+                ],
+                'class'               => '\stdClass',
+                'method'              => 'someMethod',
+                'args'                => ['argument#1', 'argument#2']
+            ]
+        ]
+    ]
+];
+```
+
+To know more about the "Method config" usage, please see its dedicated documentation ["Method config"](#method-config).
+
+### DataSourceStore config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\DataSourcesStore({
+ *      @DM\DataSource(
+ *          id="personSource",
+ *          class="Kassko\Sample\PersonDataSource",
+ *          method="getData",
+ *          args="#id",
+ *          lazyLoading=true,
+ *          supplySeveralFields=true,
+ *          onFail="checkException",
+ *          exceptionClass="\RuntimeException",
+ *          badReturnValue="emptyString",
+ *          fallbackSourceId="testFallbackSourceId",
+ *          depends="#dependsFirst",
+ *          preprocessor = @DM\Method(method="somePreprocessor"),
+ *          processor = @DM\Method(method="someProcessor")
+ *      )
+ * })
+ */
+class SomeClass
+{
+}
+```
+
+Yaml format:
+```yml
+object:
+    dataSourcesStore:
+        - id: personSource
+        class: "Kassko\\\Sample\\\PersonDataSource"
+        method: getData
+        args: [#id]
+        lazyLoading: true
+        supplySeveralFields: true
+        onFail: checkException
+        exceptionClass: \RuntimeException
+        badReturnValue: emptyString
+        fallbackSourceId: testFallbackSourceId
+        depends: [#dependsFirst]
+        preprocessor:
+            class: ""
+            method: somePreprocessor
+            args: []
+        processor:
+            class: ""
+            method: someProcessor
+            args: []
+```
+
+Php format:
+```php
+[
+    'object'    => [
+        'dataSourcesStore'    => [
+            [
+                'id'=> 'personSource',
+                'class'=> 'Kassko\Sample\PersonDataSource',
+                'method'=> 'getData',
+                'args' => ['#id'],
+                'lazyLoading' => true,
+                'supplySeveralFields' => true,
+                'onFail'    => 'checkException',
+                'exceptionClass' => '\RuntimeException',
+                'badReturnValue' => 'emptyString',
+                'fallbackSourceId' => 'testFallbackSourceId',
+                'depends' => ['#dependsFirst'],
+                'preprocessor' => [
+                    'class' => '',
+                    'method' => 'somePreprocessor',
+                    'args' => []
+                ],
+                'processor' => [
+                    'class' => '',
+                    'method' => 'someProcessor',
+                    'args' => []
+                ]
+            ]
+        ]
+    ]
+];
+```
+
+To know more about the "Method config" usage, please see its dedicated documentation ["Method config"](#method-config).
+
+### Exclude config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+class SomeClass
+{
+    /**
+     * @DM\Exclude
+     */
+    protected $excludedField;
+
+    /**
+     * @DM\Field
+     */
+    protected $field;
+}
+```
+
+Yaml format:
+```yml
+exclude: [excludedField]
+fields:
+  excludedField:
+    name: originalFieldName
+  field:
+    name: field
+```
+
+Php format:
+```php
+[
+    'exclude' => [
+        'excludedField'
+    ],
+    'fields'  => [
+        'excludedField' => [
+            'name'     => 'originalFieldName'
+        ],
+        'field'         => [
+            'name'     => 'field'
+        ]
+    ]
+];
+```
+
+### ExcludeDefaultSource config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+class SomeClass
+{
+    /**
+     * @DM\ExcludeDefaultSource
+     */
+    protected $excludeDefaultSourceField;
+}
+```
+
+Yaml format:
+```yml
+```
+
+Php format:
+```php
+```
+
+### Field config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+class SomeClass
+{
+    /**
+     * @DM\Field(
+     *      name="FirstField",
+     *      type="string",
+     *      class="stdClass",
+     *      readConverter="readConvertFirstField",
+     *      writeConverter="writeConvertFirstField",
+     *      fieldMappingExtensionClass="ExtensionClass"
+     * )
+     */
+    protected $fieldOne;
+
+    /**
+     * @DM\Field(
+     *      name="SecondField",
+     *      type="integer",
+     *      class="\DateTime",
+     *      readDateConverter="readDateConvertSecondField",
+     *      writeDateConverter="writeDateConvertSecondField",
+     *      fieldMappingExtensionClass="ExtensionClass",
+     *      defaultValue="12"
+     * )
+     */
+    protected $fieldTwo;
+
+    /**
+     * @DM\Field(
+     *      name="DateField",
+     *      type="date"
+     * )
+     */
+    protected $dateField;
+}
+```
+
+Yaml format:
+```yml
+fields:
+    fieldOne:
+        name: FirstField
+        type: string
+        class: stdClass
+        readConverter: readConvertFirstField
+        writeConverter: writeConvertFirstField
+        fieldMappingExtensionClass: ExtensionClass
+    fieldTwo:
+        name: SecondField
+        type: integer
+        class: "\\\DateTime"
+        readDateConverter: readDateConvertSecondField
+        writeDateConverter: writeDateConvertSecondField
+        fieldMappingExtensionClass: ExtensionClass
+        defaultValue: 12
+    dateField:
+        name: DateField
+        type: date
+```
+
+Php format:
+```php
+[
+    'fields' => [
+        'fieldOne'  => [
+            'name'                       => 'FirstField',
+            'type'                       => 'string',
+            'class'                      => 'stdClass',
+            'readConverter'              => 'readConvertFirstField',
+            'writeConverter'             => 'writeConvertFirstField',
+            'fieldMappingExtensionClass' => 'ExtensionClass',
+        ],
+        'fieldTwo'  => [
+            'name'                       => 'SecondField',
+            'type'                       => 'integer',
+            'class'                      => '\DateTime',
+            'readDateConverter'          => 'readDateConvertSecondField',
+            'writeDateConverter'         => 'writeDateConvertSecondField',
+            'fieldMappingExtensionClass' => 'ExtensionClass',
+            'defaultValue'               => 12
+        ],
+        'dateField' => [
+            'name'                       => 'DateField',
+            'type'                       => 'date'
+        ]
+    ]
+];
+```
+
+### Getter config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+class SomeClass
+{
+    /**
+     * @DM\Getter(
+     *      name="getterName"
+     * )
+     */
+    protected $firstField;
+
+    /**
+     * @DM\Getter(
+     *      prefix="is"
+     * )
+     */
+    protected $secondField;
+}
+```
+
+Yaml format:
+```yml
+fields:
+    firstField:
+        name: firstField
+        getter: 
+            name: getterName
+    secondField:
+        name: secondField
+        getter:
+            prefix: is
+```
+
+Php format:
+```php
+[
+    'fields'    => [
+        'firstField'    => [
+            'name'      => 'firstField',
+            'getter'    => ['name' => 'getterName'],
+        ],
+        'secondField'    => [
+            'name'      => 'secondField',
+            'getter'    => ['prefix' => 'is'],
+        ],
+    ]
+];
+```
+
+### Id config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+class SomeClass
+{
+    /**
+     * @DM\Id
+     */
+    protected $firstField;
+}
+```
+
+Yaml format:
+```yml
+id: firstField
+fields: ["firstField"]
+```
+
+Php format:
+```php
+[
+    'id'        => 'firstField',
+    'fields'    => ['firstField']
+];
+```
+
+### IdCompositePart config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+class SomeClass
+{
+    /**
+     * @DM\IdCompositePart
+     */
+    protected $firstField;
+
+    /**
+     * @DM\IdCompositePart
+     */
+    protected $secondField;
+}
+```
+
+Yaml format:
+```yml
+idComposite:    [firstField, secondField]
+fields:         [firstField, secondField]
+```
+
+Php format:
+```php
+[
+    'idComposite'   => ['firstField', 'secondField'],
+    'fields'    => ['firstField', 'secondField']
+];
+```
+
+### Listeners config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\Listeners(
+ *  preHydrate = @DM\Methods({
+ *      @DM\Method(class="SomeClass", method="preHydrateMethodName")   
+ * }),
+ *  postHydrate = @DM\Methods({
+ *      @DM\Method(class="SomeClass", method="postHydrateMethodName"),
+ *      @DM\Method(class="SomeClassB", method="postHydrateMethodName") 
+ * }),
+ *  preExtract = @DM\Methods({
+ *      @DM\Method(class="SomeClass", method="preExtractMethodName", args="foo")   
+ * }),
+ *  postExtract = @DM\Methods({
+ *      @DM\Method(class="SomeClass", method="postExtractMethodName", args={"foo", "#bar"})   
+ * })
+ * )
+ */
+class SomeClass
+{
+}
+```
+
+Yaml format:
+```yml
+listeners:
+    preHydrate: 
+        - {class: SomeClass, method: preHydrateMethodName}
+    postHydrate: 
+        - {class: SomeClass, method: postHydrateMethodName}
+        - {class: SomeClassB, method: postHydrateMethodName}
+    preExtract: 
+        - {class: SomeClass, method: preExtractMethodName, args: foo}
+    postExtract: 
+        - {class: SomeClass, method: postExtractMethodName, args: ['foo', '#bar']}
+```
+
+Php format:
+```php
+[
+    'listeners' => [
+        'preHydrate' => ['class' => 'SomeClass', 'method' => 'preHydrateMethodName'],                
+        'postHydrate' => 
+        [
+            ['class' => 'SomeClass', 'method' => 'postHydrateMethodName'],
+            ['class' => 'SomeClassB', 'method' => 'postHydrateMethodName'],
+        ], 
+        'preExtract' => ['class' => 'SomeClass', 'method' => 'preExtractMethodName', 'args' => 'foo'],
+        'postExtract' => ['class' => 'SomeClass', 'method' => 'postExtractMethodName', 'args' => ['foo', '#bar']],
+    ]
+];
+```
+
+### Method config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\Method(method="someMethod")
+ * @DM\Method(class="SomeClass", method="someMethod", args="abc")
+ * @DM\Method(class="@some_object_created_from_factory_or_container", method="someMethod", args= {"##this", "abc"}
+ */
+```
+
+Yaml format:
+```yml
+some_key:
+    'method': someMethod
+
+some_key:
+    class: SomeClass
+    method: someMethod
+    args: abc
+
+some_key:
+    class: @some_object_created_from_factory_or_container
+    method: someMethod
+    args: ['##this', 'abc']
+```
+
+Php format:
+```php
+[
+    'method' => 'someMethod',
+]
+
+[
+    'class' => 'SomeClass',
+    'method' => 'someMethod',
+    'args' => 'abc'
+]
+
+[
+    'class' => '@some_object_created_from_factory_or_container',
+    'method' => 'someMethod',
+    'args' => ['##this', 'abc']
+]
+```
+
+### Object config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\Object(
+ *      fieldExclusionPolicy="exclude_all",
+ *      providerClass="testProviderClass",
+ *      readDateConverter="testReadDateConverter",
+ *      writeDateConverter="testWriteDateConverter",
+ *      propertyAccessStrategy=true,
+ *      fieldMappingExtensionClass="testFieldMappingExtensionClass",
+ *      classMappingExtensionClass="testClassMappingExtensionClass"
+ * )
+ */
+class SomeClass
+{
+
+}
+```
+
+Yaml format:
+```yml
+object:
+    fieldExclusionPolicy: exclude_all
+    providerClass: testProviderClass
+    readDateConverter: testReadDateConverter
+    writeDateConverter: testWriteDateConverter
+    propertyAccessStrategy: true
+    fieldMappingExtensionClass: testFieldMappingExtensionClass
+    classMappingExtensionClass: testClassMappingExtensionClass
+```
+
+Php format:
+```php
+[
+    'object'    => [
+        'fieldExclusionPolicy'  => 'exclude_all',
+        'providerClass'         => 'testProviderClass',
+        'readDateConverter'     => 'testReadDateConverter',
+        'writeDateConverter'    => 'testWriteDateConverter',
+        'propertyAccessStrategy'=> true,
+        'fieldMappingExtensionClass' => 'testFieldMappingExtensionClass',
+        'classMappingExtensionClass' => 'testClassMappingExtensionClass'
+    ]
+];
+```
+
+### ObjectListeners config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/** 
+ * @DM\ObjectListeners(
+ *      classList={"SomeListenerAClass", "SomeListenerBClass"}
+ * )
+ */
+class SomeClass
+{
+}
+```
+
+Yaml format:
+```yml
+objectListeners: [SomeListenerAClass, SomeListenerBClass]
+```
+
+Php format:
+```php
+[
+    'objectListeners'   => ['SomeListenerAClass', 'SomeListenerBClass']
+];
+```
+
+### PostExtract config
+
+Deprecated. Use [Listeners config](#listeners-config) instead.
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\PostExtract(
+ *      class="CustomHydratorClassName",
+ *      method="postExtractMethodName"
+ * )
+ */
+class SomeClass
+{
+}
+```
+
+Yaml format:
+```yml
+interceptors:
+    postExtract: postExtractMethodName
+```
+
+Php format:
+```php
+[
+    'interceptors'  => [
+        'postExtract'    => 'postExtractMethodName'
+    ]
+];
+```
+
+### PostHydrate config
+
+Deprecated. Use [Listeners config](#listeners-config) instead.
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\PostHydrate(
+ *      class="CustomHydratorClassName",
+ *      method="postHydrateMethodName"
+ * )
+ */
+class SomeClass
+{
+}
+```
+
+Yaml format:
+```yml
+interceptors:
+    postHydrate: postHydrateMethodName
+```
+
+Php format:
+```php
+[
+    'interceptors'  => [
+        'postHydrate'    => 'postHydrateMethodName'
+    ]
+];
+```
+
+### PreExtract config
+
+Deprecated. Use [Listeners config](#listeners-config) instead.
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\PreExtract(
+ *      method="preExtractMethodName"
+ * )
+ */
+class SomeClass
+{
+}
+```
+
+Yaml format:
+```yml
+interceptors:
+    preExtract: preExtractMethodName
+```
+
+Php format:
+```php
+[
+    'interceptors'  => [
+        'preExtract'    => 'preExtractMethodName'
+    ]
+];
+```
+
+### PreHydrate config
+
+Deprecated. Use [Listeners config](#listeners-config) instead.
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\PreHydrate(
+ *      class="CustomHydratorClassName",
+ *      method="preHydrateMethodName"
+ * )
+ */
+class SomeClass
+{
+}
+```
+
+Yaml format:
+```yml
+interceptors:
+    preHydrate: preHydrateMethodName
+```
+
+Php format:
+```php
+[
+    'interceptors'  => [
+        'preHydrate'    => 'preHydrateMethodName'
+    ]
+];
+```
+
+### Provider config
+
+Deprecated. Use [DataSource config](#datasource-config) instead.
+Configuration is the same as DataSource.
+
+### ProviderStore config
+
+Deprecated. Use [DataSourceStore config](#datasourcestore-config) instead.
+Configuration is the same as DataSourceStore.
+
+### RefDefaultSource config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\RefDefaultSource(id="refDefaultSourceId")
+ */
+class SomeClass
+{
+
+}
+```
+
+Yaml format:
+```yml
+fields:
+    mockField:
+        name: mockFieldName
+        refSource: refDefaultSourceId
+```
+
+Php format:
+```php
+[
+    'fields' => [
+        'mockField' => [
+            'name'      => 'mockFieldName',
+            'refSource' => 'refDefaultSourceId'
+        ]
+    ]
+];
+```
+
+### RefSource config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+```
+
+Yaml format:
+```yml
+```
+
+Php format:
+```php
+```
+
+### Setter config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+class SomeClass
+{
+    /**
+     * @DM\Setter(
+     *      prefix="setterPrefix",
+     *      name="setterName"
+     * )
+     */
+    protected $firstField;
+}
+```
+
+Yaml format:
+```yml
+fields:
+    firstField:
+        name: firstField
+        setter: 
+            name: setterName
+```
+
+Php format:
+```php
+[
+    'fields'    => [
+        'firstField'    => [
+            'name'      => 'firstField',
+            'setter'    => ['name' => 'setterName'],
+        ]
+    ]
+];
+```
+
+### Transient config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+class SomeClass
+{
+    /**
+     * @DM\Transient
+     */
+    protected $firstField;
+
+    /**
+     * @var string
+     */
+    protected $secondField;
+}
+```
+
+Yaml format:
+```yml
+transient: [firstField]
+fields: [firstField]
+```
+
+Php format:
+```php
+[
+    'transient' => ['firstField'],
+    'fields'    => [
+        'firstField'    => [
+            'name'      => 'firstFieldName'
+        ]
+    ]
+];
+```
+
+### ValueObject config
+
+Deprecated. Use [Listeners config](#listeners-config) instead.
+
+Annotation format:
+Annotation `@Kassko\DataMapper\Annotation\ValueObject` become `@Kassko\DataMapper\Annotation\Config`.
+
+Yaml and Php format:
+Key `'valueObjects'` become `'config'`.
+
+### Version config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+class SomeClass
+{
+    /**
+     * @DM\Version
+     */
+    protected $firstField;
+}
+```
+
+Yaml format:
+```yml
+version: firstField
+fields: [firstField]
+```
+
+Php format:
+```php
+[
+    'version'   => 'firstField',
+    'fields'    => ['firstField']
+];
+```
 
 ========================================
 
@@ -1587,7 +2672,7 @@ This section will be written later.
 * [`Map some property names to keys of your raw datas`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/map_properties.md)
 * [`Convert some values before hydration or before extraction`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/converters.md)
 * [`Use a data source for a property`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/data_source.md)
-* [Lazy load some properties`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/lazy_loading.md)
+* [`Lazy load some properties`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/lazy_loading.md)
 * [`Use a data source for a set of properties`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/data_source.md)
 * [`Hydrate nested object or nested collections`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/nested_object_hydration.md)
 * [`Use fallback data sources`](https://github.com/kassko/data-mapper/blob/master/Resources/doc/fallback_source.md)
