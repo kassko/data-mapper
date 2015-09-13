@@ -8,6 +8,6 @@ namespace Kassko\DataMapper\Annotation;
 *
 * @author kko
 */
-final class Include
+final class ToExclude
 {
 }

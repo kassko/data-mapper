@@ -4,6 +4,7 @@ namespace Kassko\DataMapper\ClassMetadataLoader;
 
 use Kassko\DataMapper\ClassMetadata\ClassMetadata;
 use Kassko\DataMapper\ClassMetadata\Model;
+use Symfony\Component\Config\Definition\Processor;
 
 /**
  * Base for class metadata loader that parse data to array before loading them.
@@ -16,8 +17,7 @@ abstract class ArrayLoader extends AbstractLoader
 
     protected function doLoadClassMetadata(ClassMetadata $classMetadata, array $data)
     {
-        $this->normalizeFormat($data);
-        $this->normalizeData($data);
+        $this->normalize($data);
 
         $this->classMetadata = $classMetadata;
         $this->loadData($data);
@@ -26,17 +26,24 @@ abstract class ArrayLoader extends AbstractLoader
     }
 
     /**
-     * Transforms 
-     * ['fieldA', 'fieldB'] to ['fieldA' => ['name' => 'fieldA'], ['fieldB' => ['name' => 'fieldB']]
+     * Transforms the format to a convenient format.
+     * Enforce undefined keys to be defined and setted to a default value (Usually the value "null").
      *
-     * If only one listener, make an array with this only one listener)
-     * So transforms
-     * ['listeners' => [preHydrate => ['class' => 'SomeClass', 'method' => someMethod]]] 
-     * to 
-     * ['listeners' => [preHydrate => [['class' => 'SomeClass', 'method' => someMethod]]]]
+     * @param array $data The input data to reformat.
      */
-    protected function normalizeFormat(array &$data)
+    protected function normalize(array &$data)
     {
+        /**
+         * Transforms 'fieldA' to ['fieldA' => ['name' => 'fieldA']]
+         * and so will transforms ['fieldA', 'fieldB'] 
+         * to [['fieldA' => ['name' => 'fieldA']], ['fieldB' => ['name' => 'fieldB']]].
+         *
+         * Transforms ['fieldA' => null] to ['fieldA' => ['name' => 'fieldA']].
+         *
+         * Transforms ['fieldA' => []] to ['fieldA' => ['name' => 'fieldA']].
+         *
+         * Transforms ['fieldA' => 'fieldARealName'] to ['fieldA' => ['name' => 'fieldARealName']].
+         */
         $dataName = 'fields';
         if (isset($data[$dataName])) {
             $normalizedFieldsData = [];
@@ -58,42 +65,9 @@ abstract class ArrayLoader extends AbstractLoader
             }    
         }
 
-        $dataName = 'listeners';
-        if (isset($data[$dataName])) {
-            foreach ($data[$dataName] as &$eventData) {
-                reset($eventData);
-                if (! is_array(current($eventData))) {
-                    $eventData = [$eventData];
-                }
-            }
-        }
-    }
-
-    /**
-     * Enforce undefined keys to be defined and setted to null.
-     */
-    protected function normalizeData(array &$data)
-    {
-        static $template = [
-            'name' => null,
-            'type' => null,
-            'class' => null,
-            'defaultValue' => null,
-            'readConverter' => null,  
-            'writeConverter' => null,
-            'readDateConverter' => null,
-            'writeDateConverter' => null,
-            'fieldMappingExtensionClass' => null,
-        ];
-
-        if (isset($data['fields'])) {
-            foreach ($data['fields'] as &$fieldData) {
-                if (! isset($fieldData)) {
-                    continue;
-                }
-                $fieldData = array_merge($template, $fieldData);
-            }
-        }
+        $processor = new Processor();
+        $keysConfiguration = new KeysConfiguration();
+        $data = $processor->processConfiguration($keysConfiguration, [$data]);
     }
 
     protected function loadData(array $data)
@@ -122,10 +96,6 @@ abstract class ArrayLoader extends AbstractLoader
                 $providersStore[] = $this->loadSource($sourceModel, $provider);
             }
             $this->classMetadata->setProvidersStore($providersStore);
-        }
-
-        if (isset($data['object']['fieldExclusionPolicy'])) {
-            $this->classMetadata->setFieldExclusionPolicy($data['object']['fieldExclusionPolicy']);
         }
 
         if (isset($data['object']['providerClass'])) {
@@ -216,20 +186,58 @@ abstract class ArrayLoader extends AbstractLoader
          * The 'interceptor' key is to be removed because replaced by listeners.
          */
         if (isset($data['interceptors']['preHydrate'])) {
-            $this->classMetadata->setOnBeforeHydrate($data['interceptors']['preHydrate']);
+            $this->classMetadata->setOnBeforeHydrate($data['interceptors']['preHydrate']['method']);
         }
         if (isset($data['interceptors']['postHydrate'])) {
-            $this->classMetadata->setOnAfterHydrate($data['interceptors']['postHydrate']);
+            $this->classMetadata->setOnAfterHydrate($data['interceptors']['postHydrate']['method']);
         }
         if (isset($data['interceptors']['preExtract'])) {
-            $this->classMetadata->setOnBeforeExtract($data['interceptors']['preExtract']);
+            $this->classMetadata->setOnBeforeExtract($data['interceptors']['preExtract']['method']);
         }
         if (isset($data['interceptors']['postExtract'])) {
-            $this->classMetadata->setOnAfterExtract($data['interceptors']['postExtract']);
+            $this->classMetadata->setOnAfterExtract($data['interceptors']['postExtract']['method']);
         }
         
         if (isset($data['objectListeners'])) {
             $this->classMetadata->setObjectListenerClasses($data['objectListeners']);
+        } 
+
+        if (isset($data['fieldExclusionPolicy'])) {
+            $this->classMetadata->setFieldExclusionPolicy($data['fieldExclusionPolicy']);
+        }
+
+        $fieldsToExclude = [];
+        if (isset($data['fieldsToExclude'])) {
+            $fieldsToExclude = $data['fieldsToExclude'];    
+        } elseif (isset($data['exclude'])) {
+            $fieldsToExclude = $data['exclude'];    
+        }
+
+        foreach ($fieldsToExclude as $fieldToExclude) {            
+            $fieldsToExclude[$fieldToExclude] = true;
+        }
+
+        if (count($fieldsToExclude)) {
+            $this->classMetadata->setExcludedFields($fieldsToExclude);
+        }
+
+        $fieldsToInclude = [];
+        if (isset($data['fieldsToInclude'])) {
+            $fieldsToInclude = $data['fieldsToInclude'];    
+        } elseif (isset($data['include'])) {
+            $fieldsToInclude = $data['include'];    
+        }
+
+        foreach ($fieldsToInclude as $fieldToInclude) {            
+            $fieldsToInclude[$fieldToInclude] = true;
+        }    
+
+        if (count($fieldsToInclude)) {
+            $this->classMetadata->setIncludedFields($fieldsToInclude);
+        }
+
+        if (isset($data['fieldsNotToBindToDefaultSource'])) {
+            $this->classMetadata->setFieldsWithSourcesForbidden($data['fieldsNotToBindToDefaultSource']);
         }
     }
 
@@ -250,7 +258,8 @@ abstract class ArrayLoader extends AbstractLoader
         $dataSources = [];
         $providers = [];
         $refSources = [];
-        $valueObjects = [];
+        $config = [];
+        $variables = [];
         $mappedIdFieldName = null;
         $mappedIdCompositePartFieldName = [];
         $mappedVersionFieldName = null;
@@ -275,92 +284,86 @@ abstract class ArrayLoader extends AbstractLoader
             $mappedTransientFieldNames = $data['transient'];
         }
 
-        $dataName = 'fields';
-        foreach ($data[$dataName] as $mappedFieldName => $fieldData) {
+        if (isset($data['fields'])) {
+            $dataName = 'fields';
+            foreach ($data[$dataName] as $mappedFieldName => $fieldData) {
 
-            if (! is_array($fieldData)) {
-                $fieldData = ['name' => $fieldData];
+                if (! is_array($fieldData)) {
+                    $fieldData = ['name' => $fieldData];
+                }
+
+                if (! isset($fieldData['type'])) {
+                    $fieldData['type'] = 'string';
+                }
+
+                if (! isset($fieldData['class'])) {
+                    $fieldData['class'] = null;
+                }
+
+                $mappedFieldNames[] = $mappedFieldName;
+                $originalFieldNames[] = $fieldData['name'];
+
+                $toOriginal[$mappedFieldName] = $fieldData['name'];
+                $toMapped[$fieldData['name']] = $mappedFieldName;
+
+                $fieldDataByKey['field'] = $fieldData;
+
+                if ('date' === $fieldData['type']) {
+                   $mappedDateFieldNames[] = $mappedFieldName;
+                }
+
+                if (isset($fieldData['writeConverter']) || isset($fieldData['readConverter'])) {
+
+                    $fieldsWithHydrationStrategy[$mappedFieldName] = [];
+                    $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = null;
+                    $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = null;
+                    $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = null;
+                }
+
+                if (isset($fieldData['writeConverter'])) {
+                    $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = $fieldData['writeConverter'];
+                }
+
+                if (isset($fieldData['readConverter'])) {
+                    $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $fieldData['readConverter'];
+                }
+
+                if (isset($fieldData['mappingExtensionClass'])) {
+                    $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = $fieldData['mappingExtensionClass'];
+                }
+
+                if (isset($fieldData['dataSource'])) {
+                    $sourceModel = new Model\DataSource;
+                    $dataSources[$mappedFieldName] = $this->loadSource($sourceModel, $fieldData['dataSource']);
+                }
+
+                if (isset($fieldData['provider'])) {
+                    $sourceModel = new Model\Provider;
+                    $providers[$mappedFieldName] = $this->loadSource($sourceModel, $fieldData['provider']);
+                }
+
+                if (isset($fieldData['refSource'])) {
+                    $refSources[$mappedFieldName] = $fieldData['refSource'];
+                }
+
+                if (! empty($fieldData['config'])) {
+                    $config[$mappedFieldName] = $fieldData['config'];
+                }
+
+                if (! empty($fieldData['variables'])) {
+                    $variables[$mappedFieldName] = $fieldData['variables'];
+                }
+
+                if (isset($fieldData['getter'])) {
+                    $getters[$mappedFieldName] = $fieldData['getter'];
+                }
+
+                if (isset($fieldData['setter'])) {
+                    $setters[$mappedFieldName] = $fieldData['setter'];
+                }
+
+                $fieldsDataByKey[$mappedFieldName] = $fieldDataByKey;
             }
-
-            if (! isset($fieldData['type'])) {
-                $fieldData['type'] = 'string';
-            }
-
-            if (! isset($fieldData['class'])) {
-                $fieldData['class'] = null;
-            }
-
-            $mappedFieldNames[] = $mappedFieldName;
-            $originalFieldNames[] = $fieldData['name'];
-
-            $toOriginal[$mappedFieldName] = $fieldData['name'];
-            $toMapped[$fieldData['name']] = $mappedFieldName;
-
-            $fieldDataByKey['field'] = $fieldData;
-
-            if ('date' === $fieldData['type']) {
-               $mappedDateFieldNames[] = $mappedFieldName;
-            }
-
-            if (isset($fieldData['writeConverter']) || isset($fieldData['readConverter'])) {
-
-                $fieldsWithHydrationStrategy[$mappedFieldName] = [];
-                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = null;
-                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = null;
-                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = null;
-            }
-
-            if (isset($fieldData['writeConverter'])) {
-                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTRACTION_STRATEGY] = $fieldData['writeConverter'];
-            }
-
-            if (isset($fieldData['readConverter'])) {
-                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_HYDRATION_STRATEGY] = $fieldData['readConverter'];
-            }
-
-            if (isset($fieldData['mappingExtensionClass'])) {
-                $fieldsWithHydrationStrategy[$mappedFieldName][ClassMetadata::INDEX_EXTENSION_CLASS] = $fieldData['mappingExtensionClass'];
-            }
-
-            if (isset($fieldData['dataSource'])) {
-                $sourceModel = new Model\DataSource;
-                $dataSources[$mappedFieldName] = $this->loadSource($sourceModel, $fieldData['dataSource']);
-            }
-
-            if (isset($fieldData['provider'])) {
-                $sourceModel = new Model\Provider;
-                $providers[$mappedFieldName] = $this->loadSource($sourceModel, $fieldData['provider']);
-            }
-
-            if (isset($fieldData['refSource'])) {
-                $refSources[$mappedFieldName] = $fieldData['refSource'];
-            }
-
-            if (isset($fieldData['valueObjects'])) {
-                $valueObjects = $fieldData['valueObjects'];
-            }
-
-            if (isset($fieldData['getter'])) {
-                $getters[$mappedFieldName] = $fieldData['getter'];
-            }
-
-            if (isset($fieldData['setter'])) {
-                $setters[$mappedFieldName] = $fieldData['setter'];
-            }
-
-            $fieldsDataByKey[$mappedFieldName] = $fieldDataByKey;
-        }
-
-        if (isset($data['include'])) {
-            foreach ($data['include'] as $fieldToInclude) {            
-                $includedFields[$fieldToInclude] = true;
-            }    
-        }
-
-        if (isset($data['exclude'])) {
-            foreach ($data['exclude'] as $fieldToExclude) {            
-                $excludedFields[$fieldToExclude] = true;
-            }    
         }
 
         if (count($fieldsDataByKey)) {
@@ -373,14 +376,6 @@ abstract class ArrayLoader extends AbstractLoader
 
         if (count($originalFieldNames)) {
             $this->classMetadata->setOriginalFieldNames($originalFieldNames);
-        }
-
-        if (count($includedFields)) {
-            $this->classMetadata->setIncludedFields($includedFields);
-        }
-
-        if (count($excludedFields)) {
-            $this->classMetadata->setExcludedFields($excludedFields);
         }
 
         if (count($toOriginal)) {
@@ -403,8 +398,12 @@ abstract class ArrayLoader extends AbstractLoader
             $this->classMetadata->setRefSources($refSources);
         }
 
-        if (count($valueObjects)) {
-            $this->classMetadata->setValueObjects($valueObjects);
+        if (count($config)) {
+            $this->classMetadata->setValueObjects($config);
+        }
+
+        if (count($variables)) {
+            $this->classMetadata->setVariables($variables);
         }
 
         if (isset($mappedIdFieldName)) {
@@ -450,7 +449,8 @@ abstract class ArrayLoader extends AbstractLoader
      */
     private function loadSource(Model\Source $sourceModel, array $sourceData)
     {
-        $sourceModel->setId($sourceData['id'])
+        $sourceModel
+        ->setId($sourceData['id'])
         ->setMethod(new Model\Method($sourceData['class'], $sourceData['method'], $sourceData['args']))
         ->setLazyLoading($sourceData['lazyLoading'])
         ->setSupplySeveralFields($sourceData['supplySeveralFields'])
@@ -469,8 +469,8 @@ abstract class ArrayLoader extends AbstractLoader
                     $sourceData['preprocessor']['args']
                 )
             );
-        } elseif (isset($sourceData['preprocessors']['items'])) {
-            foreach ($sourceData['preprocessors']['items'] as $preprocessor) {
+        } elseif (isset($sourceData['preprocessors'])) {
+            foreach ($sourceData['preprocessors'] as $preprocessor) {
                 $sourceModel->addPreprocessor(
                     new Model\Method(
                         $preprocessor['class'],
@@ -489,8 +489,8 @@ abstract class ArrayLoader extends AbstractLoader
                     $sourceData['processor']['args']
                 )
             );
-        } elseif (isset($sourceData['processors']['items'])) {
-            foreach ($sourceData['processors']['items'] as $processor) {
+        } elseif (isset($sourceData['processors'])) {
+            foreach ($sourceData['processors'] as $processor) {
                 $sourceModel->addProcessor(
                     new Model\Method(
                         $processor['class'],

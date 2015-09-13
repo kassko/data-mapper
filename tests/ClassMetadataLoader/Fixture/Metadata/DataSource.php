@@ -42,18 +42,8 @@ class DataSource
                         'exceptionClass'      => '\RuntimeException',
                         'badReturnValue'      => 'emptyString',
                         'fallbackSourceId'    => 'firstFieldFallbackSourceId',
-                        'preprocessor'        => [
-                            'class'  => '##this',
-                            'method' => 'fooPreprocessor',
-                            'args'   => []
-                        ],
-                        'processor'           => [
-                            'class'  => '##this',
-                            'method' => 'barProcessor',
-                            'args'   => []
-                        ],
-                        'preprocessors'       => [],
-                        'processors'          => [],
+                        'preprocessor'        => ['method' => 'fooPreprocessor'],
+                        'processor'           => ['method' => 'barProcessor'],                    
                         'class'               => '\stdClass',
                         'method'              => 'someMethod',
                         'args'                => ['argument#1', 'argument#2']
@@ -82,15 +72,9 @@ fields:
       badReturnValue: emptyString
       fallbackSourceId: firstFieldFallbackSourceId
       preprocessor:
-        class: "##this"
         method: fooPreprocessor
-        args: []
       processor:
-        class: "##this"
         method: barProcessor
-        args: []
-      preprocessors: []
-      processors: []
       class: "\\\stdClass"
       method: someMethod
       args: [argument#1, argument#2]

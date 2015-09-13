@@ -3,12 +3,15 @@ namespace Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Metadata;
 
 use Kassko\DataMapper\Annotation as DM;
 
-class Exclude
+/**
+ * @DM\Object(fieldExclusionPolicy="exclude_all")
+ */
+class ToInclude
 {
     /**
-     * @DM\Exclude
+     * @DM\ToInclude
      */
-    protected $excludedField;
+    protected $includedField;
 
     /**
      * @DM\Field
@@ -21,12 +24,13 @@ class Exclude
     public static function loadInnerPhpMetadata()
     {
         return [
-            'exclude' => [
-                'excludedField'
+            'fieldExclusionPolicy' => 'exclude_all',
+            'fieldsToInclude' => [
+                'includedField'
             ],
             'fields'  => [
-                'excludedField' => [
-                    'name'     => 'excludedField'
+                'includedField' => [
+                    'name'     => 'includedField'
                 ],
                 'field'         => [
                     'name'     => 'field'
@@ -41,10 +45,12 @@ class Exclude
     public static function loadInnerYamlMetadata()
     {
         return <<<EOF
-exclude: [excludedField] # Test if the deprecated key "exclude" (now "fieldsToExclude") still works.
+object:        
+  fieldExclusionPolicy: exclude_all # Test if the deprecated key "object.fieldExclusionPolicy" (now "fieldExclusionPolicy") still works.       
+fieldsToInclude: [includedField]
 fields:
-  excludedField:
-    name: excludedField
+  includedField:
+    name: includedField
   field:
     name: field
 EOF;

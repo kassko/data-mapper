@@ -21,16 +21,13 @@ class ArrayLoaderTest extends AnnotationLoaderTest
 
         $loaderMock = $this->getMockBuilder(
             'Kassko\DataMapper\ClassMetadataLoader\ArrayLoader'
-        )->setMethods(array('normalizeFormat', 'normalizeData', 'loadData'))->getMockForAbstractClass();
+        )->setMethods(array('normalize', 'loadData'))->getMockForAbstractClass();
 
         $data = array('testData' => time());
         $expectedResult = 'testResult' . time();
 
         $loaderMock->expects($this->once())
-            ->method('normalizeFormat')
-            ->with($data);
-        $loaderMock->expects($this->once())
-            ->method('normalizeData')
+            ->method('normalize')
             ->with($data);
         $loaderMock->expects($this->once())
             ->method('loadData')

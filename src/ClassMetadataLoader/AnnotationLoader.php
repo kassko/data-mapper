@@ -22,8 +22,9 @@ class AnnotationLoader implements LoaderInterface
     private static $objectAnnotationName = DM\Object::class;
     private static $listenersAnnotationName = DM\Listeners::class;
     private static $fieldAnnotationName = DM\Field::class;
-    private static $includeAnnotationName = 'Kassko\\DataMapper\\Annotation\\Include';//DM\Include::class;
-    private static $excludeAnnotationName = DM\Exclude::class;
+    private static $includeAnnotationName = DM\ToInclude::class;
+    private static $excludeAnnotationName = DM\ToExclude::class;
+    private static $oldExcludeAnnotationName = DM\Exclude::class;//Deprecated. Use DM\ToExclude instead. 
     private static $idAnnotationName = DM\Id::class;
     private static $idCompositePartAnnotationName = DM\IdCompositePart::class;
     private static $versionAnnotationName = DM\Version::class;
@@ -240,7 +241,7 @@ class AnnotationLoader implements LoaderInterface
                         break;
 
                     case self::$variablesAnnotationName:
-                        $variables[$mappedFieldName] = (array)$annotation;
+                        $variables[$mappedFieldName] = (array)$annotation->variables['value'];
                         break;
 
                     case self::$includeAnnotationName:
@@ -248,6 +249,7 @@ class AnnotationLoader implements LoaderInterface
                         break;
 
                     case self::$excludeAnnotationName:
+                    case self::$oldExcludeAnnotationName:
                         $excludedFields[$mappedFieldName] = true;
                         break;
 

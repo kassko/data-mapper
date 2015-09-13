@@ -10,7 +10,7 @@ class Method
 	/**
      * @var string
      */
-    private $class;
+    private $class = '##this';
 
     /**
      * @var string
@@ -24,7 +24,9 @@ class Method
 
     public function __construct($class = null, $function = null, array $args = [])
     {
-        $this->class = $class; 
+        if (null !== $class) {
+            $this->class = $class; 
+        }
         $this->function = $function; 
         $this->args = $args;    
     }

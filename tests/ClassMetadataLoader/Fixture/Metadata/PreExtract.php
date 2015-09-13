@@ -19,7 +19,7 @@ class PreExtract
     {
         return [
             'interceptors'  => [
-                'preExtract'    => 'preExtractMethodName'
+                'preExtract'    =>  ['method' => 'preExtractMethodName']
             ]
         ];
     }
@@ -31,7 +31,8 @@ class PreExtract
     {
         return <<<EOF
 interceptors:
-  preExtract: preExtractMethodName
+  preExtract: 
+    method: preExtractMethodName
 EOF;
     }
 }

@@ -31,45 +31,13 @@ class DataSourcesStoreMultiplesProcessors
                 'dataSourcesStore' => [
                     [
                         'id'                  => 'personSource',
-                        'depends'             => [
-                            '#dependsFirst', '#dependsSecond', '#dependsThird'
-                        ],
-                        'class'               => 'Kassko\Sample\PersonDataSource',
-                        'method'              => 'getData',
-                        'args'                => ['#id'],
-                        'lazyLoading'         => true,
-                        'supplySeveralFields' => true,
-                        'onFail'              => 'checkException',
-                        'exceptionClass'      => '\RuntimeException',
-                        'badReturnValue'      => 'emptyString',
-                        'fallbackSourceId'    => 'testFallbackSourceId',
                         'preprocessors'       => [
-                            'items' => [
-                                [
-                                    'method' => 'somePreprocessorA',
-                                    'class'  => '##this',
-                                    'args'   => []
-                                ],
-                                [
-                                    'method' => 'somePreprocessorB',
-                                    'class'  => '##this',
-                                    'args'   => []
-                                ]
-                            ]
+                            ['method' => 'somePreprocessorA'],
+                            ['method' => 'somePreprocessorB']
                         ],
                         'processors'          => [
-                            'items' => [
-                                [
-                                    'method' => 'someProcessorA',
-                                    'class'  => '##this',
-                                    'args'   => []
-                                ],
-                                [
-                                    'method' => 'someProcessorB',
-                                    'class'  => '##this',
-                                    'args'   => []
-                                ]
-                            ]
+                            ['method' => 'someProcessorA'],
+                            ['method' => 'someProcessorB']                            
                         ]
                     ]
                 ]
@@ -88,30 +56,12 @@ object:
    - id: personSource
      class: "Kassko\\\Sample\\\PersonDataSource"
      method: getData
-     args: [#id]
-     lazyLoading: true
-     supplySeveralFields: true
-     onFail: checkException
-     exceptionClass: \RuntimeException
-     badReturnValue: emptyString
-     fallbackSourceId: testFallbackSourceId
-     depends: [#dependsFirst, #dependsSecond, #dependsThird]
      preprocessors:
-       items:
-         - class: "##this"
-           method: somePreprocessorA
-           args: []
-         - class: "##this"
-           method: somePreprocessorB
-           args: []
+      - method: somePreprocessorA
+      - method: somePreprocessorB
      processors:
-       items:
-         - class: "##this"
-           method: someProcessorA
-           args: []
-         - class: "##this"
-           method: someProcessorB
-           args: []
+      - method: someProcessorA
+      - method: someProcessorB
 EOF;
     }
 }

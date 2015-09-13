@@ -24,16 +24,7 @@ class ProvidersStoreMultiplesDepends
                     'name'      => 'mockFieldName',
                     'provider'  => [
                         'id'    => 'personSource',
-                        'class' => 'class',
-                        'method'=> 'method',
-                        'args'  => ['arg#1'],
-                        'lazyLoading' => true,
-                        'supplySeveralFields' => true,
                         'depends' => ['#dependsFirst', '#dependsSecond', '#dependsThird'],
-                        'onFail' => 'checkException',
-                        'exceptionClass' => '\RuntimeException',
-                        'badReturnValue' => 'emptyArray',
-                        'fallbackSourceId' => 'fallbackSourceId#1'
                     ]
                 ]
             ]
@@ -51,16 +42,7 @@ fields:
     name: mockFieldName
     provider:
       id: personSource
-      class: class
-      method: method
-      args: [arg#1]
-      lazyLoading: true
-      supplySeveralFields: true
       depends: [#dependsFirst, #dependsSecond, #dependsThird]
-      onFail: checkException
-      exceptionClass: "\\\RuntimeException"
-      badReturnValue: emptyArray
-      fallbackSourceId: fallbackSourceId#1
 EOF;
     }
 }
