@@ -17,11 +17,19 @@
 * `Fix`: Fix bug on extraction. Properties which are objects were not extracted.
 * `Fix`: Fix identification of fields with same source when sources have same class/method but differents method arguments.  Now, use the Id to process the identification instead of the pair class/method
 * `Fix`: Fix bug when working whith several object managers. The lazy loader didn't retrieve the good one.
+* `Fix`: Hydrator configuration: Fix a lot of things in each format configuration.
+* `Fix`: Hydrator configuration: Yaml ans Php format: Make useless to specify keys with a value empty or null. Just don't specify them.
 * `Fix`: Hydrator configuration: Fix key `processors` in annotation configuration. Processors specified was ignored. 
-* `Fix`: Hydrator configuration: Fix key `interceptors` in yaml configuration format
-* `Fix`: Hydrator configuration: Fix key `interceptors` in php configuration format
+* `Fix`: Hydrator configuration: Fix key `interceptors` in yaml configuration format.
+* `Fix`: Hydrator configuration: Fix key `interceptors` in php configuration format.
 * `Enhanc`: Add some hydrator tests
 * `Enhanc`: Add a default cache for data sources. An array / request cache.
+
+`0.12.4.4 - 2015/08/17 - Fix version`:
+* `Fix`: Fix `loadProperty()` access in inheritance context (make this method protected).
+
+`0.12.4.3 - 2015/06/15 - Fix version`:
+* `Fix`: Fix sources loading (only the first source was loaded sometimes) and simplify the code related to the sources loaded tracking.
 
 `0.12.4.2 - 2015/04/17 - Fix version`:
 * `Fix`: Hydrator configuration: Section Field / Key type: fix inference of type, if the key `type` is not specified, an implicit conversion to the supposed good type is performed. Conversion to string was performed. 
