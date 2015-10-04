@@ -291,6 +291,10 @@ class ObjectManager
 
     public function findFromSource(Source $sourceMetadata)
     {
+        if ($sourceMetadata->getMethod()->isNull()) {
+            return null;
+        }
+
         $class = $sourceMetadata->getMethod()->getClass();
         $source = $this->classResolver ? $this->classResolver->resolve($class) : new $class;
         $cacheKey = $sourceMetadata->getId() . $class . $sourceMetadata->getMethod()->getFunction();

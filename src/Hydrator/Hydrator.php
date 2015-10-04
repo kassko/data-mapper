@@ -78,12 +78,6 @@ class Hydrator extends AbstractHydrator
     private $expressionContext;
 
     /**
-     * Contains the parent of the object currently hydrated.
-     * @var object
-     */
-    private $parentOfObjectCurrentlyHydrated;
-
-    /**
      * All the variables used in a object mapping configuration.
      * @var array
      */
@@ -483,8 +477,6 @@ class Hydrator extends AbstractHydrator
             $hasConfig = $this->metadata->isValueObject($mappedFieldName);
             $fieldHydrator = $this->createFieldHydrator($fieldClass, $object, $mappedFieldName, $hasConfig);
 
-            $this->parentOfObjectCurrentlyHydrated = $object;
-
             reset($value);
             if (0 !== count($value) && ! is_numeric(key($value))) {
                 $field = new $fieldClass;
@@ -497,9 +489,7 @@ class Hydrator extends AbstractHydrator
                     $fieldResult[] = $fieldHydrator->hydrate($record, $field);                   
                 }
                 $this->memberAccessStrategy->setValue($fieldResult, $object, $mappedFieldName);
-            }
-
-            $this->parentOfObjectCurrentlyHydrated = null;    
+            } 
 
             if ($hasConfig) {
                 $this->popRuntimeConfiguration(); 
@@ -877,15 +867,5 @@ class Hydrator extends AbstractHydrator
     public function getCurrentObject()
     {
         return $this->currentHydrationContext->getObject();
-    }
-
-    /**
-     * Gets the raw data currently hydrated.
-     *
-     * @return object
-     */
-    public function getParentOfObjectCurrentlyHydrated()
-    {
-        return $this->parentOfObjectCurrentlyHydrated;
     }
 }
