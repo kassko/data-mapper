@@ -60,15 +60,6 @@ class ExpressionFunctionProvider implements ExpressionFunctionProviderInterface
                 }
             ),
             new ExpressionFunction(
-                'parent',
-                function () {
-                    return sprintf('value_resolver.resolveParentObject()');
-                }, 
-                function (array $context) {
-                    return $context['value_resolver']->resolveParentObject();
-                }
-            ),
-            new ExpressionFunction(
                 'var',
                 function ($arg) {
                     return sprintf('value_resolver.resolveVariable(%s)', $arg);
