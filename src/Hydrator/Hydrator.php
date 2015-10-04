@@ -42,18 +42,6 @@ class Hydrator extends AbstractHydrator
     protected $propertyAccessStrategy;
 
     /**
-     * Track properties already hydrated. Only properties hydrated by data sources.
-     * @var bool[]
-     */
-    private $dataSourceLoadingDone;
-
-    /**
-     * Track properties already hydrated. Only properties hydrated by providers.
-     * @var bool[]
-     */
-    private $providerLoadingDone;
-
-    /**
      * Retrieve an object instance from it's class name.
      * @var ClassResolverInterface
      */
@@ -714,15 +702,6 @@ class Hydrator extends AbstractHydrator
                 }
             }
         }
-    }
-
-    protected function computeSourceKey($objectClass, ClassMetadata\Model\Source $sourceMetadata)
-    {
-        if (null === $sourceMetadata->getId()) {
-            return $objectClass . $sourceMetadata->getMethod()->getClass() . $sourceMetadata->getMethod()->getFunction();
-        } 
-
-        return $objectClass . $sourceMetadata->getId() . $sourceMetadata->getMethod()->getClass() . $sourceMetadata->getMethod()->getFunction();
     }
 
     /**
