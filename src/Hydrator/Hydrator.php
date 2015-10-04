@@ -245,7 +245,7 @@ class Hydrator extends AbstractHydrator
             }
         } else {
             list($customHydratorClass, , $customExtractMethod) = $this->metadata->getCustomHydratorInfo();            
-            $this->executeMethod($object, new ClassMetadata\Model\Method($customHydratorClass, $customExtractMethod));
+            $this->executeMethod($object, new ClassMetadata\Model\Method($customHydratorClass, $customExtractMethod, [$object]));
         }
 
         //Value objects extraction.
@@ -314,7 +314,7 @@ class Hydrator extends AbstractHydrator
             }
         } else {
             list($customHydratorClass, $customHydrateMethod) = $this->metadata->getCustomHydratorInfo();
-            $this->executeMethod($object, new ClassMetadata\Model\Method($customHydratorClass, $customHydrateMethod));
+            $this->executeMethod($object, new ClassMetadata\Model\Method($customHydratorClass, $customHydrateMethod, [$data, $object]));
         }
 
         //DataSources hydration.

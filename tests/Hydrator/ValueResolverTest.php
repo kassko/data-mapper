@@ -85,4 +85,24 @@ class ValueResolverTest extends \PHPUnit_Framework_TestCase
     {  
         $this->valueResolver->handle('123', new SampleClass);
     }
+
+    /**
+     * @test
+     * @dataProvider dataNotToResolveProvider
+     *
+     * Should return the data unchanged if it is not of scalar type.
+     */
+    public function handleValidateResult($dataNotToResolve)
+    {  
+        $result = $this->valueResolver->handle($dataNotToResolve, new SampleClass);
+        $this->assertSame($dataNotToResolve, $result);
+    }
+
+    public function dataNotToResolveProvider()
+    {
+        return [
+            [['a', 'b']],
+            [new SampleClass],
+        ];
+    }
 }

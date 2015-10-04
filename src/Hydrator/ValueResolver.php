@@ -37,13 +37,13 @@ class ValueResolver
     {
         $this->object = $object;
 
+        if (! is_scalar($value)) {
+            return $value;
+        }
+
         if ('##this' === $value) {
             return $this->object; 
         }
-
-        if ('##parent' === $value) {
-            return $this->resolveParentObject(); 
-        }  
 
         if ('##data' === $value) {
             return $this->resolveRawData(); 

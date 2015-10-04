@@ -6,6 +6,20 @@ use Symfony\Component\Config\Definition\Builder\NodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder; 
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
+/**
+ * Contains the key validation rules.
+ *
+ * Note that direct children entries are always setted.
+ * The others children entries are not setted.
+ *
+ * If a direct child entry is of one scalar type, it is setted to null by default 
+ * So in loaders, use "if(isset())" to know if this entry is filled.
+ *
+ * If a direct child entry is of type array, it is setted to empty array by default.
+ * So in loaders, use "if(! empty())" to know if this entry is filled.
+ *
+ * @author kko
+ */
 class KeysConfiguration implements ConfigurationInterface
 {
     public function getConfigTreeBuilder()
@@ -13,22 +27,26 @@ class KeysConfiguration implements ConfigurationInterface
         $builder = new TreeBuilder();
         $rootNode = $builder->root('root');
 
-        $rootNode//->addDefaultsIfNotSet()     
+        $rootNode     
             ->children()
-                ->arrayNode('object')//->addDefaultsIfNotSet()
+                ->arrayNode('object')
                     ->append($this->sourceStoreNode('dataSourcesStore'))
                     ->append($this->sourceStoreNode('providersStore'))
                     ->children()
-                        ->enumNode('fieldExclusionPolicy')/** @deprecated @see root.fieldExclusionPolicy */
+                        ->enumNode('fieldExclusionPolicy')/** @deprecated @see root.fieldExclusionPolicy. */
                             ->values(['include_all', 'exclude_all'])
-                            //->defaultValue('include_all')
+                            /**
+                             * The default value is setted in a normalisation closure. @see see below. 
+                             * Do not set it here not to disturb the normalisation process.
+                             */
+                            //->defaultValue('include_all') 
                         ->end()
                         ->scalarNode('readDateConverter')->defaultNull()->end()
                         ->scalarNode('writeDateConverter')->defaultNull()->end()
                         ->scalarNode('classMappingExtensionClass')->defaultNull()->end()
                         ->scalarNode('fieldMappingExtensionClass')->defaultNull()->end()
                         ->booleanNode('propertyAccessStrategy')->defaultFalse()->end()
-                        ->arrayNode('customHydrator')//->addDefaultsIfNotSet()
+                        ->arrayNode('customHydrator')
                             ->children()
                                 ->scalarNode('class')->defaultNull()->end()
                                 ->scalarNode('hydrateMethod')->defaultNull()->end()
@@ -72,6 +90,10 @@ class KeysConfiguration implements ConfigurationInterface
                 ->end()
                 ->enumNode('fieldExclusionPolicy')
                     ->values(['include_all', 'exclude_all'])
+                    /**
+                     * The default value is setted in a normalisation closure. @see see below. 
+                     * Do not set it here not to disturb the normalisation process.
+                     */
                     //->defaultValue('include_all')
                 ->end()
                 ->append($this->smartScalarNode('fieldsToInclude'))
@@ -80,7 +102,7 @@ class KeysConfiguration implements ConfigurationInterface
                 ->append($this->smartScalarNode('exclude')) /** @deprecated @see fieldsToExclude **/
                 ->append($this->smartScalarNode('fieldsNotToBindToDefaultSource')) 
                 ->scalarNode('refDefaultSource')->defaultNull()->end()
-                ->arrayNode('listeners')//->addDefaultsIfNotSet()
+                ->arrayNode('listeners')
                     ->append($this->methodsNode('preHydrate'))
                     ->append($this->methodsNode('postHydrate'))
                     ->append($this->methodsNode('preExtract'))
@@ -100,6 +122,27 @@ class KeysConfiguration implements ConfigurationInterface
                 ->arrayNode('idComposite')->prototype('scalar')->end()->end()
                 ->append($this->smartScalarNode('transient'))
                 ->scalarNode('version')->defaultNull()->end()
+                ->arrayNode('imports')
+                    ->children()
+                        ->arrayNode('resources')
+                            ->prototype('array')
+                                ->children()
+                                    ->scalarNode('path')->defaultNull()->end()
+                                    ->scalarNode('type')->defaultNull()->end()
+                                    ->scalarNode('class')->defaultNull()->end()
+                                    ->scalarNode('method')->defaultNull()->end()
+                                ->end()
+                            ->end()
+                        ->end()
+                        ->arrayNode('config')
+                            ->prototype('array')
+                                ->children()
+                                    ->scalarNode('class')->defaultNull()->end()
+                                ->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
             ->end()
             ->validate()
             ->always(function ($v) {
@@ -122,10 +165,12 @@ class KeysConfiguration implements ConfigurationInterface
                     unset($v['include']);
                 }
 
-                if (isset($v['valueObjects']) && ! empty($v['valueObjects']) && isset($v['fields']) && ! empty($v['fields'])) {
+                if (isset($v['valueObjects']) && isset($v['fields'])) {
                     $fields = &$v['fields'];
                     foreach ($fields as &$field) {
-                        $field['config'] = $v['valueObjects'][$field['name']];
+                        if (! isset($field['config']) && isset($v['valueObjects'][$field['name']])) {
+                            $field['config'] = $v['valueObjects'][$field['name']];
+                        }
                     }
                 }
 
@@ -133,9 +178,6 @@ class KeysConfiguration implements ConfigurationInterface
             })
             ->end()
         ;
-
-        //@todo     Implement in all loaders
-        //variables
 
         return $builder;
     }
@@ -146,7 +188,6 @@ class KeysConfiguration implements ConfigurationInterface
         $node = $builder->root($nodeName);
 
         $node
-            //->addDefaultsIfNotSet()
             ->children()
                 ->scalarNode('prefix')->defaultNull()->end()
                 ->scalarNode('name')->defaultNull()->end()
@@ -181,8 +222,7 @@ class KeysConfiguration implements ConfigurationInterface
     {
         $this->configureMethodNode($node);
         
-        $node
-            //->addDefaultsIfNotSet()
+        $node   
             ->children()
                 ->scalarNode('id')->defaultNull()->end()
                 ->booleanNode('lazyLoading')->defaultFalse()->end()
@@ -292,7 +332,6 @@ class KeysConfiguration implements ConfigurationInterface
     private function configureMethodNode(NodeDefinition $node)
     {
         $node
-            //->addDefaultsIfNotSet()
             ->children()
                 ->scalarNode('class')->defaultValue('##this')->end()
                 ->scalarNode('method')->defaultNull()->end()
