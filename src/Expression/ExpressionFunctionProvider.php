@@ -33,7 +33,7 @@ class ExpressionFunctionProvider implements ExpressionFunctionProviderInterface
                 }
             ),
             new ExpressionFunction(
-                'rawField',
+                'pfield',
                 function ($arg) {
                     return sprintf('value_resolver.resolveFieldValue(%s, true)', $arg);
                 }, 
