@@ -3,7 +3,7 @@ namespace Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Metadata;
 
 use Kassko\DataMapper\Annotation as DM;
 
-class ValueObject
+class Config
 {
     /**
      * @DM\Config(
@@ -23,15 +23,13 @@ class ValueObject
         return [
             'fields' => [
                 'firstField' => [
-                    'name'         => 'firstField',
-                ]
-            ],
-            'valueObjects' => [
-                'firstField'    => [
-                    'class' => '\ValueObjectClass',
-                    'mappingResourceName' => 'valueObjectResourceName',
-                    'mappingResourcePath' => 'valueObjectResourcePath',
-                    'mappingResourceType' => 'valueObjectResourceType'
+                    'name'         => 'firstFieldName',
+                    'config' => [
+                        'class' => '\ValueObjectClass',
+                        'mappingResourceName' => 'valueObjectResourceName',
+                        'mappingResourcePath' => 'valueObjectResourcePath',
+                        'mappingResourceType' => 'valueObjectResourceType'
+                    ]
                 ]
             ]
         ];
@@ -45,9 +43,8 @@ class ValueObject
         return <<<EOF
 fields:
   firstField:
-    name: firstField
-valueObjects:
-    firstField:
+    name: firstFieldName
+    config:
         class: "\\\ValueObjectClass"
         mappingResourceName: valueObjectResourceName
         mappingResourcePath: valueObjectResourcePath

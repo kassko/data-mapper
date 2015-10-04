@@ -32,43 +32,13 @@ class ProvidersStoreMultiplesProcessors
                     'name'     => 'mockFieldName',
                     'provider' => [
                         'id'                  => 'personSource',
-                        'class'               => 'class',
-                        'method'              => 'method',
-                        'args'                => ['arg#1'],
-                        'lazyLoading'         => true,
-                        'supplySeveralFields' => true,
-                        'depends'             => [],
-                        'onFail'              => 'checkException',
-                        'exceptionClass'      => '\RuntimeException',
-                        'badReturnValue'      => 'emptyArray',
-                        'fallbackSourceId'    => 'fallbackSourceId#1',
                         'preprocessors'       => [
-                            'items' => [
-                                [
-                                    'method' => 'somePrepocessorA',
-                                    'class'  => '##this',
-                                    'args'   => []
-                                ],
-                                [
-                                    'method' => 'somePrepocessorB',
-                                    'class'  => '##this',
-                                    'args'   => []
-                                ]
-                            ]
+                          ['method' => 'somePrepocessorA'],
+                          ['method' => 'somePrepocessorB']
                         ],
                         'processors'          => [
-                            'items' => [
-                                [
-                                    'method' => 'someProcessorA',
-                                    'class'  => '##this',
-                                    'args'   => []
-                                ],
-                                [
-                                    'method' => 'someProcessorB',
-                                    'class'  => '##this',
-                                    'args'   => []
-                                ]
-                            ]
+                          ['method' => 'someProcessorA'],
+                          ['method' => 'someProcessorB']
                         ]
                     ]
                 ]
@@ -87,32 +57,12 @@ fields:
     name: mockFieldName
     provider:
       id: personSource
-      class: class
-      method: method
-      args: [arg#1]
-      lazyLoading: true
-      supplySeveralFields: true
-      depends: []
-      onFail: checkException
-      exceptionClass: "\\\RuntimeException"
-      badReturnValue: emptyArray
-      fallbackSourceId: fallbackSourceId#1
       preprocessors:
-        items:
-          - method: somePrepocessorA
-            class: "##this"
-            args: []
-          - method: somePrepocessorB
-            class: "##this"
-            args: []
+        - method: somePrepocessorA
+        - method: somePrepocessorB
       processors:
-        items:
-          - method: someProcessorA
-            class: "##this"
-            args: []
-          - method: someProcessorB
-            class: "##this"
-            args: []
+        - method: someProcessorA
+        - method: someProcessorB
 EOF;
     }
 }

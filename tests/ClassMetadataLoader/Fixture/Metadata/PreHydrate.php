@@ -7,7 +7,7 @@ use Kassko\DataMapper\Annotation as DM;
  * Class PreHydrate
  * 
  * @DM\PreHydrate(
- *      class="CustomHydratorClassName",
+ *      class="SomeClass",
  *      method="preHydrateMethodName"
  * )
  */
@@ -20,7 +20,7 @@ class PreHydrate
     {
         return [
             'interceptors'  => [
-                'preHydrate'    => 'preHydrateMethodName'
+                'preHydrate'    => ['class' => 'SomeClass', 'method' => 'preHydrateMethodName']
             ]
         ];
     }
@@ -32,7 +32,9 @@ class PreHydrate
     {
         return <<<EOF
 interceptors:
-  preHydrate: preHydrateMethodName
+  preHydrate: 
+    class: SomeClass
+    method: preHydrateMethodName
 EOF;
     }
 }

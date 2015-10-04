@@ -244,13 +244,8 @@ class Hydrator extends AbstractHydrator
                 }
             }
         } else {
-
-            list($customHydratorClass, , $customExtractMethod) = $this->metadata->getCustomHydratorInfo();
-            $customHydrator = $this->classResolver ? $this->classResolver->resolve($customHydratorClass) : new $customHydratorClass;
-            
-            if (! method_exists($customHydrator, '__call') && ! (method_exists($customHydrator, $customExtractMethod) && is_callable([$customHydrator, $customExtractMethod]))) {
-                throw new \BadMethodCallException(sprintf('Failure on call method "%s::%s".', get_class($customHydrator), $customExtractMethod));
-            }
+            list($customHydratorClass, , $customExtractMethod) = $this->metadata->getCustomHydratorInfo();            
+            $this->executeMethod($object, new ClassMetadata\Model\Method($customHydratorClass, $customExtractMethod));
         }
 
         //Value objects extraction.
@@ -318,10 +313,8 @@ class Hydrator extends AbstractHydrator
                 }
             }
         } else {
-
             list($customHydratorClass, $customHydrateMethod) = $this->metadata->getCustomHydratorInfo();
-            $customHydrator = $this->classResolver ? $this->classResolver->resolve($customHydratorClass) : new $customHydratorClass;
-            $customHydrator->$customHydrateMethod($data, $object);
+            $this->executeMethod($object, new ClassMetadata\Model\Method($customHydratorClass, $customHydrateMethod));
         }
 
         //DataSources hydration.

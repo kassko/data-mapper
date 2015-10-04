@@ -382,29 +382,32 @@ You can see more details about `class-resolver` [here](https://github.com/kassko
 * [Inherit mapping configuration](#inherit-mapping-configuration)
 * [Component configuration reference](#component-configuration-reference)
 * [Mapping configuration reference](#mapping-configuration-reference)
+  - [Config config](#config-config)
   - [CustomHydrator config](#customhydrator-config)
   - [DataSource config](#datasource-config)
-  - [DataSourceStore config](#datasourcestore-config)
-  - [Exclude config](#exclude-config)
+  - [DataSourcesStore config](#datasourcesstore-config)
   - [ExcludeDefaultSource config](#excludedefaultsource-config)
   - [Field config](#field-config)
   - [Getter config](#getter-config)
   - [Id config](#id-config)
   - [IdCompositePart config](#idcompositepart-config)
   - [Listeners config](#listeners-config)
+  - [Method config](#method-config)
   - [Object config](#object-config)
-  - [ObjectListeners config](#object-listeners-config)
-  - [PostExtract config](#postextract-config)
-  - [PostHydrate config](#posthydrate-config)
-  - [PreExtract config](#preextract-config)
-  - [PreHydrate config](#prehydrate-config)
-  - [Provider config](#provider-config)
-  - [ProviderStore config](#providerstore-config)
+  - [ObjectListeners config - DEPRECATED - SEE Listeners config](#objectlisteners-config---deprecated---see-listeners-config)
+  - [PostExtract config - DEPRECATED - SEE Listeners config](#postextract-config---deprecated---see-listeners-config)
+  - [PostHydrate config - DEPRECATED - SEE Listeners config](#posthydrate-config---deprecated---see-listeners-config)
+  - [PreExtract config - DEPRECATED - SEE Listeners config](#preextract-config---deprecated---see-listeners-config)
+  - [PreHydrate config - DEPRECATED - SEE Listeners config](#prehydrate-config---deprecated---see-listeners-config)
+  - [Provider config - DEPRECATED - SEE DataSource config](#provider-config---deprecated---see-datasource-config)
+  - [ProvidersStore config - DEPRECATED - SEE DataSourcesStore config](#providersstore-config---deprecated---see-datasourcesstore-config)
   - [RefDefaultSource config](#refdefaultsource-config)
   - [RefSource config](#refsource-config)
   - [Setter config](#setter-config)
+  - [ToExclude config](#toexclude-config)
+  - [ToInclude config](#toinclude-config)
   - [Transient config](#transient-config)
-  - [ValueObject config](#valueobject-config)
+  - [ValueObject config - DEPRECATED - SEE Config config](#valueobject-config---deprecated---see-config-config)
   - [Version config](#version-config)
 
 
@@ -1800,7 +1803,7 @@ Php format:
 
 To know more about the "Method config" usage, please see its dedicated documentation ["Method config"](#method-config).
 
-### DataSourceStore config
+### DataSourcesStore config
 
 Annotation format:
 ```php
@@ -1890,52 +1893,6 @@ Php format:
 
 To know more about the "Method config" usage, please see its dedicated documentation ["Method config"](#method-config).
 
-### Exclude config
-
-Annotation format:
-```php
-use Kassko\DataMapper\Annotation as DM;
-
-class SomeClass
-{
-    /**
-     * @DM\Exclude
-     */
-    protected $excludedField;
-
-    /**
-     * @DM\Field
-     */
-    protected $field;
-}
-```
-
-Yaml format:
-```yml
-exclude: [excludedField]
-fields:
-  excludedField:
-    name: originalFieldName
-  field:
-    name: field
-```
-
-Php format:
-```php
-[
-    'exclude' => [
-        'excludedField'
-    ],
-    'fields'  => [
-        'excludedField' => [
-            'name'     => 'originalFieldName'
-        ],
-        'field'         => [
-            'name'     => 'field'
-        ]
-    ]
-];
-```
 
 ### ExcludeDefaultSource config
 
@@ -1943,21 +1900,57 @@ Annotation format:
 ```php
 use Kassko\DataMapper\Annotation as DM;
 
+/**
+ * @DM\RefDefaultSource(id="refDefaultSourceId")
+ */
 class SomeClass
 {
+    protected $fieldToBindAutoToDefaultSource;
+
+    protected $anotherFieldToBindAutoToDefaultSource;
+
     /**
-     * @DM\ExcludeDefaultSource
+     *@DM\ExcludeDefaultSource
      */
-    protected $excludeDefaultSourceField;
+    protected $fieldNotToBindAutoToDefaultSource;
 }
 ```
 
 Yaml format:
 ```yml
+object:
+    refDefaultSource: refDefaultSourceId
+fields:
+    fieldToBindAutoToDefaultSource:
+        name: fieldToBindAutoToDefaultSource
+    anotherFieldToBindAutoToDefaultSource:
+        name: anotherFieldToBindAutoToDefaultSource
+    fieldNotToBindAutoToDefaultSource:
+        name: fieldNotToBindAutoToDefaultSource
+fieldsNotToBindToDefaultSource: [fieldNotToBindAutoToDefaultSource]
 ```
 
 Php format:
 ```php
+[
+    'object' => [
+        'refDefaultSource' => 'refDefaultSourceId'
+    ],
+    'fields' => [
+        'fieldToBindAutoToDefaultSource' => [
+            'name'      => 'fieldToBindAutoToDefaultSource',
+        ],
+        'anotherFieldToBindAutoToDefaultSource' => [
+            'name'      => 'anotherFieldToBindAutoToDefaultSource',
+        ],
+        'fieldNotToBindAutoToDefaultSource' => [
+            'name'      => 'fieldNotToBindAutoToDefaultSource',
+        ]
+    ],
+    'fieldsNotToBindToDefaultSource' => [
+        'fieldNotToBindAutoToDefaultSource'
+    ]
+];
 ```
 
 ### Field config
@@ -2302,8 +2295,8 @@ class SomeClass
 
 Yaml format:
 ```yml
+fieldExclusionPolicy: exclude_all
 object:
-    fieldExclusionPolicy: exclude_all
     providerClass: testProviderClass
     readDateConverter: testReadDateConverter
     writeDateConverter: testWriteDateConverter
@@ -2315,8 +2308,8 @@ object:
 Php format:
 ```php
 [
+    'fieldExclusionPolicy'  => 'exclude_all',
     'object'    => [
-        'fieldExclusionPolicy'  => 'exclude_all',
         'providerClass'         => 'testProviderClass',
         'readDateConverter'     => 'testReadDateConverter',
         'writeDateConverter'    => 'testWriteDateConverter',
@@ -2327,7 +2320,7 @@ Php format:
 ];
 ```
 
-### ObjectListeners config
+### ObjectListeners config - DEPRECATED - SEE Listeners Config
 
 Annotation format:
 ```php
@@ -2355,7 +2348,7 @@ Php format:
 ];
 ```
 
-### PostExtract config
+### PostExtract config - DEPRECATED - SEE Listeners Config
 
 Deprecated. Use [Listeners config](#listeners-config) instead.
 
@@ -2364,10 +2357,9 @@ Annotation format:
 use Kassko\DataMapper\Annotation as DM;
 
 /**
- * @DM\PostExtract(
- *      class="CustomHydratorClassName",
- *      method="postExtractMethodName"
- * )
+ * @DM\Object(classMappingExtensionClass="mappingExtensionClass")
+ *
+ * @DM\PostExtract(method="postExtractMethodName")
  */
 class SomeClass
 {
@@ -2376,6 +2368,9 @@ class SomeClass
 
 Yaml format:
 ```yml
+object:
+    classMappingExtensionClass: mappingExtensionClass
+
 interceptors:
     postExtract: postExtractMethodName
 ```
@@ -2383,13 +2378,14 @@ interceptors:
 Php format:
 ```php
 [
+    'object' => ['classMappingExtensionClass' => 'mappingExtensionClass'],
     'interceptors'  => [
         'postExtract'    => 'postExtractMethodName'
     ]
 ];
 ```
 
-### PostHydrate config
+### PostHydrate config - DEPRECATED - SEE Listeners Config
 
 Deprecated. Use [Listeners config](#listeners-config) instead.
 
@@ -2398,10 +2394,9 @@ Annotation format:
 use Kassko\DataMapper\Annotation as DM;
 
 /**
- * @DM\PostHydrate(
- *      class="CustomHydratorClassName",
- *      method="postHydrateMethodName"
- * )
+ * @DM\Object(classMappingExtensionClass="mappingExtensionClass")
+ *
+ * @DM\PostHydrate(method="postHydrateMethodName")
  */
 class SomeClass
 {
@@ -2410,6 +2405,9 @@ class SomeClass
 
 Yaml format:
 ```yml
+object:
+    classMappingExtensionClass: mappingExtensionClass
+
 interceptors:
     postHydrate: postHydrateMethodName
 ```
@@ -2417,13 +2415,14 @@ interceptors:
 Php format:
 ```php
 [
+    'object' => ['classMappingExtensionClass' => 'mappingExtensionClass'],
     'interceptors'  => [
         'postHydrate'    => 'postHydrateMethodName'
     ]
 ];
 ```
 
-### PreExtract config
+### PreExtract config - DEPRECATED - SEE Listeners Config
 
 Deprecated. Use [Listeners config](#listeners-config) instead.
 
@@ -2432,6 +2431,8 @@ Annotation format:
 use Kassko\DataMapper\Annotation as DM;
 
 /**
+ * @DM\Object(classMappingExtensionClass="mappingExtensionClass")
+ *
  * @DM\PreExtract(
  *      method="preExtractMethodName"
  * )
@@ -2443,6 +2444,9 @@ class SomeClass
 
 Yaml format:
 ```yml
+object:
+    classMappingExtensionClass: mappingExtensionClass
+
 interceptors:
     preExtract: preExtractMethodName
 ```
@@ -2450,13 +2454,14 @@ interceptors:
 Php format:
 ```php
 [
+    'object' => ['classMappingExtensionClass' => 'mappingExtensionClass'],
     'interceptors'  => [
         'preExtract'    => 'preExtractMethodName'
     ]
 ];
 ```
 
-### PreHydrate config
+### PreHydrate config - DEPRECATED - SEE Listeners Config
 
 Deprecated. Use [Listeners config](#listeners-config) instead.
 
@@ -2465,10 +2470,9 @@ Annotation format:
 use Kassko\DataMapper\Annotation as DM;
 
 /**
- * @DM\PreHydrate(
- *      class="CustomHydratorClassName",
- *      method="preHydrateMethodName"
- * )
+ * @DM\Object(classMappingExtensionClass="mappingExtensionClass")
+ *
+ * @DM\PreHydrate(method="preHydrateMethodName")
  */
 class SomeClass
 {
@@ -2477,6 +2481,9 @@ class SomeClass
 
 Yaml format:
 ```yml
+object:
+    classMappingExtensionClass: mappingExtensionClass
+
 interceptors:
     preHydrate: preHydrateMethodName
 ```
@@ -2484,20 +2491,21 @@ interceptors:
 Php format:
 ```php
 [
+    'object' => ['classMappingExtensionClass' => 'mappingExtensionClass'],
     'interceptors'  => [
         'preHydrate'    => 'preHydrateMethodName'
     ]
 ];
 ```
 
-### Provider config
+### Provider config - DEPRECATED - SEE DataSource Config
 
 Deprecated. Use [DataSource config](#datasource-config) instead.
 Configuration is the same as DataSource.
 
-### ProviderStore config
+### ProvidersStore config - DEPRECATED - SEE DataSourcesStore Config
 
-Deprecated. Use [DataSourceStore config](#datasourcestore-config) instead.
+Deprecated. Use [DataSourcesStore config](#datasourcesstore-config) instead.
 Configuration is the same as DataSourceStore.
 
 ### RefDefaultSource config
@@ -2517,19 +2525,22 @@ class SomeClass
 
 Yaml format:
 ```yml
+object:
+    refDefaultSource: refDefaultSourceId
 fields:
     mockField:
         name: mockFieldName
-        refSource: refDefaultSourceId
 ```
 
 Php format:
 ```php
 [
+    'object' => [
+        'refDefaultSource' => 'refDefaultSourceId'
+    ],
     'fields' => [
         'mockField' => [
             'name'      => 'mockFieldName',
-            'refSource' => 'refDefaultSourceId'
         ]
     ]
 ];
@@ -2540,16 +2551,57 @@ Php format:
 Annotation format:
 ```php
 use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\DataSourcesStore({
+ *      @DM\DataSource(
+ *          id="someDataSource",
+ *          class="Kassko\Sample\PersonDataSource",
+ *          method="getData"
+ *      )
+ * })
+ */
+class SomeClass
+{
+    /**
+     * @DM\RefSource(id="someDataSource")
+     */
+    private $fieldOne;
+}
 ```
 
 Yaml format:
 ```yml
+object:
+    dataSourcesStore:
+        - id: personSource
+        class: "Kassko\\\Sample\\\PersonDataSource"
+        method: getData
+fields:
+    fieldOne:
+        name: fieldOne
+        refSource: someDataSource
 ```
 
 Php format:
 ```php
-```
-
+[
+    'object'    => [
+        'dataSourcesStore'    => [
+            [
+                'id'=> 'personSource',
+                'class'=> 'Kassko\Sample\PersonDataSource',
+                'method'=> 'getData',
+            ]
+        ]
+    ],
+    'fields'    => [
+        'fieldOne' => [
+            'name'  => 'fieldOne',
+            'refSource' => 'someDataSource',
+        ]
+    ],
+];
 ### Setter config
 
 Annotation format:
@@ -2585,6 +2637,118 @@ Php format:
             'name'      => 'firstField',
             'setter'    => ['name' => 'setterName'],
         ]
+    ]
+];
+```
+
+### ToExclude config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * Optional because it's the default settings for fieldExclusionPolicy.
+ * @DM\Object(fieldExclusionPolicy="include_all")
+ */
+class SomeClass
+{
+    /**
+     * @DM\ToExclude
+     */
+    protected $excludedField;
+
+    /**
+     * @DM\Field
+     */
+    protected $anotherField;
+}
+```
+
+Yaml format:
+```yml
+# Optional because it's the default settings for fieldExclusionPolicy.
+# object:
+#    fieldExclusionPolicy: include_all
+excludedFields: [excludedField]
+fields:
+  excludedField:
+    name: excludedField
+  anotherField:
+    name: anotherField
+```
+
+Php format:
+```php
+[
+    /*
+    //Optional because it's the default settings for fieldExclusionPolicy.
+    'object' => [
+        'fieldExclusionPolicy' => 'include_all'
+    ],
+    */
+    'excludedFields' => [
+        'excludedField'
+    ],
+    'fields'  => [
+        'excludedField' => [
+            'name'     => 'excludedField'
+        ],
+        'anotherField'         => [
+            'name'     => 'anotherField'
+        ]
+    ]
+];
+```
+
+### ToInclude config
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+/**
+ * @DM\Object(fieldExclusionPolicy="exclude_all")
+ */
+class SomeClass
+{
+    /**
+     * @DM\Include
+     */
+    protected $includedField;
+
+    /**
+     * @DM\Field
+     */
+    protected $field;
+}
+```
+
+Yaml format:
+```yml
+fieldExclusionPolicy: exclude_all
+fieldsToInclude: [includedField]
+fields:
+    includedField:
+        name: includedField
+    anotherField:
+        name: anotherField
+```
+
+Php format:
+```php
+[
+    'fieldExclusionPolicy' => 'exclude_all'
+    'fieldsToInclude' => [
+        'includedField'
+    ],
+    'fields'  => [
+        'includedField' => [
+            'name'     => 'includedField'
+        ],
+        'anotherField' => [
+            'name'     => 'anotherField'
+        ],
     ]
 ];
 ```
@@ -2627,15 +2791,65 @@ Php format:
 ];
 ```
 
-### ValueObject config
+### ValueObject config - DEPRECATED - SEE Config Config
 
-Deprecated. Use [Listeners config](#listeners-config) instead.
+Deprecated. Use [Config config](#config-config) instead.
 
 Annotation format:
-Annotation `@Kassko\DataMapper\Annotation\ValueObject` become `@Kassko\DataMapper\Annotation\Config`.
+Annotation `@Kassko\DataMapper\Annotation\ValueObject` becomes `@Kassko\DataMapper\Annotation\Config`.
 
 Yaml and Php format:
-Key `'valueObjects'` become `'config'`.
+Now, there's a field key `'fields.some_field.config'`. Uses it instead of the global key `'valueObjects'`.
+
+Annotation format:
+```php
+use Kassko\DataMapper\Annotation as DM;
+
+class ValueObject
+{
+    /**
+     * @DM\Config(
+     *      class="\ValueObjectClass",
+     *      mappingResourceName="valueObjectResourceName",
+     *      mappingResourcePath="valueObjectResourcePath",
+     *      mappingResourceType="valueObjectResourceType"
+     * )
+     */
+    protected $firstField;
+}
+```
+
+Yaml format:
+```yml
+fields:
+  firstField:
+    name: firstField
+valueObjects:
+    firstField:
+        class: "\\\ValueObjectClass"
+        mappingResourceName: valueObjectResourceName
+        mappingResourcePath: valueObjectResourcePath
+        mappingResourceType: valueObjectResourceType
+```
+
+Php format:
+```php
+[
+    'fields' => [
+        'firstField' => [
+            'name'         => 'firstField',
+        ]
+    ],
+    'valueObjects' => [
+        'firstField'    => [
+            'class' => '\ValueObjectClass',
+            'mappingResourceName' => 'valueObjectResourceName',
+            'mappingResourcePath' => 'valueObjectResourcePath',
+            'mappingResourceType' => 'valueObjectResourceType'
+        ]
+    ]
+];
+```
 
 ### Version config
 

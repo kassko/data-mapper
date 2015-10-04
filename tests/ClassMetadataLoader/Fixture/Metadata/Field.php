@@ -60,12 +60,11 @@ class Field
                     'readDateConverter'          => 'readDateConvertSecondField',
                     'writeDateConverter'         => 'writeDateConvertSecondField',
                     'fieldMappingExtensionClass' => 'ExtensionClass',
-                    'defaultValue'               => 12
+                    'defaultValue'               => 12,
                 ],
                 'dateField' => [
                     'name'                       => 'DateField',
                     'type'                       => 'date',
-                    'readDateConverter'          => null, //We can omit this key instead of specify it with the value null.
                 ]
             ]
         ];
@@ -96,13 +95,6 @@ fields:
   dateField:
     name: DateField
     type: date
-    readDateConverter: null # We can omit this key instead of specify it with the value null.
-    writeDateConverter: ~ # Identical to null. We can omit this key too.
 EOF;
     }
 }
-
-/**
- * (1) Allows to test the normalization process. 
- * It will add the missing entries (readConverter, writeConverter) and set them to null.
- */

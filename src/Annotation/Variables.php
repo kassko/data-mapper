@@ -13,5 +13,10 @@ final class Variables
 	/**
     * @var array
     */
-    private $variables = [];
+    public $variables = [];
+
+    public function __construct(array $variables)
+    {
+		$this->variables = $variables;
+    }
 }

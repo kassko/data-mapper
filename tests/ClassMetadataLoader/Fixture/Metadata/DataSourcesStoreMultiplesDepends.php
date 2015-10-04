@@ -25,25 +25,6 @@ class DataSourcesStoreMultiplesDepends
                         'id'                  => 'personSource',
                         'depends'             => [
                             '#dependsFirst', '#dependsSecond', '#dependsThird'
-                        ],
-                        'class'               => 'Kassko\Sample\PersonDataSource',
-                        'method'              => 'getData',
-                        'args'                => ['#id'],
-                        'lazyLoading'         => true,
-                        'supplySeveralFields' => true,
-                        'onFail'              => 'checkException',
-                        'exceptionClass'      => '\RuntimeException',
-                        'badReturnValue'      => 'emptyString',
-                        'fallbackSourceId'    => 'testFallbackSourceId',
-                        'preprocessor'        => [
-                            'class'  => '',
-                            'method' => 'somePreprocessor',
-                            'args'   => []
-                        ],
-                        'processor'           => [
-                            'class'  => '',
-                            'method' => 'someProcessor',
-                            'args'   => []
                         ]
                     ]
                 ]
@@ -58,26 +39,9 @@ class DataSourcesStoreMultiplesDepends
     {
         return <<<EOF
 object:
-  dataSourcesStore:
-   - id: personSource
-     class: "Kassko\\\Sample\\\PersonDataSource"
-     method: getData
-     args: [#id]
-     lazyLoading: true
-     supplySeveralFields: true
-     onFail: checkException
-     exceptionClass: \RuntimeException
-     badReturnValue: emptyString
-     fallbackSourceId: testFallbackSourceId
-     depends: [#dependsFirst, #dependsSecond, #dependsThird]
-     preprocessor:
-       class: ""
-       method: somePreprocessor
-       args: []
-     processor:
-       class: ""
-       method: someProcessor
-       args: []
+    dataSourcesStore:
+        - id: personSource
+          depends: [#dependsFirst, #dependsSecond, #dependsThird]
 EOF;
     }
 }

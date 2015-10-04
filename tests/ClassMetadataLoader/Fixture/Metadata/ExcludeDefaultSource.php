@@ -5,10 +5,14 @@ use Kassko\DataMapper\Annotation as DM;
 
 class ExcludeDefaultSource
 {
+    protected $fieldToBindAutoToDefaultSource;
+
+    protected $anotherFieldToBindAutoToDefaultSource;
+
     /**
-     * @DM\ExcludeDefaultSource
+     *@DM\ExcludeDefaultSource
      */
-    protected $excludeDefaultSourceField;
+    protected $fieldNotToBindAutoToDefaultSource;
 
     /**
      * @return array
@@ -16,6 +20,20 @@ class ExcludeDefaultSource
     public static function loadInnerPhpMetadata()
     {
         return [
+            'fields' => [
+                'fieldToBindAutoToDefaultSource' => [
+                    'name'      => 'fieldToBindAutoToDefaultSource',
+                ],
+                'anotherFieldToBindAutoToDefaultSource' => [
+                    'name'      => 'anotherFieldToBindAutoToDefaultSource',
+                ],
+                'fieldNotToBindAutoToDefaultSource' => [
+                    'name'      => 'fieldNotToBindAutoToDefaultSource',
+                ]
+            ],
+            'fieldsNotToBindToDefaultSource' => [
+                'fieldNotToBindAutoToDefaultSource'
+            ]
         ];
     }
 
@@ -25,6 +43,14 @@ class ExcludeDefaultSource
     public static function loadInnerYamlMetadata()
     {
         return <<<EOF
+fields:
+    fieldToBindAutoToDefaultSource:
+        name: fieldToBindAutoToDefaultSource
+    anotherFieldToBindAutoToDefaultSource:
+        name: anotherFieldToBindAutoToDefaultSource
+    fieldNotToBindAutoToDefaultSource:
+        name: fieldNotToBindAutoToDefaultSource
+fieldsNotToBindToDefaultSource: [fieldNotToBindAutoToDefaultSource]        
 EOF;
     }
 }

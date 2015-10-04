@@ -358,50 +358,64 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $metadata = $this->loadMetadata('Field');
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
-        $this->assertEquals(
-            array(
-                'fieldOne'  => array(
-                    'field' => array(
-                        'name'                       => 'FirstField',
-                        'type'                       => 'string',
-                        'class'                      => 'stdClass',
-                        'readConverter'              => 'readConvertFirstField',
-                        'writeConverter'             => 'writeConvertFirstField',
-                        'readDateConverter'          => null,
-                        'writeDateConverter'         => null,
-                        'fieldMappingExtensionClass' => 'ExtensionClass',
-                        'defaultValue'               => null
-                    )
-                ),
-                'fieldTwo'  => array(
-                    'field' => array(
-                        'name'                       => 'SecondField',
-                        'type'                       => 'integer',
-                        'class'                      => '\DateTime',
-                        'readConverter'              => null,
-                        'writeConverter'             => null,
-                        'readDateConverter'          => 'readDateConvertSecondField',
-                        'writeDateConverter'         => 'writeDateConvertSecondField',
-                        'fieldMappingExtensionClass' => 'ExtensionClass',
-                        'defaultValue'               => 12
-                    )
-                ),
-                'dateField'  => array(
-                    'field' => array(
-                        'name'                       => 'DateField',
-                        'type'                       => 'date',
-                        'class'                      => null,
-                        'readConverter'              => null,
-                        'writeConverter'             => null,
-                        'readDateConverter'          => null,
-                        'writeDateConverter'         => null,
-                        'fieldMappingExtensionClass' => null,
-                        'defaultValue'               => null
-                    )
+
+        $expectedData = array(
+            'fieldOne'  => array(
+                'field' => array(
+                    'name'                       => 'FirstField',
+                    'type'                       => 'string',
+                    'class'                      => 'stdClass',
+                    'readConverter'              => 'readConvertFirstField',
+                    'writeConverter'             => 'writeConvertFirstField',
+                    'readDateConverter'          => null,
+                    'writeDateConverter'         => null,
+                    'fieldMappingExtensionClass' => 'ExtensionClass',
+                    'defaultValue'               => null
                 )
             ),
-            $metadata->getFieldsDataByKey()
+            'fieldTwo'  => array(
+                'field' => array(
+                    'name'                       => 'SecondField',
+                    'type'                       => 'integer',
+                    'class'                      => '\DateTime',
+                    'readConverter'              => null,
+                    'writeConverter'             => null,
+                    'readDateConverter'          => 'readDateConvertSecondField',
+                    'writeDateConverter'         => 'writeDateConvertSecondField',
+                    'fieldMappingExtensionClass' => 'ExtensionClass',
+                    'defaultValue'               => 12
+                )
+            ),
+            'dateField'  => array(
+                'field' => array(
+                    'name'                       => 'DateField',
+                    'type'                       => 'date',
+                    'class'                      => null,
+                    'readConverter'              => null,
+                    'writeConverter'             => null,
+                    'readDateConverter'          => null,
+                    'writeDateConverter'         => null,
+                    'fieldMappingExtensionClass' => null,
+                    'defaultValue'               => null
+                )
+            )
         );
+
+        $obtainedResult = array_keys($metadata->getFieldsDataByKey());
+        sort($obtainedResult);
+        $expectedResult = array_keys($expectedData);
+        sort($expectedResult);
+        $this->assertEquals($expectedResult, $obtainedResult);
+
+        $diff = array_diff_assoc($expectedData['fieldOne']['field'], $metadata->getFieldsDataByKey()['fieldOne']['field']);
+        $this->assertTrue(0 === count($diff), 'Failed asserting that field "fieldOne" data are identical.');
+
+        $diff = array_diff_assoc($expectedData['fieldTwo']['field'], $metadata->getFieldsDataByKey()['fieldTwo']['field']);
+        $this->assertTrue(0 === count($diff), 'Failed asserting that field "fieldTwo" data are identical.');
+
+        $diff = array_diff_assoc($expectedData['dateField']['field'], $metadata->getFieldsDataByKey()['dateField']['field']);
+        $this->assertTrue(0 === count($diff), 'Failed asserting that field "dateField" data are identical.');
+
         $this->assertEquals(array('dateField'), $metadata->getMappedDateFieldNames());
         // @TODO: Need to verify INDEX_EXTENSION_CLASS. Possibly error, unknown attribute 'mappingExtensionClass' used.
         $this->assertEquals(
@@ -419,6 +433,19 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
+    public function toExcludeValidateResult()
+    {
+        $metadata = $this->loadMetadata('ToExclude');
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('include_all', $metadata->getFieldExclusionPolicy());
+        $this->assertTrue($metadata->isNotManaged('excludedField'));
+        $this->assertFalse($metadata->isNotManaged('field'));
+    }
+
+    /**
+     * @test
+     */
     public function excludeValidateResult()
     {
         $metadata = $this->loadMetadata('Exclude');
@@ -426,6 +453,19 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
         $this->assertEquals('include_all', $metadata->getFieldExclusionPolicy());
         $this->assertTrue($metadata->isNotManaged('excludedField'));
+        $this->assertFalse($metadata->isNotManaged('field'));
+    }
+
+    /**
+     * @test
+     */
+    public function toIncludeValidateResult()
+    {
+        $metadata = $this->loadMetadata('ToInclude');
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals('exclude_all', $metadata->getFieldExclusionPolicy());
+        $this->assertTrue($metadata->isNotManaged('includedField'));
         $this->assertFalse($metadata->isNotManaged('field'));
     }
 
@@ -541,7 +581,23 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $metadata = $this->loadMetadata('ExcludeDefaultSource');
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
-        $this->assertEquals(array('excludeDefaultSourceField' => true), $metadata->getFieldsWithSourcesForbidden());
+        $this->assertEquals(array('fieldNotToBindAutoToDefaultSource' => true), $metadata->getFieldsWithSourcesForbidden());
+    }
+
+    /**
+     * @test
+     */
+    public function configValidateResult()
+    {
+        $metadata = $this->loadMetadata('Config');
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertEquals(
+            array(
+                '\ValueObjectClass', 'valueObjectResourcePath/valueObjectResourceName', 'valueObjectResourceType'
+            ),
+            $metadata->getValueObjectInfo('firstField')
+        );
     }
 
     /**
@@ -558,6 +614,20 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
             ),
             $metadata->getValueObjectInfo('firstField')
         );
+    }
+
+    /**
+     * @test
+     */
+    public function variablesValidateResult()
+    {
+        $metadata = $this->loadMetadata('Variables');
+
+        $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
+        $this->assertTrue($metadata->fieldHasVariables('firstField'));
+        $this->assertFalse($metadata->fieldHasVariables('secondField'));
+        //var_dump($metadata->getVariablesByField('firstField'));
+        $this->assertEquals(['var_a' =>'foo', 'var_b' => '123'], $metadata->getVariablesByField('firstField'));
     }
 
     /**
@@ -618,7 +688,8 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($metadata->hasProvider('firstField'));
 
         $providers = $metadata->getProviders();
-        $this->assertEquals(['secondField', 'firstField'], array_keys($providers));
+        $diff = array_diff(['secondField', 'firstField'], array_keys($providers));
+        $this->assertTrue(0 === count($diff), 'Failed asserting that refSource[] has good keys.');
 
         /**
          ********************** First item

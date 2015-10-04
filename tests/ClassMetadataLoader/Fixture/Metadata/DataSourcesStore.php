@@ -45,16 +45,8 @@ class DataSourcesStore
                         'badReturnValue' => 'emptyString',
                         'fallbackSourceId' => 'testFallbackSourceId',
                         'depends' => ['#dependsFirst'],
-                        'preprocessor' => [
-                            'class' => '',
-                            'method' => 'somePreprocessor',
-                            'args' => []
-                        ],
-                        'processor' => [
-                            'class' => '',
-                            'method' => 'someProcessor',
-                            'args' => []
-                        ]
+                        'preprocessor' => ['method' => 'somePreprocessor'],
+                        'processor' => ['method' => 'someProcessor']
                     ]
                 ]
             ]
@@ -81,13 +73,9 @@ object:
      fallbackSourceId: testFallbackSourceId
      depends: [#dependsFirst]
      preprocessor:
-       class: ""
        method: somePreprocessor
-       args: []
      processor:
-       class: ""
        method: someProcessor
-       args: []
 EOF;
     }
 }
