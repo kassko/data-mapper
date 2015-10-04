@@ -33,12 +33,30 @@ class ExpressionFunctionProvider implements ExpressionFunctionProviderInterface
                 }
             ),
             new ExpressionFunction(
+                'pfield',
+                function ($arg) {
+                    return sprintf('value_resolver.resolveFieldValue(%s, true)', $arg);
+                }, 
+                function (array $context, $value) {
+                    return $context['value_resolver']->resolveFieldValue($value, true);
+                }
+            ),
+            new ExpressionFunction(
                 'source',
                 function ($arg) {
                     return sprintf('value_resolver.resolveSourceResult(%s)', $arg);
                 }, 
                 function (array $context, $value) {
                     return $context['value_resolver']->resolveSourceResult($value);
+                }
+            ),
+            new ExpressionFunction(
+                'object',
+                function () {
+                    return sprintf('value_resolver.resolveObject()');
+                }, 
+                function (array $context) {
+                    return $context['value_resolver']->resolveObject();
                 }
             ),
             new ExpressionFunction(

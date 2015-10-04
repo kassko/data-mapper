@@ -14,10 +14,12 @@ use Kassko\DataMapper\Hydrator\Hydrator;
 */
 class ValueResolver
 {
-    private static $serviceMarker = '@';
-    private static $serviceMarkerSize = 1;
-    private static $fieldMarker = '#';
-    private static $fieldMarkerSize = 1;
+    private $serviceMarker = '@';
+    private $serviceMarkerSize = 1;
+    private $fieldMarker = '#';
+    private $fieldMarkerSize = 1;
+    private $directFieldMarker = '#!';
+    private $directFieldMarkerSize = 2;
     
     private $object;//TODO: check if this attribute is still usefull an remove it if function resolveObject() can replaces it.
     private $hydrator;
@@ -35,19 +37,27 @@ class ValueResolver
     {
         $this->object = $object;
 
+        if (! is_scalar($value)) {
+            return $value;
+        }
+
         if ('##this' === $value) {
             return $this->object; 
-        } 
+        }
 
         if ('##data' === $value) {
             return $this->resolveRawData(); 
         } 
 
-        if (self::$fieldMarker === $value[0]) {
-            return $this->resolveFieldValue(substr($value, self::$fieldMarkerSize));
+        if ($this->directFieldMarker === substr($value, 0, $this->directFieldMarkerSize)) {
+            return $this->resolveFieldValue(substr($value, $this->directFieldMarkerSize), true);
         } 
 
-        if (self::$serviceMarker === $value[0]) {
+        if ($this->fieldMarker === $value[0]) {
+            return $this->resolveFieldValue(substr($value, $this->fieldMarkerSize), false);
+        } 
+
+        if ($this->serviceMarker === $value[0]) {
             return $this->resolveService($value);
         }
 
@@ -64,11 +74,16 @@ class ValueResolver
         return $this->hydrator->getCurrentObject();
     }
 
-    public function resolveFieldValue($fieldName)
+    public function resolveParentObject()
+    {
+        return $this->hydrator->getParentOfObjectCurrentlyHydrated();
+    }
+
+    public function resolveFieldValue($fieldName, $bypassLoading)
     {
         $fieldToResolve = $this->metadata->getMappedFieldName($fieldName);
 
-        return $this->hydrator->extractProperty($this->object, $fieldToResolve);
+        return $this->hydrator->extractProperty($this->object, $fieldToResolve, null, $bypassLoading);
     }
 
     public function resolveClass($class)
@@ -94,6 +109,6 @@ class ValueResolver
             return $this->classResolver->resolve($serviceId);
         } 
         
-        throw new ObjectMappingException(sprintf('Cannot resolve id "%s". No resolver is available.', substr($serviceId, self::$serviceMarkerSize)));
+        throw new ObjectMappingException(sprintf('Cannot resolve id "%s". No resolver is available.', substr($serviceId, $this->serviceMarkerSize)));
     }
 }

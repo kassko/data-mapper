@@ -31,6 +31,11 @@ class Method
         $this->args = $args;    
     }
 
+    public function isNull()
+    {
+        return null === $this->function && 0 === count($this->args);
+    }
+
     public function isEquals(Method $method)
     {
         return $this->class === $method->class && $this->function === $method->function;

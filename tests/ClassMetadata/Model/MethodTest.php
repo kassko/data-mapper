@@ -16,35 +16,59 @@ class MethodTest extends \PHPUnit_Framework_TestCase
     protected $methodMetadata;
 
     /**
-     * @var string
+     * @test
+     * @dataProvider constructorParamProvider
      */
-    protected $className = 'Kassko\DataMapperTest\ClassMetadata\Fixture\SampleClass';
-
-    /**
-     * @var string
-     */
-    protected $method = '';
-
-    /**
-     * @var array
-     */
-    protected $arguments = array();
-
-    /**
-     * @return void
-     */
-    public function setUp()
+    public function validateConstructor($className, $method, $arguments)
     {
-        $this->methodMetadata = new ClassMetadata\Model\Method($this->className, $this->method, $this->arguments);
+        $methodMetadata = new ClassMetadata\Model\Method($className, $method, $arguments);
+
+        $this->assertSame($className, $methodMetadata->getClass());
+        $this->assertSame($method, $methodMetadata->getFunction());
+        $this->assertSame($arguments, $methodMetadata->getArgs());
+    }
+
+    public function constructorParamProvider()
+    {
+        return array(
+            array('Kassko\DataMapperTest\ClassMetadata\Fixture\SampleClass', 'method', array()),
+        );
     }
 
     /**
      * @test
+     * @dataProvider notNullCaseProvider
      */
-    public function validateConstructor()
+    public function isNullValidateResultFalse($className, $method, $arguments)
     {
-        $this->assertSame($this->className, $this->methodMetadata->getClass());
-        $this->assertSame($this->method, $this->methodMetadata->getFunction());
-        $this->assertSame($this->arguments, $this->methodMetadata->getArgs());
+        $methodMetadata = new ClassMetadata\Model\Method($className, $method, $arguments);
+
+        $this->assertFalse($methodMetadata->isNull());
+    }
+
+    public function notNullCaseProvider()
+    {
+        return array(
+            array('Kassko\DataMapperTest\ClassMetadata\Fixture\SampleClass', 'method', array()),
+        );
+    }
+
+    /**
+     * @test
+     * @dataProvider nullCaseProvider
+     */
+    public function isNullValidateResultTrue($className, $method, $arguments)
+    {
+        $methodMetadata = new ClassMetadata\Model\Method($className, $method, $arguments);
+
+        $this->assertTrue($methodMetadata->isNull());
+    }
+
+    public function nullCaseProvider()
+    {
+        return array(
+            array(null, null, array()),
+            array('Kassko\DataMapperTest\ClassMetadata\Fixture\SampleClass', null, array()),
+        );
     }
 }
