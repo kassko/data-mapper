@@ -157,7 +157,7 @@ class ClassMetadata
         $this->normalizeProvidersStore();*/
 
         $this->resolveSource();
-        //$this->resolveDefaultSource(); /* Is not backward compatible ! */
+        $this->resolveDefaultSource();
     }
 
     private function resolveSource()
@@ -187,22 +187,6 @@ class ClassMetadata
                 $this->resolveDefaultDataSourceById($defaultSource);
                 return;
             }
-        }
-
-        if (count($this->providersStore)) {
-            reset($this->providersStore);
-            $defaultSource = current($this->providersStore);
-            $this->resolveDefaultProviderById($defaultSource);
-
-            return;
-        }
-
-        if (count($this->dataSourcesStore)) {
-            reset($this->dataSourcesStore);
-            $defaultSource = current($this->dataSourcesStore);
-            $this->resolveDefaultDataSourceById($defaultSource);  
-
-            return;
         }
     }
 

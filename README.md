@@ -110,6 +110,8 @@ namespace Kassko\Sample;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 /**
+ * @DM\RefDefaultSource(id="personSource")
+ *
  * @DM\DataSourcesStore({
  *      @DM\DataSource(
  *          id="personSource", 
@@ -219,6 +221,8 @@ namespace Kassko\Sample;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 /**
+ * @DM\RefDefaultSource(id="personSource")
+ *
  * @DM\DataSourcesStore({
  *      @DM\DataSource(
  *          id="personSource", 
