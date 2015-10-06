@@ -19,6 +19,7 @@ use Kassko\DataMapper\Hydrator\HydrationStrategy\DateHydrationStrategy;
 use Kassko\DataMapper\LazyLoader\LazyLoaderFactoryInterface;
 use Kassko\DataMapper\Listener\Events;
 use Kassko\DataMapper\Listener\ObjectListenerResolverInterface;
+use Kassko\DataMapper\MethodInvoker\MagicMethodInvoker;
 use Kassko\DataMapper\MethodInvoker\MethodInvoker;
 use Kassko\DataMapper\Query\CacheConfig;
 use Kassko\DataMapper\Query\ResultManager;
@@ -77,6 +78,7 @@ class ObjectManager
     {
         $this->resultManager = new ResultManager($this);
         $this->cacheProfile = new CacheProfile(new ArrayCache);
+        $this->methodInvoker = new MagicMethodInvoker;
     }
 
     /**
