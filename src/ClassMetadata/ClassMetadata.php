@@ -153,9 +153,6 @@ class ClassMetadata
             unset($fieldDataByKey);
         }
 
-        /*$this->normalizeDataSourcesStore();
-        $this->normalizeProvidersStore();*/
-
         $this->resolveSource();
         $this->resolveImplicitSource();
     }
@@ -178,19 +175,19 @@ class ClassMetadata
          
             $implicitSource = $this->findProviderByIdBeforeCompilation($this->refImplicitSource);   
             if (null !== $implicitSource) {
-                $this->resolveDefaultProviderById($implicitSource);
+                $this->resolveImplicitProviderById($implicitSource);
                 return;
             }
 
             $implicitSource = $this->findDataSourceByIdBeforeCompilation($this->refImplicitSource);
             if (null !== $implicitSource) {
-                $this->resolveDefaultDataSourceById($implicitSource);
+                $this->resolveImplicitDataSourceById($implicitSource);
                 return;
             }
         }
     }
 
-    private function resolveDefaultDataSourceById($implicitSource)
+    private function resolveImplicitDataSourceById($implicitSource)
     {
         foreach ($this->mappedFieldNames as $mappedFieldName) {
             if (! isset($this->fieldsNotToBindAutoToImplicitSource[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
@@ -199,7 +196,7 @@ class ClassMetadata
         }
     }
 
-    private function resolveDefaultProviderById($implicitSource)
+    private function resolveImplicitProviderById($implicitSource)
     {
         foreach ($this->mappedFieldNames as $mappedFieldName) {
             if (! isset($this->fieldsNotToBindAutoToImplicitSource[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
@@ -1136,20 +1133,6 @@ class ClassMetadata
             $this->customHydrator['hydrateMethod'],
             $this->customHydrator['extractMethod'],
         ];
-    }
-
-    private function normalizeDataSourcesStore()
-    {
-        foreach ($this->dataSourcesStore as $dataSource) {
-            $dataSource->setSupplySeveralFields(false);
-        }
-    }
-
-    private function normalizeProvidersStore()
-    {
-        foreach ($this->providersStore as $provider) {
-            $provider->setSupplySeveralFields(false);
-        }
     }
 
     private function findDataSourceByIdBeforeCompilation($id)
