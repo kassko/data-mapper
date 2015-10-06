@@ -42,17 +42,6 @@ class ArrayLoaderTest extends AnnotationLoaderTest
         $this->assertInstanceOf('Kassko\DataMapper\ClassMetadata\ClassMetadata', $result);
     }
 
-    /**
-     * @test
-     * @TODO: Verify setup 'fieldsNotToBindAutoToImplicitSource' in InnerPhpLoader. There is no 'setFieldsNotToBindAutoToImplicitSource' method call.
-     */
-    public function excludeImplicitSourceValidateResult()
-    {
-        $this->markTestIncomplete(
-            'This test has not been implemented yet.'
-        );
-    }
-
     private function callInaccessibleMethod($object, $method, array $args)
     {
         $func = function () use ($method, $args) {

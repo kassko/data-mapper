@@ -237,7 +237,8 @@ abstract class ArrayLoader extends AbstractLoader
         }
 
         if (isset($data['fieldsNotToBindToImplicitSource'])) {
-            $this->classMetadata->setFieldsNotToBindAutoToImplicitSource($data['fieldsNotToBindToImplicitSource']);
+            $fieldsNotToBindToImplicitSource = array_fill_keys($data['fieldsNotToBindToImplicitSource'], true);
+            $this->classMetadata->setFieldsNotToBindAutoToImplicitSource($fieldsNotToBindToImplicitSource);
         }
     }
 
