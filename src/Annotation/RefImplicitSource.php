@@ -8,7 +8,7 @@ namespace Kassko\DataMapper\Annotation;
 *
 * @author kko
 */
-final class RefDefaultSource
+final class RefImplicitSource
 {
     /**
      * @var string

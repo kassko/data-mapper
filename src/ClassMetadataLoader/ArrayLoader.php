@@ -126,8 +126,8 @@ abstract class ArrayLoader extends AbstractLoader
             $this->classMetadata->setCustomHydrator($data['object']['customHydrator']);
         }
 
-        if (isset($data['refDefaultSource'])) {
-            $this->classMetadata->setRefDefaultSource($data['refDefaultSource']);
+        if (isset($data['refImplicitSource'])) {
+            $this->classMetadata->setRefImplicitSource($data['refImplicitSource']);
         }
 
         if (isset($data['listeners']['preHydrate'])) {
@@ -236,8 +236,8 @@ abstract class ArrayLoader extends AbstractLoader
             $this->classMetadata->setIncludedFields($fieldsToInclude);
         }
 
-        if (isset($data['fieldsNotToBindToDefaultSource'])) {
-            $this->classMetadata->setFieldsWithSourcesForbidden($data['fieldsNotToBindToDefaultSource']);
+        if (isset($data['fieldsNotToBindToImplicitSource'])) {
+            $this->classMetadata->setFieldsNotToBindAutoToImplicitSource($data['fieldsNotToBindToImplicitSource']);
         }
     }
 

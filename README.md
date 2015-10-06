@@ -110,7 +110,7 @@ namespace Kassko\Sample;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 /**
- * @DM\RefDefaultSource(id="personSource")
+ * @DM\RefImplicitSource(id="personSource")
  *
  * @DM\DataSourcesStore({
  *      @DM\DataSource(
@@ -127,10 +127,10 @@ class Person
     use LoadableTrait;
 
     /**
-     * @DM\ExcludeDefaultSource
+     * @DM\ExcludeImplicitSource
      */
-    private $id;//Not linked to the default source because of the annotation ExcludeDefaultSource.
-    private $firstName;//Linked to the default source idem for name, email and phone.
+    private $id;//Not linked to the implicit source because of the annotation ExcludeImplicitSource.
+    private $firstName;//Linked to the implicit source idem for name, email and phone.
     private $name;
     private $email;
     private $phone;
@@ -221,7 +221,7 @@ namespace Kassko\Sample;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 /**
- * @DM\RefDefaultSource(id="personSource")
+ * @DM\RefImplicitSource(id="personSource")
  *
  * @DM\DataSourcesStore({
  *      @DM\DataSource(
@@ -240,14 +240,14 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
  * })
  *
  *
- * @DM\RefDefaultSource(id="personSource")
+ * @DM\RefImplicitSource(id="personSource")
  */
 class Person
 {
     use LoadableTrait;
 
     /**
-     * @DM\ExcludeDefaultSource
+     * @DM\ExcludeImplicitSource
      */
     private $id;
     private $firstName;
@@ -390,7 +390,7 @@ You can see more details about `class-resolver` [here](https://github.com/kassko
   - [CustomHydrator config](#customhydrator-config)
   - [DataSource config](#datasource-config)
   - [DataSourcesStore config](#datasourcesstore-config)
-  - [ExcludeDefaultSource config](#excludedefaultsource-config)
+  - [ExcludeImplicitSource config](#excludeimplicitsource-config)
   - [Field config](#field-config)
   - [Getter config](#getter-config)
   - [Id config](#id-config)
@@ -405,7 +405,7 @@ You can see more details about `class-resolver` [here](https://github.com/kassko
   - [PreHydrate config - DEPRECATED - SEE Listeners config](#prehydrate-config---deprecated---see-listeners-config)
   - [Provider config - DEPRECATED - SEE DataSource config](#provider-config---deprecated---see-datasource-config)
   - [ProvidersStore config - DEPRECATED - SEE DataSourcesStore config](#providersstore-config---deprecated---see-datasourcesstore-config)
-  - [RefDefaultSource config](#refdefaultsource-config)
+  - [RefImplicitSource config](#RefImplicitSource-config)
   - [RefSource config](#refsource-config)
   - [Setter config](#setter-config)
   - [ToExclude config](#toexclude-config)
@@ -1898,61 +1898,61 @@ Php format:
 To know more about the "Method config" usage, please see its dedicated documentation ["Method config"](#method-config).
 
 
-### ExcludeDefaultSource config
+### ExcludeImplicitSource config
 
 Annotation format:
 ```php
 use Kassko\DataMapper\Annotation as DM;
 
 /**
- * @DM\RefDefaultSource(id="refDefaultSourceId")
+ * @DM\RefImplicitSource(id="RefImplicitSourceId")
  */
 class SomeClass
 {
-    protected $fieldToBindAutoToDefaultSource;
+    protected $fieldToBindAutoToImplicitSource;
 
-    protected $anotherFieldToBindAutoToDefaultSource;
+    protected $anotherFieldToBindAutoToImplicitSource;
 
     /**
-     *@DM\ExcludeDefaultSource
+     *@DM\ExcludeImplicitSource
      */
-    protected $fieldNotToBindAutoToDefaultSource;
+    protected $fieldNotToBindAutoToImplicitSource;
 }
 ```
 
 Yaml format:
 ```yml
 object:
-    refDefaultSource: refDefaultSourceId
+    RefImplicitSource: RefImplicitSourceId
 fields:
-    fieldToBindAutoToDefaultSource:
-        name: fieldToBindAutoToDefaultSource
-    anotherFieldToBindAutoToDefaultSource:
-        name: anotherFieldToBindAutoToDefaultSource
-    fieldNotToBindAutoToDefaultSource:
-        name: fieldNotToBindAutoToDefaultSource
-fieldsNotToBindToDefaultSource: [fieldNotToBindAutoToDefaultSource]
+    fieldToBindAutoToImplicitSource:
+        name: fieldToBindAutoToImplicitSource
+    anotherFieldToBindAutoToImplicitSource:
+        name: anotherFieldToBindAutoToImplicitSource
+    fieldNotToBindAutoToImplicitSource:
+        name: fieldNotToBindAutoToImplicitSource
+fieldsNotToBindToImplicitSource: [fieldNotToBindAutoToImplicitSource]
 ```
 
 Php format:
 ```php
 [
     'object' => [
-        'refDefaultSource' => 'refDefaultSourceId'
+        'RefImplicitSource' => 'RefImplicitSourceId'
     ],
     'fields' => [
-        'fieldToBindAutoToDefaultSource' => [
-            'name'      => 'fieldToBindAutoToDefaultSource',
+        'fieldToBindAutoToImplicitSource' => [
+            'name'      => 'fieldToBindAutoToImplicitSource',
         ],
-        'anotherFieldToBindAutoToDefaultSource' => [
-            'name'      => 'anotherFieldToBindAutoToDefaultSource',
+        'anotherFieldToBindAutoToImplicitSource' => [
+            'name'      => 'anotherFieldToBindAutoToImplicitSource',
         ],
-        'fieldNotToBindAutoToDefaultSource' => [
-            'name'      => 'fieldNotToBindAutoToDefaultSource',
+        'fieldNotToBindAutoToImplicitSource' => [
+            'name'      => 'fieldNotToBindAutoToImplicitSource',
         ]
     ],
-    'fieldsNotToBindToDefaultSource' => [
-        'fieldNotToBindAutoToDefaultSource'
+    'fieldsNotToBindToImplicitSource' => [
+        'fieldNotToBindAutoToImplicitSource'
     ]
 ];
 ```
@@ -2512,14 +2512,14 @@ Configuration is the same as DataSource.
 Deprecated. Use [DataSourcesStore config](#datasourcesstore-config) instead.
 Configuration is the same as DataSourceStore.
 
-### RefDefaultSource config
+### RefImplicitSource config
 
 Annotation format:
 ```php
 use Kassko\DataMapper\Annotation as DM;
 
 /**
- * @DM\RefDefaultSource(id="refDefaultSourceId")
+ * @DM\RefImplicitSource(id="RefImplicitSourceId")
  */
 class SomeClass
 {
@@ -2530,7 +2530,7 @@ class SomeClass
 Yaml format:
 ```yml
 object:
-    refDefaultSource: refDefaultSourceId
+    RefImplicitSource: RefImplicitSourceId
 fields:
     mockField:
         name: mockFieldName
@@ -2540,7 +2540,7 @@ Php format:
 ```php
 [
     'object' => [
-        'refDefaultSource' => 'refDefaultSourceId'
+        'RefImplicitSource' => 'RefImplicitSourceId'
     ],
     'fields' => [
         'mockField' => [

@@ -232,15 +232,15 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Doesn't work any more because function ClasMetadata::resolveDefaultSource() 
+     * Doesn't work any more because function ClasMetadata::resolveImplicitSource() 
      * was temporarily commented (because of backward compatibility issue).
      */
-    public function refDefaultSourceValidateResult()
+    public function refImplicitSourceValidateResult()
     {
-        $metadata = $this->loadMetadata('RefDefaultSource');
+        $metadata = $this->loadMetadata('RefImplicitSource');
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
-        $this->assertEquals('refDefaultSourceId', $metadata->getRefDefaultSource());
+        $this->assertEquals('refImplicitSourceId', $metadata->getRefImplicitSource());
     }
 
     /**
@@ -576,12 +576,12 @@ class AnnotationLoaderTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function excludeDefaultSourceValidateResult()
+    public function excludeImplicitSourceValidateResult()
     {
-        $metadata = $this->loadMetadata('ExcludeDefaultSource');
+        $metadata = $this->loadMetadata('ExcludeImplicitSource');
 
         $this->assertInstanceOf('\Kassko\DataMapper\ClassMetadata\ClassMetadata', $metadata);
-        $this->assertEquals(array('fieldNotToBindAutoToDefaultSource' => true), $metadata->getFieldsWithSourcesForbidden());
+        $this->assertEquals(array('fieldNotToBindAutoToImplicitSource' => true), $metadata->getFieldsNotToBindAutoToImplicitSource());
     }
 
     /**

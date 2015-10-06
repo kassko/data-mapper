@@ -44,9 +44,9 @@ class ArrayLoaderTest extends AnnotationLoaderTest
 
     /**
      * @test
-     * @TODO: Verify setup 'fieldsWithSourcesForbidden' in InnerPhpLoader. There is no 'setFieldsWithSourcesForbidden' method call.
+     * @TODO: Verify setup 'fieldsNotToBindAutoToImplicitSource' in InnerPhpLoader. There is no 'setFieldsNotToBindAutoToImplicitSource' method call.
      */
-    public function excludeDefaultSourceValidateResult()
+    public function excludeImplicitSourceValidateResult()
     {
         $this->markTestIncomplete(
             'This test has not been implemented yet.'

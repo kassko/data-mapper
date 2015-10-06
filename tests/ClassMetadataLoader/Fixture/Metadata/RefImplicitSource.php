@@ -4,11 +4,11 @@ namespace Kassko\DataMapperTest\ClassMetadataLoader\Fixture\Metadata;
 use Kassko\DataMapper\Annotation as DM;
 
 /**
- * Class RefDefaultSource
+ * Class RefImplicitSource
  *
- * @DM\RefDefaultSource(id="refDefaultSourceId")
+ * @DM\RefImplicitSource(id="refImplicitSourceId")
  */
-class RefDefaultSource
+class RefImplicitSource
 {
     /**
      * @return array
@@ -19,7 +19,7 @@ class RefDefaultSource
             'fields' => [
                 'mockField' => [
                     'name'      => 'mockFieldName',
-                    'refSource' => 'refDefaultSourceId'
+                    'refSource' => 'refImplicitSourceId'
                 ]
             ]
         ];
@@ -34,7 +34,7 @@ class RefDefaultSource
 fields:
   mockField:
     name: mockFieldName
-    refSource: refDefaultSourceId
+    refSource: refImplicitSourceId
 EOF;
     }
 }

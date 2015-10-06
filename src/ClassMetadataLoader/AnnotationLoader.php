@@ -39,8 +39,8 @@ class AnnotationLoader implements LoaderInterface
     private static $refSourceAnnotationName = DM\RefSource::class;
     private static $dataSourcesStoreAnnotationName = DM\DataSourcesStore::class;
     private static $providersStoreAnnotationName = DM\ProvidersStore::class;
-    private static $noSourceAnnotationName = DM\ExcludeDefaultSource::class;
-    private static $defaultSourceAnnotationName = DM\RefDefaultSource::class;
+    private static $excludeImplicitSourceAnnotationName = DM\ExcludeImplicitSource::class;
+    private static $implicitSourceAnnotationName = DM\RefImplicitSource::class;
     
     private static $getterAnnotationName = DM\Getter::class;
     private static $setterAnnotationName = DM\Setter::class;
@@ -138,8 +138,8 @@ class AnnotationLoader implements LoaderInterface
                     $this->classMetadata->setProvidersStore($providers);
                     break;
 
-                case self::$defaultSourceAnnotationName:
-                    $this->classMetadata->setRefDefaultSource($annotation->id);
+                case self::$implicitSourceAnnotationName:
+                    $this->classMetadata->setRefImplicitSource($annotation->id);
                     break;
 
                 case self::$customHydratorAnnotationName:
@@ -178,7 +178,7 @@ class AnnotationLoader implements LoaderInterface
         $dataSources = [];
         $providers = [];
         $refSources = []; 
-        $fieldsWithSourcesForbidden = []; 
+        $fieldsNotToBindAutoToImplicitSource = []; 
         $mappedIdFieldName = null;
         $mappedIdCompositePartFieldName = [];
         $mappedVersionFieldName = null;
@@ -277,9 +277,9 @@ class AnnotationLoader implements LoaderInterface
                         $refSources[$mappedFieldName] = isset($annotation->id) ? $annotation->id : $annotation->ref;
                         break; 
 
-                    case self::$noSourceAnnotationName:
+                    case self::$excludeImplicitSourceAnnotationName:
 
-                        $fieldsWithSourcesForbidden[$mappedFieldName] = true;
+                        $fieldsNotToBindAutoToImplicitSource[$mappedFieldName] = true;
                         break;             
 
                     case self::$configAnnotationName:
@@ -361,8 +361,8 @@ class AnnotationLoader implements LoaderInterface
             $this->classMetadata->setRefSources($refSources);
         }
 
-        if (count($fieldsWithSourcesForbidden)) {
-            $this->classMetadata->setFieldsWithSourcesForbidden($fieldsWithSourcesForbidden);
+        if (count($fieldsNotToBindAutoToImplicitSource)) {
+            $this->classMetadata->setFieldsNotToBindAutoToImplicitSource($fieldsNotToBindAutoToImplicitSource);
         }
 
         if (isset($mappedIdFieldName)) {

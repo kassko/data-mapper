@@ -100,8 +100,8 @@ class KeysConfiguration implements ConfigurationInterface
                 ->append($this->smartScalarNode('fieldsToExclude'))
                 ->append($this->smartScalarNode('include')) /** @deprecated @see fieldsToInclude **/
                 ->append($this->smartScalarNode('exclude')) /** @deprecated @see fieldsToExclude **/
-                ->append($this->smartScalarNode('fieldsNotToBindToDefaultSource')) 
-                ->scalarNode('refDefaultSource')->defaultNull()->end()
+                ->append($this->smartScalarNode('fieldsNotToBindToImplicitSource')) 
+                ->scalarNode('refImplicitSource')->defaultNull()->end()
                 ->arrayNode('listeners')
                     ->append($this->methodsNode('preHydrate'))
                     ->append($this->methodsNode('postHydrate'))

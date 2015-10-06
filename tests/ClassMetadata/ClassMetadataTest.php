@@ -583,7 +583,7 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
      */
     public function getFieldsWithSourcesForbiddenValidateDefaultValue()
     {
-        $result = $this->classMetadata->getFieldsWithSourcesForbidden();
+        $result = $this->classMetadata->getFieldsNotToBindAutoToImplicitSource();
 
         $this->assertEquals(array(), $result);
     }
@@ -594,7 +594,7 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
      */
     public function setFieldsWithSourcesForbiddenValidateTypeHinting()
     {
-        $this->classMetadata->setFieldsWithSourcesForbidden($this);
+        $this->classMetadata->setFieldsNotToBindAutoToImplicitSource($this);
     } 
 
     /**
@@ -602,10 +602,10 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
      */
     public function setFieldsWithSourcesForbiddenValidateResult()
     {
-        $fieldsWithSourcesForbidden = ['fieldA', 'fieldB', 'fieldC'];
-        $result = $this->classMetadata->setFieldsWithSourcesForbidden($fieldsWithSourcesForbidden);
+        $fieldsNotToBindAutoToImplicitSource = ['fieldA', 'fieldB', 'fieldC'];
+        $result = $this->classMetadata->setFieldsNotToBindAutoToImplicitSource($fieldsNotToBindAutoToImplicitSource);
 
         $this->assertSame($this->classMetadata, $result);
-        $this->assertEquals($fieldsWithSourcesForbidden, $this->classMetadata->getFieldsWithSourcesForbidden());
+        $this->assertEquals($fieldsNotToBindAutoToImplicitSource, $this->classMetadata->getFieldsNotToBindAutoToImplicitSource());
     }
 }

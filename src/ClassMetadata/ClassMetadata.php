@@ -59,11 +59,11 @@ class ClassMetadata
     /**
      * @var string
      */
-    private $refDefaultSource;
+    private $refImplicitSource;
     /**
-     * @var array Fields not to bind implicitly to a source. 
+     * @var array Fields not to bind to the implicit source. 
      */
-    private $fieldsWithSourcesForbidden = [];
+    private $fieldsNotToBindAutoToImplicitSource = [];
     
     private $getters = [];
     private $setters = [];
@@ -157,7 +157,7 @@ class ClassMetadata
         $this->normalizeProvidersStore();*/
 
         $this->resolveSource();
-        $this->resolveDefaultSource();
+        $this->resolveImplicitSource();
     }
 
     private function resolveSource()
@@ -172,38 +172,38 @@ class ClassMetadata
         }
     }
 
-    private function resolveDefaultSource()
+    private function resolveImplicitSource()
     {
-        if (isset($this->refDefaultSource)) {
+        if (isset($this->refImplicitSource)) {
          
-            $defaultSource = $this->findProviderByIdBeforeCompilation($this->refDefaultSource);   
-            if (null !== $defaultSource) {
-                $this->resolveDefaultProviderById($defaultSource);
+            $implicitSource = $this->findProviderByIdBeforeCompilation($this->refImplicitSource);   
+            if (null !== $implicitSource) {
+                $this->resolveDefaultProviderById($implicitSource);
                 return;
             }
 
-            $defaultSource = $this->findDataSourceByIdBeforeCompilation($this->refDefaultSource);
-            if (null !== $defaultSource) {
-                $this->resolveDefaultDataSourceById($defaultSource);
+            $implicitSource = $this->findDataSourceByIdBeforeCompilation($this->refImplicitSource);
+            if (null !== $implicitSource) {
+                $this->resolveDefaultDataSourceById($implicitSource);
                 return;
             }
         }
     }
 
-    private function resolveDefaultDataSourceById($defaultSource)
+    private function resolveDefaultDataSourceById($implicitSource)
     {
         foreach ($this->mappedFieldNames as $mappedFieldName) {
-            if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
-                $this->dataSources[$mappedFieldName] = $defaultSource;
+            if (! isset($this->fieldsNotToBindAutoToImplicitSource[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
+                $this->dataSources[$mappedFieldName] = $implicitSource;
             }
         }
     }
 
-    private function resolveDefaultProviderById($defaultSource)
+    private function resolveDefaultProviderById($implicitSource)
     {
         foreach ($this->mappedFieldNames as $mappedFieldName) {
-            if (! isset($this->fieldsWithSourcesForbidden[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
-                $this->providers[$mappedFieldName] = $defaultSource;
+            if (! isset($this->fieldsNotToBindAutoToImplicitSource[$mappedFieldName]) && ! isset($this->providers[$mappedFieldName]) && ! isset($this->dataSources[$mappedFieldName])) {
+                $this->providers[$mappedFieldName] = $implicitSource;
             }
         }
     }
@@ -1053,49 +1053,49 @@ class ClassMetadata
     }
 
     /**
-     * Gets the value of fieldsWithSourcesForbidden.
+     * Gets the value of fieldsNotToBindAutoToImplicitSource.
      *
      * @return array Fields not to bind implicitly to a source
      */
-    public function getFieldsWithSourcesForbidden()
+    public function getFieldsNotToBindAutoToImplicitSource()
     {
-        return $this->fieldsWithSourcesForbidden;
+        return $this->fieldsNotToBindAutoToImplicitSource;
     }
 
     /**
-     * Sets the value of fieldsWithSourcesForbidden.
+     * Sets the value of fieldsNotToBindAutoToImplicitSource.
      *
-     * @param array Fields not to bind implicitly to a source $fieldsWithSourcesForbidden the fields without source
+     * @param array Fields not to bind implicitly to a source $fieldsNotToBindAutoToImplicitSource the fields without source
      *
      * @return self
      */
-    public function setFieldsWithSourcesForbidden(array $fieldsWithSourcesForbidden)
+    public function setFieldsNotToBindAutoToImplicitSource(array $fieldsNotToBindAutoToImplicitSource)
     {
-        $this->fieldsWithSourcesForbidden = $fieldsWithSourcesForbidden;
+        $this->fieldsNotToBindAutoToImplicitSource = $fieldsNotToBindAutoToImplicitSource;
 
         return $this;
     }
 
     /**
-     * Gets the value of refDefaultSource.
+     * Gets the value of refImplicitSource.
      *
      * @return string
      */
-    public function getRefDefaultSource()
+    public function getRefImplicitSource()
     {
-        return $this->refDefaultSource;
+        return $this->refImplicitSource;
     }
 
     /**
-     * Sets the value of refDefaultSource.
+     * Sets the value of refImplicitSource.
      *
-     * @param string $refDefaultSource the ref default source
+     * @param string $refImplicitSource the ref implicit source
      *
      * @return self
      */
-    public function setRefDefaultSource($refDefaultSource)
+    public function setRefImplicitSource($refImplicitSource)
     {
-        $this->refDefaultSource = $refDefaultSource;
+        $this->refImplicitSource = $refImplicitSource;
 
         return $this;
     }
