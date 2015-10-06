@@ -1,4 +1,4 @@
-`0.12.5.0 - 2015/05/24 - New version`:
+`0.12.5.0 - 2015/10/06 - New version`:
 * `New`: Allows to perform relations between severals sources.
 * `New`: New config item `RefDefaultSource` which allows to bind a default source to all the fields of an object. That's usefull not to duplicate on all fields the config item RefSource. It's possible to exclude some fields to be bound with another new config item `ExcludeDefaultSource`.
 * `New`: Source loading: new trait `LoadableTrait` with a method `load` which load all properties (except properties marked to be lazy loaded). That's usefull in combination with the new config items `RefDefaultSource` and `ExcludeDefaultSource`. It's also fix an inconsistency: only the mode `lazyloading enabled` worked. We were not able to load immediately properties.
