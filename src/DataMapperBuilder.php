@@ -19,7 +19,7 @@ use Kassko\DataMapper\Expression\ExpressionFunctionProvider;
 use Kassko\DataMapper\Expression\ExpressionLanguageConfigurator;
 use Kassko\DataMapper\Hydrator\ExpressionLanguageEvaluator;
 use Kassko\DataMapper\LazyLoader\LazyLoaderFactory;
-use Kassko\DataMapper\MethodExecutor\MagicMethodInvoker;
+use Kassko\DataMapper\MethodInvoker\MagicMethodInvoker;
 use Kassko\DataMapper\ObjectManager;
 use Kassko\DataMapper\Registry\Registry;
 use Psr\Log\LoggerInterface;

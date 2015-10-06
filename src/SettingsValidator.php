@@ -65,21 +65,26 @@ class SettingsValidator implements ConfigurationInterface
 
                 ->variableNode('class_resolver')
                     ->defaultNull()
-                    ->ifTrue(function ($v) {
-                        return null !== $v && ! $v instanceof \Kassko\ClassResolver\ClassResolverInterface && ! is_callable($v);
-                    })
-                    ->then(function ($v) {
-                        return new \Kassko\ClassResolver\CallableClassResolver($v);
-                    })
+                    ->beforeNormalization()
+                        ->ifTrue(function ($v) {
+                            return null !== $v && ! $v instanceof \Kassko\ClassResolver\ClassResolverInterface && ! is_callable($v);
+                        })
+                        ->then(function ($v) {
+                            return new \Kassko\ClassResolver\CallableClassResolver($v);
+                        })
+                    ->end()
                 ->end()
 
                 ->variableNode('object_listener_resolver')
-                ->ifTrue(function ($v) {
-                        return null !== $v && ! $v instanceof \Kassko\DataMapper\Listener\ObjectListenerResolverInterface && ! is_callable($v);
-                    })
-                ->then(function ($v) {
-                    return new \Kassko\DataMapper\Listener\CallableObjectListenerResolver($v);
-                })
+                    ->defaultNull()
+                    ->beforeNormalization()
+                        ->ifTrue(function ($v) {
+                                return null !== $v && ! $v instanceof \Kassko\DataMapper\Listener\ObjectListenerResolverInterface && ! is_callable($v);
+                            })
+                        ->then(function ($v) {
+                            return new \Kassko\DataMapper\Listener\CallableObjectListenerResolver($v);
+                        })
+                    ->end()
                 ->end()
 
                 ->arrayNode('cache')->addDefaultsIfNotSet()
