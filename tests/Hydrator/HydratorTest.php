@@ -648,6 +648,37 @@ class HydratorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @test
+     *
+     * Test DataSource arguments resolution when DataSource is shared between several instances.
+     * This case occurs when we works with collection.  
+     * We make sure that the resolution is done for each instance of the collection and not only once.
+     */
+    public function collectionOfObjectsWithDataSourceArgsToResolveValidateBehaviour()
+    {
+        $dataSourceClass = 'DataSourceMock';
+
+        $dataSourceMock = $this->getMockBuilder($dataSourceClass)
+                               ->setMethods(['getData'])
+                               ->getMock();
+        $dataSourceMock->expects($this->exactly(2))
+                       ->method('getData')
+                       ->withConsecutive(
+                            array($this->equalTo('value a')),
+                            array($this->equalTo('value b'))
+                        );
+
+        $classResolver = $this->createClassResolver([$dataSourceClass => $dataSourceMock]);
+        $this->configureObjectManager($classResolver);
+
+        $object = new \Kassko\DataMapperTest\Hydrator\Fixture\Model\CaseCollectionOfObjectsWithDataSourceArgsToResolve();
+
+        $items = $object->getItems();
+        $items[0]->getPropertyB();
+        $items[1]->getPropertyB();
+    }
+
+    /**
      * @return Hydrator
      */
     private function createHydrator($objectClass, array $map = [])
