@@ -291,7 +291,7 @@ class ObjectManager
         return $hydrator;
     }
 
-    public function findFromSource(Source $sourceMetadata)
+    public function findFromSource(Source $sourceMetadata, $resolvedArgs)
     {
         if ($sourceMetadata->getMethod()->isNull()) {
             return null;
@@ -304,7 +304,7 @@ class ObjectManager
         return $this->methodInvoker->invoke(
             $source, 
             $sourceMetadata->getMethod()->getFunction(), 
-            $sourceMetadata->getMethod()->getArgs(), 
+            $resolvedArgs, 
             $this->cacheProfile ? $this->cacheProfile->setKey($cacheKey)->derive() : null
         );
     }

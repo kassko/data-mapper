@@ -380,17 +380,15 @@ class Hydrator extends AbstractHydrator
 
     public function findFromSource(ClassMetadata\Model\Source $sourceMetadata, $object)
     {
-        $args = $sourceMetadata->getMethod()->getArgs();
-        $this->resolveValues($args, $object);
-        $sourceMetadata->getMethod()->setArgs($args);
+        $resolvedArgs = $this->resolveValues($sourceMetadata->getMethod()->getArgs(), $object);
 
         if (null === $sourceMetadata->getFallbackSourceId()) {
-            return $this->objectManager->findFromSource($sourceMetadata);
+            return $this->objectManager->findFromSource($sourceMetadata, $resolvedArgs);
         }
 
         if (ClassMetadata\Model\Source::ON_FAIL_CHECK_RETURN_VALUE === $sourceMetadata->getOnFail()) {
             
-            $data = $this->objectManager->findFromSource($sourceMetadata);
+            $data = $this->objectManager->findFromSource($sourceMetadata, $resolvedArgs);
             if ($sourceMetadata->areDataInvalid($data)) {
                 $sourceMetadata = $this->metadata->findSourceById($sourceMetadata->getFallbackSourceId());
                 return $this->findFromSource($sourceMetadata, $object);
@@ -401,7 +399,7 @@ class Hydrator extends AbstractHydrator
 
         //Else ClassMetadata\Model\Source::ON_FAIL_CHECK_EXCEPTION === $sourceMetadata->getOnFail().
         try {
-            $data = $this->objectManager->findFromSource($sourceMetadata);
+            $data = $this->objectManager->findFromSource($sourceMetadata, $resolvedArgs);
         } catch (Exception $e) {
             $exceptionClass = $sourceMetadata->getExceptionClass();
             if (! $e instanceof $exceptionClass) {
@@ -536,8 +534,8 @@ class Hydrator extends AbstractHydrator
 
         if ($this->metadata->fieldHasVariables($mappedFieldName)) {
             $fieldHydratorConfigVariables = $this->metadata->getVariablesByField($mappedFieldName);
-            $this->resolveValues($fieldHydratorConfigVariables, $object);
-            $fieldHydrator->setCurrentConfigVariables(array_merge($this->currentConfigVariables, $fieldHydratorConfigVariables));    
+            $fieldHydratorResolvedConfigVariables = $this->resolveValues($fieldHydratorConfigVariables, $object);
+            $fieldHydrator->setCurrentConfigVariables(array_merge($this->currentConfigVariables, $fieldHydratorResolvedConfigVariables));    
         }
 
         return $fieldHydrator;
@@ -674,10 +672,10 @@ class Hydrator extends AbstractHydrator
         return $result;
     }
 
-    protected function resolveValues(array &$args, $object)
+    protected function resolveValues(array $args, $object)
     {
         if (0 === count($args)) {
-            return;
+            return [];
         }
 
         if (null !== $this->expressionContext) {
@@ -702,6 +700,8 @@ class Hydrator extends AbstractHydrator
                 }
             }
         }
+
+        return $args;
     }
 
     /**
@@ -722,19 +722,16 @@ class Hydrator extends AbstractHydrator
     private function executeMethod($object, ClassMetadata\Model\Method $method)
     {
         $class = $method->getClass();
+        $resolvedArgs = $this->resolveValues([$class], $object);
 
-        $classInArgs = [$class];
-        $this->resolveValues($classInArgs, $object);
-
-        if (is_object($classInArgs[0])) {//If expression present in $class is resolved to an object.
-            $instance = $classInArgs[0];
+        if (is_object($resolvedArgs[0])) {//If expression present in $class is resolved to an object.
+            $instance = $resolvedArgs[0];
         } else {
             $instance = $this->classResolver ? $this->classResolver->resolve($class) : new $class;
         }
 
-        $args = $method->getArgs();
-        $this->resolveValues($args, $object);
-        $this->methodInvoker->invoke($instance, $method->getFunction(), $args);
+        $resolvedArgs = $this->resolveValues($method->getArgs(), $object);
+        $this->methodInvoker->invoke($instance, $method->getFunction(), $resolvedArgs);
     }
 
     protected function pushRuntimeConfiguration($mappedFieldName, $object, $voClassName, $voResource, $voResourceType)

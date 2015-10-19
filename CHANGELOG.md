@@ -1,3 +1,6 @@
+`0.12.5.1 - 2015/10/19 - Fix version`:
+* `Fix`: [DataSource][Arguments resolution] DataSource arguments were not resolved properly when DataSource config was shared between several instances (DataSource sharing occurs when we work with collection). The resolution was processed only once, now it's processed for each instance of the collection.
+
 `0.12.5.0 - 2015/10/06 - New version`:
 * `New`: Allows to perform relations between severals sources.
 * `New`: New config item `RefDefaultSource` which allows to bind a default source to all the fields of an object. That's usefull not to duplicate on all fields the config item RefSource. It's possible to exclude some fields to be bound with another new config item `ExcludeDefaultSource`.
