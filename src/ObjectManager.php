@@ -94,11 +94,7 @@ class ObjectManager
     {
         $traitsUses = $this->getClassUsesDeeply(get_class($object));
 
-        if (
-            ! in_array('Kassko\\DataMapper\\ObjectExtension\\LoadableTrait', $traitsUses)
-            &&
-            ! in_array('Kassko\\DataMapper\\ObjectExtension\\LazyLoadableTrait', $traitsUses)
-        ) {
+        if (! $this->isLoadable($object)) {
             throw new ObjectMappingException(
                 sprintf(
                     'To work with DataSource, the class "%s" must use the trait "Kassko\\DataMapper\\ObjectExtension\\LoadableTrait"'
@@ -107,6 +103,17 @@ class ObjectManager
                 ) 
             );
         }
+    }
+
+    protected function isLoadable($object)
+    {
+        $traitsUses = $this->getClassUsesDeeply(get_class($object));
+
+        return  
+            in_array('Kassko\\DataMapper\\ObjectExtension\\LoadableTrait', $traitsUses)
+            ||
+            in_array('Kassko\\DataMapper\\ObjectExtension\\LazyLoadableTrait', $traitsUses)
+        ;
     }
 
     private function getClassUsesDeeply($class, $autoload = true)
@@ -291,7 +298,7 @@ class ObjectManager
         return $hydrator;
     }
 
-    public function findFromSource(Source $sourceMetadata, $resolvedArgs)
+    public function findFromSource(Source $sourceMetadata, array $resolvedArgs)
     {
         if ($sourceMetadata->getMethod()->isNull()) {
             return null;
@@ -299,7 +306,8 @@ class ObjectManager
 
         $class = $sourceMetadata->getMethod()->getClass();
         $source = $this->classResolver ? $this->classResolver->resolve($class) : new $class;
-        $cacheKey = $sourceMetadata->getId() . $class . $sourceMetadata->getMethod()->getFunction();
+        //$cacheKey = $sourceMetadata->getId() . $class . $sourceMetadata->getMethod()->getFunction();
+        $cacheKey = $this->getCacheKey($sourceMetadata, $resolvedArgs);
 
         return $this->methodInvoker->invoke(
             $source, 
@@ -307,6 +315,45 @@ class ObjectManager
             $resolvedArgs, 
             $this->cacheProfile ? $this->cacheProfile->setKey($cacheKey)->derive() : null
         );
+    }
+
+    protected function getCacheKey(Source $sourceMetadata, array $resolvedArgs)
+    {
+        return 
+            $sourceMetadata->getId() 
+            . $sourceMetadata->getMethod()->getClass() 
+            . $sourceMetadata->getMethod()->getFunction()
+            . $this->flattenValue($resolvedArgs)
+        ;
+    }
+
+    protected function flattenValue($value)
+    {
+        return sha1(serialize($this->normalizeValue($value)));
+    }
+
+    protected function normalizeValue($value)
+    {
+        if (is_scalar($value))  {
+            return $value;
+        }
+
+        if (is_object($value))  {
+            $object = $value;
+            return spl_object_hash($object);
+        }
+
+        if (is_array($value))  {
+            if (0 === count($value)) {
+                return '';
+            }
+
+            foreach ($value as $key => $valueItem) {
+                $value[$key] = $this->flattenValue($valueItem);
+            }
+        }
+
+        return $value;
     }
 
     public function getRepository($objectClass)

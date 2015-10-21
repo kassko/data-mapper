@@ -1,3 +1,5 @@
+`0.12.5.2 - 2015/10/20 - Fix version`:
+* `Fix`: [DataSource][Source cache key] Fix source cache key by including source method arguments in the key.
 `0.12.5.1 - 2015/10/19 - Fix version`:
 * `Fix`: [DataSource][Arguments resolution] DataSource arguments were not resolved properly when DataSource config was shared between several instances (DataSource sharing occurs when we work with collection). The resolution was processed only once, now it's processed for each instance of the collection.
 
