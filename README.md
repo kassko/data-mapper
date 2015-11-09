@@ -1,59 +1,83 @@
 data-mapper
 ==================
 
-[![Build Status](https://secure.travis-ci.org/kassko/data-mapper.png?branch=master)](https://travis-ci.org/kassko/data-mapper)
-[![Latest Stable Version](https://poser.pugx.org/kassko/data-mapper/v/stable.png)](https://packagist.org/packages/kassko/data-mapper)
+[![Build Status](https://secure.travis-ci.org/kassko/data-mapper.png?branch=0.12)](https://travis-ci.org/kassko/data-mapper)
+[![Latest Stable Version](https://poser.pugx.org/kassko/data-mapper/version)](https://packagist.org/packages/kassko/data-mapper)
 [![Total Downloads](https://poser.pugx.org/kassko/data-mapper/downloads.png)](https://packagist.org/packages/kassko/data-mapper)
-[![Latest Unstable Version](https://poser.pugx.org/kassko/data-mapper/v/unstable.png)](https://packagist.org/packages/kassko/data-mapper)
+[![Latest Unstable Version](https://poser.pugx.org/kassko/data-mapper/v/unstable)](https://packagist.org/packages/kassko/data-mapper)
 
 # A php mapper very tunable, cross-orm and cross-DBMS #
 
 * Objects do not extends a base entity class
 * Map nested objects
-* Support entities with value objects
-* Builder to facilitate to hydrate an object (or a collection) or to extract it
-* Abstract databases
 * Support relationship between all types of sources (relational databases, non relational, caches ...)
-* Can chain some fallbacks sources while a source is unavailable or instable
-* Can evaluate the good source to use from an expression or cancel a source (usefull with ACL)
-* Supports dynamic configuration with expression language
 * Lazy loading
-* Eager loading
+* Supports dynamic configuration with expression language
 * Various mapping configuration format
-* Builder to configure at a high level the component
+* Can chain some fallbacks sources while a source is unavailable or instable
 
 # Installation #
 
-Add to your composer.json:
 ```json
-"require": {
-    "kassko/data-mapper": "~0.12.5"
-}
+composer require kassko/data-mapper:%version%
 ```
 
+Replace %version% by the version you want. We suggest you to use the Latest stable version (see version badge at the top of this page). 
+
 Note that:
+* version contains 4 numbers
 * the second version number is used when compatibility is broken
 * the third for new feature
 * the fourth for hotfix
 * the first for new API or to go from pre-release to release (from 0 to 1)
 
+# Basic usage #
+
+* [Installation: precisions](#installation-precisions)
+* [Accessing datas](#accessing-datas)
+  - [Inline data sources](#inline-data-sources)
+* [Hydrating your object](#hydrating-your-object)
+  - [Hydrating your object using inline data sources](#hydrating-your-object-using-inline-data-sources)
+  - [Hydrating your object using a data source store](#hydrating-your-object-using-a-data-source-store)
+  - [Working with sources and dependency injection](#working-with-sources-and-dependency-injection)
+  - [Example with a relation with a Doctrine source](#example-with-a-relation-with-a-doctrine-source)
+  - [Source annotation details](#source-annotation-details)
+* [Component configuration reference](#component-configuration-reference)
+* [Mapping configuration reference](#mapping-configuration-reference)
+  - [Config config](#config-config)
+  - [CustomHydrator config](#customhydrator-config)
+  - [DataSource config](#datasource-config)
+  - [DataSourcesStore config](#datasourcesstore-config)
+  - [ExcludeImplicitSource config](#excludeimplicitsource-config)
+  - [Field config](#field-config)
+  - [Getter config](#getter-config)
+  - [Id config](#id-config)
+  - [IdCompositePart config](#idcompositepart-config)
+  - [Listeners config](#listeners-config)
+  - [Method config](#method-config)
+  - [Object config](#object-config)
+  - [ObjectListeners config - DEPRECATED - SEE Listeners config](#objectlisteners-config---deprecated---see-listeners-config)
+  - [PostExtract config - DEPRECATED - SEE Listeners config](#postextract-config---deprecated---see-listeners-config)
+  - [PostHydrate config - DEPRECATED - SEE Listeners config](#posthydrate-config---deprecated---see-listeners-config)
+  - [PreExtract config - DEPRECATED - SEE Listeners config](#preextract-config---deprecated---see-listeners-config)
+  - [PreHydrate config - DEPRECATED - SEE Listeners config](#prehydrate-config---deprecated---see-listeners-config)
+  - [Provider config - DEPRECATED - SEE DataSource config](#provider-config---deprecated---see-datasource-config)
+  - [ProvidersStore config - DEPRECATED - SEE DataSourcesStore config](#providersstore-config---deprecated---see-datasourcesstore-config)
+  - [RefImplicitSource config](#RefImplicitSource-config)
+  - [RefSource config](#refsource-config)
+  - [Setter config](#setter-config)
+  - [ToExclude config](#toexclude-config)
+  - [ToInclude config](#toinclude-config)
+  - [Transient config](#transient-config)
+  - [ValueObject config - DEPRECATED - SEE Config config](#valueobject-config---deprecated---see-config-config)
+  - [Version config](#version-config)
+
 # Run tests #
 ./bin/phpunit
 
-# Usage #
-
-* [Installation: precisions](#installation-precisions)
-* [Accessing existing datas](#accessing-existing-datas)
-* [Example with a relation with a Doctrine source](#example-with-a-relation-with-a-doctrine-source)
-* [Example with inline sources](#example-with-inline-sources)
-* [Example with conditional sources](#example-with-conditional-sources)
-* [Example using the hydrator](#example-using-the-hydrator)
-* [Component building: precisions](#component-building-precisions)
-
-
 ### Installation: precisions ###
 
-If you use annotations format, register the autoloader:
+If you use annotations, register the autoloader:
 ```php
 $loader = require 'vendor/autoload.php';
 
@@ -65,15 +89,15 @@ And run the environment:
 (new Kassko\DataMapper\DataMapperBuilder)->run();
 ```
 
-### Accessing existing datas ###
+### Accessing datas ###
 
 #### Data-mapper style ####
 ```php
 $id = 1;
-//Construct a person, set an id to it and implicitly load person from the given id fetching all sources configured.
+//Construct a person, set an id to it.
 $person = new Kassko\Sample\Person($id);
 
-echo $person->getName();
+echo $person->getName();//Implicitly load the name from the given id by fetching the source configured.
 ```
 
 #### Doctrine style ####
@@ -86,73 +110,42 @@ $person = $entityManager->getRepository('Kassko\Sample\Person')->find($id);
 echo $person->getName();
 ```
 
-With data-mapper, the access logic is in the configuration in object with annotations (note that the configuration also could be in a separed yaml or php file or in the object with inner php or inner yaml).
+With data-mapper, you only need to call a getter, the access logic is in a configuration. 
 
-Maybe you need to create an object you don't know if it already persisted or new.
+The configuration is either in the object php file or in a separated file.
+If it's in the object file, the configuration is in annotations or a method returns it in a php array or in a yaml string. 
+If it's in a separated file, the configuration is in a php or a yaml file.
 
-#### Data-mapper style (explicit loading from sources configured) ####
-```php
-$dataMapper = (new Kassko\DataMapper\DataMapperBuilder)->instance();
+For simplicity, the usage is documented with annotations format. But in this documentation, you can find reference guide for the others formats.
 
-$id = 1;
-$person = new Kassko\Sample\Person()->setId($id);//Only construct a person and set an id to it.
-$dataMapper->load($person);//Explicitly load person from the given id fetching all sources configured.
+### Hydrating your object ###
 
-echo $person->getName();
-```
+#### Hydrating your object using inline data sources ####
 
-The variant above allows not to load automatically the object if parameters are not send by the constructor but by the setters. If the client code always create already persisted object, the first version is good. If this client code sometimes create new objects (objects that are not already persisted), you should use the second version which will not attempt to load your objects that are not already existing in your storage.
-
-#### Example ####
 ```php
 namespace Kassko\Sample;
 
+use Kassko\DataMapper\Annotation as DM;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
-/**
- * @DM\RefImplicitSource(id="personSource")
- *
- * @DM\DataSourcesStore({
- *      @DM\DataSource(
- *          id="personSource", 
- *          class="Kassko\Sample\PersonDataSource", 
- *          method="getData", 
- *          args="#id",
- *          supplySeveralFields=true
- *      )
- * })
- */
 class Person
 {
     use LoadableTrait;
 
+    private $id;
     /**
-     * @DM\ExcludeImplicitSource
+     * @DM\DataSource(class="Kassko\Sample\PersonDataSource", method="getData", args="#id", lazyLoading=true)
      */
-    private $id;//Not linked to the implicit source because of the annotation ExcludeImplicitSource.
-    private $firstName;//Linked to the implicit source idem for name, email and phone.
     private $name;
+    /**
+     * @DM\DataSource(class="Kassko\Sample\PersonDataSource", method="getData", args="#id", lazyLoading=true)
+     */
     private $email;
-    private $phone;
 
-    public function __construct($id = null)
-    {
-        if (null !== $id) {
-            $this->id = $id;
-            $this->load();//Implicit loading is performed by the constructor not by the setter setId().
-        }
-    }
-
-    public function getId() { return $this->id;}
-    public function setId($id) { $this->id = $id; return $this; }
-    public function getFirstName() { return $this->firstName; }
-    public function setFirstName($firstName) { $this->firstName = $firstName; return $this; }
-    public function getName() { return $this->name; }
-    public function setName($name) { $this->name = $name; return $this; }
-    public function getEmail() { return $this->email; }
-    public function setEmail($email) { $this->email = $email; return $this; }
-    public function getPhone() { return $this->phone; }
-    public function setPhone($phone) { $this->phone = $phone; return $this; }
+    public function __construct($id) { $this->id = $id; }
+    public function getId() { return $this->id; }
+    public function getName() { $this->loadProperty('name'); return $this->name; }
+    public function getEmail() { $this->loadProperty('email'); return $this->email; }
 }
 ```
 
@@ -163,14 +156,178 @@ class PersonDataSource
 {
     public function getData($id)
     {
-        $data = $this->connection->executeQuery('select first_name as firstName, name, email, phone from some_table where id = ?', [$id]);
-
-        if (! isset($data[0])) {
-            return null;            
-        }
-
-        return $data[0];
+        return 'bar';
     }
+}
+```
+
+#### Hydrating your object using a data source store ####
+
+A DataSource store is usefull 
+
+If you prefer to group your sources in one place:
+
+```php
+namespace Kassko\Sample;
+
+use Kassko\DataMapper\Annotation as DM;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+/**
+ * @DM\DataSourcesStore({
+ *      @DM\DataSource(
+ *          id="nameSource", 
+ *          class="Kassko\Sample\PersonDataSource", 
+ *          method="getData",
+ *          args="#id",
+ *          lazyLoading=true
+ *      ),
+ *      @DM\DataSource(
+ *          id="emailSource", 
+ *          class="Kassko\Sample\PersonDataSource", 
+ *          method="getData",
+ *          args="#id",
+ *          lazyLoading=true
+ *      )
+ * })
+ */
+class Person
+{
+    use LoadableTrait;
+
+    private $id;
+    /**
+     * @DM\RefSource(id="nameSource")
+     */
+    private $name;
+    /**
+     * @DM\RefSource(id="emailSource")
+     */
+    private $email;
+
+    public function __construct($id) { $this->id = $id; }
+    public function getId() { return $this->id; }
+    public function getName() { $this->loadProperty('name'); return $this->name; }
+    public function getEmail() { $this->loadProperty('email'); return $this->email; }
+}
+```
+
+Or if you have a source which hydrate several properties:
+
+```php
+namespace Kassko\Sample;
+
+use Kassko\DataMapper\Annotation as DM;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+/**
+ * @DM\DataSourcesStore({
+ *      @DM\DataSource(
+ *          id="personSource", 
+ *          class="Kassko\Sample\PersonDataSource", 
+ *          method="getData",
+ *          args="#id", 
+ *          lazyLoading=true,
+ *          supplySeveralFields=true
+ *      )
+ * })
+ */
+class Person
+{
+    use LoadableTrait;
+
+    private $id;
+    /**
+     * @DM\RefSource(id="personSource")
+     * @DM\Field("name"="first_name")
+     */
+    private $firstName;
+    /**
+     * @DM\RefSource(id="personSource")
+     */
+    private $name;
+    /**
+     * @DM\RefSource(id="personSource")
+     */
+    private $email;
+    /**
+     * @DM\RefSource(id="personSource")
+     */
+    private $phone;
+
+    public function __construct($id) { $this->id = $id; }
+    public function getId() { return $this->id; }
+    public function getFirstName() { $this->loadProperty('firstName'); return $this->firstName; }
+    public function getName() { $this->loadProperty('name'); return $this->name; }
+    public function getEmail() { $this->loadProperty('email'); return $this->email; }
+    public function getPhone() { $this->loadProperty('phone'); return $this->phone; }
+}
+```
+
+```php
+namespace Kassko\Sample;
+
+class PersonDataSource
+{
+    public function getData($id)
+    {
+        return [
+            'first_name' => 'foo',
+            'name' => 'bar',
+            'email' => 'foo@bar',
+            'phone' => '01 02 03 04 05',
+        ];
+    }
+}
+```
+
+Note that you don't have to expose the setters. Expose them only if you have specific logic to write. I advise you not to make "public" these setters since the properties they wrapp are loaded (and so managed) with a data source.
+
+
+#### Working with sources and dependency injection
+
+CarRepository has some dependencies too (the entity manager), it is instantiated with a resolver class-resolver. Reminder: you can see more details [here](#work-with-object-complex-to-create-like-service).
+
+Run environment and register dependencies:
+```php
+(new Kassko\DataMapper\DataMapperBuilder)
+    ->settings(['container' => ['person.data_source_id' => $personDataSourceInstance]])
+    ->run()
+;
+```
+
+You can send an object which implements `\ArrayAccess`:
+```php
+(new Kassko\DataMapper\DataMapperBuilder)
+    ->settings(['container' => ['instance' => $container]])
+    ->run()
+;
+```
+
+Or send an object which have "get" and "has" methods:
+```php
+(new Kassko\DataMapper\DataMapperBuilder)
+    ->settings(['container' => ['instance' => $container, 'get_method_name' => 'get', 'has_method_name' => 'has']])
+    ->run()
+;
+```
+
+And you specify your dependency id like below:
+
+```php
+/**
+ * @DM\DataSourcesStore({
+ *      @DM\DataSource(
+ *          id="carSource", 
+ *          class="@person.data_source_id", 
+ *          method="find", 
+ *          args="#id",
+ *          lazyLoading=true
+ *      )
+ * })
+ */
+class Person
+{
 }
 ```
 
@@ -180,106 +337,66 @@ class PersonDataSource
 * `method`. The name of the method that return datas. 
 * `args`. Arguments of the method that return datas. You can send a raw value, a field value with the prefix `#` (ex: `#id`), an expression and more ... See more details [here](#method-arguments)
 * `supplySeveralFields`. Whether the source returns the data directly or put them in a key of an array and return the array. If the source supply only one field, it can return directly the data, these data will be bound to the good property. Else the source should return an array with as keys as property to supply. The key is named like the property or a mapping is done in the annotation Field. 
-```php
-namespace Kassko\Sample;
 
-class Person
-{
-    private $name;
 
-    /**
-     * @DM\Field(name="first_name")
-     */
-    private $firstName;
-}
-```
+Data-mapper is not an ORM so it cannot generate for you some sql statement. But it can wrapp the use of an ORM like Doctrine ORM so that you can take advantage of the two. It also can help you to make relations between different DBMS.
 
-```php
-namespace Kassko\Sample;
-
-class PersonDataSource
-{
-    public function getData($id)
-    {
-        $data = $this->connection->executeQuery('select name, first_name from some_table where id = ?', [$id]);
-
-        if (! isset($data[0])) {
-            return null;            
-        }
-
-        return $data[0];
-    }
-}
-```
-
-Data-mapper is not an ORM so it cannot generate for you some sql statement. But you can use it with an ORM like Doctrine ORM.
-
-### Example with a relation with a Doctrine source ###
+#### Example with a relation with a Doctrine source ####
 ```php
 namespace Kassko\Sample;
 
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 /**
- * @DM\RefImplicitSource(id="personSource")
- *
  * @DM\DataSourcesStore({
  *      @DM\DataSource(
  *          id="personSource", 
  *          class="Kassko\Sample\PersonDataSource", 
  *          method="getData", 
  *          args="#id", 
+ *          lazyLoading=true,
  *          supplySeveralFields=true
  *      ),
  *      @DM\DataSource(
  *          id="carSource", 
  *          class="Kassko\Sample\CarRepository", 
  *          method="find", 
- *          args="expr(source('personSource')['car_id'])"
+ *          args="expr(source('personSource')['car_id'])",
+ *          lazyLoading=true
  *      )
  * })
- *
- *
- * @DM\RefImplicitSource(id="personSource")
  */
 class Person
 {
-    use LoadableTrait;
-
-    /**
-     * @DM\ExcludeImplicitSource
-     */
     private $id;
+    /**
+     * @DM\RefSource(id="personSource")
+     */
     private $firstName;
+    /**
+     * @DM\RefSource(id="personSource")
+     */
     private $name;
+    /**
+     * @DM\RefSource(id="personSource")
+     */
     private $email;
+    /**
+     * @DM\RefSource(id="personSource")
+     */
     private $phone;
-
     /**
      * @DM\RefSource(id="carSource")
      */
     private $car;
 
-    public function __construct($id = null)
-    {
-        if (null !== $id) {
-            $this->id = $id;
-            $this->load();//Implicit loading is performed by the constructor not by the setter setId().
-        }
-    }
-
-    public function getId() { return $this->id;}
-    public function setId($id) { $this->id = $id; return $this; }
+    public function __construct($id) { $this->id = $id; }
+    public function getId() { return $this->id; }
     public function getFirstName() { return $this->firstName; }
-    public function setFirstName($firstName) { $this->firstName = $firstName; return $this; }
     public function getName() { return $this->name; }
-    public function setName($name) { $this->name = $name; return $this; }
     public function getEmail() { return $this->email; }
-    public function setEmail($email) { $this->email = $email; return $this; }
     public function getPhone() { return $this->phone; }
-    public function setPhone($phone) { $this->phone = $phone; return $this; }
-    public function getCar();
-    public function setCar($car) { $this->car = $car; return $this; }
+    public function getCar() { return $this->car; }
 }
 ```
 
@@ -288,22 +405,14 @@ namespace Kassko\Sample;
 
 class PersonDataSource
 {
-    private $connection;
-
-    public function __construct($connection)
-    {
-        $this->connection = $connection;
-    }
-
     public function getData($id)
     {
-        $data = $this->connection->executeQuery('select firstName, name, email, phone, car_id from some_table where id = ?', [$id]);
-
-        if (! isset($data[0])) {
-            return null;            
-        }
-
-        return $data[0];
+        return [
+            'first_name' => 'foo',
+            'name' => 'bar',
+            'email' => 'foo@bar',
+            'phone' => '01 02 03 04 05',
+        ];
     }
 }
 ```
@@ -320,34 +429,6 @@ class CarRepository extends EntityRepository
 {
 }
 ```
-
-CarRepository has some dependencies too (the entity manager), it is instantiated with a resolver class-resolver. Reminder: you can see more details [here](#work-with-object-complex-to-create-like-service).
-
-
-### Component building: precisions ###
-
-Run environment with class-resolver:
-```php
-(new Kassko\DataMapper\DataMapperBuilder)
-    ->settings(['class_resolver' => $classResolver])
-    ->run()
-;
-```
-
-But before, create your class-resolver (example of basic resolver):
-```php
-$classResolver = function ($class, & $supported = true) {
-    if ('Kassko\Sample\PersonDataSource' === $class) {
-        return new Kassko\Sample\PersonDataSource(new Kassko\Sample\Connection);
-    }
-
-    return null;
-};
-```
-
-The settings key `class_resolver` accepts either a callable (a closure / an array like `[$class, $method]` / an invocable class) or an instance of `Kassko\ClassResolver\ClassResolverInterface`.
-
-You can see more details about `class-resolver` [here](https://github.com/kassko/class-resolver). 
 
 # Features: details #
 
@@ -384,36 +465,6 @@ You can see more details about `class-resolver` [here](https://github.com/kassko
 * [Object listener](#object-listener)
 * [Add a custom mapping configuration format](#add-a-custom-mapping-configuration-format)
 * [Inherit mapping configuration](#inherit-mapping-configuration)
-* [Component configuration reference](#component-configuration-reference)
-* [Mapping configuration reference](#mapping-configuration-reference)
-  - [Config config](#config-config)
-  - [CustomHydrator config](#customhydrator-config)
-  - [DataSource config](#datasource-config)
-  - [DataSourcesStore config](#datasourcesstore-config)
-  - [ExcludeImplicitSource config](#excludeimplicitsource-config)
-  - [Field config](#field-config)
-  - [Getter config](#getter-config)
-  - [Id config](#id-config)
-  - [IdCompositePart config](#idcompositepart-config)
-  - [Listeners config](#listeners-config)
-  - [Method config](#method-config)
-  - [Object config](#object-config)
-  - [ObjectListeners config - DEPRECATED - SEE Listeners config](#objectlisteners-config---deprecated---see-listeners-config)
-  - [PostExtract config - DEPRECATED - SEE Listeners config](#postextract-config---deprecated---see-listeners-config)
-  - [PostHydrate config - DEPRECATED - SEE Listeners config](#posthydrate-config---deprecated---see-listeners-config)
-  - [PreExtract config - DEPRECATED - SEE Listeners config](#preextract-config---deprecated---see-listeners-config)
-  - [PreHydrate config - DEPRECATED - SEE Listeners config](#prehydrate-config---deprecated---see-listeners-config)
-  - [Provider config - DEPRECATED - SEE DataSource config](#provider-config---deprecated---see-datasource-config)
-  - [ProvidersStore config - DEPRECATED - SEE DataSourcesStore config](#providersstore-config---deprecated---see-datasourcesstore-config)
-  - [RefImplicitSource config](#RefImplicitSource-config)
-  - [RefSource config](#refsource-config)
-  - [Setter config](#setter-config)
-  - [ToExclude config](#toexclude-config)
-  - [ToInclude config](#toinclude-config)
-  - [Transient config](#transient-config)
-  - [ValueObject config - DEPRECATED - SEE Config config](#valueobject-config---deprecated---see-config-config)
-  - [Version config](#version-config)
-
 
 =======================================================================================================
 

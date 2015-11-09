@@ -10,6 +10,7 @@
         "orm", "hydration", "hydrate", "extract", "data", "access",
         "mapper", "dao", "entity", "repository"
     ],
+    "license": "MIT",
     "require":{
         "php":">=5.5.0",
         "kassko/class-resolver": "~0.3.2",
