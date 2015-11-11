@@ -63,7 +63,16 @@ class SettingsValidator implements ConfigurationInterface
 
                 ->variableNode('logger')->end()
 
-                ->variableNode('class_resolver')
+                ->arrayNode('container')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->variableNode('instance')->defaultNull()->end()
+                        ->scalarNode('get_method_name')->defaultNull()->end()
+                        ->scalarNode('has_method_name')->defaultNull()->end()
+                    ->end()
+                ->end()
+
+                ->variableNode('class_resolver')/** @deprecated @see key "container" */ 
                     ->defaultNull()
                     ->beforeNormalization()
                         ->ifTrue(function ($v) {
