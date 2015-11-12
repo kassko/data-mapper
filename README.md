@@ -2,9 +2,7 @@ data-mapper
 ==================
 
 [![Build Status](https://secure.travis-ci.org/kassko/data-mapper.png?branch=0.12)](https://travis-ci.org/kassko/data-mapper)
-[![Latest Stable Version](https://poser.pugx.org/kassko/data-mapper/version)](https://packagist.org/packages/kassko/data-mapper)
 [![Total Downloads](https://poser.pugx.org/kassko/data-mapper/downloads.png)](https://packagist.org/packages/kassko/data-mapper)
-[![Latest Unstable Version](https://poser.pugx.org/kassko/data-mapper/v/unstable)](https://packagist.org/packages/kassko/data-mapper)
 
 # A php mapper very tunable, cross-orm and cross-DBMS #
 
@@ -19,10 +17,10 @@ data-mapper
 # Installation #
 
 ```json
-composer require kassko/data-mapper:%version%
+composer require kassko/data-mapper:~0.12.5
 ```
 
-Replace %version% by the version you want. We suggest you to use the Latest stable version (see version badge at the top of this page). 
+Dot not use a version 0.13.x.X (deprecated), only some version 0.12.x.x.
 
 Note that:
 * version contains 4 numbers
