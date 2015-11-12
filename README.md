@@ -291,7 +291,7 @@ CarRepository has some dependencies too (the entity manager), it is instantiated
 Run environment and register dependencies:
 ```php
 (new Kassko\DataMapper\DataMapperBuilder)
-    ->settings(['container' => ['person.data_source_id' => $personDataSourceInstance]])
+    ->settings(['container' => ['instance' => ['person.data_source_id' => $personDataSourceInstance]]])
     ->run()
 ;
 ```
@@ -318,7 +318,7 @@ And you specify your dependency id like below:
 /**
  * @DM\DataSourcesStore({
  *      @DM\DataSource(
- *          id="carSource", 
+ *          id="personSource", 
  *          class="@person.data_source_id", 
  *          method="find", 
  *          args="#id",
