@@ -3,6 +3,7 @@
 namespace Kassko\DataMapper;
 
 use Doctrine\Common\Annotations\AnnotationReader;
+use Kassko\ClassResolver;
 use Kassko\DataMapper\ClassMetadataLoader\AnnotationLoader;
 use Kassko\DataMapper\ClassMetadataLoader\DelegatingLoader;
 use Kassko\DataMapper\ClassMetadataLoader\InnerPhpLoader;
@@ -14,6 +15,7 @@ use Kassko\DataMapper\ClassMetadata\ClassMetadataFactory;
 use Kassko\DataMapper\Configuration\CacheConfiguration;
 use Kassko\DataMapper\Configuration\ClassMetadataFactoryConfigurator;
 use Kassko\DataMapper\Configuration\ConfigurationChain;
+use Kassko\DataMapper\ContainerAdapter;
 use Kassko\DataMapper\Expression\ExpressionContext;
 use Kassko\DataMapper\Expression\ExpressionFunctionProvider;
 use Kassko\DataMapper\Expression\ExpressionLanguageConfigurator;
@@ -147,6 +149,20 @@ class DataMapperBuilder
 
         $classResolver = isset($settings['class_resolver']) ? $settings['class_resolver'] : null;
         $objectListenerResolver = isset($settings['object_listener_resolver']) ? $settings['object_listener_resolver'] : null;
+
+        if (isset($settings['container'])) {
+            $containerInstance = $settings['container']['instance'];
+            $containerAdapter = null;
+            if (is_array($containerInstance) || $containerInstance instanceof \ArrayAccess) {
+                $containerAdapter = new ContainerAdapter\ArrayAdapterContainer($containerInstance);
+            } else {
+                $containerAdapter = new ContainerAdapter\VariableAdapterContainer($containerInstance, $settings['container']['get_method_name'], $settings['container']['has_method_name']);
+            }
+
+            $classResolver = new ClassResolver\ContainerAwareClassResolver;
+            $classResolver->setContainer($containerAdapter);
+            $classResolver = new ClassResolver\ClassResolverChain([$classResolver]);
+        }
 
         $loaders = [
             //TODO: instantiate only the loaders that are required in the settings.

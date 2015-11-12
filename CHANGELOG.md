@@ -1,3 +1,5 @@
+`0.12.5.4 - 2015/11/12 - New version`:
+* `New`: [Dependency Injection Usage][DataMapperBuilder] Hide the concept class resolver.
 `0.12.5.2 - 2015/10/20 - Fix version`:
 * `Fix`: [DataSource][Source cache key] Fix source cache key by including source method arguments in the key.
 `0.12.5.1 - 2015/10/19 - Fix version`:
