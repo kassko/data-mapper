@@ -1,7 +1,21 @@
-`0.12.5.4 - 2015/11/12 - New version`:
+`0.12.6.0 - 2015/11/24 - New version`:
+* `New`: [Support][Symfony] Add support for version 3.0 of Symfony components.
+
+`0.12.5.6 - 2015/11/12 - Fix version`:
+* `New`: [Documentation][DataSource] Fix some typo.
+
+`0.12.5.5 - 2015/11/12 - Fix version`:
+* `New`: [Documentation][DataSource] Improve Documentation about data sources.
+
+`0.12.5.4 - 2015/11/12 - Fix version`:
 * `New`: [Dependency Injection Usage][DataMapperBuilder] Hide the concept class resolver.
+
+`0.12.5.3 - 2015/11/10 - Fix version`:
+* `New`: [General][MIT] Add MIT.
+
 `0.12.5.2 - 2015/10/20 - Fix version`:
 * `Fix`: [DataSource][Source cache key] Fix source cache key by including source method arguments in the key.
+
 `0.12.5.1 - 2015/10/19 - Fix version`:
 * `Fix`: [DataSource][Arguments resolution] DataSource arguments were not resolved properly when DataSource config was shared between several instances (DataSource sharing occurs when we work with collection). The resolution was processed only once, now it's processed for each instance of the collection.
 

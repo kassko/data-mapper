@@ -16,11 +16,12 @@ data-mapper
 
 # Installation #
 
-```json
-composer require kassko/data-mapper:~0.12.5
-```
+Require the library in your composer.
 
-Dot not use a version 0.13.x.X (deprecated), only some version 0.12.x.x.
+Use only a version like `0.12.x.x`. 
+Dot not use a version `0.13.x.x` (deprecated).
+
+Exemple of good version number requirements: `~0.12.6`
 
 Note that:
 * version contains 4 numbers
