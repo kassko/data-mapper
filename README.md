@@ -16,18 +16,20 @@ data-mapper
 
 # Installation #
 
-```json
-composer require kassko/data-mapper:~0.12.5
-```
-
-Dot not use a version 0.13.x.X (deprecated), only some version 0.12.x.x.
-
 Note that:
 * version contains 4 numbers
 * the second version number is used when compatibility is broken
 * the third for new feature
 * the fourth for hotfix
 * the first for new API or to go from pre-release to release (from 0 to 1)
+
+Using a version in `0.12` is recommended. 
+Versions in `0.13` are no longer maintained.
+
+Example of good requirement:
+```php
+composer require kassko/data-mapper:"~0.12.6"
+```
 
 # Basic usage #
 
