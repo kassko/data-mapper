@@ -131,10 +131,16 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setOriginalFieldNamesValidateTypeHinting()
     {
+        if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $this->markTestSkipped('PHP 7 throws a TypeError on bad type.'); 
+            return;
+        }
+
+        $this->setExpectedException('PHPUnit_Framework_Error');
+
         $this->classMetadata->setOriginalFieldNames($this);
     }
 
@@ -168,10 +174,16 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedDateFieldNamesValidateTypeHinting()
     {
+        if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $this->markTestSkipped('PHP 7 throws a TypeError on bad type.'); 
+            return;
+        }
+
+        $this->setExpectedException('PHPUnit_Framework_Error');
+
         $this->classMetadata->setMappedDateFieldNames($this);
     }
 
@@ -197,10 +209,16 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedFieldNamesValidateTypeHinting()
     {
+        if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $this->markTestSkipped('PHP 7 throws a TypeError on bad type.'); 
+            return;
+        }
+
+        $this->setExpectedException('PHPUnit_Framework_Error');
+        
         $this->classMetadata->setMappedFieldNames($this);
     }
 
@@ -218,10 +236,16 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setFieldsDataByKeyValidateTypeHinting()
     {
+        if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $this->markTestSkipped('PHP 7 throws a TypeError on bad type.'); 
+            return;
+        }
+
+        $this->setExpectedException('PHPUnit_Framework_Error');
+
         $this->classMetadata->setFieldsDataByKey($this);
     }
 
@@ -267,10 +291,16 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedIdCompositePartFieldNameValidateTypeHinting()
     {
+        if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $this->markTestSkipped('PHP 7 throws a TypeError on bad type.'); 
+            return;
+        }
+
+        $this->setExpectedException('PHPUnit_Framework_Error');
+
         $this->classMetadata->setMappedIdCompositePartFieldName($this);
     }
 
@@ -316,10 +346,16 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setToOriginalValidateTypeHinting()
     {
+        if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $this->markTestSkipped('PHP 7 throws a TypeError on bad type.'); 
+            return;
+        }
+
+        $this->setExpectedException('PHPUnit_Framework_Error');
+
         $this->classMetadata->setToOriginal($this);
     }
 
@@ -345,10 +381,16 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setToMappedValidateTypeHinting()
     {
+        if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $this->markTestSkipped('PHP 7 throws a TypeError on bad type.'); 
+            return; 
+        }
+
+        $this->setExpectedException('PHPUnit_Framework_Error');
+
         $this->classMetadata->setToMapped($this);
     }
 
@@ -480,10 +522,16 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setValueObjectsValidateTypeHinting()
     {
+        if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $this->markTestSkipped('PHP 7 throws a TypeError on bad type.'); 
+            return;
+        }
+
+        $this->setExpectedException('PHPUnit_Framework_Error');
+
         $this->classMetadata->setValueObjects($this);
     }
 
@@ -557,10 +605,16 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedTransientFieldNamesValidateTypeHinting()
     {
+        if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $this->markTestSkipped('PHP 7 throws a TypeError on bad type.'); 
+            return;
+        }
+
+        $this->setExpectedException('PHPUnit_Framework_Error');
+
         $this->classMetadata->setMappedTransientFieldNames($this);
     }
 
@@ -590,10 +644,16 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setFieldsWithSourcesForbiddenValidateTypeHinting()
     {
+        if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $this->markTestSkipped('PHP 7 throws a TypeError on bad type.'); 
+            return;
+        }
+
+        $this->setExpectedException('PHPUnit_Framework_Error');
+
         $this->classMetadata->setFieldsNotToBindAutoToImplicitSource($this);
     } 
 
