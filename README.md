@@ -16,19 +16,20 @@ data-mapper
 
 # Installation #
 
-Require the library in your composer.
-
-Use only a version like `0.12.x.x`. 
-Dot not use a version `0.13.x.x` (deprecated).
-
-Exemple of good version number requirements: `~0.12.6`
-
 Note that:
 * version contains 4 numbers
 * the second version number is used when compatibility is broken
 * the third for new feature
 * the fourth for hotfix
 * the first for new API or to go from pre-release to release (from 0 to 1)
+
+Using a version in `0.12` is recommended. 
+Versions in `0.13` are no longer maintained.
+
+Example of good requirement:
+```php
+composer require kassko/data-mapper:"~0.12.6"
+```
 
 # Basic usage #
 
