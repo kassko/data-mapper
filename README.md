@@ -73,7 +73,9 @@ composer require kassko/data-mapper:"~0.12.6"
   - [Version config](#version-config)
 
 # Run tests #
-./bin/phpunit
+
+Ensures phpunit is installed
+phpunit
 
 ### Installation: precisions ###
 

@@ -127,14 +127,15 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
         $this->assertSame($this->classMetadata, $result);
         $this->assertEquals($dateFormat, $this->classMetadata->getObjectWriteDateFormat());
-    }
+    }    
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setOriginalFieldNamesValidateTypeHinting()
     {
+        $this->setExpectedTypeError();
+
         $this->classMetadata->setOriginalFieldNames($this);
     }
 
@@ -168,10 +169,11 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedDateFieldNamesValidateTypeHinting()
     {
+        $this->setExpectedTypeError();
+
         $this->classMetadata->setMappedDateFieldNames($this);
     }
 
@@ -197,10 +199,11 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedFieldNamesValidateTypeHinting()
     {
+        $this->setExpectedTypeError();
+        
         $this->classMetadata->setMappedFieldNames($this);
     }
 
@@ -218,10 +221,11 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setFieldsDataByKeyValidateTypeHinting()
     {
+        $this->setExpectedTypeError();
+
         $this->classMetadata->setFieldsDataByKey($this);
     }
 
@@ -267,10 +271,11 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedIdCompositePartFieldNameValidateTypeHinting()
     {
+        $this->setExpectedTypeError();
+
         $this->classMetadata->setMappedIdCompositePartFieldName($this);
     }
 
@@ -316,10 +321,11 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setToOriginalValidateTypeHinting()
     {
+        $this->setExpectedTypeError();
+
         $this->classMetadata->setToOriginal($this);
     }
 
@@ -345,10 +351,11 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setToMappedValidateTypeHinting()
     {
+        $this->setExpectedTypeError();
+
         $this->classMetadata->setToMapped($this);
     }
 
@@ -480,10 +487,11 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setValueObjectsValidateTypeHinting()
     {
+        $this->setExpectedTypeError();
+
         $this->classMetadata->setValueObjects($this);
     }
 
@@ -557,10 +565,11 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setMappedTransientFieldNamesValidateTypeHinting()
     {
+        $this->setExpectedTypeError();
+
         $this->classMetadata->setMappedTransientFieldNames($this);
     }
 
@@ -590,10 +599,11 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \PHPUnit_Framework_Error
      */
     public function setFieldsWithSourcesForbiddenValidateTypeHinting()
     {
+        $this->setExpectedTypeError();
+
         $this->classMetadata->setFieldsNotToBindAutoToImplicitSource($this);
     } 
 
@@ -607,5 +617,14 @@ class ClassMetadataTest extends \PHPUnit_Framework_TestCase
 
         $this->assertSame($this->classMetadata, $result);
         $this->assertEquals($fieldsNotToBindAutoToImplicitSource, $this->classMetadata->getFieldsNotToBindAutoToImplicitSource());
+    }
+
+    protected function setExpectedTypeError()
+    {
+        if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $this->setExpectedException('TypeError');
+        } else {
+            $this->setExpectedException('PHPUnit_Framework_Error');
+        }
     }
 }
