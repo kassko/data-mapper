@@ -150,7 +150,7 @@ class DataMapperBuilder
         $classResolver = isset($settings['class_resolver']) ? $settings['class_resolver'] : null;
         $objectListenerResolver = isset($settings['object_listener_resolver']) ? $settings['object_listener_resolver'] : null;
 
-        if (isset($settings['container'])) {
+        if (isset($settings['container']['instance'])) {
             $containerInstance = $settings['container']['instance'];
             $containerAdapter = null;
             if (is_array($containerInstance) || $containerInstance instanceof \ArrayAccess) {
@@ -271,7 +271,7 @@ class DataMapperBuilder
         $cmFactory = (new ClassMetadataFactory)->setClassMetadataLoader($delegatingLoader);
         $cmConfigurator = new ClassMetadataFactoryConfigurator($configuration);
         $cmConfigurator->configure($cmFactory);
-   
+
         //Expressions
         $functionProviders = [new ExpressionFunctionProvider];
         if (isset($settings['mapping']['expression']['function_providers'])) {
@@ -285,7 +285,7 @@ class DataMapperBuilder
         $elConfigurator->configure($expressionLanguage);
 
         $expressionContext = new ExpressionContext;
-        
+
         $expressionLanguageEvaluator = new ExpressionLanguageEvaluator($expressionLanguage, $expressionContext);
 
         //ObjectManager
