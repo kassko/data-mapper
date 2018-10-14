@@ -1,3 +1,6 @@
+`0.12.6.1 - 2018/10/14 - New version`:
+* `New`: Add shortcuts for the feature on property loaded. No need to use the service ObjectManager and go through `ObjectManager::markPropertyLoaded()` or `ObjectManager::isPropertyLoaded()` anymore, because from now there are shorcuts `LoadableTrait::markPropertyLoaded()` and `LoadableTrait::isPropertyLoaded()` and then methods are accessibles from objects which use the trait `LoadableTrait`.
+
 `0.12.6.0 - 2015/11/24 - New version`:
 * `New`: [Support][Symfony] Add support for version 3.0 of Symfony components.
 
@@ -24,12 +27,12 @@
 * `New`: New config item `RefDefaultSource` which allows to bind a default source to all the fields of an object. That's usefull not to duplicate on all fields the config item RefSource. It's possible to exclude some fields to be bound with another new config item `ExcludeDefaultSource`.
 * `New`: Source loading: new trait `LoadableTrait` with a method `load` which load all properties (except properties marked to be lazy loaded). That's usefull in combination with the new config items `RefDefaultSource` and `ExcludeDefaultSource`. It's also fix an inconsistency: only the mode `lazyloading enabled` worked. We were not able to load immediately properties.
 * `New`: Hydrator configuration: new key `depends` in source config item that allows to specify some sources as dependencies. These sources will always be triggered before the dependant source.
-* `New`: Allows variables in configuration. Variables are send from an object to another nested object and are availables in the configuration via an expression language. 
+* `New`: Allows variables in configuration. Variables are send from an object to another nested object and are availables in the configuration via an expression language.
 * `New`: New key `defaultValue` (a smart default value) in config item `Field` usefull to initialize properties from configuration and expression language.
 * `New`: New config item `Config`. It replaces `ValueObject config` which is deprecated now.
 * `New`: Merge Provider to DataSource concept. So just use DataSource instead of Provider. Provider concept will be removed in the next significant release.
-* `New`: key config `class_resolver`: make invisible the use of `class-resolver`. You can just send a closure which is internally convert to a `Kassko\ClassResolver\CallableClassResolver`. 
-* `New`: key config `object_listener_resolver`: like for `class_resolver`, now you can just send a closure. 
+* `New`: key config `class_resolver`: make invisible the use of `class-resolver`. You can just send a closure which is internally convert to a `Kassko\ClassResolver\CallableClassResolver`.
+* `New`: key config `object_listener_resolver`: like for `class_resolver`, now you can just send a closure.
 * `New`: add a new method `unsetClassResolver()` to unset the class resolver from ObjectManager.
 * `New`: add a new method `unsetClassResolver()` to unset the class resolver from Hydrator\Hydrator.
 * `New`: add a new method `unsetCacheProfile()` to unset the cache profile from ObjectManager. By default, data sources results are cached in an `array` cache to be reused during all the hydration process. Results are cached because they can be used by others data sources as parameter/input). Unsetting the cache profile allows to disable data sources result caching. Usefull in unit tests to really call data sources and to expect a number of calls.
@@ -40,7 +43,7 @@
 * `Fix`: Fix bug when working whith several object managers. The lazy loader didn't retrieve the good one.
 * `Fix`: Hydrator configuration: Fix a lot of things in each format configuration.
 * `Fix`: Hydrator configuration: Yaml ans Php format: Make useless to specify keys with a value empty or null. Just don't specify them.
-* `Fix`: Hydrator configuration: Fix key `processors` in annotation configuration. Processors specified was ignored. 
+* `Fix`: Hydrator configuration: Fix key `processors` in annotation configuration. Processors specified was ignored.
 * `Fix`: Hydrator configuration: Fix key `interceptors` in yaml configuration format.
 * `Fix`: Hydrator configuration: Fix key `interceptors` in php configuration format.
 * `Enhanc`: Add some hydrator tests
@@ -53,7 +56,7 @@
 * `Fix`: Fix sources loading (only the first source was loaded sometimes) and simplify the code related to the sources loaded tracking.
 
 `0.12.4.2 - 2015/04/17 - Fix version`:
-* `Fix`: Hydrator configuration: Section Field / Key type: fix inference of type, if the key `type` is not specified, an implicit conversion to the supposed good type is performed. Conversion to string was performed. 
+* `Fix`: Hydrator configuration: Section Field / Key type: fix inference of type, if the key `type` is not specified, an implicit conversion to the supposed good type is performed. Conversion to string was performed.
 
 `0.12.4.1 - 2015/04/16 - Fix version`:
 * `Fix`: Fix lazyloading in inheritance context. Between two properties in the same hierarchy, only one was loaded and an error occured when we tried to load the second.
@@ -62,7 +65,7 @@
 * `New`: Hydrator configuration: add expression language for methods arguments.
 * `New`: Hydrator configuration: add processors (some methods) to do some stuff before or after the invocation of a source.
 * `New`: Hydrator configuration: enhance type - allows to enforce type of fields.
-* `Fix`: Hydrator configuration: allows to invoke __call method. 
+* `Fix`: Hydrator configuration: allows to invoke __call method.
 * `Fix`: Data Mapper configuration: fix forgotten keys `class_resolver` and `object_listener_resolver`.
 
 `0.12.3.0 - 2015/03/30 - New version`:
@@ -92,7 +95,7 @@
 * `Break`: Relations ToOneProvider and ToManyProvider have been removed. They will be implemented in DataSource and Provider in a next version.
 * `Break`: DataMapperFactory is moved to DataMapperBuilder.
 
-* `New`: 
+* `New`:
 You can send some arbitrary values as parameters of a data source method (2, 'foo'). That's why conventions have changed.
 New key Fields.class which allows to hydrate properties which are objects.
 And as a consequence, Data sources can now return structure like tree from which nested objects can be hydrated.

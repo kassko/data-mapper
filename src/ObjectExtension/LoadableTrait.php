@@ -16,19 +16,37 @@ trait LoadableTrait
     protected function load()
     {
         if (false === $lazyLoader = $this->__getLoader()) {
-            return; 
+            return;
         }
-            
+
         $lazyLoader->load($this);
     }
 
     protected function loadProperty($propertyName)
     {
         if (false === $lazyLoader = $this->__getLoader()) {
-            return; 
+            return;
         }
-            
+
         $lazyLoader->loadProperty($this, $propertyName);
+    }
+
+    public function markPropertyLoaded($propertyName)
+    {
+        if (false === $lazyLoader = $this->__getLoader()) {
+            return;
+        }
+
+        $lazyLoader->markPropertyLoaded($this, $propertyName);
+    }
+
+    public function isPropertyLoaded($propertyName)
+    {
+        if (false === $lazyLoader = $this->__getLoader()) {
+            return;
+        }
+
+        $lazyLoader->isPropertyLoaded($this, $propertyName);
     }
 
     private function __getLoader()
@@ -36,7 +54,7 @@ trait LoadableTrait
         $registry = Registry::getInstance();
         if (! isset($registry[Registry::KEY_LAZY_LOADER_FACTORY])) {
             return false;
-        } 
+        }
 
         $loaderFactory = $registry[Registry::KEY_LAZY_LOADER_FACTORY];
 
