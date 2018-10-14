@@ -51,10 +51,35 @@ class LazyLoader
         }
 
         if ($this->objectManager->isPropertyLoaded($object, $propertyName)) {
-            return;   
+            return;
         }
 
         $hydrator = $this->objectManager->getHydratorFor($this->objectClass);
         $hydrator->loadProperty($object, $propertyName);
+    }
+
+    /**
+     * Mark a property as loaded.
+     * If others properties are loaded by the same source, there are also mark as loaded.
+     *
+     * @param array $object An object
+     * @param array $propertyName The property to mark loaded
+     */
+    public function markPropertyLoaded($object, $propertyName)
+    {
+        $this->objectManager->markPropertyLoaded($object, $propertyName);
+    }
+
+    /**
+     * Say if a property is loaded.
+     *
+     * @param array $object An object
+     * @param array $propertyName A property to check if it's loaded
+     *
+     * @return boolean
+     */
+    public function isPropertyLoaded($object, $propertyName)
+    {
+        return $this->objectManager->isPropertyLoaded($object, $propertyName);
     }
 }
