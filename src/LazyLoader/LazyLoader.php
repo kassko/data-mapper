@@ -75,9 +75,11 @@ class LazyLoader
      *
      * @param array $object An object
      * @param array $propertyName A property to check if it's loaded
+     *
+     * @return boolean
      */
     public function isPropertyLoaded($object, $propertyName)
     {
-        $this->objectManager->isPropertyLoaded($object, $propertyName);
+        return $this->objectManager->isPropertyLoaded($object, $propertyName);
     }
 }

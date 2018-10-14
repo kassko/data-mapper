@@ -46,7 +46,7 @@ trait LoadableTrait
             return;
         }
 
-        $lazyLoader->isPropertyLoaded($this, $propertyName);
+        return $lazyLoader->isPropertyLoaded($this, $propertyName);
     }
 
     private function __getLoader()
