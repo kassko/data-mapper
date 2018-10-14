@@ -1,4 +1,4 @@
-`0.12.6.1 - 2018/10/14 - New version`:
+`0.12.7.0 - 2018/10/14 - New version`:
 * `New`: Add shortcuts for the feature about property loaded. No need to use the service ObjectManager and go through `ObjectManager::markPropertyLoaded()` or `ObjectManager::isPropertyLoaded()` anymore. From now there are shorcuts `LoadableTrait::markPropertyLoaded()` and `LoadableTrait::isPropertyLoaded()` and then methods are accessibles from objects which use the trait `LoadableTrait`.
 
 `0.12.6.0 - 2015/11/24 - New version`:
