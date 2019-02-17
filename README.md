@@ -158,8 +158,11 @@ class PersonDataSource
 {
     public function getData($id)
     {
-        return 'bar';
-    }
+        return [
+          'name' => 'foo',
+          'email' => 'foo@bar.com'
+        ];
+    }  
 }
 ```
 
