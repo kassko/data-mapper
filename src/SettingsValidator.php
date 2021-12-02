@@ -11,8 +11,7 @@ class SettingsValidator implements ConfigurationInterface
 
     public function getConfigTreeBuilder()
     {
-        $builder = new TreeBuilder();
-        $rootNode = $builder->root('kassko_data_mapper');
+        list($rootNode, $builder) = $this->getRootNode('kassko_data_mapper');
 
         $rootNode
             ->addDefaultsIfNotSet()
@@ -49,13 +48,13 @@ class SettingsValidator implements ConfigurationInterface
                                 //TODO: add markers for service @, field # and semantic ##
                                 ->arrayNode('function_providers')
                                     ->prototype('variable')->end()
-                                    
+
                                     /*->arrayNode('function_providers')
                                         ->prototype('array')
                                             ->children()
                                             ->end()
                                         ->end()*/
-                                ->end()        
+                                ->end()
                             ->end()
                         ->end()
                     ->end()
@@ -72,7 +71,7 @@ class SettingsValidator implements ConfigurationInterface
                     ->end()
                 ->end()
 
-                ->variableNode('class_resolver')/** @deprecated @see key "container" */ 
+                ->variableNode('class_resolver')/** @deprecated @see key "container" */
                     ->defaultNull()
                     ->beforeNormalization()
                         ->ifTrue(function ($v) {
@@ -109,8 +108,7 @@ class SettingsValidator implements ConfigurationInterface
 
     private function addCacheNode($name)
     {
-        $builder = new TreeBuilder();
-        $node = $builder->root($name);
+        list($node, $builder) = $this->getRootNode($name);
 
         $node
             ->addDefaultsIfNotSet()
@@ -136,5 +134,21 @@ class SettingsValidator implements ConfigurationInterface
         ;
 
         return $node;
+    }
+
+    private function getRootNode($rootNodeName)
+    {
+        if (method_exists(TreeBuilder::class, 'getRootNode')) {
+            $builder = new TreeBuilder($rootNodeName);
+            $rootNode = $builder->getRootNode();
+        } else {//Keep compatibility with Symfony <= 4.3
+            /**
+             * @see https://github.com/symfony/symfony/blob/4.3/src/Symfony/Component/Config/Definition/Builder/TreeBuilder.php#L48
+             */
+            $builder = new TreeBuilder;
+            $rootNode = $builder->root($rootNodeName);
+        }
+
+        return [$rootNode, $builder];
     }
 }
