@@ -2,7 +2,7 @@
     "name": "kassko/data-mapper-experimental",
     "description": "A minimal PHP 8 data-mapper library with attributes and lazy loading",
     "type": "library",
-    "license": "MIT",
+    "license": "Apache-2.0",
     "require": {
         "php": ">=8.0",
         "psr/container": "^1.1|^2.0"

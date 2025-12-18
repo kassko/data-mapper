@@ -9,13 +9,33 @@ use Kassko\DataMapper\LazyLoader\LazyLoaderInterface;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Psr\Container\ContainerInterface;
 
-class DataMapper
+final class DataMapper
 {
     private LazyLoaderInterface $lazyLoader;
 
-    public function __construct(?ContainerInterface $container = null)
+    /**
+     * @param ServiceResolver|ContainerInterface|null $serviceResolverOrContainer
+     */
+    public function __construct(ServiceResolver|ContainerInterface|null $serviceResolverOrContainer = null)
     {
-        $this->lazyLoader = new LazyLoader($container);
+        // Support backward compatibility: allow ContainerInterface or null
+        if ($serviceResolverOrContainer instanceof ServiceResolver) {
+            $serviceResolver = $serviceResolverOrContainer;
+        } elseif ($serviceResolverOrContainer instanceof ContainerInterface || $serviceResolverOrContainer === null) {
+            // Backward compatibility: create a ServiceResolver with just the container
+            $serviceResolver = new ServiceResolver($serviceResolverOrContainer, []);
+        } else {
+            throw new \InvalidArgumentException(
+                'Argument must be ServiceResolver, ContainerInterface, or null'
+            );
+        }
+        
+        $this->lazyLoader = new LazyLoader($serviceResolver);
+    }
+
+    public function getServiceResolver(): ServiceResolver
+    {
+        return $this->lazyLoader->getServiceResolver();
     }
 
     /**
@@ -39,3 +59,4 @@ class DataMapper
         $object->setDataMapperLoader($this->lazyLoader);
     }
 }
+

@@ -150,4 +150,4 @@ vendor/bin/phpunit
 
 ## License
 
-MIT
+Apache-2.0

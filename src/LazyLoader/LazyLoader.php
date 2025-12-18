@@ -8,6 +8,7 @@ use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Expression\ExpressionParser;
 use Kassko\DataMapper\Expression\SourceFunctionProvider;
 use Kassko\DataMapper\Metadata\AttributeReader;
+use Kassko\DataMapper\ServiceResolver;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
 use ReflectionProperty;
@@ -22,14 +23,33 @@ class LazyLoader implements LazyLoaderInterface
     private WeakMap $sourceFunctionProviders;
     
     private AttributeReader $attributeReader;
-    private ?ContainerInterface $container;
+    private ServiceResolver $serviceResolver;
 
-    public function __construct(?ContainerInterface $container = null)
+    /**
+     * @param ServiceResolver|ContainerInterface|null $serviceResolverOrContainer
+     */
+    public function __construct(ServiceResolver|ContainerInterface|null $serviceResolverOrContainer = null)
     {
         $this->loadedProperties = new WeakMap();
         $this->sourceFunctionProviders = new WeakMap();
         $this->attributeReader = new AttributeReader();
-        $this->container = $container;
+        
+        // Support backward compatibility: allow ContainerInterface or null
+        if ($serviceResolverOrContainer instanceof ServiceResolver) {
+            $this->serviceResolver = $serviceResolverOrContainer;
+        } elseif ($serviceResolverOrContainer instanceof ContainerInterface || $serviceResolverOrContainer === null) {
+            // Backward compatibility: create a ServiceResolver with just the container
+            $this->serviceResolver = new ServiceResolver($serviceResolverOrContainer, []);
+        } else {
+            throw new \InvalidArgumentException(
+                'Argument must be ServiceResolver, ContainerInterface, or null'
+            );
+        }
+    }
+
+    public function getServiceResolver(): ServiceResolver
+    {
+        return $this->serviceResolver;
     }
 
     /**
@@ -264,33 +284,7 @@ class LazyLoader implements LazyLoaderInterface
      */
     private function resolveDataSource(string $class): object
     {
-        // Check if it's a service identifier (prefixed with @)
-        if (str_starts_with($class, '@')) {
-            if ($this->container === null) {
-                throw new \RuntimeException(
-                    "Cannot resolve service identifier '{$class}' without a container"
-                );
-            }
-            
-            $serviceId = substr($class, 1);
-            return $this->container->get($serviceId);
-        }
-        
-        // Validate class exists and is instantiable before direct instantiation
-        if (!class_exists($class)) {
-            throw new \RuntimeException(
-                "DataSource class '{$class}' does not exist"
-            );
-        }
-        
-        $reflectionClass = new ReflectionClass($class);
-        if (!$reflectionClass->isInstantiable()) {
-            throw new \RuntimeException(
-                "DataSource class '{$class}' is not instantiable"
-            );
-        }
-        
-        return new $class();
+        return $this->serviceResolver->resolve($class);
     }
 
     /**
