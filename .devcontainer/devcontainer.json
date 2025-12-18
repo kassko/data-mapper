@@ -1,0 +1,15 @@
+{
+  "name": "PHP 8.2 Devcontainer",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "root",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bmewburn.vscode-intelephense-client"
+      ]
+    }
+  },
+  "postCreateCommand": "php -v && composer --version"
+}
