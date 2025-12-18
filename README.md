@@ -2,6 +2,14 @@
 
 A minimal PHP 8 data-mapper library with lazy loading, attributes, and PSR-11 container integration.
 
+## Origin
+
+This project was initiated as a personal open-source initiative, developed independently and outside of any professional assignment.
+
+It is not affiliated with, nor owned by, any organization.
+
+[Read more about the project background](./ABOUT.md)
+
 ## Features
 
 - **PHP 8 Attributes**: Use native PHP 8 attributes for metadata (no external annotation library)

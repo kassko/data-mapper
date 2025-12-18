@@ -198,7 +198,7 @@ class LazyLoader implements LazyLoaderInterface
                 
                 if ($reflectionClass->hasProperty($propertyName)) {
                     $property = $reflectionClass->getProperty($propertyName);
-                    $property->setAccessible(true);
+                    // $property->setAccessible(true);
                     $resolved[] = $property->getValue($object);
                 } else {
                     $resolved[] = null;
@@ -232,7 +232,7 @@ class LazyLoader implements LazyLoaderInterface
         }
         
         $property = $reflectionClass->getProperty($propertyName);
-        $property->setAccessible(true);
+        // $property->setAccessible(true);
         $property->setValue($object, $data[$propertyName]);
     }
 }
