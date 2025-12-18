@@ -98,7 +98,7 @@ class ExpressionParser
     private function evaluateExpression(string $expression, object $object, callable $propertyLoader)
     {
         // Parse source('id')['key'] or source('id')
-        if (preg_match("/source\('([^']+)'\)(?:\['([^']+)'\])?/", $expression, $matches)) {
+        if (preg_match("/source\('([a-zA-Z0-9_-]+)'\)(?:\['([^']+)'\])?/", $expression, $matches)) {
             $sourceId = $matches[1];
             $key = $matches[2] ?? null;
             

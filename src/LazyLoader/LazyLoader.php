@@ -322,8 +322,10 @@ class LazyLoader implements LazyLoaderInterface
         $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
         
         if (!isset($dataSourceMap[$sourceId])) {
+            // Sanitize sourceId for error message to prevent log injection
+            $sanitizedId = preg_replace('/[^a-zA-Z0-9_-]/', '', $sourceId);
             throw new \RuntimeException(
-                sprintf('DataSource with id "%s" not found in DataSourcesStore', $sourceId)
+                sprintf('DataSource with id "%s" not found in DataSourcesStore', $sanitizedId)
             );
         }
         
