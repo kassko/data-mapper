@@ -9,7 +9,7 @@ use Psr\Container\ContainerInterface;
 final class ServiceResolver
 {
     /**
-     * @param ServiceLocatorInterface[] $locators
+     * @param ServiceLocatorInterface[] $locators Locators are checked in order; first match wins
      */
     public function __construct(
         private ?ContainerInterface $container,
@@ -45,7 +45,7 @@ final class ServiceResolver
     {
         if ($this->container === null) {
             throw new \RuntimeException(
-                "Cannot resolve service identifier '@{$serviceId}' without a container"
+                "Cannot resolve service identifier '{$serviceId}' without a container"
             );
         }
 

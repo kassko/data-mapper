@@ -98,7 +98,7 @@ final class ServiceResolverTest extends TestCase
         
         $container = $this->createMock(ContainerInterface::class);
         $container->method('has')->willReturnCallback(
-            fn($id) => in_array($id, ['person.data_source', 'car.repository'])
+            fn(string $id) => in_array($id, ['person.data_source', 'car.repository'])
         );
         $container->method('get')->willReturnCallback(function($id) use ($personService, $carService) {
             return match($id) {

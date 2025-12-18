@@ -159,12 +159,20 @@ final class ServiceLocatorIntegrationTest extends TestCase
         ]);
 
         // Create a mock container
-        $container = new class implements ContainerInterface {
+        $personService = new PersonDataSource();
+        $carService = new CarRepository();
+        
+        $container = new class($personService, $carService) implements ContainerInterface {
+            public function __construct(
+                private PersonDataSource $personService,
+                private CarRepository $carService
+            ) {}
+            
             public function get(string $id): object
             {
                 return match($id) {
-                    'person.data_source' => new PersonDataSource(),
-                    'car.repository' => new CarRepository(),
+                    'person.data_source' => $this->personService,
+                    'car.repository' => $this->carService,
                     default => throw new \RuntimeException("Service not found: {$id}")
                 };
             }
