@@ -123,6 +123,17 @@ class LazyLoader implements LazyLoaderInterface
         $dataSourceInstance = $this->resolveDataSource($dataSource->class);
         $resolvedArgs = $this->resolveArgs($dataSource->args, $object);
         
+        // Validate method exists before calling
+        if (!method_exists($dataSourceInstance, $dataSource->method)) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Method %s does not exist on DataSource class %s',
+                    $dataSource->method,
+                    get_class($dataSourceInstance)
+                )
+            );
+        }
+        
         $result = call_user_func_array(
             [$dataSourceInstance, $dataSource->method],
             $resolvedArgs
@@ -151,7 +162,20 @@ class LazyLoader implements LazyLoaderInterface
             return $this->container->get($serviceId);
         }
         
-        // Direct instantiation
+        // Validate class exists and is instantiable before direct instantiation
+        if (!class_exists($class)) {
+            throw new \RuntimeException(
+                "DataSource class '{$class}' does not exist"
+            );
+        }
+        
+        $reflectionClass = new ReflectionClass($class);
+        if (!$reflectionClass->isInstantiable()) {
+            throw new \RuntimeException(
+                "DataSource class '{$class}' is not instantiable"
+            );
+        }
+        
         return new $class();
     }
 
