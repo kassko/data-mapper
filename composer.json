@@ -1,0 +1,26 @@
+{
+    "name": "kassko/data-mapper-experimental",
+    "description": "A minimal PHP 8 data-mapper library with attributes and lazy loading",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.0",
+        "psr/container": "^1.1|^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5|^10.0|^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Kassko\\DataMapper\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Kassko\\DataMapper\\Tests\\": "tests/",
+            "Kassko\\Sample\\": "tests/Fixtures/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
