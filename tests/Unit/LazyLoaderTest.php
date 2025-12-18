@@ -19,6 +19,7 @@ class LazyLoaderTest extends TestCase
         // Verify property is null before loading
         $reflection = new ReflectionClass($person);
         $nameProperty = $reflection->getProperty('name');
+        $nameProperty->setAccessible(true);
         $this->assertNull($nameProperty->getValue($person));
 
         // Load the property
@@ -40,9 +41,11 @@ class LazyLoaderTest extends TestCase
         $reflection = new ReflectionClass($person);
         
         $nameProperty = $reflection->getProperty('name');
+        $nameProperty->setAccessible(true);
         $this->assertEquals('foo', $nameProperty->getValue($person));
 
         $emailProperty = $reflection->getProperty('email');
+        $emailProperty->setAccessible(true);
         $this->assertEquals('foo@aaa.com', $emailProperty->getValue($person));
     }
 
@@ -57,6 +60,7 @@ class LazyLoaderTest extends TestCase
         // Get the value
         $reflection = new ReflectionClass($person);
         $nameProperty = $reflection->getProperty('name');
+        $nameProperty->setAccessible(true);
         $firstValue = $nameProperty->getValue($person);
 
         // Manually change the value
@@ -81,9 +85,11 @@ class LazyLoaderTest extends TestCase
         $reflection = new ReflectionClass($person1);
         
         $person1Name = $reflection->getProperty('name');
+        $person1Name->setAccessible(true);
         $this->assertEquals('foo', $person1Name->getValue($person1));
 
         $person2Name = $reflection->getProperty('name');
+        $person2Name->setAccessible(true);
         $this->assertEquals('bar', $person2Name->getValue($person2));
     }
 }
