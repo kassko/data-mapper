@@ -81,12 +81,20 @@ class LazyLoader implements LazyLoaderInterface
             $propertiesToHydrate = $this->findPropertiesWithSameSignature($object, $signature);
             
             // Load data from DataSource
-            $data = $this->loadDataFromSource($dataSource, $object);
+            $result = $this->executeDataSource($dataSource, $object);
             
-            // Hydrate all properties with the same signature
-            foreach ($propertiesToHydrate as $propName) {
-                $this->hydrateProperty($object, $propName, $data);
-                $this->loadedProperties[$object][$propName] = true;
+            // If result is an array, use array-based hydration
+            // Otherwise, directly set the value to all matching properties
+            if (is_array($result)) {
+                foreach ($propertiesToHydrate as $propName) {
+                    $this->hydrateProperty($object, $propName, $result);
+                    $this->loadedProperties[$object][$propName] = true;
+                }
+            } else {
+                foreach ($propertiesToHydrate as $propName) {
+                    $this->hydratePropertyWithValue($object, $propName, $result);
+                    $this->loadedProperties[$object][$propName] = true;
+                }
             }
         }
     }
@@ -187,12 +195,19 @@ class LazyLoader implements LazyLoaderInterface
     private function findPropertiesWithSameSignature(object $object, string $signature): array
     {
         $properties = [];
-        $allProperties = $this->attributeReader->getPropertiesWithDataSource($object);
+        $reflectionClass = new ReflectionClass($object);
         
-        foreach ($allProperties as $propName => $dataSource) {
+        // Check all properties for matching DataSource signature
+        foreach ($reflectionClass->getProperties() as $property) {
+            $dataSource = $this->resolveDataSourceForProperty($property, $object);
+            
+            if ($dataSource === null) {
+                continue;
+            }
+            
             $propSignature = $this->createSignature($dataSource, $object);
             if ($propSignature === $signature) {
-                $properties[] = $propName;
+                $properties[] = $property->getName();
             }
         }
         
@@ -200,13 +215,26 @@ class LazyLoader implements LazyLoaderInterface
     }
 
     /**
-     * Load data from the DataSource
+     * Load data from the DataSource (expects array result for supplySeveralFields)
      *
      * @param DataSource $dataSource
      * @param object $object
      * @return array
      */
     private function loadDataFromSource(DataSource $dataSource, object $object): array
+    {
+        $result = $this->executeDataSource($dataSource, $object);
+        return is_array($result) ? $result : [];
+    }
+
+    /**
+     * Execute a DataSource and return the result
+     *
+     * @param DataSource $dataSource
+     * @param object $object
+     * @return mixed
+     */
+    private function executeDataSource(DataSource $dataSource, object $object)
     {
         $dataSourceInstance = $this->resolveDataSource($dataSource->class);
         $resolvedArgs = $this->resolveArgs($dataSource->args, $object);
@@ -222,12 +250,10 @@ class LazyLoader implements LazyLoaderInterface
             );
         }
         
-        $result = call_user_func_array(
+        return call_user_func_array(
             [$dataSourceInstance, $dataSource->method],
             $resolvedArgs
         );
-        
-        return is_array($result) ? $result : [];
     }
 
     /**
@@ -303,8 +329,8 @@ class LazyLoader implements LazyLoaderInterface
         
         $dataSource = $dataSourceMap[$sourceId];
         
-        // Load the data from the source
-        $result = $this->loadDataFromSource($dataSource, $object);
+        // Execute the data source
+        $result = $this->executeDataSource($dataSource, $object);
         
         // If supplySeveralFields, also hydrate all related properties
         if ($dataSource->supplySeveralFields && is_array($result)) {
@@ -315,7 +341,7 @@ class LazyLoader implements LazyLoaderInterface
     }
 
     /**
-     * Hydrate a property with data
+     * Hydrate a property with data from an array
      *
      * @param object $object
      * @param string $propertyName
@@ -340,5 +366,24 @@ class LazyLoader implements LazyLoaderInterface
         }
         
         $property->setValue($object, $data[$fieldName]);
+    }
+
+    /**
+     * Hydrate a property with a single value
+     *
+     * @param object $object
+     * @param string $propertyName
+     * @param mixed $value
+     */
+    private function hydratePropertyWithValue(object $object, string $propertyName, $value): void
+    {
+        $reflectionClass = new ReflectionClass($object);
+        
+        if (!$reflectionClass->hasProperty($propertyName)) {
+            return;
+        }
+        
+        $property = $reflectionClass->getProperty($propertyName);
+        $property->setValue($object, $value);
     }
 }
