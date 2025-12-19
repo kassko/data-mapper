@@ -16,6 +16,7 @@ This folder contains the history of all evolutions made to the data-mapper libra
 | [#9](PR-0009.md) | Implement 6 evolutions: KeepProperty, Getter/Setter, Context, Expression enrichment, and PHP 8.0 fixes | 2025-12-19 | Merged |
 | [#10](PR-0010.md) | Upgrade to PHP 8.1 minimum and remove compatibility workarounds | 2025-12-19 | Merged |
 | [#11](PR-0011.md) | Add expression language functions, lifecycle hooks, and polymorphic property resolution | 2025-12-19 | Merged |
+| [#14](PR-0014.md) | Fix getter chain resolution, add Needs attribute, and verify Hook external service support | 2025-12-19 | Pending |
 
 ## Overview
 
@@ -35,3 +36,4 @@ This repository contains an experimental data-mapper library that has evolved th
 - **PR 9**: Additional features including Context, Getter/Setter attributes
 - **PR 10**: Upgrade to PHP 8.1
 - **PR 11**: Advanced features like hooks and polymorphic resolution
+- **PR 14**: Getter chain resolution, Needs attribute for property dependencies

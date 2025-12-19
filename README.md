@@ -118,9 +118,10 @@ private ?string $name = null;
 
 #### Hook
 
-Lifecycle callbacks:
+Lifecycle callbacks with support for external services:
 
 ```php
+// Hook on the data object itself
 #[Hook(name: 'after_create_object', method: 'initialize', args: ['##this'])]
 class Entity
 {
@@ -128,7 +129,43 @@ class Entity
     #[Hook(name: 'after_set_property', method: 'onSet', args: ['##this', '#name'])]
     private ?string $name = null;
 }
+
+// Hook on external service
+#[Hook(
+    name: 'after_set_property',
+    class: ValidationService::class,  // External service
+    method: 'validateEmail',
+    args: ['##this', '#email']
+)]
+private ?string $email = null;
 ```
+
+When `class` is provided, the hook calls the method on the external service instead of the data object.
+
+#### Needs
+
+Specify property dependencies to ensure proper loading order:
+
+```php
+class SomeClass
+{
+    #[DataSourceRef(id: 'sourceA')]
+    private $propA;
+    
+    #[DataSourceRef(id: 'sourceB')]
+    private $propB;
+
+    #[Needs(['propA', 'propB'])]  // Load these first
+    #[DataSource(
+        class: PersonSource::class,
+        method: 'someMethod',
+        args: ['#propA', '#propB']  // Now available
+    )]
+    private $propC;
+}
+```
+
+Properties listed in `Needs` are loaded before the annotated property. Already-loaded properties are not reloaded.
 
 #### PropertyCandidates (Polymorphism)
 
@@ -178,9 +215,15 @@ private ?Shop $shop = null;
 
 | Syntax | Description |
 |--------|-------------|
-| `#id` | Property value (via getter) |
+| `#id` | Property value (tries getter → isser → haser → direct) |
 | `!#id` | Property value (direct, bypass getter) |
 | `##this` | Current object |
+
+**Property Reference Resolution Order:**
+1. `getPropertyName()` - Getter method
+2. `isPropertyName()` - Isser method (for booleans)
+3. `hasPropertyName()` - Haser method
+4. Direct property access via reflection
 
 #### Advanced Expressions (`expr()`)
 
