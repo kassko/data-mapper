@@ -9,6 +9,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Field;
 use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\KeepProperty;
 use Kassko\DataMapper\Attribute\Loading;
 use Kassko\DataMapper\Attribute\SkipProperty;
 use Kassko\DataMapper\Attribute\SkipAllProperties;
@@ -78,6 +79,23 @@ class AttributeReader
     public function readProperty(ReflectionProperty $property): ?Property
     {
         $attributes = $property->getAttributes(Property::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read KeepProperty attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return KeepProperty|null
+     */
+    public function readKeepProperty(ReflectionProperty $property): ?KeepProperty
+    {
+        $attributes = $property->getAttributes(KeepProperty::class);
         
         if (empty($attributes)) {
             return null;
@@ -269,6 +287,7 @@ class AttributeReader
     {
         $hasSkipProperty = $this->readSkipProperty($property) !== null;
         $hasProperty = $this->readProperty($property) !== null;
+        $hasKeepProperty = $this->readKeepProperty($property) !== null;
         $hasSkipAllProperties = $this->hasSkipAllProperties($reflectionClass);
         
         // If property has SkipProperty, never hydrate
@@ -276,9 +295,9 @@ class AttributeReader
             return false;
         }
         
-        // If class has SkipAllProperties, only hydrate if property has Property attribute
+        // If class has SkipAllProperties, only hydrate if property has Property or KeepProperty attribute
         if ($hasSkipAllProperties) {
-            return $hasProperty;
+            return $hasProperty || $hasKeepProperty;
         }
         
         // Default behavior (KeepAllProperties): hydrate unless SkipProperty
