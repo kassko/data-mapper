@@ -9,9 +9,11 @@ use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Field;
+use Kassko\DataMapper\Attribute\Getter;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\KeepProperty;
 use Kassko\DataMapper\Attribute\Loading;
+use Kassko\DataMapper\Attribute\Setter;
 use Kassko\DataMapper\Attribute\SkipProperty;
 use Kassko\DataMapper\Attribute\SkipAllProperties;
 use Kassko\DataMapper\Attribute\KeepAllProperties;
@@ -97,6 +99,40 @@ class AttributeReader
     public function readContext(ReflectionProperty $property): ?Context
     {
         $attributes = $property->getAttributes(Context::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read Getter attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return Getter|null
+     */
+    public function readGetter(ReflectionProperty $property): ?Getter
+    {
+        $attributes = $property->getAttributes(Getter::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read Setter attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return Setter|null
+     */
+    public function readSetter(ReflectionProperty $property): ?Setter
+    {
+        $attributes = $property->getAttributes(Setter::class);
         
         if (empty($attributes)) {
             return null;

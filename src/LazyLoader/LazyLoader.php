@@ -211,7 +211,8 @@ class LazyLoader implements LazyLoaderInterface
                 // Apply recursive hydration if needed
                 $value = $this->applyRecursiveHydration($property, $value, 0);
                 
-                $property->setValue($object, $value);
+                // Set property value using setter resolution
+                $this->setPropertyValue($object, $property, $value);
                 $this->loadedProperties[$object][$propName] = true;
                 
                 // Handle Context attribute
@@ -398,7 +399,8 @@ class LazyLoader implements LazyLoaderInterface
         // Check if we should perform recursive hydration
         $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
         
-        $property->setValue($object, $value);
+        // Set property value using setter resolution
+        $this->setPropertyValue($object, $property, $value);
         
         // Handle Context attribute
         $this->handleContextAttribute($property, $value);
@@ -425,7 +427,8 @@ class LazyLoader implements LazyLoaderInterface
         // Check if we should perform recursive hydration
         $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
         
-        $property->setValue($object, $value);
+        // Set property value using setter resolution
+        $this->setPropertyValue($object, $property, $value);
         
         // Handle Context attribute
         $this->handleContextAttribute($property, $value);
@@ -548,11 +551,70 @@ class LazyLoader implements LazyLoaderInterface
             // Apply recursive hydration if needed
             $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
             
-            $property->setValue($object, $value);
+            // Set property value using setter resolution
+            $this->setPropertyValue($object, $property, $value);
             
             // Handle Context attribute
             $this->handleContextAttribute($property, $value);
         }
+    }
+
+    /**
+     * Set a property value using setter resolution logic
+     *
+     * @param object $object
+     * @param ReflectionProperty $property
+     * @param mixed $value
+     */
+    private function setPropertyValue(object $object, ReflectionProperty $property, mixed $value): void
+    {
+        $propertyName = $property->getName();
+        
+        // 1. Check for explicit Setter attribute
+        $setter = $this->attributeReader->readSetter($property);
+        if ($setter !== null && $setter->name !== null) {
+            // Use explicit setter method
+            if (method_exists($object, $setter->name)) {
+                $object->{$setter->name}($value);
+                return;
+            }
+        }
+        
+        // 2. If value is a non-associative array (list), look for adder method
+        if (is_array($value) && $this->isListArray($value)) {
+            $adderMethod = 'add' . ucfirst($propertyName) . 'Item';
+            if (method_exists($object, $adderMethod)) {
+                foreach ($value as $item) {
+                    $object->$adderMethod($item);
+                }
+                return;
+            }
+        }
+        
+        // 3. Look for setter method
+        $setterMethod = 'set' . ucfirst($propertyName);
+        if (method_exists($object, $setterMethod)) {
+            $object->$setterMethod($value);
+            return;
+        }
+        
+        // 4. Fall back to direct property assignment via reflection
+        $property->setValue($object, $value);
+    }
+
+    /**
+     * Check if an array is a list (non-associative array with sequential numeric keys)
+     *
+     * @param array $array
+     * @return bool
+     */
+    private function isListArray(array $array): bool
+    {
+        if (empty($array)) {
+            return true;
+        }
+        
+        return array_keys($array) === range(0, count($array) - 1);
     }
 
     /**
