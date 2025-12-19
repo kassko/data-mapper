@@ -469,7 +469,20 @@ class LazyLoader implements LazyLoaderInterface
      */
     private function applyRecursiveHydration(ReflectionProperty $property, mixed $value, int $currentDepth): mixed
     {
-        $propertyAttr = $this->attributeReader->readProperty($property);
+        // Check for PropertyCandidates first
+        $propertyCandidates = $this->attributeReader->readPropertyCandidates($property);
+        $propertyAttr = null;
+        
+        if ($propertyCandidates !== null && is_array($value)) {
+            // Resolve property config based on discriminators
+            $propertyAttr = $this->resolvePropertyCandidate($propertyCandidates, $value);
+        }
+        
+        // Fall back to direct Property attribute if no candidates or not resolved
+        if ($propertyAttr === null) {
+            $propertyAttr = $this->attributeReader->readProperty($property);
+        }
+        
         if ($propertyAttr === null || $propertyAttr->class === null) {
             return $value;
         }
@@ -485,19 +498,106 @@ class LazyLoader implements LazyLoaderInterface
             return $value;
         }
         
+        // Handle array of objects (collection)
+        if ($this->isListArray($value)) {
+            $result = [];
+            foreach ($value as $itemData) {
+                if (!is_array($itemData)) {
+                    $result[] = $itemData;
+                    continue;
+                }
+                
+                // Resolve property config for each item if PropertyCandidates exists
+                $itemPropertyAttr = $propertyAttr;
+                if ($propertyCandidates !== null) {
+                    $resolved = $this->resolvePropertyCandidate($propertyCandidates, $itemData);
+                    if ($resolved !== null) {
+                        $itemPropertyAttr = $resolved;
+                    }
+                }
+                
+                if ($itemPropertyAttr->class === null) {
+                    $result[] = $itemData;
+                    continue;
+                }
+                
+                // Instantiate the nested object
+                $nestedObject = new $itemPropertyAttr->class();
+                
+                // Execute after_create_object hooks
+                $this->executeClassHooks($nestedObject, 'after_create_object', $itemData);
+                
+                // Hydrate the nested object recursively
+                $this->hydrateObject($nestedObject, $itemData, $itemPropertyAttr, $currentDepth + 1);
+                
+                $result[] = $nestedObject;
+            }
+            return $result;
+        }
+        
         // Get the actual class to instantiate
         $className = $propertyAttr->class;
         
         // Instantiate the nested object
         $nestedObject = new $className();
         
-        // Get the actual class (in case of inheritance)
-        $actualClass = get_class($nestedObject);
+        // Execute after_create_object hooks
+        $this->executeClassHooks($nestedObject, 'after_create_object', $value);
         
         // Hydrate the nested object recursively
         $this->hydrateObject($nestedObject, $value, $propertyAttr, $currentDepth + 1);
         
         return $nestedObject;
+    }
+
+    /**
+     * Resolve property configuration from PropertyCandidates based on discriminator evaluation
+     *
+     * @param \Kassko\DataMapper\Attribute\PropertyCandidates $propertyCandidates
+     * @param array $rawDataItem
+     * @return \Kassko\DataMapper\Attribute\Property|null
+     */
+    private function resolvePropertyCandidate(\Kassko\DataMapper\Attribute\PropertyCandidates $propertyCandidates, array $rawDataItem): ?\Kassko\DataMapper\Attribute\Property
+    {
+        // Create a temporary expression parser for discriminator evaluation
+        $sourceFunctionProvider = new SourceFunctionProvider(fn() => null);
+        $expressionParser = new ExpressionParser($sourceFunctionProvider, $this->serviceResolver);
+        $expressionParser->setRawData($rawDataItem);
+        
+        foreach ($propertyCandidates->candidates as $candidate) {
+            // Evaluate the discriminator expression
+            $discriminator = $candidate->discriminator;
+            
+            // Check if it's an expression
+            if (preg_match('/^expr\((.+)\)$/s', $discriminator, $matches)) {
+                $expression = $matches[1];
+                
+                // Parse and evaluate the expression
+                // For rawDataItemExists and rawDataItem, we need to evaluate manually
+                if (preg_match("/rawDataItemExists\('([^']+)'\)/", $expression, $keyMatches)) {
+                    $key = $keyMatches[1];
+                    $result = array_key_exists($key, $rawDataItem);
+                } elseif (preg_match("/context\('([^']+)'\)/", $expression, $keyMatches)) {
+                    $key = $keyMatches[1];
+                    $contextValue = ContextRegistry::get($key);
+                    // Evaluate the full expression - for now handle simple equality
+                    if (preg_match("/context\('([^']+)'\)\s*==\s*'([^']+)'/", $expression, $eqMatches)) {
+                        $result = ($contextValue == $eqMatches[2]);
+                    } else {
+                        $result = (bool)$contextValue;
+                    }
+                } else {
+                    // Try to evaluate using the expression parser
+                    $result = false;
+                }
+                
+                if ($result === true) {
+                    return $candidate->property;
+                }
+            }
+        }
+        
+        return null;
     }
 
     /**
@@ -570,12 +670,17 @@ class LazyLoader implements LazyLoaderInterface
     {
         $propertyName = $property->getName();
         
+        // Execute before_set_property hooks
+        $this->executePropertyHooks($object, $property, 'before_set_property', $value);
+        
         // 1. Check for explicit Setter attribute
         $setter = $this->attributeReader->readSetter($property);
         if ($setter !== null && $setter->name !== null) {
             // Use explicit setter method
             if (method_exists($object, $setter->name)) {
                 $object->{$setter->name}($value);
+                // Execute after_set_property hooks
+                $this->executePropertyHooks($object, $property, 'after_set_property', $value);
                 return;
             }
         }
@@ -587,6 +692,8 @@ class LazyLoader implements LazyLoaderInterface
                 foreach ($value as $item) {
                     $object->$adderMethod($item);
                 }
+                // Execute after_set_property hooks
+                $this->executePropertyHooks($object, $property, 'after_set_property', $value);
                 return;
             }
         }
@@ -595,11 +702,16 @@ class LazyLoader implements LazyLoaderInterface
         $setterMethod = 'set' . ucfirst($propertyName);
         if (method_exists($object, $setterMethod)) {
             $object->$setterMethod($value);
+            // Execute after_set_property hooks
+            $this->executePropertyHooks($object, $property, 'after_set_property', $value);
             return;
         }
         
         // 4. Fall back to direct property assignment via reflection
         $property->setValue($object, $value);
+        
+        // Execute after_set_property hooks
+        $this->executePropertyHooks($object, $property, 'after_set_property', $value);
     }
 
     /**
@@ -629,5 +741,137 @@ class LazyLoader implements LazyLoaderInterface
         
         // Set all context values
         ContextRegistry::setMany($context->values);
+    }
+
+    /**
+     * Execute hooks for a specific event on a class
+     *
+     * @param object $object
+     * @param string $hookName
+     * @param array $rawData Optional raw data for expression evaluation
+     */
+    private function executeClassHooks(object $object, string $hookName, array $rawData = []): void
+    {
+        $reflectionClass = new ReflectionClass($object);
+        $hooks = $this->attributeReader->readClassHooks($reflectionClass);
+        
+        foreach ($hooks as $hook) {
+            if ($hook->name === $hookName) {
+                $this->executeHook($object, $hook, $rawData);
+            }
+        }
+    }
+
+    /**
+     * Execute hooks for a specific event on a property
+     *
+     * @param object $object
+     * @param ReflectionProperty $property
+     * @param string $hookName
+     * @param mixed $propertyValue Optional property value to pass
+     */
+    private function executePropertyHooks(object $object, ReflectionProperty $property, string $hookName, mixed $propertyValue = null): void
+    {
+        $hooks = $this->attributeReader->readPropertyHooks($property);
+        
+        foreach ($hooks as $hook) {
+            if ($hook->name === $hookName) {
+                // Add property value to raw data for expression evaluation
+                $rawData = [$property->getName() => $propertyValue];
+                $this->executeHook($object, $hook, $rawData, $property);
+            }
+        }
+    }
+
+    /**
+     * Execute a single hook
+     *
+     * @param object $object
+     * @param \Kassko\DataMapper\Attribute\Hook $hook
+     * @param array $rawData Raw data for expression evaluation
+     * @param ReflectionProperty|null $property Optional property for #property reference
+     */
+    private function executeHook(object $object, \Kassko\DataMapper\Attribute\Hook $hook, array $rawData = [], ?ReflectionProperty $property = null): void
+    {
+        // Determine which object/service to call the method on
+        $target = $object;
+        if ($hook->class !== null) {
+            // External service/class
+            $target = $this->serviceResolver->resolve($hook->class);
+        }
+        
+        // Resolve hook arguments
+        $sourceFunctionProvider = $this->sourceFunctionProviders[$object] ?? new SourceFunctionProvider(
+            fn(string $sourceId) => $this->executeDataSourceById($object, $sourceId)
+        );
+        $expressionParser = new ExpressionParser($sourceFunctionProvider, $this->serviceResolver);
+        $expressionParser->setRawData($rawData);
+        $expressionParser->setCurrentObject($object);
+        
+        // Create a property loader callback
+        $propertyLoader = function(string $propertyName) use ($object) {
+            $this->loadProperty($object, $propertyName);
+        };
+        
+        // Resolve arguments, but handle #property reference specially
+        $resolvedArgs = [];
+        foreach ($hook->args as $arg) {
+            if ($property !== null && $arg === '#' . $property->getName()) {
+                // Special case: reference to the property being set
+                $resolvedArgs[] = $property->getValue($object);
+            } else {
+                // Use standard resolution via expression parser
+                $resolved = is_string($arg) ? $this->resolveSingleArg($arg, $object, $propertyLoader, $expressionParser) : $arg;
+                $resolvedArgs[] = $resolved;
+            }
+        }
+        
+        // Call the hook method
+        if (method_exists($target, $hook->method)) {
+            call_user_func_array([$target, $hook->method], $resolvedArgs);
+        }
+    }
+
+    /**
+     * Resolve a single argument using the expression parser
+     *
+     * @param string $arg
+     * @param object $object
+     * @param callable $propertyLoader
+     * @param ExpressionParser $expressionParser
+     * @return mixed
+     */
+    private function resolveSingleArg(string $arg, object $object, callable $propertyLoader, ExpressionParser $expressionParser)
+    {
+        // Handle ##this syntax (return current object)
+        if ($arg === '##this') {
+            return $object;
+        }
+
+        // Handle #property syntax
+        if (str_starts_with($arg, '#')) {
+            $propertyName = substr($arg, 1);
+            $propertyLoader($propertyName);
+            
+            $reflectionClass = new ReflectionClass($object);
+            if ($reflectionClass->hasProperty($propertyName)) {
+                $property = $reflectionClass->getProperty($propertyName);
+                return $property->getValue($object);
+            }
+            return null;
+        }
+
+        // Handle expr(...) syntax
+        if (preg_match('/^expr\((.+)\)$/s', $arg, $matches)) {
+            $expression = $matches[1];
+            
+            // Use the expression parser to evaluate
+            // We need to expose a method or make evaluateExpression public/use reflection
+            // For now, let's use the resolveArgs method with a single arg
+            return $expressionParser->resolveArgs(['expr(' . $expression . ')'], $object, $propertyLoader)[0];
+        }
+
+        // Plain value
+        return $arg;
     }
 }

@@ -12,6 +12,8 @@ class ExpressionParser
 {
     private SourceFunctionProvider $sourceFunctionProvider;
     private ?ServiceResolver $serviceResolver;
+    private ?object $currentObject = null;
+    private array $rawData = [];
 
     public function __construct(
         SourceFunctionProvider $sourceFunctionProvider,
@@ -19,6 +21,26 @@ class ExpressionParser
     ) {
         $this->sourceFunctionProvider = $sourceFunctionProvider;
         $this->serviceResolver = $serviceResolver;
+    }
+
+    /**
+     * Set the raw data context for expression evaluation
+     *
+     * @param array $rawData
+     */
+    public function setRawData(array $rawData): void
+    {
+        $this->rawData = $rawData;
+    }
+
+    /**
+     * Set the current object being hydrated
+     *
+     * @param object $object
+     */
+    public function setCurrentObject(object $object): void
+    {
+        $this->currentObject = $object;
     }
 
     /**
@@ -52,6 +74,11 @@ class ExpressionParser
     {
         if (!is_string($arg)) {
             return $arg;
+        }
+
+        // Handle ##this syntax (return current object)
+        if ($arg === '##this') {
+            return $object;
         }
 
         // Handle #property syntax
@@ -103,6 +130,23 @@ class ExpressionParser
      */
     private function evaluateExpression(string $expression, object $object, callable $propertyLoader)
     {
+        // Parse _self() - returns the current object
+        if (preg_match("/^_self\(\)$/", $expression)) {
+            return $object;
+        }
+        
+        // Parse rawDataItem('key') - returns raw data value
+        if (preg_match("/rawDataItem\('([^']+)'\)/", $expression, $matches)) {
+            $key = $matches[1];
+            return $this->rawData[$key] ?? null;
+        }
+        
+        // Parse rawDataItemExists('key') - checks if key exists in raw data
+        if (preg_match("/rawDataItemExists\('([^']+)'\)/", $expression, $matches)) {
+            $key = $matches[1];
+            return array_key_exists($key, $this->rawData);
+        }
+        
         // Parse source('id')['key'] or source('id')
         if (preg_match("/source\('([a-zA-Z0-9_-]+)'\)(?:\['([^']+)'\])?/", $expression, $matches)) {
             $sourceId = $matches[1];
