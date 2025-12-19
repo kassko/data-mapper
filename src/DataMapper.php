@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Kassko\DataMapper;
 
 use Kassko\DataMapper\LazyLoader\LazyLoader;
-use Kassko\DataMapper\LazyLoader\LazyLoaderInterface;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\Registry\LazyLoaderRegistry;
 use Psr\Container\ContainerInterface;
 
 final class DataMapper
 {
-    private LazyLoaderInterface $lazyLoader;
+    private ServiceResolver $serviceResolver;
 
     /**
      * @param ServiceResolver|ContainerInterface|null $serviceResolverOrContainer
@@ -20,43 +19,23 @@ final class DataMapper
     {
         // Support backward compatibility: allow ContainerInterface or null
         if ($serviceResolverOrContainer instanceof ServiceResolver) {
-            $serviceResolver = $serviceResolverOrContainer;
+            $this->serviceResolver = $serviceResolverOrContainer;
         } elseif ($serviceResolverOrContainer instanceof ContainerInterface || $serviceResolverOrContainer === null) {
             // Backward compatibility: create a ServiceResolver with just the container
-            $serviceResolver = new ServiceResolver($serviceResolverOrContainer, []);
+            $this->serviceResolver = new ServiceResolver($serviceResolverOrContainer, []);
         } else {
             throw new \InvalidArgumentException(
                 'Argument must be ServiceResolver, ContainerInterface, or null'
             );
         }
         
-        $this->lazyLoader = new LazyLoader($serviceResolver);
+        // Register LazyLoader in the registry for backward compatibility
+        $lazyLoader = new LazyLoader($this->serviceResolver);
+        LazyLoaderRegistry::set($lazyLoader);
     }
 
     public function getServiceResolver(): ServiceResolver
     {
-        return $this->lazyLoader->getServiceResolver();
-    }
-
-    /**
-     * Prepare an object for lazy loading by injecting the loader
-     *
-     * @param object $object The object to prepare (must use LoadableTrait)
-     */
-    public function prepare(object $object): void
-    {
-        // Check if object uses LoadableTrait
-        if (!method_exists($object, 'setDataMapperLoader')) {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    'Object of class %s must use %s to support lazy loading',
-                    get_class($object),
-                    LoadableTrait::class
-                )
-            );
-        }
-        
-        $object->setDataMapperLoader($this->lazyLoader);
+        return $this->serviceResolver;
     }
 }
-

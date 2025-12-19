@@ -61,11 +61,12 @@ class ServiceLocatorTest extends TestCase
             }
         };
 
-        $dataMapper = new DataMapper($container);
-        $dataMapper->prepare($entity);
+        new DataMapper($container);
 
         $this->assertEquals('foo', $entity->getName());
         $this->assertEquals('foo@aaa.com', $entity->getEmail());
+        
+        \Kassko\DataMapper\Registry\LazyLoaderRegistry::clear();
     }
 
     public function testServiceLocatorThrowsExceptionWithoutContainer(): void
@@ -91,12 +92,13 @@ class ServiceLocatorTest extends TestCase
             }
         };
 
-        $dataMapper = new DataMapper(); // No container provided
-        $dataMapper->prepare($entity);
+        new DataMapper(); // No container provided
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Cannot resolve service identifier');
 
         $entity->getName();
+        
+        \Kassko\DataMapper\Registry\LazyLoaderRegistry::clear();
     }
 }

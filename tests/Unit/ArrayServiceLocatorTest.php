@@ -47,7 +47,7 @@ final class ArrayServiceLocatorTest extends TestCase
             'key1' => 'value1',
         ]);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\Psr\Container\NotFoundExceptionInterface::class);
         $this->expectExceptionMessage('Key "nonexistent" not found in locator');
 
         $locator->get('nonexistent');
