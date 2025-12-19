@@ -111,6 +111,19 @@ class LazyLoader implements LazyLoaderInterface
         }
         
         $property = $reflectionClass->getProperty($propertyName);
+        
+        // Check for DataSourceRef with chain or providers
+        $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
+        if ($dataSourceRef !== null && $dataSourceRef->chain !== null) {
+            // Handle chain fallback
+            $this->loadPropertyWithChain($object, $propertyName, $property, $dataSourceRef);
+            return;
+        } elseif ($dataSourceRef !== null && $dataSourceRef->providers !== null) {
+            // Handle aggregation
+            $this->loadPropertyWithProviders($object, $propertyName, $property, $dataSourceRef);
+            return;
+        }
+        
         $dataSource = $this->resolveDataSourceForProperty($property, $object);
         
         if ($dataSource === null) {
@@ -145,6 +158,94 @@ class LazyLoader implements LazyLoaderInterface
                 }
             }
         }
+    }
+
+    /**
+     * Load a property with chain fallback mechanism
+     *
+     * @param object $object
+     * @param string $propertyName
+     * @param ReflectionProperty $property
+     * @param \Kassko\DataMapper\Attribute\DataSourceRef $dataSourceRef
+     */
+    private function loadPropertyWithChain(object $object, string $propertyName, ReflectionProperty $property, $dataSourceRef): void
+    {
+        $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
+        $exceptionClass = $dataSourceRef->exception;
+        
+        foreach ($dataSourceRef->chain as $sourceId) {
+            if (!isset($dataSourceMap[$sourceId])) {
+                continue;
+            }
+            
+            $dataSource = $dataSourceMap[$sourceId];
+            
+            try {
+                $result = $this->executeDataSource($dataSource, $object);
+                
+                // Success! Hydrate the property
+                if (is_array($result) && !$this->isListArray($result) && count($result) > 0) {
+                    $this->hydrateProperty($object, $propertyName, $result);
+                } else {
+                    $this->hydratePropertyWithValue($object, $propertyName, $result);
+                }
+                
+                $this->loadedProperties[$object][$propertyName] = true;
+                return; // Successfully loaded, exit chain
+            } catch (\Throwable $e) {
+                // Check if this is the expected exception type
+                if ($exceptionClass !== null && is_a($e, $exceptionClass)) {
+                    // Continue to next source in chain
+                    continue;
+                }
+                // If it's a different exception, rethrow it
+                throw $e;
+            }
+        }
+        
+        // If we get here, all sources in the chain failed
+        throw new \Kassko\DataMapper\Exception\NoValidDataSourceException(
+            sprintf('No valid DataSource found in chain for property %s', $propertyName)
+        );
+    }
+
+    /**
+     * Load a property with aggregation from multiple providers
+     *
+     * @param object $object
+     * @param string $propertyName
+     * @param ReflectionProperty $property
+     * @param \Kassko\DataMapper\Attribute\DataSourceRef $dataSourceRef
+     */
+    private function loadPropertyWithProviders(object $object, string $propertyName, ReflectionProperty $property, $dataSourceRef): void
+    {
+        $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
+        $aggregatedResult = [];
+        
+        foreach ($dataSourceRef->providers as $sourceId) {
+            if (!isset($dataSourceMap[$sourceId])) {
+                continue;
+            }
+            
+            $dataSource = $dataSourceMap[$sourceId];
+            $result = $this->executeDataSource($dataSource, $object);
+            
+            // Only aggregate arrays
+            if (is_array($result)) {
+                $aggregatedResult = array_replace_recursive($aggregatedResult, $result);
+            }
+        }
+        
+        // Hydrate the property with aggregated result
+        if (!empty($aggregatedResult)) {
+            if (!$this->isListArray($aggregatedResult)) {
+                $this->hydrateProperty($object, $propertyName, $aggregatedResult);
+            } else {
+                $this->hydratePropertyWithValue($object, $propertyName, $aggregatedResult);
+            }
+        }
+        
+        $this->loadedProperties[$object][$propertyName] = true;
     }
 
     /**
