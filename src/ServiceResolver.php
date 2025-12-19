@@ -32,7 +32,12 @@ final class ServiceResolver
             if ($locator->has($classOrId)) {
                 $resolved = $locator->get($classOrId);
                 
-                // Recursively resolve (in case locator returns @serviceId)
+                // If it's already an object, return it directly
+                if (is_object($resolved)) {
+                    return $resolved;
+                }
+                
+                // Recursively resolve (in case locator returns @serviceId or class name)
                 return $this->resolve($resolved);
             }
         }

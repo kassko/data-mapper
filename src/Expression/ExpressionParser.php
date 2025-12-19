@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Expression;
 
+use Kassko\DataMapper\Registry\ContextRegistry;
+use Kassko\DataMapper\ServiceResolver;
 use ReflectionClass;
 
 class ExpressionParser
 {
     private SourceFunctionProvider $sourceFunctionProvider;
+    private ?ServiceResolver $serviceResolver;
 
-    public function __construct(SourceFunctionProvider $sourceFunctionProvider)
-    {
+    public function __construct(
+        SourceFunctionProvider $sourceFunctionProvider,
+        ?ServiceResolver $serviceResolver = null
+    ) {
         $this->sourceFunctionProvider = $sourceFunctionProvider;
+        $this->serviceResolver = $serviceResolver;
     }
 
     /**
@@ -109,6 +115,37 @@ class ExpressionParser
             }
             
             return $result;
+        }
+        
+        // Parse service('service_id')
+        if (preg_match("/service\('([^']+)'\)/", $expression, $matches)) {
+            $serviceId = $matches[1];
+            
+            if ($this->serviceResolver === null) {
+                throw new \RuntimeException('ServiceResolver not available for service() function');
+            }
+            
+            return $this->serviceResolver->resolve($serviceId);
+        }
+        
+        // Parse env_var('KEY')
+        if (preg_match("/env_var\('([^']+)'\)/", $expression, $matches)) {
+            $key = $matches[1];
+            
+            // Try $_ENV first, then getenv()
+            if (isset($_ENV[$key])) {
+                return $_ENV[$key];
+            }
+            
+            $envValue = getenv($key);
+            return $envValue !== false ? $envValue : null;
+        }
+        
+        // Parse context('key')
+        if (preg_match("/context\('([^']+)'\)/", $expression, $matches)) {
+            $key = $matches[1];
+            
+            return ContextRegistry::get($key);
         }
         
         // If we can't parse it, return the original expression

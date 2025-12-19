@@ -10,15 +10,13 @@ use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
-#[DataSourcesStore([
-    new DataSource(
-        id: 'personSource',
-        class: PersonDataSource::class,
-        method: 'getData',
-        args: ['#id'],
-        supplySeveralProps: true
-    )
-])]
+#[DataSource(
+    id: 'personSource',
+    class: PersonDataSource::class,
+    method: 'getData',
+    args: ['#id'],
+    supplySeveralProperties: true
+)]
 class PersonWithStore
 {
     use LoadableTrait;

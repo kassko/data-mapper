@@ -11,14 +11,12 @@ use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\Loading;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
-#[DataSourcesStore([
-    new DataSource(
-        id: 'infoSource',
-        class: ShopDataSource::class,
-        method: 'getShopsSurveyInfo',
-        supplySeveralProps: true
-    )
-])]
+#[DataSource(
+    id: 'infoSource',
+    class: ShopDataSource::class,
+    method: 'getShopsSurveyInfo',
+    supplySeveralProperties: true
+)]
 class Information
 {
     use LoadableTrait;

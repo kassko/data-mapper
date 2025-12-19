@@ -10,6 +10,7 @@ use Kassko\DataMapper\Attribute\Loading;
 use Kassko\DataMapper\Expression\ExpressionParser;
 use Kassko\DataMapper\Expression\SourceFunctionProvider;
 use Kassko\DataMapper\Metadata\AttributeReader;
+use Kassko\DataMapper\Registry\ContextRegistry;
 use Kassko\DataMapper\ServiceResolver;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
@@ -115,8 +116,8 @@ class LazyLoader implements LazyLoaderInterface
             return;
         }
         
-        // Handle supplySeveralProps
-        if ($dataSource->supplySeveralProps) {
+        // Handle supplySeveralProperties
+        if ($dataSource->supplySeveralProperties) {
             // Load all properties that reference this DataSource
             $this->loadPropertiesForDataSource($object, $dataSource);
         } else {
@@ -169,7 +170,7 @@ class LazyLoader implements LazyLoaderInterface
     }
 
     /**
-     * Load all properties that reference a DataSource with supplySeveralProps
+     * Load all properties that reference a DataSource with supplySeveralProperties
      *
      * @param object $object
      * @param DataSource $dataSource
@@ -210,8 +211,12 @@ class LazyLoader implements LazyLoaderInterface
                 // Apply recursive hydration if needed
                 $value = $this->applyRecursiveHydration($property, $value, 0);
                 
-                $property->setValue($object, $value);
+                // Set property value using setter resolution
+                $this->setPropertyValue($object, $property, $value);
                 $this->loadedProperties[$object][$propName] = true;
+                
+                // Handle Context attribute
+                $this->handleContextAttribute($property, $value);
             }
         }
     }
@@ -263,7 +268,7 @@ class LazyLoader implements LazyLoaderInterface
     }
 
     /**
-     * Load data from the DataSource (expects array result for supplySeveralProps)
+     * Load data from the DataSource (expects array result for supplySeveralProperties)
      *
      * @param DataSource $dataSource
      * @param object $object
@@ -325,7 +330,7 @@ class LazyLoader implements LazyLoaderInterface
     private function resolveArgs(array $args, object $object): array
     {
         $sourceFunctionProvider = $this->sourceFunctionProviders[$object];
-        $expressionParser = new ExpressionParser($sourceFunctionProvider);
+        $expressionParser = new ExpressionParser($sourceFunctionProvider, $this->serviceResolver);
         
         return $expressionParser->resolveArgs($args, $object, function(string $propertyName) use ($object) {
             $this->loadProperty($object, $propertyName);
@@ -356,8 +361,8 @@ class LazyLoader implements LazyLoaderInterface
         // Execute the data source
         $result = $this->executeDataSource($dataSource, $object);
         
-        // If supplySeveralProps, also hydrate all related properties
-        if ($dataSource->supplySeveralProps && is_array($result)) {
+        // If supplySeveralProperties, also hydrate all related properties
+        if ($dataSource->supplySeveralProperties && is_array($result)) {
             $this->loadPropertiesForDataSource($object, $dataSource);
         }
         
@@ -394,7 +399,11 @@ class LazyLoader implements LazyLoaderInterface
         // Check if we should perform recursive hydration
         $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
         
-        $property->setValue($object, $value);
+        // Set property value using setter resolution
+        $this->setPropertyValue($object, $property, $value);
+        
+        // Handle Context attribute
+        $this->handleContextAttribute($property, $value);
     }
 
     /**
@@ -418,7 +427,11 @@ class LazyLoader implements LazyLoaderInterface
         // Check if we should perform recursive hydration
         $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
         
-        $property->setValue($object, $value);
+        // Set property value using setter resolution
+        $this->setPropertyValue($object, $property, $value);
+        
+        // Handle Context attribute
+        $this->handleContextAttribute($property, $value);
     }
 
     /**
@@ -538,7 +551,100 @@ class LazyLoader implements LazyLoaderInterface
             // Apply recursive hydration if needed
             $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
             
-            $property->setValue($object, $value);
+            // Set property value using setter resolution
+            $this->setPropertyValue($object, $property, $value);
+            
+            // Handle Context attribute
+            $this->handleContextAttribute($property, $value);
         }
+    }
+
+    /**
+     * Set a property value using setter resolution logic
+     *
+     * @param object $object
+     * @param ReflectionProperty $property
+     * @param mixed $value
+     */
+    private function setPropertyValue(object $object, ReflectionProperty $property, mixed $value): void
+    {
+        $propertyName = $property->getName();
+        
+        // 1. Check for explicit Setter attribute
+        $setter = $this->attributeReader->readSetter($property);
+        if ($setter !== null && $setter->name !== null) {
+            // Use explicit setter method
+            if (method_exists($object, $setter->name)) {
+                $object->{$setter->name}($value);
+                return;
+            }
+        }
+        
+        // 2. If value is a non-associative array (list), look for adder method
+        if (is_array($value) && $this->isListArray($value)) {
+            $adderMethod = 'add' . ucfirst($propertyName) . 'Item';
+            if (method_exists($object, $adderMethod)) {
+                foreach ($value as $item) {
+                    $object->$adderMethod($item);
+                }
+                return;
+            }
+        }
+        
+        // 3. Look for setter method
+        $setterMethod = 'set' . ucfirst($propertyName);
+        if (method_exists($object, $setterMethod)) {
+            $object->$setterMethod($value);
+            return;
+        }
+        
+        // 4. Fall back to direct property assignment via reflection
+        $property->setValue($object, $value);
+    }
+
+    /**
+     * Check if an array is a list (non-associative array with sequential numeric keys)
+     *
+     * @param array $array
+     * @return bool
+     */
+    private function isListArray(array $array): bool
+    {
+        if (empty($array)) {
+            return true;
+        }
+        
+        // Use array_is_list() if available (PHP 8.1+), otherwise fall back to manual check
+        if (function_exists('array_is_list')) {
+            return array_is_list($array);
+        }
+        
+        // Manual check for PHP 8.0 compatibility
+        $i = 0;
+        foreach ($array as $key => $value) {
+            if ($key !== $i++) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Handle Context attribute - set context values when property is loaded
+     *
+     * @param ReflectionProperty $property
+     * @param mixed $value
+     */
+    private function handleContextAttribute(ReflectionProperty $property, mixed $value): void
+    {
+        $context = $this->attributeReader->readContext($property);
+        
+        if ($context === null) {
+            return;
+        }
+        
+        // Set all context values
+        ContextRegistry::setMany($context->values);
     }
 }

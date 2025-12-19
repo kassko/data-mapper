@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Metadata;
 
+use Kassko\DataMapper\Attribute\Context;
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Field;
+use Kassko\DataMapper\Attribute\Getter;
 use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\KeepProperty;
 use Kassko\DataMapper\Attribute\Loading;
+use Kassko\DataMapper\Attribute\Setter;
 use Kassko\DataMapper\Attribute\SkipProperty;
 use Kassko\DataMapper\Attribute\SkipAllProperties;
 use Kassko\DataMapper\Attribute\KeepAllProperties;
@@ -78,6 +82,74 @@ class AttributeReader
     public function readProperty(ReflectionProperty $property): ?Property
     {
         $attributes = $property->getAttributes(Property::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read Context attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return Context|null
+     */
+    public function readContext(ReflectionProperty $property): ?Context
+    {
+        $attributes = $property->getAttributes(Context::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read Getter attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return Getter|null
+     */
+    public function readGetter(ReflectionProperty $property): ?Getter
+    {
+        $attributes = $property->getAttributes(Getter::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read Setter attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return Setter|null
+     */
+    public function readSetter(ReflectionProperty $property): ?Setter
+    {
+        $attributes = $property->getAttributes(Setter::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read KeepProperty attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return KeepProperty|null
+     */
+    public function readKeepProperty(ReflectionProperty $property): ?KeepProperty
+    {
+        $attributes = $property->getAttributes(KeepProperty::class);
         
         if (empty($attributes)) {
             return null;
@@ -160,7 +232,7 @@ class AttributeReader
     }
 
     /**
-     * Build a map of DataSource id => DataSource from DataSourcesStore
+     * Build a map of DataSource id => DataSource from DataSourcesStore or repeatable DataSource attributes
      *
      * @param object $object
      * @return array<string, DataSource>
@@ -168,14 +240,22 @@ class AttributeReader
     public function getDataSourceMap(object $object): array
     {
         $reflectionClass = new ReflectionClass($object);
-        $store = $this->readDataSourcesStore($reflectionClass);
+        $map = [];
         
-        if ($store === null) {
-            return [];
+        // First try DataSourcesStore (backward compatibility)
+        $store = $this->readDataSourcesStore($reflectionClass);
+        if ($store !== null) {
+            foreach ($store->sources as $source) {
+                if ($source->id !== null) {
+                    $map[$source->id] = $source;
+                }
+            }
         }
         
-        $map = [];
-        foreach ($store->sources as $source) {
+        // Also check for repeatable DataSource attributes on the class
+        $dataSourceAttrs = $reflectionClass->getAttributes(DataSource::class);
+        foreach ($dataSourceAttrs as $attr) {
+            $source = $attr->newInstance();
             if ($source->id !== null) {
                 $map[$source->id] = $source;
             }
@@ -261,6 +341,7 @@ class AttributeReader
     {
         $hasSkipProperty = $this->readSkipProperty($property) !== null;
         $hasProperty = $this->readProperty($property) !== null;
+        $hasKeepProperty = $this->readKeepProperty($property) !== null;
         $hasSkipAllProperties = $this->hasSkipAllProperties($reflectionClass);
         
         // If property has SkipProperty, never hydrate
@@ -268,9 +349,9 @@ class AttributeReader
             return false;
         }
         
-        // If class has SkipAllProperties, only hydrate if property has Property attribute
+        // If class has SkipAllProperties, only hydrate if property has Property or KeepProperty attribute
         if ($hasSkipAllProperties) {
-            return $hasProperty;
+            return $hasProperty || $hasKeepProperty;
         }
         
         // Default behavior (KeepAllProperties): hydrate unless SkipProperty
