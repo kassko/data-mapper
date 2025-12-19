@@ -311,6 +311,22 @@ class LazyLoader implements LazyLoaderInterface
                 continue;
             }
             
+            // Check if property has instance mapping
+            $propertyAttr = $this->attributeReader->readProperty($property);
+            if ($propertyAttr !== null && $propertyAttr->mapping !== null) {
+                // Extract data using mapping from flat parent data
+                $mappedData = $this->applyInstanceMapping($data, $propertyAttr);
+                
+                // Only proceed if we have mapped data
+                if (!empty($mappedData)) {
+                    $value = $this->applyRecursiveHydration($property, $mappedData, 0);
+                    $this->setPropertyValue($object, $property, $value);
+                    $this->loadedProperties[$object][$propName] = true;
+                    $this->handleContextAttribute($property, $value);
+                }
+                continue;
+            }
+            
             // Get the field name mapping
             $fieldName = $this->getPropertyNameMapping($property);
             
@@ -497,6 +513,21 @@ class LazyLoader implements LazyLoaderInterface
         
         $property = $reflectionClass->getProperty($propertyName);
         
+        // Check if property has instance mapping
+        $propertyAttr = $this->attributeReader->readProperty($property);
+        if ($propertyAttr !== null && $propertyAttr->mapping !== null) {
+            // Extract data using mapping from flat parent data
+            $mappedData = $this->applyInstanceMapping($data, $propertyAttr);
+            
+            // Only proceed if we have mapped data
+            if (!empty($mappedData)) {
+                $value = $this->applyRecursiveHydration($property, $mappedData, $currentDepth);
+                $this->setPropertyValue($object, $property, $value);
+                $this->handleContextAttribute($property, $value);
+            }
+            return;
+        }
+        
         // Get the field name mapping
         $fieldName = $this->getPropertyNameMapping($property);
         
@@ -636,7 +667,7 @@ class LazyLoader implements LazyLoaderInterface
                 // Execute after_create_object hooks
                 $this->executeClassHooks($nestedObject, 'after_create_object', $itemData);
                 
-                // Hydrate the nested object recursively
+                // Hydrate the nested object recursively (data is already mapped if needed)
                 $this->hydrateObject($nestedObject, $itemData, $itemPropertyAttr, $currentDepth + 1);
                 
                 $result[] = $nestedObject;
@@ -664,7 +695,7 @@ class LazyLoader implements LazyLoaderInterface
         // Execute after_create_object hooks
         $this->executeClassHooks($nestedObject, 'after_create_object', $value);
         
-        // Hydrate the nested object recursively
+        // Hydrate the nested object recursively (data is already mapped if needed)
         $this->hydrateObject($nestedObject, $value, $propertyAttr, $currentDepth + 1);
         
         return $nestedObject;
@@ -1033,5 +1064,31 @@ class LazyLoader implements LazyLoaderInterface
                 // Load all properties
                 return true;
         }
+    }
+
+    /**
+     * Apply instance-specific mapping to data
+     *
+     * @param array $data
+     * @param Property|null $propertyAttr
+     * @return array
+     */
+    private function applyInstanceMapping(array $data, ?Property $propertyAttr): array
+    {
+        // If no mapping specified, return data as-is
+        if ($propertyAttr === null || $propertyAttr->mapping === null) {
+            return $data;
+        }
+        
+        // Transform keys according to mapping
+        // mapping format: ['source_key' => 'target_key', ...]
+        $mappedData = [];
+        foreach ($propertyAttr->mapping as $sourceKey => $targetKey) {
+            if (array_key_exists($sourceKey, $data)) {
+                $mappedData[$targetKey] = $data[$sourceKey];
+            }
+        }
+        
+        return $mappedData;
     }
 }
