@@ -116,15 +116,28 @@ class ExpressionParser
         // Try to load the property first if it needs loading
         $propertyLoader($propertyName);
         
-        // Try getter first
-        $getterMethod = 'get' . ucfirst($propertyName);
-        if (method_exists($object, $getterMethod)) {
-            return $object->$getterMethod();
+        $reflectionClass = new ReflectionClass($object);
+        $ucPropertyName = ucfirst($propertyName);
+        
+        // 1. Try getter: getPropertyName()
+        $getterName = 'get' . $ucPropertyName;
+        if ($reflectionClass->hasMethod($getterName)) {
+            return $object->$getterName();
         }
         
-        // Fall back to direct property access
-        $reflectionClass = new ReflectionClass($object);
+        // 2. Try isser: isPropertyName()
+        $isserName = 'is' . $ucPropertyName;
+        if ($reflectionClass->hasMethod($isserName)) {
+            return $object->$isserName();
+        }
         
+        // 3. Try haser: hasPropertyName()
+        $haserName = 'has' . $ucPropertyName;
+        if ($reflectionClass->hasMethod($haserName)) {
+            return $object->$haserName();
+        }
+        
+        // 4. Direct property access
         if ($reflectionClass->hasProperty($propertyName)) {
             $property = $reflectionClass->getProperty($propertyName);
             return $property->getValue($object);
