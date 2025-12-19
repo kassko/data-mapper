@@ -29,7 +29,6 @@ class ExpandNoExpandTest extends TestCase
         // Use reflection to call the private hydrateObject method
         $reflection = new \ReflectionClass($lazyLoader);
         $method = $reflection->getMethod('hydrateObject');
-        $method->setAccessible(true);
         $method->invoke($lazyLoader, $shop, $data, $propertyAttr, 0);
         
         // Only 'name' should be hydrated
@@ -56,7 +55,6 @@ class ExpandNoExpandTest extends TestCase
         // Use reflection to call the private hydrateObject method
         $reflection = new \ReflectionClass($lazyLoader);
         $method = $reflection->getMethod('hydrateObject');
-        $method->setAccessible(true);
         $method->invoke($lazyLoader, $shop, $data, $propertyAttr, 0);
         
         // 'name' should not be hydrated (in noExpand list)
