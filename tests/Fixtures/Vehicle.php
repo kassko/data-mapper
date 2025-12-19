@@ -8,6 +8,7 @@ abstract class Vehicle
 {
     private ?int $id = null;
     private ?string $brand = null;
+    private ?string $model = null;
 
     public function getId(): ?int
     {
@@ -27,5 +28,15 @@ abstract class Vehicle
     public function setBrand(?string $brand): void
     {
         $this->brand = $brand;
+    }
+
+    public function getModel(): ?string
+    {
+        return $this->model;
+    }
+
+    public function setModel(?string $model): void
+    {
+        $this->model = $model;
     }
 }

@@ -128,14 +128,16 @@ class LazyLoader implements LazyLoaderInterface
             // Load data from DataSource
             $result = $this->executeDataSource($dataSource, $object);
             
-            // If result is an array, use array-based hydration
-            // Otherwise, directly set the value to all matching properties
-            if (is_array($result)) {
+            // If result is an associative array (not a list), use array-based hydration for multiple properties
+            // If result is a list or non-array, treat it as a direct value for the property
+            if (is_array($result) && !$this->isListArray($result) && count($result) > 0) {
+                // Associative array - hydrate multiple properties from it
                 foreach ($propertiesToHydrate as $propName) {
                     $this->hydrateProperty($object, $propName, $result);
                     $this->loadedProperties[$object][$propName] = true;
                 }
             } else {
+                // Direct value (could be a list, scalar, object, etc.) - set it directly to the property
                 foreach ($propertiesToHydrate as $propName) {
                     $this->hydratePropertyWithValue($object, $propName, $result);
                     $this->loadedProperties[$object][$propName] = true;
@@ -473,17 +475,15 @@ class LazyLoader implements LazyLoaderInterface
         $propertyCandidates = $this->attributeReader->readPropertyCandidates($property);
         $propertyAttr = null;
         
-        if ($propertyCandidates !== null && is_array($value)) {
-            // Resolve property config based on discriminators
-            $propertyAttr = $this->resolvePropertyCandidate($propertyCandidates, $value);
-        }
+        // Note: Don't try to resolve PropertyCandidate here for the whole value
+        // It will be resolved per-item if this is a list array
         
-        // Fall back to direct Property attribute if no candidates or not resolved
-        if ($propertyAttr === null) {
-            $propertyAttr = $this->attributeReader->readProperty($property);
-        }
+        // Fall back to direct Property attribute
+        $propertyAttr = $this->attributeReader->readProperty($property);
         
-        if ($propertyAttr === null || $propertyAttr->class === null) {
+        // If no direct Property attribute and we have PropertyCandidates, 
+        // we'll handle it in the list processing below
+        if ($propertyAttr === null && $propertyCandidates === null) {
             return $value;
         }
         
@@ -516,7 +516,8 @@ class LazyLoader implements LazyLoaderInterface
                     }
                 }
                 
-                if ($itemPropertyAttr->class === null) {
+                // If still no property config, skip this item
+                if ($itemPropertyAttr === null || $itemPropertyAttr->class === null) {
                     $result[] = $itemData;
                     continue;
                 }
@@ -533,6 +534,17 @@ class LazyLoader implements LazyLoaderInterface
                 $result[] = $nestedObject;
             }
             return $result;
+        }
+        
+        // Single object (not a list)
+        // If no propertyAttr and we have PropertyCandidates, try to resolve
+        if ($propertyAttr === null && $propertyCandidates !== null) {
+            $propertyAttr = $this->resolvePropertyCandidate($propertyCandidates, $value);
+        }
+        
+        // If still no propertyAttr or no class, return as-is
+        if ($propertyAttr === null || $propertyAttr->class === null) {
+            return $value;
         }
         
         // Get the actual class to instantiate
