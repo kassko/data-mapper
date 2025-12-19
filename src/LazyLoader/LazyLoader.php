@@ -10,6 +10,7 @@ use Kassko\DataMapper\Attribute\Loading;
 use Kassko\DataMapper\Expression\ExpressionParser;
 use Kassko\DataMapper\Expression\SourceFunctionProvider;
 use Kassko\DataMapper\Metadata\AttributeReader;
+use Kassko\DataMapper\Registry\ContextRegistry;
 use Kassko\DataMapper\ServiceResolver;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
@@ -212,6 +213,9 @@ class LazyLoader implements LazyLoaderInterface
                 
                 $property->setValue($object, $value);
                 $this->loadedProperties[$object][$propName] = true;
+                
+                // Handle Context attribute
+                $this->handleContextAttribute($property, $value);
             }
         }
     }
@@ -395,6 +399,9 @@ class LazyLoader implements LazyLoaderInterface
         $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
         
         $property->setValue($object, $value);
+        
+        // Handle Context attribute
+        $this->handleContextAttribute($property, $value);
     }
 
     /**
@@ -419,6 +426,9 @@ class LazyLoader implements LazyLoaderInterface
         $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
         
         $property->setValue($object, $value);
+        
+        // Handle Context attribute
+        $this->handleContextAttribute($property, $value);
     }
 
     /**
@@ -539,6 +549,27 @@ class LazyLoader implements LazyLoaderInterface
             $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
             
             $property->setValue($object, $value);
+            
+            // Handle Context attribute
+            $this->handleContextAttribute($property, $value);
         }
+    }
+
+    /**
+     * Handle Context attribute - set context values when property is loaded
+     *
+     * @param ReflectionProperty $property
+     * @param mixed $value
+     */
+    private function handleContextAttribute(ReflectionProperty $property, mixed $value): void
+    {
+        $context = $this->attributeReader->readContext($property);
+        
+        if ($context === null) {
+            return;
+        }
+        
+        // Set all context values
+        ContextRegistry::setMany($context->values);
     }
 }

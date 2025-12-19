@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Metadata;
 
+use Kassko\DataMapper\Attribute\Context;
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
@@ -79,6 +80,23 @@ class AttributeReader
     public function readProperty(ReflectionProperty $property): ?Property
     {
         $attributes = $property->getAttributes(Property::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read Context attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return Context|null
+     */
+    public function readContext(ReflectionProperty $property): ?Context
+    {
+        $attributes = $property->getAttributes(Context::class);
         
         if (empty($attributes)) {
             return null;
