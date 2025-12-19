@@ -23,4 +23,18 @@ trait LoadableTrait
 
         $lazyLoader->loadProperty($this, $propertyName);
     }
+
+    /**
+     * Load all eager properties. Call this after instantiation if needed.
+     */
+    protected function loadEagerProperties(): void
+    {
+        $lazyLoader = LazyLoaderRegistry::get();
+        
+        if ($lazyLoader === null) {
+            return;
+        }
+        
+        $lazyLoader->loadEagerProperties($this);
+    }
 }
