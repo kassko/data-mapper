@@ -115,8 +115,8 @@ class LazyLoader implements LazyLoaderInterface
             return;
         }
         
-        // Handle supplySeveralProps
-        if ($dataSource->supplySeveralProps) {
+        // Handle supplySeveralProperties
+        if ($dataSource->supplySeveralProperties) {
             // Load all properties that reference this DataSource
             $this->loadPropertiesForDataSource($object, $dataSource);
         } else {
@@ -356,8 +356,8 @@ class LazyLoader implements LazyLoaderInterface
         // Execute the data source
         $result = $this->executeDataSource($dataSource, $object);
         
-        // If supplySeveralProps, also hydrate all related properties
-        if ($dataSource->supplySeveralProps && is_array($result)) {
+        // If supplySeveralProperties, also hydrate all related properties
+        if ($dataSource->supplySeveralProperties && is_array($result)) {
             $this->loadPropertiesForDataSource($object, $dataSource);
         }
         

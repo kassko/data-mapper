@@ -160,7 +160,7 @@ class AttributeReader
     }
 
     /**
-     * Build a map of DataSource id => DataSource from DataSourcesStore
+     * Build a map of DataSource id => DataSource from DataSourcesStore or repeatable DataSource attributes
      *
      * @param object $object
      * @return array<string, DataSource>
@@ -168,14 +168,22 @@ class AttributeReader
     public function getDataSourceMap(object $object): array
     {
         $reflectionClass = new ReflectionClass($object);
-        $store = $this->readDataSourcesStore($reflectionClass);
+        $map = [];
         
-        if ($store === null) {
-            return [];
+        // First try DataSourcesStore (backward compatibility)
+        $store = $this->readDataSourcesStore($reflectionClass);
+        if ($store !== null) {
+            foreach ($store->sources as $source) {
+                if ($source->id !== null) {
+                    $map[$source->id] = $source;
+                }
+            }
         }
         
-        $map = [];
-        foreach ($store->sources as $source) {
+        // Also check for repeatable DataSource attributes on the class
+        $dataSourceAttrs = $reflectionClass->getAttributes(DataSource::class);
+        foreach ($dataSourceAttrs as $attr) {
+            $source = $attr->newInstance();
             if ($source->id !== null) {
                 $map[$source->id] = $source;
             }
