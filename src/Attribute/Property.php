@@ -14,5 +14,11 @@ final class Property
         public readonly ?string $class = null,     // Class for nested object hydration
         public readonly ?string $expand = null,    // Comma-separated props to expand
         public readonly ?string $noExpand = null,  // Comma-separated props to NOT expand
-    ) {}
+        public readonly ?array $mapping = null,    // Instance-specific key mapping
+    ) {
+        // Validation: mapping requires class to be set
+        if ($mapping !== null && $class === null) {
+            throw new \InvalidArgumentException('Property: mapping can only be set when class is also specified');
+        }
+    }
 }

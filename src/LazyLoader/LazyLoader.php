@@ -111,6 +111,19 @@ class LazyLoader implements LazyLoaderInterface
         }
         
         $property = $reflectionClass->getProperty($propertyName);
+        
+        // Check for DataSourceRef with chain or providers
+        $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
+        if ($dataSourceRef !== null && $dataSourceRef->chain !== null) {
+            // Handle chain fallback
+            $this->loadPropertyWithChain($object, $propertyName, $property, $dataSourceRef);
+            return;
+        } elseif ($dataSourceRef !== null && $dataSourceRef->providers !== null) {
+            // Handle aggregation
+            $this->loadPropertyWithProviders($object, $propertyName, $property, $dataSourceRef);
+            return;
+        }
+        
         $dataSource = $this->resolveDataSourceForProperty($property, $object);
         
         if ($dataSource === null) {
@@ -120,7 +133,7 @@ class LazyLoader implements LazyLoaderInterface
         // Handle supplySeveralProperties
         if ($dataSource->supplySeveralProperties) {
             // Load all properties that reference this DataSource
-            $this->loadPropertiesForDataSource($object, $dataSource);
+            $this->loadPropertiesForDataSource($object, $dataSource, $propertyName);
         } else {
             // Old behavior: find properties with same signature
             $signature = $this->createSignature($dataSource, $object);
@@ -145,6 +158,94 @@ class LazyLoader implements LazyLoaderInterface
                 }
             }
         }
+    }
+
+    /**
+     * Load a property with chain fallback mechanism
+     *
+     * @param object $object
+     * @param string $propertyName
+     * @param ReflectionProperty $property
+     * @param \Kassko\DataMapper\Attribute\DataSourceRef $dataSourceRef
+     */
+    private function loadPropertyWithChain(object $object, string $propertyName, ReflectionProperty $property, $dataSourceRef): void
+    {
+        $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
+        $exceptionClass = $dataSourceRef->exception;
+        
+        foreach ($dataSourceRef->chain as $sourceId) {
+            if (!isset($dataSourceMap[$sourceId])) {
+                continue;
+            }
+            
+            $dataSource = $dataSourceMap[$sourceId];
+            
+            try {
+                $result = $this->executeDataSource($dataSource, $object);
+                
+                // Success! Hydrate the property
+                if (is_array($result) && !$this->isListArray($result) && count($result) > 0) {
+                    $this->hydrateProperty($object, $propertyName, $result);
+                } else {
+                    $this->hydratePropertyWithValue($object, $propertyName, $result);
+                }
+                
+                $this->loadedProperties[$object][$propertyName] = true;
+                return; // Successfully loaded, exit chain
+            } catch (\Throwable $e) {
+                // Check if this is the expected exception type
+                if ($exceptionClass !== null && is_a($e, $exceptionClass)) {
+                    // Continue to next source in chain
+                    continue;
+                }
+                // If it's a different exception, rethrow it
+                throw $e;
+            }
+        }
+        
+        // If we get here, all sources in the chain failed
+        throw new \Kassko\DataMapper\Exception\NoValidDataSourceException(
+            sprintf('No valid DataSource found in chain for property %s', $propertyName)
+        );
+    }
+
+    /**
+     * Load a property with aggregation from multiple providers
+     *
+     * @param object $object
+     * @param string $propertyName
+     * @param ReflectionProperty $property
+     * @param \Kassko\DataMapper\Attribute\DataSourceRef $dataSourceRef
+     */
+    private function loadPropertyWithProviders(object $object, string $propertyName, ReflectionProperty $property, $dataSourceRef): void
+    {
+        $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
+        $aggregatedResult = [];
+        
+        foreach ($dataSourceRef->providers as $sourceId) {
+            if (!isset($dataSourceMap[$sourceId])) {
+                continue;
+            }
+            
+            $dataSource = $dataSourceMap[$sourceId];
+            $result = $this->executeDataSource($dataSource, $object);
+            
+            // Only aggregate arrays
+            if (is_array($result)) {
+                $aggregatedResult = array_replace_recursive($aggregatedResult, $result);
+            }
+        }
+        
+        // Hydrate the property with aggregated result
+        if (!empty($aggregatedResult)) {
+            if (!$this->isListArray($aggregatedResult)) {
+                $this->hydrateProperty($object, $propertyName, $aggregatedResult);
+            } else {
+                $this->hydratePropertyWithValue($object, $propertyName, $aggregatedResult);
+            }
+        }
+        
+        $this->loadedProperties[$object][$propertyName] = true;
     }
 
     /**
@@ -177,8 +278,9 @@ class LazyLoader implements LazyLoaderInterface
      *
      * @param object $object
      * @param DataSource $dataSource
+     * @param string $triggeringPropertyName The property that triggered this load
      */
-    private function loadPropertiesForDataSource(object $object, DataSource $dataSource): void
+    private function loadPropertiesForDataSource(object $object, DataSource $dataSource, string $triggeringPropertyName = ''): void
     {
         // Load data from DataSource once
         $data = $this->loadDataFromSource($dataSource, $object);
@@ -201,6 +303,27 @@ class LazyLoader implements LazyLoaderInterface
             // Check if already loaded
             $propName = $property->getName();
             if (isset($this->loadedProperties[$object][$propName])) {
+                continue;
+            }
+            
+            // Check loading scope
+            if (!$this->shouldHydratePropertyInScope($dataSource, $propName, $triggeringPropertyName)) {
+                continue;
+            }
+            
+            // Check if property has instance mapping
+            $propertyAttr = $this->attributeReader->readProperty($property);
+            if ($propertyAttr !== null && $propertyAttr->mapping !== null) {
+                // Extract data using mapping from flat parent data
+                $mappedData = $this->applyInstanceMapping($data, $propertyAttr);
+                
+                // Only proceed if we have mapped data
+                if (!empty($mappedData)) {
+                    $value = $this->applyRecursiveHydration($property, $mappedData, 0);
+                    $this->setPropertyValue($object, $property, $value);
+                    $this->loadedProperties[$object][$propName] = true;
+                    $this->handleContextAttribute($property, $value);
+                }
                 continue;
             }
             
@@ -390,6 +513,21 @@ class LazyLoader implements LazyLoaderInterface
         
         $property = $reflectionClass->getProperty($propertyName);
         
+        // Check if property has instance mapping
+        $propertyAttr = $this->attributeReader->readProperty($property);
+        if ($propertyAttr !== null && $propertyAttr->mapping !== null) {
+            // Extract data using mapping from flat parent data
+            $mappedData = $this->applyInstanceMapping($data, $propertyAttr);
+            
+            // Only proceed if we have mapped data
+            if (!empty($mappedData)) {
+                $value = $this->applyRecursiveHydration($property, $mappedData, $currentDepth);
+                $this->setPropertyValue($object, $property, $value);
+                $this->handleContextAttribute($property, $value);
+            }
+            return;
+        }
+        
         // Get the field name mapping
         $fieldName = $this->getPropertyNameMapping($property);
         
@@ -529,7 +667,7 @@ class LazyLoader implements LazyLoaderInterface
                 // Execute after_create_object hooks
                 $this->executeClassHooks($nestedObject, 'after_create_object', $itemData);
                 
-                // Hydrate the nested object recursively
+                // Hydrate the nested list item (using mapped data keys)
                 $this->hydrateObject($nestedObject, $itemData, $itemPropertyAttr, $currentDepth + 1);
                 
                 $result[] = $nestedObject;
@@ -557,7 +695,7 @@ class LazyLoader implements LazyLoaderInterface
         // Execute after_create_object hooks
         $this->executeClassHooks($nestedObject, 'after_create_object', $value);
         
-        // Hydrate the nested object recursively
+        // Hydrate the single nested object (using mapped data keys)
         $this->hydrateObject($nestedObject, $value, $propertyAttr, $currentDepth + 1);
         
         return $nestedObject;
@@ -896,5 +1034,61 @@ class LazyLoader implements LazyLoaderInterface
 
         // Plain value
         return $arg;
+    }
+
+    /**
+     * Check if a property should be hydrated based on loading scope
+     *
+     * @param DataSource $dataSource
+     * @param string $propertyName
+     * @param string $triggeringPropertyName
+     * @return bool
+     */
+    private function shouldHydratePropertyInScope(DataSource $dataSource, string $propertyName, string $triggeringPropertyName): bool
+    {
+        switch ($dataSource->loadingScope) {
+            case DataSource::SCOPE_PROPERTY:
+                // Only load the triggering property
+                return $propertyName === $triggeringPropertyName;
+                
+            case DataSource::SCOPE_ONLY_KEYS:
+                // Only load specified keys
+                return in_array($propertyName, $dataSource->loadingScopeKeys, true);
+                
+            case DataSource::SCOPE_EXCEPT_KEYS:
+                // Load all except specified keys
+                return !in_array($propertyName, $dataSource->loadingScopeKeys, true);
+                
+            case DataSource::SCOPE_ALL:
+            default:
+                // Load all properties
+                return true;
+        }
+    }
+
+    /**
+     * Apply instance-specific mapping to data
+     *
+     * @param array $data
+     * @param Property|null $propertyAttr
+     * @return array
+     */
+    private function applyInstanceMapping(array $data, ?Property $propertyAttr): array
+    {
+        // If no mapping specified, return data as-is
+        if ($propertyAttr === null || $propertyAttr->mapping === null) {
+            return $data;
+        }
+        
+        // Transform keys according to mapping
+        // mapping format: ['source_key' => 'target_key', ...]
+        $mappedData = [];
+        foreach ($propertyAttr->mapping as $sourceKey => $targetKey) {
+            if (array_key_exists($sourceKey, $data)) {
+                $mappedData[$targetKey] = $data[$sourceKey];
+            }
+        }
+        
+        return $mappedData;
     }
 }
