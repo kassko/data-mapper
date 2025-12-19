@@ -329,7 +329,7 @@ class LazyLoader implements LazyLoaderInterface
     private function resolveArgs(array $args, object $object): array
     {
         $sourceFunctionProvider = $this->sourceFunctionProviders[$object];
-        $expressionParser = new ExpressionParser($sourceFunctionProvider);
+        $expressionParser = new ExpressionParser($sourceFunctionProvider, $this->serviceResolver);
         
         return $expressionParser->resolveArgs($args, $object, function(string $propertyName) use ($object) {
             $this->loadProperty($object, $propertyName);
