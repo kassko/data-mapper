@@ -133,7 +133,7 @@ class LazyLoader implements LazyLoaderInterface
         // Handle supplySeveralProperties
         if ($dataSource->supplySeveralProperties) {
             // Load all properties that reference this DataSource
-            $this->loadPropertiesForDataSource($object, $dataSource);
+            $this->loadPropertiesForDataSource($object, $dataSource, $propertyName);
         } else {
             // Old behavior: find properties with same signature
             $signature = $this->createSignature($dataSource, $object);
@@ -278,8 +278,9 @@ class LazyLoader implements LazyLoaderInterface
      *
      * @param object $object
      * @param DataSource $dataSource
+     * @param string $triggeringPropertyName The property that triggered this load
      */
-    private function loadPropertiesForDataSource(object $object, DataSource $dataSource): void
+    private function loadPropertiesForDataSource(object $object, DataSource $dataSource, string $triggeringPropertyName = ''): void
     {
         // Load data from DataSource once
         $data = $this->loadDataFromSource($dataSource, $object);
@@ -302,6 +303,11 @@ class LazyLoader implements LazyLoaderInterface
             // Check if already loaded
             $propName = $property->getName();
             if (isset($this->loadedProperties[$object][$propName])) {
+                continue;
+            }
+            
+            // Check loading scope
+            if (!$this->shouldHydratePropertyInScope($dataSource, $propName, $triggeringPropertyName)) {
                 continue;
             }
             
@@ -997,5 +1003,35 @@ class LazyLoader implements LazyLoaderInterface
 
         // Plain value
         return $arg;
+    }
+
+    /**
+     * Check if a property should be hydrated based on loading scope
+     *
+     * @param DataSource $dataSource
+     * @param string $propertyName
+     * @param string $triggeringPropertyName
+     * @return bool
+     */
+    private function shouldHydratePropertyInScope(DataSource $dataSource, string $propertyName, string $triggeringPropertyName): bool
+    {
+        switch ($dataSource->loadingScope) {
+            case DataSource::SCOPE_PROPERTY:
+                // Only load the triggering property
+                return $propertyName === $triggeringPropertyName;
+                
+            case DataSource::SCOPE_ONLY_KEYS:
+                // Only load specified keys
+                return in_array($propertyName, $dataSource->loadingScopeKeys, true);
+                
+            case DataSource::SCOPE_EXCEPT_KEYS:
+                // Load all except specified keys
+                return !in_array($propertyName, $dataSource->loadingScopeKeys, true);
+                
+            case DataSource::SCOPE_ALL:
+            default:
+                // Load all properties
+                return true;
+        }
     }
 }
