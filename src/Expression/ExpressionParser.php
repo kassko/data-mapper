@@ -81,6 +81,12 @@ class ExpressionParser
             return $object;
         }
 
+        // Handle !#property syntax (bypass getter - direct access)
+        if (str_starts_with($arg, '!#')) {
+            $propertyName = substr($arg, 2);
+            return $this->getPropertyValueDirect($object, $propertyName);
+        }
+
         // Handle #property syntax
         if (str_starts_with($arg, '#')) {
             return $this->resolvePropertyReference($arg, $object, $propertyLoader);
@@ -110,6 +116,13 @@ class ExpressionParser
         // Try to load the property first if it needs loading
         $propertyLoader($propertyName);
         
+        // Try getter first
+        $getterMethod = 'get' . ucfirst($propertyName);
+        if (method_exists($object, $getterMethod)) {
+            return $object->$getterMethod();
+        }
+        
+        // Fall back to direct property access
         $reflectionClass = new ReflectionClass($object);
         
         if ($reflectionClass->hasProperty($propertyName)) {
@@ -172,7 +185,20 @@ class ExpressionParser
             return $this->serviceResolver->resolve($serviceId);
         }
         
-        // Parse env_var('KEY')
+        // Parse envVar('KEY') - new preferred name
+        if (preg_match("/envVar\('([^']+)'\)/", $expression, $matches)) {
+            $key = $matches[1];
+            
+            // Try $_ENV first, then getenv()
+            if (isset($_ENV[$key])) {
+                return $_ENV[$key];
+            }
+            
+            $envValue = getenv($key);
+            return $envValue !== false ? $envValue : null;
+        }
+        
+        // Parse env_var('KEY') - backward compatibility
         if (preg_match("/env_var\('([^']+)'\)/", $expression, $matches)) {
             $key = $matches[1];
             
@@ -185,6 +211,12 @@ class ExpressionParser
             return $envValue !== false ? $envValue : null;
         }
         
+        // Parse strictProperty('propertyName')
+        if (preg_match("/strictProperty\('([^']+)'\)/", $expression, $matches)) {
+            $propertyName = $matches[1];
+            return $this->getPropertyValueDirect($this->currentObject, $propertyName);
+        }
+        
         // Parse context('key')
         if (preg_match("/context\('([^']+)'\)/", $expression, $matches)) {
             $key = $matches[1];
@@ -194,5 +226,24 @@ class ExpressionParser
         
         // If we can't parse it, return the original expression
         return $expression;
+    }
+
+    /**
+     * Get property value directly (bypass getter)
+     *
+     * @param object $object
+     * @param string $propertyName
+     * @return mixed
+     */
+    private function getPropertyValueDirect(object $object, string $propertyName)
+    {
+        $reflectionClass = new ReflectionClass($object);
+        
+        if ($reflectionClass->hasProperty($propertyName)) {
+            $property = $reflectionClass->getProperty($propertyName);
+            return $property->getValue($object);
+        }
+        
+        return null;
     }
 }
