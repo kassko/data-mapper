@@ -1,6 +1,6 @@
-# PHP 8.1+ Data Mapper Library
+# Data Mapper
 
-A minimal PHP 8.1+ data-mapper library with lazy loading, attributes, and PSR-11 container integration.
+A powerful PHP 8.1+ library for mapping and hydrating data objects with lazy loading, expression language, and advanced features.
 
 ## Origin
 
@@ -10,18 +10,10 @@ It is not affiliated with, nor owned by, any organization.
 
 [Read more about the project background](./ABOUT.md)
 
-## Features
-
-- **PHP 8 Attributes**: Use native PHP 8 attributes for metadata (no external annotation library)
-- **Lazy Loading**: Properties are loaded on-demand when accessed
-- **Single Call Optimization**: Properties sharing the same DataSource configuration are loaded together in one call
-- **Service Locator Pattern**: Resolve DataSources via PSR-11 ContainerInterface or direct instantiation
-- **WeakMap Registry**: Efficient memory management with PHP 8's WeakMap for tracking loaded properties
-
 ## Requirements
 
 - PHP >= 8.1
-- PSR-11 Container Interface
+- Symfony ExpressionLanguage component
 
 ## Installation
 
@@ -29,117 +21,179 @@ It is not affiliated with, nor owned by, any organization.
 composer require kassko/data-mapper-experimental
 ```
 
-## Usage
+## Features
 
-### Basic Example
+### Core Concepts
+
+- **Lazy Loading**: Properties are loaded on-demand via DataSources
+- **Expression Language**: Dynamic argument resolution
+- **Lifecycle Hooks**: Callbacks during hydration
+- **Polymorphic Hydration**: Runtime type resolution
+
+### Attributes
+
+#### DataSource & DataSourcesStore
+
+Define data sources at class or property level:
 
 ```php
-use Kassko\DataMapper\Attribute\DataSource;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
-use Kassko\DataMapper\DataMapper;
-
-// Define your entity
+#[DataSourcesStore([
+    new DataSource(
+        id: 'personSource',
+        class: PersonDataSource::class,
+        method: 'getData',
+        args: ['#id'],
+        supplySeveralProperties: true
+    )
+])]
 class Person
 {
     use LoadableTrait;
-
-    private int $id;
-
-    #[DataSource(class: PersonDataSource::class, method: 'getData', args: ['#id'])]
-    private ?string $name = null;
-
-    #[DataSource(class: PersonDataSource::class, method: 'getData', args: ['#id'])]
-    private ?string $email = null;
-
-    public function __construct(int $id)
-    {
-        $this->id = $id;
-    }
-
-    public function getId(): int
-    {
-        return $this->id;
-    }
-
-    public function getName(): ?string
-    {
-        $this->loadProperty('name');
-        return $this->name;
-    }
-
-    public function getEmail(): ?string
-    {
-        $this->loadProperty('email');
-        return $this->email;
-    }
+    
+    #[DataSourceRef(id: 'personSource')]
+    #[Property(name: 'first_name')]
+    private ?string $firstName = null;
 }
-
-// Define your data source
-class PersonDataSource
-{
-    public function getData(int $id): array
-    {
-        return match($id) {
-            1 => ['name' => 'foo', 'email' => 'foo@aaa.com'],
-            2 => ['name' => 'bar', 'email' => 'bar@bbb.com'],
-            default => ['name' => 'baz', 'email' => 'baz@ccc.com'],
-        };
-    }
-}
-
-// Use the data mapper
-$dataMapper = new DataMapper();
-$person = new Person(1);
-$dataMapper->prepare($person);
-
-echo $person->getName();  // Output: foo (loads both name and email in one call)
-echo $person->getEmail(); // Output: foo@aaa.com (already loaded, no additional call)
 ```
 
-### Service Locator Pattern
+#### DataSourceRef
 
-You can use the `@` prefix to resolve DataSources from a PSR-11 container:
+Reference DataSources with three modes:
+- `id`: Single DataSource
+- `chain`: Fallback chain (with `exception`)
+- `providers`: Aggregation (merge results)
 
 ```php
-use Psr\Container\ContainerInterface;
+// Fallback chain
+#[DataSourceRef(
+    chain: ['sourceA', 'sourceB', 'sourceC'],
+    exception: UnsuitableSourceException::class
+)]
 
-// Configure your container
-$container = /* your PSR-11 container */;
-
-// Use service identifier in the attribute
-class Person
-{
-    use LoadableTrait;
-
-    private int $id;
-
-    #[DataSource(class: '@person.data_source', method: 'getData', args: ['#id'])]
-    private ?string $name = null;
-
-    // ... rest of the class
-}
-
-// Pass container to DataMapper
-$dataMapper = new DataMapper($container);
-$person = new Person(1);
-$dataMapper->prepare($person);
+// Aggregation
+#[DataSourceRef(
+    providers: ['providerA', 'providerB', 'providerC']
+)]
 ```
 
-### Property References
+#### Property
 
-The `args` parameter in the `#[DataSource]` attribute can reference object properties using the `#` prefix:
+Map and configure properties:
 
 ```php
-#[DataSource(class: PersonDataSource::class, method: 'getData', args: ['#id', 'some-static-value'])]
+#[Property(
+    name: 'first_name',           // Key in data array
+    class: Address::class,        // For nested objects
+    mapping: ['src_key' => 'dest_key'],  // Instance mapping
+    expand: 'field1,field2',      // Fields to expand
+    noExpand: 'field3'            // Fields to skip
+)]
+```
+
+#### Loading Scope
+
+Control which properties to hydrate:
+
+```php
+#[DataSource(
+    loadingScope: 'property',              // Only triggered property
+    // or
+    loadingScope: 'data_source_only_keys',
+    loadingScopeKeys: ['first_name', 'last_name'],
+    // or
+    loadingScope: 'data_source_except_keys',
+    loadingScopeKeys: ['phone']
+)]
+```
+
+#### Getter & Setter
+
+Custom property access:
+
+```php
+#[Getter(name: 'isEnabled', type: 'isser')]
+#[Setter(name: 'setName', type: 'setter')]
 private ?string $name = null;
 ```
 
-## How It Works
+#### Hook
 
-1. **Selective Hydration**: Only properties with the `#[DataSource]` attribute are hydrated
-2. **Lazy Loading**: Properties are loaded when `loadProperty()` is called (typically in getters)
-3. **Single Call Optimization**: Properties with identical DataSource signatures (class + method + resolved args) are loaded together
-4. **Registry**: A WeakMap tracks which properties have been loaded to avoid duplicate calls
+Lifecycle callbacks:
+
+```php
+#[Hook(name: 'after_create_object', method: 'initialize', args: ['##this'])]
+class Entity
+{
+    #[Hook(name: 'before_set_property', method: 'validate', args: ["expr(rawDataItem('name'))"])]
+    #[Hook(name: 'after_set_property', method: 'onSet', args: ['##this', '#name'])]
+    private ?string $name = null;
+}
+```
+
+#### PropertyCandidates (Polymorphism)
+
+Runtime type resolution:
+
+```php
+#[PropertyCandidates([
+    new PropertyCandidate(
+        discriminator: "expr(rawDataItemExists('gasoline_kind'))",
+        property: new Property(class: GasolineCar::class)
+    ),
+    new PropertyCandidate(
+        discriminator: "expr(rawDataItemExists('energy_provider'))",
+        property: new Property(class: ElectricCar::class)
+    )
+])]
+private array $cars = [];
+```
+
+#### KeepAllProperties, SkipAllProperties, SkipProperty, KeepProperty
+
+Control property inclusion:
+
+```php
+#[SkipAllProperties]
+class Person
+{
+    #[KeepProperty]  // Explicitly include
+    private ?string $name = null;
+    
+    private ?string $internal = null;  // Excluded
+}
+```
+
+#### Context
+
+Set context variables:
+
+```php
+#[Context(['shop_quality' => 'premium'])]
+private ?Shop $shop = null;
+```
+
+### Expression Language
+
+#### Simple Expressions
+
+| Syntax | Description |
+|--------|-------------|
+| `#id` | Property value (via getter) |
+| `!#id` | Property value (direct, bypass getter) |
+| `##this` | Current object |
+
+#### Advanced Expressions (`expr()`)
+
+| Function | Description |
+|----------|-------------|
+| `source('id')` | Get DataSource result |
+| `service('id')` | Resolve service |
+| `context('key')` | Get context value |
+| `envVar('KEY')` | Environment variable |
+| `_self()` | Current object |
+| `rawDataItem('key')` | Raw data value |
+| `rawDataItemExists('key')` | Check raw data key |
+| `strictProperty('name')` | Direct property access |
 
 ## Testing
 
