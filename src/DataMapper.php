@@ -39,4 +39,3 @@ final class DataMapper
         return $this->serviceResolver;
     }
 }
-

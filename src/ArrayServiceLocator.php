@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper;
 
-use Psr\Container\NotFoundExceptionInterface;
+use Kassko\DataMapper\Exception\NotFoundException;
 
 final class ArrayServiceLocator implements ServiceLocatorInterface
 {
@@ -23,8 +23,9 @@ final class ArrayServiceLocator implements ServiceLocatorInterface
     public function get(string $id): mixed
     {
         if (!$this->has($id)) {
-            throw new class("Key \"$id\" not found in locator") extends \Exception implements NotFoundExceptionInterface {};
+            throw new NotFoundException("Key \"$id\" not found in locator");
         }
         return $this->map[$id];
     }
 }
+
