@@ -26,7 +26,6 @@ class PropertyInclusionTest extends TestCase
         // Use reflection to call the private hydrateObject method
         $reflection = new \ReflectionClass($lazyLoader);
         $method = $reflection->getMethod('hydrateObject');
-        $method->setAccessible(true);
         $method->invoke($lazyLoader, $product, $data, null, 0);
         
         // name and price should be hydrated
@@ -52,7 +51,6 @@ class PropertyInclusionTest extends TestCase
         // Use reflection to call the private hydrateObject method
         $reflection = new \ReflectionClass($lazyLoader);
         $method = $reflection->getMethod('hydrateObject');
-        $method->setAccessible(true);
         $method->invoke($lazyLoader, $product, $data, null, 0);
         
         // Only description should be hydrated (marked with Property)

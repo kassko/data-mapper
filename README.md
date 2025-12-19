@@ -1,6 +1,6 @@
-# PHP 8 Data Mapper Library
+# PHP 8.1+ Data Mapper Library
 
-A minimal PHP 8 data-mapper library with lazy loading, attributes, and PSR-11 container integration.
+A minimal PHP 8.1+ data-mapper library with lazy loading, attributes, and PSR-11 container integration.
 
 ## Origin
 
@@ -20,7 +20,7 @@ It is not affiliated with, nor owned by, any organization.
 
 ## Requirements
 
-- PHP >= 8.0
+- PHP >= 8.1
 - PSR-11 Container Interface
 
 ## Installation

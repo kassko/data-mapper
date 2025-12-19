@@ -32,7 +32,6 @@ class DepthControlTest extends TestCase
         // We'll manually set up a property with depth limit of 0
         $reflection = new \ReflectionClass($lazyLoader);
         $method = $reflection->getMethod('applyRecursiveHydration');
-        $method->setAccessible(true);
         
         // Create a mock property with class and depth attributes
         $propertyReflection = new \ReflectionClass(Company::class);
@@ -41,7 +40,6 @@ class DepthControlTest extends TestCase
         // Create attribute reader mock to return our property and loading attributes
         $attributeReaderReflection = new \ReflectionClass($lazyLoader);
         $attributeReaderProp = $attributeReaderReflection->getProperty('attributeReader');
-        $attributeReaderProp->setAccessible(true);
         $attributeReader = $attributeReaderProp->getValue($lazyLoader);
         
         // Test that depth of 0 prevents recursion

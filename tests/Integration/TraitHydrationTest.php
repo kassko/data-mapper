@@ -26,7 +26,6 @@ class TraitHydrationTest extends TestCase
         // Use reflection to call the private hydrateObject method
         $reflection = new \ReflectionClass($lazyLoader);
         $method = $reflection->getMethod('hydrateObject');
-        $method->setAccessible(true);
         $method->invoke($lazyLoader, $electricCar, $data, null, 0);
         
         // All properties should be hydrated, including trait properties

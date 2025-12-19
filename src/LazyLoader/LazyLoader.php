@@ -610,24 +610,7 @@ class LazyLoader implements LazyLoaderInterface
      */
     private function isListArray(array $array): bool
     {
-        if (empty($array)) {
-            return true;
-        }
-        
-        // Use array_is_list() if available (PHP 8.1+), otherwise fall back to manual check
-        if (function_exists('array_is_list')) {
-            return array_is_list($array);
-        }
-        
-        // Manual check for PHP 8.0 compatibility
-        $i = 0;
-        foreach ($array as $key => $value) {
-            if ($key !== $i++) {
-                return false;
-            }
-        }
-        
-        return true;
+        return array_is_list($array);
     }
 
     /**
