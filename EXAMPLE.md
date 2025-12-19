@@ -254,13 +254,19 @@ class Person
 
 ## Property Dependencies with Needs
 
+### Understanding Auto-Loading vs Needs
+
+**Auto-Loading (No Needs Required)**: Properties passed as arguments (`#propX`) are automatically loaded BEFORE being passed to the DataSource.
+
+**Needs Attribute**: Use when properties must be loaded for reasons OTHER than being passed as arguments (e.g., used in getter, validation, hooks).
+
+### Example 1: Auto-Loading in Args (No Needs Required)
+
 ```php
-use Kassko\DataMapper\Attribute\Needs;
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 
 #[DataSource(id: 'userSource', class: UserDataSource::class, method: 'getUser', args: ['#userId'], supplySeveralProperties: true)]
-#[DataSource(id: 'profileSource', class: ProfileDataSource::class, method: 'getProfile', args: ['#userId'], supplySeveralProperties: true)]
 #[DataSource(id: 'preferencesSource', class: PreferencesDataSource::class, method: 'getPreferences', args: ['#userId', '#role'], supplySeveralProperties: true)]
 class UserProfile
 {
@@ -269,28 +275,105 @@ class UserProfile
     private int $userId;
     
     #[DataSourceRef(id: 'userSource')]
-    private ?string $username = null;
-    
-    #[DataSourceRef(id: 'userSource')]
     private ?string $role = null;
     
-    #[DataSourceRef(id: 'profileSource')]
-    private ?string $avatar = null;
-    
-    // Load userId and role first, then load preferences
-    #[Needs(['userId', 'role'])]
+    // NO Needs required - userId and role auto-load because they're in args
     #[DataSourceRef(id: 'preferencesSource')]
     private ?array $preferences = null;
     
     public function getPreferences(): ?array
     {
         $this->loadProperty('preferences');
+        // userId and role were already auto-loaded when passed as args
         return $this->preferences;
     }
 }
 ```
 
-In this example:
-1. When `getPreferences()` is called, the Needs attribute ensures `userId` and `role` are loaded first
-2. The preferences DataSource can safely use `#userId` and `#role` as arguments
-3. Already-loaded properties are not reloaded
+### Example 2: Needs for Properties Used in Getter
+
+```php
+use Kassko\DataMapper\Attribute\Needs;
+use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+
+#[DataSource(id: 'discountSource', class: DiscountDataSource::class, method: 'getDiscount', args: ['#customerId'], supplySeveralProperties: true)]
+#[DataSource(id: 'customerSource', class: CustomerDataSource::class, method: 'getCustomer', args: ['#customerId'], supplySeveralProperties: true)]
+#[DataSource(id: 'orderSource', class: OrderDataSource::class, method: 'getOrder', args: ['#orderId'], supplySeveralProperties: true)]
+class Order
+{
+    use LoadableTrait;
+    
+    private int $customerId;
+    private int $orderId;
+    
+    #[DataSourceRef(id: 'customerSource')]
+    private ?Customer $customer = null;
+    
+    #[DataSourceRef(id: 'discountSource')]
+    private ?float $discount = null;
+    
+    // orderId auto-loads (it's in args)
+    // customer and discount need Needs (they're used in the getter, not in args)
+    #[Needs(['customer', 'discount'])]
+    #[DataSourceRef(id: 'orderSource')]
+    private ?float $totalPrice = null;
+    
+    public function getTotalPrice(): ?float
+    {
+        $this->loadProperty('totalPrice');
+        
+        // customer and discount are used here - loaded via Needs
+        if ($this->customer->isPremium()) {
+            return $this->totalPrice * (1 - $this->discount);
+        }
+        return $this->totalPrice;
+    }
+}
+```
+
+### Example 3: Combining Auto-Loading and Needs
+
+```php
+use Kassko\DataMapper\Attribute\Needs;
+use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+
+#[DataSource(id: 'sourceA', class: SourceA::class, method: 'getData', supplySeveralProperties: true)]
+#[DataSource(id: 'sourceB', class: SourceB::class, method: 'getData', supplySeveralProperties: true)]
+#[DataSource(id: 'sourceC', class: SourceC::class, method: 'process', args: ['#propA'], supplySeveralProperties: true)]
+class Example
+{
+    use LoadableTrait;
+    
+    #[DataSourceRef(id: 'sourceA')]
+    private ?string $propA = null;
+    
+    #[DataSourceRef(id: 'sourceB')]
+    private ?bool $validator = null;
+    
+    // propA auto-loads (it's in args)
+    // validator needs Needs (it's used in the getter, not in args)
+    #[Needs(['validator'])]
+    #[DataSourceRef(id: 'sourceC')]
+    private ?string $propC = null;
+    
+    public function getPropC(): ?string
+    {
+        $this->loadProperty('propC');
+        
+        // validator is used here - loaded via Needs
+        if (!$this->validator) {
+            throw new \RuntimeException('Validation failed');
+        }
+        
+        return $this->propC;
+    }
+}
+```
+
+### Key Takeaways
+
+1. **Properties in args auto-load** - No `Needs` required
+2. **Use `Needs` for properties used in getter** - They're not in args but needed for logic
+3. **Already-loaded properties are not reloaded** - Efficient and safe

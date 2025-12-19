@@ -144,24 +144,47 @@ When `class` is provided, the hook calls the method on the external service inst
 
 #### Needs
 
-Specify property dependencies to ensure proper loading order:
+Specify property dependencies that must be loaded before the current property.
+
+**Important**: Properties passed as arguments (`#propX`) are automatically loaded and do NOT require `Needs`.
+
+Use `Needs` when you need properties loaded for reasons OTHER than passing them as arguments:
+- Properties used in the **getter** of the current property
+- Properties needed for **validation** or **computation** after loading
+- Properties used in **hooks** associated with the current property
 
 ```php
-class SomeClass
+class Order
 {
-    #[DataSourceRef(id: 'sourceA')]
-    private $propA;
+    #[DataSourceRef(id: 'customerSource')]
+    private ?Customer $customer = null;
     
-    #[DataSourceRef(id: 'sourceB')]
-    private $propB;
-
-    #[Needs(['propA', 'propB'])]  // Load these first
+    #[DataSourceRef(id: 'discountSource')]
+    private ?float $discount = null;
+    
+    #[DataSourceRef(id: 'orderIdSource')]
+    private ?string $orderId = null;
+    
+    // orderId is in args -> auto-loads (NO Needs required)
+    // customer and discount are NOT in args, but used in getter -> need Needs
+    #[Needs(['customer', 'discount'])]
     #[DataSource(
-        class: PersonSource::class,
-        method: 'someMethod',
-        args: ['#propA', '#propB']  // Now available
+        class: PriceCalculator::class,
+        method: 'calculateTotal',
+        args: ['#orderId']  // ← orderId auto-loads, no Needs required
     )]
-    private $propC;
+    private ?float $finalPrice = null;
+    
+    public function getFinalPrice(): ?float
+    {
+        $this->loadProperty('finalPrice');
+        
+        // customer and discount were loaded via Needs
+        if ($this->customer->isPremium()) {
+            return $this->finalPrice * (1 - $this->discount);
+        }
+        return $this->finalPrice;
+    }
 }
 ```
 
