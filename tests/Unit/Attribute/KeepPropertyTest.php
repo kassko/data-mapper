@@ -50,8 +50,7 @@ class KeepPropertyTest extends TestCase
 
     public function testKeepPropertyWorksWithSkipAllProperties(): void
     {
-        #[SkipAllProperties]
-        $testClass = new class {
+        $testClass = new #[SkipAllProperties] class {
             #[KeepProperty]
             private ?string $included = null;
 

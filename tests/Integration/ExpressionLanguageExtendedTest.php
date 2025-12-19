@@ -38,7 +38,7 @@ class ExpressionLanguageExtendedTest extends TestCase
         $serviceLocator = new ArrayServiceLocator([
             'test_service' => $testService,
         ]);
-        $serviceResolver = new ServiceResolver($serviceLocator, []);
+        $serviceResolver = new ServiceResolver(null, [$serviceLocator]);
         
         $sourceFunctionProvider = new SourceFunctionProvider(fn($id) => []);
         $parser = new ExpressionParser($sourceFunctionProvider, $serviceResolver);

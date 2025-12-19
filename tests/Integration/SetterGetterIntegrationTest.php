@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\Attribute\Setter;
-use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\LazyLoader\LazyLoader;
 use PHPUnit\Framework\TestCase;
 
 class SetterGetterIntegrationTest extends TestCase
@@ -36,11 +34,14 @@ class SetterGetterIntegrationTest extends TestCase
             }
         };
 
-        $lazyLoader = new LazyLoader();
-        $mapper = new DataMapper($lazyLoader);
+        $lazyLoader = new \Kassko\DataMapper\LazyLoader\LazyLoader();
 
         $data = ['firstName' => 'john'];
-        $mapper->hydrate($testClass, $data);
+        
+        // Use reflection to call the private hydrateObject method
+        $reflection = new \ReflectionClass($lazyLoader);
+        $method = $reflection->getMethod('hydrateObject');
+        $method->invoke($lazyLoader, $testClass, $data, null, 0);
 
         $this->assertEquals('setCustomName', $testClass->getMethodCalled());
         $this->assertEquals('JOHN', $testClass->getFirstName());
@@ -69,11 +70,14 @@ class SetterGetterIntegrationTest extends TestCase
             }
         };
 
-        $lazyLoader = new LazyLoader();
-        $mapper = new DataMapper($lazyLoader);
+        $lazyLoader = new \Kassko\DataMapper\LazyLoader\LazyLoader();
 
         $data = ['name' => 'jane'];
-        $mapper->hydrate($testClass, $data);
+        
+        // Use reflection to call the private hydrateObject method
+        $reflection = new \ReflectionClass($lazyLoader);
+        $method = $reflection->getMethod('hydrateObject');
+        $method->invoke($lazyLoader, $testClass, $data, null, 0);
 
         $this->assertEquals('setName', $testClass->getMethodCalled());
         $this->assertEquals('JANE', $testClass->getName());
@@ -102,11 +106,14 @@ class SetterGetterIntegrationTest extends TestCase
             }
         };
 
-        $lazyLoader = new LazyLoader();
-        $mapper = new DataMapper($lazyLoader);
+        $lazyLoader = new \Kassko\DataMapper\LazyLoader\LazyLoader();
 
         $data = ['emails' => ['email1@test.com', 'email2@test.com', 'email3@test.com']];
-        $mapper->hydrate($testClass, $data);
+        
+        // Use reflection to call the private hydrateObject method
+        $reflection = new \ReflectionClass($lazyLoader);
+        $method = $reflection->getMethod('hydrateObject');
+        $method->invoke($lazyLoader, $testClass, $data, null, 0);
 
         $this->assertCount(3, $testClass->getMethodCalls());
         $this->assertEquals(['email1@test.com', 'email2@test.com', 'email3@test.com'], $testClass->getEmails());
@@ -123,11 +130,14 @@ class SetterGetterIntegrationTest extends TestCase
             }
         };
 
-        $lazyLoader = new LazyLoader();
-        $mapper = new DataMapper($lazyLoader);
+        $lazyLoader = new \Kassko\DataMapper\LazyLoader\LazyLoader();
 
         $data = ['name' => 'direct'];
-        $mapper->hydrate($testClass, $data);
+        
+        // Use reflection to call the private hydrateObject method
+        $reflection = new \ReflectionClass($lazyLoader);
+        $method = $reflection->getMethod('hydrateObject');
+        $method->invoke($lazyLoader, $testClass, $data, null, 0);
 
         $this->assertEquals('direct', $testClass->getName());
     }
@@ -160,12 +170,15 @@ class SetterGetterIntegrationTest extends TestCase
             }
         };
 
-        $lazyLoader = new LazyLoader();
-        $mapper = new DataMapper($lazyLoader);
+        $lazyLoader = new \Kassko\DataMapper\LazyLoader\LazyLoader();
 
         // Associative array should not use adder
         $data = ['config' => ['key1' => 'value1', 'key2' => 'value2']];
-        $mapper->hydrate($testClass, $data);
+        
+        // Use reflection to call the private hydrateObject method
+        $reflection = new \ReflectionClass($lazyLoader);
+        $method = $reflection->getMethod('hydrateObject');
+        $method->invoke($lazyLoader, $testClass, $data, null, 0);
 
         $this->assertFalse($testClass->wasAdderCalled());
         $this->assertEquals(['key1' => 'value1', 'key2' => 'value2'], $testClass->getConfig());
