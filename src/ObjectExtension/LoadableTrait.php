@@ -27,7 +27,7 @@ trait LoadableTrait
     /**
      * Load all eager properties. Call this after instantiation if needed.
      */
-    protected function loadEagerProperties(): void
+    public function loadEagerProperties(): void
     {
         $lazyLoader = LazyLoaderRegistry::get();
         
