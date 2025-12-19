@@ -667,7 +667,7 @@ class LazyLoader implements LazyLoaderInterface
                 // Execute after_create_object hooks
                 $this->executeClassHooks($nestedObject, 'after_create_object', $itemData);
                 
-                // Hydrate the nested object recursively (data is already mapped if needed)
+                // Hydrate the nested list item (using mapped data keys)
                 $this->hydrateObject($nestedObject, $itemData, $itemPropertyAttr, $currentDepth + 1);
                 
                 $result[] = $nestedObject;
@@ -695,7 +695,7 @@ class LazyLoader implements LazyLoaderInterface
         // Execute after_create_object hooks
         $this->executeClassHooks($nestedObject, 'after_create_object', $value);
         
-        // Hydrate the nested object recursively (data is already mapped if needed)
+        // Hydrate the single nested object (using mapped data keys)
         $this->hydrateObject($nestedObject, $value, $propertyAttr, $currentDepth + 1);
         
         return $nestedObject;
