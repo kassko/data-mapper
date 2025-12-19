@@ -192,3 +192,105 @@ class Entity
 )]
 private ?Result $result = null;
 ```
+
+## Hook with External Service
+
+```php
+use Kassko\DataMapper\Attribute\Hook;
+use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+
+// Define a validation service
+class ValidationService
+{
+    public function validateEmail(object $obj, ?string $email): void
+    {
+        if ($email && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException("Invalid email: {$email}");
+        }
+    }
+    
+    public function validateAge(object $obj, ?int $age): void
+    {
+        if ($age && ($age < 0 || $age > 150)) {
+            throw new \InvalidArgumentException("Invalid age: {$age}");
+        }
+    }
+}
+
+// Use the service in hooks
+#[DataSource(
+    id: 'personSource',
+    class: PersonDataSource::class,
+    method: 'getData',
+    args: ['#id'],
+    supplySeveralProperties: true
+)]
+class Person
+{
+    use LoadableTrait;
+    
+    private int $id;
+    
+    #[DataSourceRef(id: 'personSource')]
+    #[Hook(
+        name: Hook::AFTER_SET_PROPERTY,
+        class: ValidationService::class,  // External service
+        method: 'validateEmail',
+        args: ['##this', '#email']
+    )]
+    private ?string $email = null;
+    
+    #[DataSourceRef(id: 'personSource')]
+    #[Hook(
+        name: Hook::AFTER_SET_PROPERTY,
+        class: ValidationService::class,
+        method: 'validateAge',
+        args: ['##this', '#age']
+    )]
+    private ?int $age = null;
+}
+```
+
+## Property Dependencies with Needs
+
+```php
+use Kassko\DataMapper\Attribute\Needs;
+use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+
+#[DataSource(id: 'userSource', class: UserDataSource::class, method: 'getUser', args: ['#userId'], supplySeveralProperties: true)]
+#[DataSource(id: 'profileSource', class: ProfileDataSource::class, method: 'getProfile', args: ['#userId'], supplySeveralProperties: true)]
+#[DataSource(id: 'preferencesSource', class: PreferencesDataSource::class, method: 'getPreferences', args: ['#userId', '#role'], supplySeveralProperties: true)]
+class UserProfile
+{
+    use LoadableTrait;
+    
+    private int $userId;
+    
+    #[DataSourceRef(id: 'userSource')]
+    private ?string $username = null;
+    
+    #[DataSourceRef(id: 'userSource')]
+    private ?string $role = null;
+    
+    #[DataSourceRef(id: 'profileSource')]
+    private ?string $avatar = null;
+    
+    // Load userId and role first, then load preferences
+    #[Needs(['userId', 'role'])]
+    #[DataSourceRef(id: 'preferencesSource')]
+    private ?array $preferences = null;
+    
+    public function getPreferences(): ?array
+    {
+        $this->loadProperty('preferences');
+        return $this->preferences;
+    }
+}
+```
+
+In this example:
+1. When `getPreferences()` is called, the Needs attribute ensures `userId` and `role` are loaded first
+2. The preferences DataSource can safely use `#userId` and `#role` as arguments
+3. Already-loaded properties are not reloaded
