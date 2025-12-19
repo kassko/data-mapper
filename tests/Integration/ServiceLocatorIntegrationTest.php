@@ -8,6 +8,7 @@ use Kassko\DataMapper\DataMapperBuilder;
 use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\Registry\LazyLoaderRegistry;
 use Kassko\Sample\PersonDataSource;
 use Kassko\Sample\CarRepository;
 use PHPUnit\Framework\TestCase;
@@ -15,6 +16,10 @@ use Psr\Container\ContainerInterface;
 
 final class ServiceLocatorIntegrationTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        LazyLoaderRegistry::clear();
+    }
     public function testDirectContainerResolution(): void
     {
         // Create a mock container
@@ -58,7 +63,6 @@ final class ServiceLocatorIntegrationTest extends TestCase
             ->setContainer($container)
             ->build();
 
-        $dataMapper->prepare($entity);
 
         $this->assertEquals('foo', $entity->getName());
     }
@@ -112,7 +116,6 @@ final class ServiceLocatorIntegrationTest extends TestCase
             ->addLocator($locator)
             ->build();
 
-        $dataMapper->prepare($entity);
 
         $this->assertEquals('bar', $entity->getName());
     }
@@ -143,7 +146,6 @@ final class ServiceLocatorIntegrationTest extends TestCase
         // Build without container or locators - should instantiate directly
         $dataMapper = (new DataMapperBuilder())->build();
 
-        $dataMapper->prepare($entity);
 
         $this->assertEquals('baz', $entity->getName());
     }
@@ -210,7 +212,6 @@ final class ServiceLocatorIntegrationTest extends TestCase
             ->addLocator($vehicleLocator)
             ->build();
 
-        $dataMapper->prepare($person);
 
         $this->assertEquals('foo', $person->getName());
     }
@@ -247,7 +248,6 @@ final class ServiceLocatorIntegrationTest extends TestCase
             ->addLocator($proofLocator)
             ->build();
 
-        $dataMapper->prepare($entity);
 
         $this->assertEquals('foo', $entity->getName());
     }
@@ -291,7 +291,6 @@ final class ServiceLocatorIntegrationTest extends TestCase
             ->addLocator($locator2)
             ->build();
 
-        $dataMapper->prepare($entity);
 
         $this->assertEquals('foo', $entity->getName());
     }
@@ -345,7 +344,6 @@ final class ServiceLocatorIntegrationTest extends TestCase
             ->addLocator($locator)
             ->build();
 
-        $dataMapper->prepare($entity);
 
         // Should resolve: MY_DATASOURCE -> @person.data_source -> PersonDataSource instance
         $this->assertEquals('foo', $entity->getName());

@@ -4,31 +4,23 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\ObjectExtension;
 
-use Kassko\DataMapper\LazyLoader\LazyLoaderInterface;
+use Kassko\DataMapper\Registry\LazyLoaderRegistry;
 
 trait LoadableTrait
 {
-    private ?LazyLoaderInterface $dataMapperLoader = null;
-
     /**
-     * Set the lazy loader for this object
-     *
-     * @param LazyLoaderInterface $loader
-     */
-    public function setDataMapperLoader(LazyLoaderInterface $loader): void
-    {
-        $this->dataMapperLoader = $loader;
-    }
-
-    /**
-     * Load a property lazily using the configured loader
-     *
-     * @param string $propertyName The name of the property to load
+     * Load a property on-demand using the global LazyLoader.
      */
     protected function loadProperty(string $propertyName): void
     {
-        if ($this->dataMapperLoader !== null) {
-            $this->dataMapperLoader->loadProperty($this, $propertyName);
+        $lazyLoader = LazyLoaderRegistry::get();
+        
+        if ($lazyLoader === null) {
+            // No DataMapper configured - silently skip
+            // This allows objects to work even without DataMapper
+            return;
         }
+
+        $lazyLoader->loadProperty($this, $propertyName);
     }
 }

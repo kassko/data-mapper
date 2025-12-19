@@ -7,10 +7,15 @@ namespace Kassko\DataMapper\Tests\Unit;
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\Registry\LazyLoaderRegistry;
 use PHPUnit\Framework\TestCase;
 
 class LazyLoaderValidationTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        LazyLoaderRegistry::clear();
+    }
     public function testThrowsExceptionForNonExistentClass(): void
     {
         $entity = new class(1) {
@@ -34,7 +39,6 @@ class LazyLoaderValidationTest extends TestCase
         };
 
         $dataMapper = new DataMapper();
-        $dataMapper->prepare($entity);
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage("DataSource class 'NonExistentClass' does not exist");
@@ -65,7 +69,6 @@ class LazyLoaderValidationTest extends TestCase
         };
 
         $dataMapper = new DataMapper();
-        $dataMapper->prepare($entity);
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Method nonExistentMethod does not exist');

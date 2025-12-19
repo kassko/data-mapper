@@ -105,8 +105,7 @@ class DifferentSignaturesTest extends TestCase
             }
         };
 
-        $dataMapper = new DataMapper();
-        $dataMapper->prepare($entity);
+        new DataMapper();
 
         // Load name (should use id1=1, which returns ['name' => 'foo', 'email' => 'foo@aaa.com'])
         $name = $entity->getName();
@@ -116,5 +115,7 @@ class DifferentSignaturesTest extends TestCase
         // The email property will be hydrated with 'bar@bbb.com'
         $email = $entity->getEmail();
         $this->assertEquals('bar@bbb.com', $email);
+        
+        \Kassko\DataMapper\Registry\LazyLoaderRegistry::clear();
     }
 }

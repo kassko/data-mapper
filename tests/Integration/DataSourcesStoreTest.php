@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\DataMapper;
+use Kassko\DataMapper\Registry\LazyLoaderRegistry;
 use Kassko\Sample\PersonWithStore;
 use PHPUnit\Framework\TestCase;
 
 class DataSourcesStoreTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        LazyLoaderRegistry::clear();
+    }
+
     public function testDataSourcesStoreWithSupplySeveralFields(): void
     {
-        $dataMapper = new DataMapper();
+        new DataMapper();
         $person = new PersonWithStore(1);
-
-        $dataMapper->prepare($person);
 
         // Access firstName with Field mapping
         $this->assertEquals('Foo', $person->getFirstName());
@@ -32,10 +36,8 @@ class DataSourcesStoreTest extends TestCase
 
     public function testSupplySeveralFieldsLoadsAllPropertiesInSingleCall(): void
     {
-        $dataMapper = new DataMapper();
+        new DataMapper();
         $person = new PersonWithStore(2);
-
-        $dataMapper->prepare($person);
 
         // Trigger loading by accessing one property
         $name = $person->getName();
@@ -48,10 +50,8 @@ class DataSourcesStoreTest extends TestCase
 
     public function testFieldAttributeMapsPropertyToDifferentKey(): void
     {
-        $dataMapper = new DataMapper();
+        new DataMapper();
         $person = new PersonWithStore(3);
-
-        $dataMapper->prepare($person);
 
         // firstName property should be mapped to 'first_name' key in data
         $this->assertEquals('Baz', $person->getFirstName());
@@ -59,10 +59,8 @@ class DataSourcesStoreTest extends TestCase
 
     public function testPropertiesWithoutDataSourceRefAreNotHydrated(): void
     {
-        $dataMapper = new DataMapper();
+        new DataMapper();
         $person = new PersonWithStore(1);
-
-        $dataMapper->prepare($person);
 
         // Load some properties
         $person->getName();

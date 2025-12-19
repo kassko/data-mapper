@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper;
 
+use Kassko\DataMapper\LazyLoader\LazyLoader;
+use Kassko\DataMapper\Registry\LazyLoaderRegistry;
 use Psr\Container\ContainerInterface;
 
 final class DataMapperBuilder
@@ -28,6 +30,11 @@ final class DataMapperBuilder
     public function build(): DataMapper
     {
         $serviceResolver = new ServiceResolver($this->container, $this->locators);
+        $lazyLoader = new LazyLoader($serviceResolver);
+        
+        // Register the LazyLoader globally
+        LazyLoaderRegistry::set($lazyLoader);
+        
         return new DataMapper($serviceResolver);
     }
 }

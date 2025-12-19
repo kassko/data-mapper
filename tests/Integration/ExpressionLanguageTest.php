@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\DataMapper;
+use Kassko\DataMapper\Registry\LazyLoaderRegistry;
 use Kassko\Sample\PersonWithCar;
 use PHPUnit\Framework\TestCase;
 
 class ExpressionLanguageTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        LazyLoaderRegistry::clear();
+    }
+
     public function testSimplePropertyReferenceExpression(): void
     {
-        $dataMapper = new DataMapper();
+        new DataMapper();
         $person = new PersonWithCar(1);
-
-        $dataMapper->prepare($person);
 
         // The personSource uses #id which references $id property
         $name = $person->getName();
@@ -24,10 +28,8 @@ class ExpressionLanguageTest extends TestCase
 
     public function testExprWithSourceFunction(): void
     {
-        $dataMapper = new DataMapper();
+        new DataMapper();
         $person = new PersonWithCar(1);
-
-        $dataMapper->prepare($person);
 
         // The carSource uses expr(source('personSource')['car_id'])
         // This should load personSource, extract car_id, and use it to load the car
@@ -41,10 +43,8 @@ class ExpressionLanguageTest extends TestCase
 
     public function testDependencyChainResolution(): void
     {
-        $dataMapper = new DataMapper();
+        new DataMapper();
         $person = new PersonWithCar(2);
-
-        $dataMapper->prepare($person);
 
         // Loading car requires loading personSource first (dependency)
         $car = $person->getCar();
@@ -60,10 +60,8 @@ class ExpressionLanguageTest extends TestCase
 
     public function testSourceResultIsCached(): void
     {
-        $dataMapper = new DataMapper();
+        new DataMapper();
         $person = new PersonWithCar(3);
-
-        $dataMapper->prepare($person);
 
         // Load car first (which loads personSource internally)
         $car = $person->getCar();
@@ -81,13 +79,10 @@ class ExpressionLanguageTest extends TestCase
 
     public function testMultipleExpressionEvaluations(): void
     {
-        $dataMapper = new DataMapper();
+        new DataMapper();
         
         $person1 = new PersonWithCar(1);
         $person2 = new PersonWithCar(2);
-        
-        $dataMapper->prepare($person1);
-        $dataMapper->prepare($person2);
         
         $car1 = $person1->getCar();
         $car2 = $person2->getCar();
