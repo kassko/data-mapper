@@ -6,6 +6,7 @@ namespace Kassko\DataMapper\LazyLoader;
 
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\PropertyCandidates;
 use Kassko\DataMapper\Attribute\Loading;
 use Kassko\DataMapper\Expression\ExpressionParser;
 use Kassko\DataMapper\Expression\SourceFunctionProvider;
@@ -565,11 +566,11 @@ class LazyLoader implements LazyLoaderInterface
     /**
      * Resolve property configuration from PropertyCandidates based on discriminator evaluation
      *
-     * @param \Kassko\DataMapper\Attribute\PropertyCandidates $propertyCandidates
+     * @param PropertyCandidates $propertyCandidates
      * @param array $rawDataItem
-     * @return \Kassko\DataMapper\Attribute\Property|null
+     * @return Property|null
      */
-    private function resolvePropertyCandidate(\Kassko\DataMapper\Attribute\PropertyCandidates $propertyCandidates, array $rawDataItem): ?\Kassko\DataMapper\Attribute\Property
+    private function resolvePropertyCandidate(PropertyCandidates $propertyCandidates, array $rawDataItem): ?Property
     {
         // Create a temporary expression parser for discriminator evaluation
         $sourceFunctionProvider = new SourceFunctionProvider(fn() => null);
@@ -589,6 +590,16 @@ class LazyLoader implements LazyLoaderInterface
                 if (preg_match("/rawDataItemExists\('([^']+)'\)/", $expression, $keyMatches)) {
                     $key = $keyMatches[1];
                     $result = array_key_exists($key, $rawDataItem);
+                } elseif (preg_match("/rawDataItem\('([^']+)'\)/", $expression, $keyMatches)) {
+                    // Support rawDataItem() expressions
+                    $key = $keyMatches[1];
+                    $value = $rawDataItem[$key] ?? null;
+                    // If followed by comparison, evaluate it
+                    if (preg_match("/rawDataItem\('[^']+'\)\s*==\s*'([^']+)'/", $expression, $eqMatches)) {
+                        $result = ($value == $eqMatches[1]);
+                    } else {
+                        $result = (bool)$value;
+                    }
                 } elseif (preg_match("/context\('([^']+)'\)/", $expression, $keyMatches)) {
                     $key = $keyMatches[1];
                     $contextValue = ContextRegistry::get($key);
@@ -599,7 +610,8 @@ class LazyLoader implements LazyLoaderInterface
                         $result = (bool)$contextValue;
                     }
                 } else {
-                    // Try to evaluate using the expression parser
+                    // For other expressions, attempt basic evaluation
+                    // This is a fallback - complex expressions may need additional handling
                     $result = false;
                 }
                 
@@ -830,6 +842,8 @@ class LazyLoader implements LazyLoaderInterface
         foreach ($hook->args as $arg) {
             if ($property !== null && $arg === '#' . $property->getName()) {
                 // Special case: reference to the property being set
+                // Make property accessible before getting value
+                $property->setAccessible(true);
                 $resolvedArgs[] = $property->getValue($object);
             } else {
                 // Use standard resolution via expression parser
@@ -875,12 +889,9 @@ class LazyLoader implements LazyLoaderInterface
 
         // Handle expr(...) syntax
         if (preg_match('/^expr\((.+)\)$/s', $arg, $matches)) {
-            $expression = $matches[1];
-            
-            // Use the expression parser to evaluate
-            // We need to expose a method or make evaluateExpression public/use reflection
-            // For now, let's use the resolveArgs method with a single arg
-            return $expressionParser->resolveArgs(['expr(' . $expression . ')'], $object, $propertyLoader)[0];
+            // Re-use the expression parser's existing resolveArgs method
+            // which will properly handle the expr() wrapper
+            return $expressionParser->resolveArgs([$arg], $object, $propertyLoader)[0];
         }
 
         // Plain value
