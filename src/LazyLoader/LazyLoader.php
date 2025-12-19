@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\LazyLoader;
 
 use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\Loading;
 use Kassko\DataMapper\Expression\ExpressionParser;
 use Kassko\DataMapper\Expression\SourceFunctionProvider;
 use Kassko\DataMapper\Metadata\AttributeReader;
@@ -53,6 +55,28 @@ class LazyLoader implements LazyLoaderInterface
     }
 
     /**
+     * Load all eager properties on the given object
+     *
+     * @param object $object The object to load eager properties for
+     */
+    public function loadEagerProperties(object $object): void
+    {
+        $reflectionClass = new ReflectionClass($object);
+        
+        // Get all properties including from parent classes
+        $allProperties = $this->attributeReader->getAllProperties($reflectionClass);
+        
+        foreach ($allProperties as $property) {
+            $loading = $this->attributeReader->readLoading($property);
+            
+            // Only load if marked as eager
+            if ($loading !== null && $loading->type === Loading::TYPE_EAGER) {
+                $this->loadProperty($object, $property->getName());
+            }
+        }
+    }
+
+    /**
      * Load a property on the given object
      *
      * @param object $object The object containing the property
@@ -91,8 +115,8 @@ class LazyLoader implements LazyLoaderInterface
             return;
         }
         
-        // Handle supplySeveralFields
-        if ($dataSource->supplySeveralFields) {
+        // Handle supplySeveralProps
+        if ($dataSource->supplySeveralProps) {
             // Load all properties that reference this DataSource
             $this->loadPropertiesForDataSource($object, $dataSource);
         } else {
@@ -145,7 +169,7 @@ class LazyLoader implements LazyLoaderInterface
     }
 
     /**
-     * Load all properties that reference a DataSource with supplySeveralFields
+     * Load all properties that reference a DataSource with supplySeveralProps
      *
      * @param object $object
      * @param DataSource $dataSource
@@ -177,12 +201,16 @@ class LazyLoader implements LazyLoaderInterface
             }
             
             // Get the field name mapping
-            $fieldAttr = $this->attributeReader->readField($property);
-            $fieldName = $fieldAttr !== null && $fieldAttr->name !== null ? $fieldAttr->name : $propName;
+            $fieldName = $this->getPropertyNameMapping($property);
             
             // Hydrate if the field exists in the data
             if (array_key_exists($fieldName, $data)) {
-                $property->setValue($object, $data[$fieldName]);
+                $value = $data[$fieldName];
+                
+                // Apply recursive hydration if needed
+                $value = $this->applyRecursiveHydration($property, $value, 0);
+                
+                $property->setValue($object, $value);
                 $this->loadedProperties[$object][$propName] = true;
             }
         }
@@ -235,7 +263,7 @@ class LazyLoader implements LazyLoaderInterface
     }
 
     /**
-     * Load data from the DataSource (expects array result for supplySeveralFields)
+     * Load data from the DataSource (expects array result for supplySeveralProps)
      *
      * @param DataSource $dataSource
      * @param object $object
@@ -328,8 +356,8 @@ class LazyLoader implements LazyLoaderInterface
         // Execute the data source
         $result = $this->executeDataSource($dataSource, $object);
         
-        // If supplySeveralFields, also hydrate all related properties
-        if ($dataSource->supplySeveralFields && is_array($result)) {
+        // If supplySeveralProps, also hydrate all related properties
+        if ($dataSource->supplySeveralProps && is_array($result)) {
             $this->loadPropertiesForDataSource($object, $dataSource);
         }
         
@@ -342,8 +370,9 @@ class LazyLoader implements LazyLoaderInterface
      * @param object $object
      * @param string $propertyName
      * @param array $data
+     * @param int $currentDepth Current recursion depth
      */
-    private function hydrateProperty(object $object, string $propertyName, array $data): void
+    private function hydrateProperty(object $object, string $propertyName, array $data, int $currentDepth = 0): void
     {
         $reflectionClass = new ReflectionClass($object);
         
@@ -354,14 +383,18 @@ class LazyLoader implements LazyLoaderInterface
         $property = $reflectionClass->getProperty($propertyName);
         
         // Get the field name mapping
-        $fieldAttr = $this->attributeReader->readField($property);
-        $fieldName = $fieldAttr !== null && $fieldAttr->name !== null ? $fieldAttr->name : $propertyName;
+        $fieldName = $this->getPropertyNameMapping($property);
         
         if (!array_key_exists($fieldName, $data)) {
             return;
         }
         
-        $property->setValue($object, $data[$fieldName]);
+        $value = $data[$fieldName];
+        
+        // Check if we should perform recursive hydration
+        $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
+        
+        $property->setValue($object, $value);
     }
 
     /**
@@ -370,8 +403,9 @@ class LazyLoader implements LazyLoaderInterface
      * @param object $object
      * @param string $propertyName
      * @param mixed $value
+     * @param int $currentDepth Current recursion depth
      */
-    private function hydratePropertyWithValue(object $object, string $propertyName, $value): void
+    private function hydratePropertyWithValue(object $object, string $propertyName, $value, int $currentDepth = 0): void
     {
         $reflectionClass = new ReflectionClass($object);
         
@@ -380,6 +414,131 @@ class LazyLoader implements LazyLoaderInterface
         }
         
         $property = $reflectionClass->getProperty($propertyName);
+        
+        // Check if we should perform recursive hydration
+        $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
+        
         $property->setValue($object, $value);
+    }
+
+    /**
+     * Get the field/property name mapping from attributes
+     * Supports both Property (new) and Field (backward compatibility) attributes
+     *
+     * @param ReflectionProperty $property
+     * @return string
+     */
+    private function getPropertyNameMapping(ReflectionProperty $property): string
+    {
+        // Try Property attribute first
+        $propertyAttr = $this->attributeReader->readProperty($property);
+        if ($propertyAttr !== null && $propertyAttr->name !== null) {
+            return $propertyAttr->name;
+        }
+        
+        // Fall back to Field attribute for backward compatibility
+        $fieldAttr = $this->attributeReader->readField($property);
+        if ($fieldAttr !== null && $fieldAttr->name !== null) {
+            return $fieldAttr->name;
+        }
+        
+        // Default to property name
+        return $property->getName();
+    }
+
+    /**
+     * Apply recursive hydration if needed
+     *
+     * @param ReflectionProperty $property
+     * @param mixed $value
+     * @param int $currentDepth
+     * @return mixed
+     */
+    private function applyRecursiveHydration(ReflectionProperty $property, mixed $value, int $currentDepth): mixed
+    {
+        $propertyAttr = $this->attributeReader->readProperty($property);
+        if ($propertyAttr === null || $propertyAttr->class === null) {
+            return $value;
+        }
+        
+        // Check depth limit
+        $loading = $this->attributeReader->readLoading($property);
+        if ($loading !== null && $loading->depth !== null && $currentDepth >= $loading->depth) {
+            return $value;
+        }
+        
+        // If value is not an array, can't hydrate
+        if (!is_array($value)) {
+            return $value;
+        }
+        
+        // Get the actual class to instantiate
+        $className = $propertyAttr->class;
+        
+        // Instantiate the nested object
+        $nestedObject = new $className();
+        
+        // Get the actual class (in case of inheritance)
+        $actualClass = get_class($nestedObject);
+        
+        // Hydrate the nested object recursively
+        $this->hydrateObject($nestedObject, $value, $propertyAttr, $currentDepth + 1);
+        
+        return $nestedObject;
+    }
+
+    /**
+     * Hydrate an object with data
+     *
+     * @param object $object
+     * @param array $data
+     * @param Property|null $propertyAttr Property attribute for expand/noExpand control
+     * @param int $currentDepth Current recursion depth
+     */
+    private function hydrateObject(object $object, array $data, ?Property $propertyAttr = null, int $currentDepth = 0): void
+    {
+        $reflectionClass = new ReflectionClass($object);
+        
+        // Get all properties including from parent classes
+        $allProperties = $this->attributeReader->getAllProperties($reflectionClass);
+        
+        // Build list of properties to expand or skip
+        $expandList = $propertyAttr !== null && $propertyAttr->expand !== null 
+            ? array_map('trim', explode(',', $propertyAttr->expand)) 
+            : null;
+        $noExpandList = $propertyAttr !== null && $propertyAttr->noExpand !== null 
+            ? array_map('trim', explode(',', $propertyAttr->noExpand)) 
+            : null;
+        
+        foreach ($allProperties as $property) {
+            $propName = $property->getName();
+            
+            // Check if we should hydrate this property based on expand/noExpand
+            if ($expandList !== null && !in_array($propName, $expandList)) {
+                continue;
+            }
+            if ($noExpandList !== null && in_array($propName, $noExpandList)) {
+                continue;
+            }
+            
+            // Check if property should be hydrated based on attributes
+            if (!$this->attributeReader->shouldHydrateProperty($reflectionClass, $property)) {
+                continue;
+            }
+            
+            // Get the field name mapping
+            $fieldName = $this->getPropertyNameMapping($property);
+            
+            if (!array_key_exists($fieldName, $data)) {
+                continue;
+            }
+            
+            $value = $data[$fieldName];
+            
+            // Apply recursive hydration if needed
+            $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
+            
+            $property->setValue($object, $value);
+        }
     }
 }

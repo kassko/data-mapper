@@ -7,7 +7,7 @@ namespace Kassko\Sample;
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
-use Kassko\DataMapper\Attribute\Field;
+use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 #[DataSourcesStore([
@@ -16,7 +16,7 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
         class: PersonDataSource::class,
         method: 'getData',
         args: ['#id'],
-        supplySeveralFields: true
+        supplySeveralProps: true
     ),
     new DataSource(
         id: 'carSource',
@@ -32,7 +32,7 @@ class PersonWithCar
     private int $id;
 
     #[DataSourceRef(id: 'personSource')]
-    #[Field(name: 'first_name')]
+    #[Property(name: 'first_name')]
     private ?string $firstName = null;
 
     #[DataSourceRef(id: 'personSource')]
