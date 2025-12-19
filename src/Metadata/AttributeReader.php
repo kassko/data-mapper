@@ -10,7 +10,9 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Field;
 use Kassko\DataMapper\Attribute\Getter;
+use Kassko\DataMapper\Attribute\Hook;
 use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\PropertyCandidates;
 use Kassko\DataMapper\Attribute\KeepProperty;
 use Kassko\DataMapper\Attribute\Loading;
 use Kassko\DataMapper\Attribute\Setter;
@@ -356,5 +358,58 @@ class AttributeReader
         
         // Default behavior (KeepAllProperties): hydrate unless SkipProperty
         return true;
+    }
+
+    /**
+     * Read Hook attributes from a class
+     *
+     * @param ReflectionClass $reflectionClass
+     * @return Hook[]
+     */
+    public function readClassHooks(ReflectionClass $reflectionClass): array
+    {
+        $attributes = $reflectionClass->getAttributes(Hook::class);
+        
+        $hooks = [];
+        foreach ($attributes as $attr) {
+            $hooks[] = $attr->newInstance();
+        }
+        
+        return $hooks;
+    }
+
+    /**
+     * Read Hook attributes from a property
+     *
+     * @param ReflectionProperty $property
+     * @return Hook[]
+     */
+    public function readPropertyHooks(ReflectionProperty $property): array
+    {
+        $attributes = $property->getAttributes(Hook::class);
+        
+        $hooks = [];
+        foreach ($attributes as $attr) {
+            $hooks[] = $attr->newInstance();
+        }
+        
+        return $hooks;
+    }
+
+    /**
+     * Read PropertyCandidates attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return PropertyCandidates|null
+     */
+    public function readPropertyCandidates(ReflectionProperty $property): ?PropertyCandidates
+    {
+        $attributes = $property->getAttributes(PropertyCandidates::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        return $attributes[0]->newInstance();
     }
 }
