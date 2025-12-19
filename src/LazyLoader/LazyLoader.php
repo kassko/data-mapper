@@ -112,6 +112,15 @@ class LazyLoader implements LazyLoaderInterface
         
         $property = $reflectionClass->getProperty($propertyName);
         
+        // Check for Needs attribute - load dependencies first
+        $needs = $this->attributeReader->readNeeds($property);
+        if ($needs !== null) {
+            // Load dependencies first, in order
+            foreach ($needs->properties as $dependencyName) {
+                $this->loadProperty($object, $dependencyName);
+            }
+        }
+        
         // Check for DataSourceRef with chain or providers
         $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
         if ($dataSourceRef !== null && $dataSourceRef->chain !== null) {

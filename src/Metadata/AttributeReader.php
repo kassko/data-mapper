@@ -15,6 +15,7 @@ use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\PropertyCandidates;
 use Kassko\DataMapper\Attribute\KeepProperty;
 use Kassko\DataMapper\Attribute\Loading;
+use Kassko\DataMapper\Attribute\Needs;
 use Kassko\DataMapper\Attribute\Setter;
 use Kassko\DataMapper\Attribute\SkipProperty;
 use Kassko\DataMapper\Attribute\SkipAllProperties;
@@ -405,6 +406,23 @@ class AttributeReader
     public function readPropertyCandidates(ReflectionProperty $property): ?PropertyCandidates
     {
         $attributes = $property->getAttributes(PropertyCandidates::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read Needs attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return Needs|null
+     */
+    public function readNeeds(ReflectionProperty $property): ?Needs
+    {
+        $attributes = $property->getAttributes(Needs::class);
         
         if (empty($attributes)) {
             return null;
