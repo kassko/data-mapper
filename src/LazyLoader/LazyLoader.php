@@ -454,7 +454,7 @@ class LazyLoader implements LazyLoaderInterface
      * @param int $currentDepth
      * @return mixed
      */
-    private function applyRecursiveHydration(ReflectionProperty $property, $value, int $currentDepth)
+    private function applyRecursiveHydration(ReflectionProperty $property, mixed $value, int $currentDepth): mixed
     {
         $propertyAttr = $this->attributeReader->readProperty($property);
         if ($propertyAttr === null || $propertyAttr->class === null) {
