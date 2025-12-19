@@ -133,7 +133,12 @@ class ExpressionParser
             $key = $matches[1];
             
             // Try $_ENV first, then getenv()
-            return $_ENV[$key] ?? getenv($key) ?: null;
+            if (isset($_ENV[$key])) {
+                return $_ENV[$key];
+            }
+            
+            $envValue = getenv($key);
+            return $envValue !== false ? $envValue : null;
         }
         
         // Parse context('key')

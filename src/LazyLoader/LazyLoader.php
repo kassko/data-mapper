@@ -170,7 +170,7 @@ class LazyLoader implements LazyLoaderInterface
     }
 
     /**
-     * Load all properties that reference a DataSource with supplySeveralProps
+     * Load all properties that reference a DataSource with supplySeveralProperties
      *
      * @param object $object
      * @param DataSource $dataSource
@@ -268,7 +268,7 @@ class LazyLoader implements LazyLoaderInterface
     }
 
     /**
-     * Load data from the DataSource (expects array result for supplySeveralProps)
+     * Load data from the DataSource (expects array result for supplySeveralProperties)
      *
      * @param DataSource $dataSource
      * @param object $object
@@ -614,7 +614,20 @@ class LazyLoader implements LazyLoaderInterface
             return true;
         }
         
-        return array_keys($array) === range(0, count($array) - 1);
+        // Use array_is_list() if available (PHP 8.1+), otherwise fall back to manual check
+        if (function_exists('array_is_list')) {
+            return array_is_list($array);
+        }
+        
+        // Manual check for PHP 8.0 compatibility
+        $i = 0;
+        foreach ($array as $key => $value) {
+            if ($key !== $i++) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     /**
