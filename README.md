@@ -30,53 +30,87 @@ composer require kassko/data-mapper-experimental
 - **Lifecycle Hooks**: Callbacks during hydration
 - **Polymorphic Hydration**: Runtime type resolution
 
-### Attributes
+## Hydration Modes
 
-#### DataSource & DataSourcesStore
+The library supports two distinct hydration modes for clarity and type safety:
 
-Define data sources at class or property level:
+### Single-Property Hydration
+
+Use `DataSource` or `SinglePropDataSource` to hydrate one property at a time:
 
 ```php
-#[DataSourcesStore([
-    new DataSource(
-        id: 'personSource',
-        class: PersonDataSource::class,
-        method: 'getData',
-        args: ['#id'],
-        supplySeveralProperties: true
-    )
-])]
-class Person
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
+
+class User
 {
-    use LoadableTrait;
-    
-    #[DataSourceRef(id: 'personSource')]
-    #[Property(name: 'first_name')]
-    private ?string $firstName = null;
+    #[SinglePropDataSource(
+        class: AvatarService::class,
+        method: 'getAvatar',
+        args: ['#id']
+    )]
+    private ?string $avatar = null;
 }
 ```
 
-#### DataSourceRef
+### Multi-Property Hydration
+
+Use `MultiPropDataSource` on the class to hydrate multiple properties from one data source:
+
+```php
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+
+#[MultiPropDataSource(
+    id: 'personData',
+    class: PersonSource::class,
+    method: 'getAll',
+    args: ['#id']
+)]
+class Person
+{
+    private int $id;
+    
+    #[DataSourceRef(id: 'personData')]
+    private ?string $firstName = null;
+    
+    #[DataSourceRef(id: 'personData')]
+    private ?string $lastName = null;
+}
+```
+
+### Choosing Between Them
+
+| Scenario | Recommendation |
+|----------|----------------|
+| Loading individual values | Use `DataSource` or `SinglePropDataSource` |
+| Loading from associative array | Use `MultiPropDataSource` |
+| Mix of both | Use `SinglePropDataSource` + `MultiPropDataSource` |
+
+## Attributes
+
+### DataSource
+
+Alias for `SinglePropDataSource`. Best for projects using only single-property hydration.
+
+See [docs/attributes/DataSource.md](docs/attributes/DataSource.md) for details.
+
+### SinglePropDataSource & MultiPropDataSource
+
+Explicit attributes for single vs. multi-property hydration modes.
+
+- [SinglePropDataSource](docs/attributes/SinglePropDataSource.md)
+- [MultiPropDataSource](docs/attributes/MultiPropDataSource.md)
+
+### DataSourceRef
 
 Reference DataSources with three modes:
 - `id`: Single DataSource
 - `chain`: Fallback chain (with `exception`)
 - `providers`: Aggregation (merge results)
 
-```php
-// Fallback chain
-#[DataSourceRef(
-    chain: ['sourceA', 'sourceB', 'sourceC'],
-    exception: UnsuitableSourceException::class
-)]
+See [docs/attributes/DataSourceRef.md](docs/attributes/DataSourceRef.md) for details.
 
-// Aggregation
-#[DataSourceRef(
-    providers: ['providerA', 'providerB', 'providerC']
-)]
-```
-
-#### Property
+### Property
 
 Map and configure properties:
 
@@ -90,23 +124,25 @@ Map and configure properties:
 )]
 ```
 
-#### Loading Scope
+See [docs/attributes/Property.md](docs/attributes/Property.md) for details.
 
-Control which properties to hydrate:
+### Loading Scope
+
+Control which properties to hydrate with `MultiPropDataSource`:
 
 ```php
-#[DataSource(
-    loadingScope: 'property',              // Only triggered property
-    // or
-    loadingScope: 'data_source_only_keys',
-    loadingScopeKeys: ['first_name', 'last_name'],
-    // or
-    loadingScope: 'data_source_except_keys',
-    loadingScopeKeys: ['phone']
+#[MultiPropDataSource(
+    id: 'personData',
+    class: PersonSource::class,
+    method: 'getData',
+    loadingScope: MultiPropDataSource::SCOPE_ONLY_PROPS,
+    loadingScopeProps: ['firstName', 'lastName']
 )]
 ```
 
-#### Getter & Setter
+Available scopes: `SCOPE_ALL`, `SCOPE_ONLY_KEYS`, `SCOPE_EXCEPT_KEYS`, `SCOPE_ONLY_PROPS`, `SCOPE_EXCEPT_PROPS`
+
+### Getter & Setter
 
 Custom property access:
 
