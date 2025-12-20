@@ -7,6 +7,7 @@ namespace Kassko\DataMapper\Tests\Integration;
 use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Needs;
 use Kassko\DataMapper\DataMapperBuilder;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
@@ -69,9 +70,11 @@ class NeedsForGetterTest extends TestCase
         
         // Create test object with Needs for getter use case
         $testObject = new 
-        #[MultiPropDataSource(id: 'sourceC', class: 'SourceC', method: 'getData')]
-        #[MultiPropDataSource(id: 'sourceD', class: 'SourceD', method: 'getData')]
-        #[MultiPropDataSource(id: 'sourceF', class: 'SourceF', method: 'getData')]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'sourceC', class: 'SourceC', method: 'getData'),
+            new MultiPropDataSource(id: 'sourceD', class: 'SourceD', method: 'getData'),
+            new MultiPropDataSource(id: 'sourceF', class: 'SourceF', method: 'getData'),
+        ])]
         class {
             use LoadableTrait;
             
@@ -162,9 +165,11 @@ class NeedsForGetterTest extends TestCase
         
         // Create test object
         $testObject = new 
-        #[MultiPropDataSource(id: 'sourceA', class: 'SourceA', method: 'getData')]
-        #[MultiPropDataSource(id: 'sourceB', class: 'SourceB', method: 'getData', args: ['#propA'])]
-        #[MultiPropDataSource(id: 'sourceValidator', class: 'SourceValidator', method: 'getData')]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'sourceA', class: 'SourceA', method: 'getData'),
+            new MultiPropDataSource(id: 'sourceB', class: 'SourceB', method: 'getData', args: ['#propA']),
+            new MultiPropDataSource(id: 'sourceValidator', class: 'SourceValidator', method: 'getData'),
+        ])]
         class {
             use LoadableTrait;
             
