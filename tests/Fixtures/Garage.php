@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kassko\Sample;
 
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\PropertyCandidates;
 use Kassko\DataMapper\Attribute\PropertyCandidate;
@@ -20,7 +20,7 @@ class Garage
     private bool $created = false;
     private bool $carsLoaded = false;
 
-    #[DataSource(class: GarageDataSource::class, method: 'getCars', args: ['#id'])]
+    #[SinglePropDataSource(class: GarageDataSource::class, method: 'getCars', args: ['#id'])]
     #[PropertyCandidates([
         new PropertyCandidate(
             discriminator: "expr(rawDataItemExists('gasolineKind'))",

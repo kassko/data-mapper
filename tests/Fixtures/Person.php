@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace Kassko\Sample;
 
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
+#[MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])]
 class Person
 {
     use LoadableTrait;
 
     private int $id;
 
-    #[DataSource(class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+    #[DataSourceRef(id: 'personData')]
     private ?string $name = null;
 
-    #[DataSource(class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+    #[DataSourceRef(id: 'personData')]
     private ?string $email = null;
 
     public function __construct(int $id)

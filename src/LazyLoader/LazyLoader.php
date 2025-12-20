@@ -149,13 +149,13 @@ class LazyLoader implements LazyLoaderInterface
                 $this->loadMultipleProperties($object, $multiSource);
                 return;
             }
-        }
-        
-        // Fallback: Check for old-style DataSource in DataSourcesStore (backward compatibility)
-        $dataSource = $this->resolveDataSourceForProperty($property, $object);
-        if ($dataSource !== null) {
-            // Old behavior for backward compatibility
-            $this->loadLegacyDataSource($object, $propertyName, $property, $dataSource);
+            
+            // Check for SinglePropDataSource/DataSource in DataSourcesStore
+            $dataSource = $this->resolveDataSourceForProperty($property, $object);
+            if ($dataSource !== null) {
+                $this->loadSingleProperty($object, $property, $dataSource);
+                return;
+            }
         }
     }
 
@@ -260,19 +260,9 @@ class LazyLoader implements LazyLoaderInterface
         SinglePropDataSource|DataSource $source
     ): void {
         $data = $this->callDataSource($source, $object);
-        
-        // Backward compatibility: if result is associative array, hydrate from it
-        // Otherwise, set directly to the property
-        if (is_array($data) && !$this->isListArray($data) && count($data) > 0) {
-            // Associative array - try to hydrate the property from it
-            $this->hydrateProperty($object, $property->getName(), $data);
-            $this->loadedProperties[$object][$property->getName()] = true;
-        } else {
-            // Direct value (could be a list, scalar, object, etc.) - set it directly
-            $this->setPropertyValue($object, $property, $data);
-            $this->loadedProperties[$object][$property->getName()] = true;
-            $this->handleContextAttribute($property, $data);
-        }
+        $this->setPropertyValue($object, $property, $data);
+        $this->loadedProperties[$object][$property->getName()] = true;
+        $this->handleContextAttribute($property, $data);
     }
 
     /**
@@ -416,197 +406,6 @@ class LazyLoader implements LazyLoaderInterface
         );
     }
 
-    /**
-     * Load property using legacy DataSource (backward compatibility)
-     *
-     * @param object $object
-     * @param string $propertyName
-     * @param ReflectionProperty $property
-     * @param DataSource $dataSource
-     */
-    private function loadLegacyDataSource(object $object, string $propertyName, ReflectionProperty $property, DataSource $dataSource): void
-    {
-        // Old behavior: find properties with same signature
-        $signature = $this->createSignature($dataSource, $object);
-        $propertiesToHydrate = $this->findPropertiesWithSameSignature($object, $signature);
-        
-        // Load data from DataSource
-        $result = $this->executeDataSource($dataSource, $object);
-        
-        // If result is an associative array (not a list), use array-based hydration for multiple properties
-        // If result is a list or non-array, treat it as a direct value for the property
-        if (is_array($result) && !$this->isListArray($result) && count($result) > 0) {
-            // Associative array - hydrate multiple properties from it
-            foreach ($propertiesToHydrate as $propName) {
-                $this->hydrateProperty($object, $propName, $result);
-                $this->loadedProperties[$object][$propName] = true;
-            }
-        } else {
-            // Direct value (could be a list, scalar, object, etc.) - set it directly to the property
-            foreach ($propertiesToHydrate as $propName) {
-                $this->hydratePropertyWithValue($object, $propName, $result);
-                $this->loadedProperties[$object][$propName] = true;
-            }
-        }
-    }
-
-    /**
-     * Resolve the DataSource for a property (either from attribute or from store via ref)
-     *
-     * @param ReflectionProperty $property
-     * @param object $object
-     * @return DataSource|null
-     */
-    private function resolveDataSourceForProperty(ReflectionProperty $property, object $object): ?DataSource
-    {
-        // First check for direct DataSource attribute
-        $dataSource = $this->attributeReader->readDataSource($property);
-        if ($dataSource !== null) {
-            return $dataSource;
-        }
-        
-        // Check for DataSourceRef attribute
-        $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
-        if ($dataSourceRef !== null) {
-            $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
-            return $dataSourceMap[$dataSourceRef->id] ?? null;
-        }
-        
-        return null;
-    }
-
-    /**
-     * Load all properties that reference a DataSource with supplySeveralProperties
-     *
-     * @param object $object
-     * @param DataSource $dataSource
-     * @param string $triggeringPropertyName The property that triggered this load
-     */
-    private function loadPropertiesForDataSource(object $object, DataSource $dataSource, string $triggeringPropertyName = ''): void
-    {
-        // Load data from DataSource once
-        $data = $this->loadDataFromSource($dataSource, $object);
-        
-        if (!is_array($data)) {
-            return;
-        }
-        
-        // Find all properties that reference this DataSource
-        $reflectionClass = new ReflectionClass($object);
-        
-        foreach ($reflectionClass->getProperties() as $property) {
-            $propDataSource = $this->resolveDataSourceForProperty($property, $object);
-            
-            // Check if this property uses the same DataSource (by id)
-            if ($propDataSource === null || $propDataSource->id === null || $propDataSource->id !== $dataSource->id) {
-                continue;
-            }
-            
-            // Check if already loaded
-            $propName = $property->getName();
-            if (isset($this->loadedProperties[$object][$propName])) {
-                continue;
-            }
-            
-            // Check loading scope
-            if (!$this->shouldHydratePropertyInScope($dataSource, $propName, $triggeringPropertyName)) {
-                continue;
-            }
-            
-            // Check if property has instance mapping
-            $propertyAttr = $this->attributeReader->readProperty($property);
-            if ($propertyAttr !== null && $propertyAttr->mapping !== null) {
-                // Extract data using mapping from flat parent data
-                $mappedData = $this->applyInstanceMapping($data, $propertyAttr);
-                
-                // Only proceed if we have mapped data
-                if (!empty($mappedData)) {
-                    $value = $this->applyRecursiveHydration($property, $mappedData, 0);
-                    $this->setPropertyValue($object, $property, $value);
-                    $this->loadedProperties[$object][$propName] = true;
-                    $this->handleContextAttribute($property, $value);
-                }
-                continue;
-            }
-            
-            // Get the field name mapping
-            $fieldName = $this->getPropertyNameMapping($property);
-            
-            // Hydrate if the field exists in the data
-            if (array_key_exists($fieldName, $data)) {
-                $value = $data[$fieldName];
-                
-                // Apply recursive hydration if needed
-                $value = $this->applyRecursiveHydration($property, $value, 0);
-                
-                // Set property value using setter resolution
-                $this->setPropertyValue($object, $property, $value);
-                $this->loadedProperties[$object][$propName] = true;
-                
-                // Handle Context attribute
-                $this->handleContextAttribute($property, $value);
-            }
-        }
-    }
-
-    /**
-     * Create a unique signature for a DataSource configuration
-     *
-     * @param DataSource $dataSource
-     * @param object $object
-     * @return string
-     */
-    private function createSignature(DataSource $dataSource, object $object): string
-    {
-        $resolvedArgs = $this->resolveArgs($dataSource->args, $object);
-        return md5(serialize([
-            'class' => $dataSource->class,
-            'method' => $dataSource->method,
-            'args' => $resolvedArgs
-        ]));
-    }
-
-    /**
-     * Find all properties that share the same DataSource signature
-     *
-     * @param object $object
-     * @param string $signature
-     * @return array<string>
-     */
-    private function findPropertiesWithSameSignature(object $object, string $signature): array
-    {
-        $properties = [];
-        $reflectionClass = new ReflectionClass($object);
-        
-        // Check all properties for matching DataSource signature
-        foreach ($reflectionClass->getProperties() as $property) {
-            $dataSource = $this->resolveDataSourceForProperty($property, $object);
-            
-            if ($dataSource === null) {
-                continue;
-            }
-            
-            $propSignature = $this->createSignature($dataSource, $object);
-            if ($propSignature === $signature) {
-                $properties[] = $property->getName();
-            }
-        }
-        
-        return $properties;
-    }
-
-    /**
-     * Load data from the DataSource (expects array result for supplySeveralProperties)
-     *
-     * @param DataSource $dataSource
-     * @param object $object
-     * @return array
-     */
-    private function loadDataFromSource(DataSource $dataSource, object $object): array
-    {
-        $result = $this->executeDataSource($dataSource, $object);
-        return is_array($result) ? $result : [];
-    }
 
     /**
      * Execute a DataSource and return the result
@@ -635,6 +434,35 @@ class LazyLoader implements LazyLoaderInterface
             [$dataSourceInstance, $dataSource->method],
             $resolvedArgs
         );
+    }
+
+    /**
+     * Resolve the DataSource for a property (either from attribute or from store via ref)
+     *
+     * @param ReflectionProperty $property
+     * @param object $object
+     * @return SinglePropDataSource|DataSource|null
+     */
+    private function resolveDataSourceForProperty(ReflectionProperty $property, object $object): SinglePropDataSource|DataSource|null
+    {
+        // First check for direct SinglePropDataSource or DataSource attribute
+        $dataSource = $this->attributeReader->readSinglePropDataSource($property);
+        if ($dataSource !== null) {
+            return $dataSource;
+        }
+        
+        // Check for DataSourceRef attribute
+        $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
+        if ($dataSourceRef !== null && $dataSourceRef->id !== null) {
+            $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
+            $source = $dataSourceMap[$dataSourceRef->id] ?? null;
+            // Only return if it's SinglePropDataSource or DataSource (not MultiPropDataSource)
+            if ($source instanceof SinglePropDataSource || $source instanceof DataSource) {
+                return $source;
+            }
+        }
+        
+        return null;
     }
 
     /**
@@ -1246,35 +1074,6 @@ class LazyLoader implements LazyLoaderInterface
         return $arg;
     }
 
-    /**
-     * Check if a property should be hydrated based on loading scope
-     *
-     * @param DataSource $dataSource
-     * @param string $propertyName
-     * @param string $triggeringPropertyName
-     * @return bool
-     */
-    private function shouldHydratePropertyInScope(DataSource $dataSource, string $propertyName, string $triggeringPropertyName): bool
-    {
-        switch ($dataSource->loadingScope) {
-            case DataSource::SCOPE_PROPERTY:
-                // Only load the triggering property
-                return $propertyName === $triggeringPropertyName;
-                
-            case DataSource::SCOPE_ONLY_KEYS:
-                // Only load specified keys
-                return in_array($propertyName, $dataSource->loadingScopeKeys, true);
-                
-            case DataSource::SCOPE_EXCEPT_KEYS:
-                // Load all except specified keys
-                return !in_array($propertyName, $dataSource->loadingScopeKeys, true);
-                
-            case DataSource::SCOPE_ALL:
-            default:
-                // Load all properties
-                return true;
-        }
-    }
 
     /**
      * Apply instance-specific mapping to data
