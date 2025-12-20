@@ -260,6 +260,10 @@ class LazyLoader implements LazyLoaderInterface
         SinglePropDataSource|DataSource $source
     ): void {
         $data = $this->callDataSource($source, $object);
+        
+        // Apply recursive hydration if needed (handles PropertyCandidates, nested objects, etc.)
+        $data = $this->applyRecursiveHydration($property, $data, 0);
+        
         $this->setPropertyValue($object, $property, $data);
         $this->loadedProperties[$object][$property->getName()] = true;
         $this->handleContextAttribute($property, $data);
