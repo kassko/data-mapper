@@ -12,7 +12,7 @@ use Attribute;
  * 
  * This attribute can be placed on the PROPERTY level or CLASS level (when referenced by DataSourceRef).
  */
-#[Attribute(Attribute::TARGET_PROPERTY | Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
+#[Attribute(Attribute::TARGET_PROPERTY | Attribute::TARGET_CLASS)]
 final class SinglePropDataSource
 {
     public function __construct(

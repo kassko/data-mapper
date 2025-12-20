@@ -63,6 +63,24 @@ class ExpressionParser
     }
 
     /**
+     * Get parent object for a given object
+     *
+     * @param object $object
+     * @return object|null
+     */
+    private function getParentObject(object $object): ?object
+    {
+        // Get LazyLoader from registry to access parent tracking
+        $lazyLoader = \Kassko\DataMapper\Registry\LazyLoaderRegistry::get();
+        
+        if ($lazyLoader === null || !method_exists($lazyLoader, 'getParentObject')) {
+            return null;
+        }
+        
+        return $lazyLoader->getParentObject($object);
+    }
+
+    /**
      * Resolve a single argument
      *
      * @param mixed $arg
@@ -79,6 +97,11 @@ class ExpressionParser
         // Handle ##this syntax (return current object)
         if ($arg === '##this') {
             return $object;
+        }
+        
+        // Handle #parent or ##parent syntax (return parent object)
+        if ($arg === '#parent' || $arg === '##parent') {
+            return $this->getParentObject($object);
         }
 
         // Handle !#property syntax (bypass getter - direct access)
@@ -156,9 +179,19 @@ class ExpressionParser
      */
     private function evaluateExpression(string $expression, object $object, callable $propertyLoader)
     {
-        // Parse _self() - returns the current object
+        // Parse _this() - returns the current object (new name)
+        if (preg_match("/^_this\(\)$/", $expression)) {
+            return $object;
+        }
+        
+        // Parse _self() - returns the current object (backward compatibility)
         if (preg_match("/^_self\(\)$/", $expression)) {
             return $object;
+        }
+        
+        // Parse thisParent() - returns the parent object
+        if (preg_match("/^thisParent\(\)$/", $expression)) {
+            return $this->getParentObject($object);
         }
         
         // Parse rawDataItem('key') - returns raw data value

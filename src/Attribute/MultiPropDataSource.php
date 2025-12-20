@@ -10,9 +10,9 @@ use Attribute;
  * Defines a data source that hydrates multiple properties.
  * The source returns an associative array where keys map to properties.
  * 
- * This attribute is placed on the CLASS level since it affects multiple properties.
+ * This attribute is ONLY used inside DataSourcesStore, not as a standalone attribute.
  */
-#[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
+#[Attribute]
 final class MultiPropDataSource
 {
     public const SCOPE_ALL = 'all';

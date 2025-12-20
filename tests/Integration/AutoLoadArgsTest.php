@@ -7,6 +7,7 @@ namespace Kassko\DataMapper\Tests\Integration;
 use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\DataMapperBuilder;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LazyLoaderRegistry;
@@ -59,8 +60,10 @@ class AutoLoadArgsTest extends TestCase
         // Create test object WITHOUT Needs attribute
         // propA should auto-load because it's used in args of propB's DataSource
         $testObject = new 
-        #[MultiPropDataSource(id: 'sourceA', class: 'SourceA', method: 'getData')]
-        #[MultiPropDataSource(id: 'sourceB', class: 'SourceB', method: 'getData', args: ['#propA'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'sourceA', class: 'SourceA', method: 'getData'),
+            new MultiPropDataSource(id: 'sourceB', class: 'SourceB', method: 'getData', args: ['#propA']),
+        ])]
         class {
             use LoadableTrait;
             
@@ -145,9 +148,11 @@ class AutoLoadArgsTest extends TestCase
         
         // Create test object WITHOUT Needs attribute
         $testObject = new 
-        #[MultiPropDataSource(id: 'sourceA', class: 'SourceA', method: 'getData')]
-        #[MultiPropDataSource(id: 'sourceB', class: 'SourceB', method: 'getData')]
-        #[MultiPropDataSource(id: 'sourceC', class: 'SourceC', method: 'calculate', args: ['#propA', '#propB'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'sourceA', class: 'SourceA', method: 'getData'),
+            new MultiPropDataSource(id: 'sourceB', class: 'SourceB', method: 'getData'),
+            new MultiPropDataSource(id: 'sourceC', class: 'SourceC', method: 'calculate', args: ['#propA', '#propB']),
+        ])]
         class {
             use LoadableTrait;
             

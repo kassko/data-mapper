@@ -10,7 +10,7 @@ use Attribute;
 final class DataSourcesStore
 {
     /**
-     * @param array<SinglePropDataSource|DataSource> $sources
+     * @param array<SinglePropDataSource|DataSource|MultiPropDataSource> $sources
      */
     public function __construct(
         public readonly array $sources = [],

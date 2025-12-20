@@ -6,6 +6,7 @@ namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use PHPUnit\Framework\TestCase;
@@ -76,8 +77,10 @@ class DifferentSignaturesTest extends TestCase
         // Create an entity with properties that reference different IDs
         // This means they have different signatures and should be loaded separately
         $entity = new 
-        #[MultiPropDataSource(id: 'data1', class: 'Kassko\Sample\PersonDataSource', method: 'getData', args: ['#id1'])]
-        #[MultiPropDataSource(id: 'data2', class: 'Kassko\Sample\PersonDataSource', method: 'getData', args: ['#id2'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'data1', class: 'Kassko\Sample\PersonDataSource', method: 'getData', args: ['#id1']),
+            new MultiPropDataSource(id: 'data2', class: 'Kassko\Sample\PersonDataSource', method: 'getData', args: ['#id2']),
+        ])]
         class(1, 2) {
             use LoadableTrait;
 

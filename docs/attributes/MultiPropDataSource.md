@@ -2,21 +2,26 @@
 
 Defines a data source that hydrates multiple properties from an associative array.
 
+**IMPORTANT**: This attribute can ONLY be used inside `DataSourcesStore`. It cannot be used as a standalone attribute on classes.
+
 ## Usage
 
 ```php
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
 
-#[MultiPropDataSource(
-    id: 'personData',
-    class: PersonRepository::class,
-    method: 'findById',
-    args: ['#id'],
-    loadingScope: MultiPropDataSource::SCOPE_ONLY_PROPS,
-    loadingScopeProps: ['firstName', 'lastName']
-)]
+#[DataSourcesStore([
+    new MultiPropDataSource(
+        id: 'personData',
+        class: PersonRepository::class,
+        method: 'findById',
+        args: ['#id'],
+        loadingScope: MultiPropDataSource::SCOPE_ONLY_PROPS,
+        loadingScopeProps: ['firstName', 'lastName']
+    ),
+])]
 class Person
 {
     private int $id;
@@ -56,21 +61,29 @@ class Person
 | `only_props` | Only hydrate properties listed in `loadingScopeProps` |
 | `except_props` | Hydrate all except properties listed in `loadingScopeProps` |
 
-## Class-Level Attribute
+## Scope Rules
 
-Unlike `SinglePropDataSource`/`DataSource`, this attribute is placed on the **class** because it affects multiple properties.
+- **ONLY** used inside `DataSourcesStore`
+- **NOT** a standalone attribute (no `Attribute::TARGET_CLASS`)
+- **NOT** repeatable
+- Multiple `MultiPropDataSource` instances are grouped in a single `DataSourcesStore`
 
 ```php
-#[MultiPropDataSource(...)]  // ← On the class
-class Person
-{
-    #[DataSourceRef(id: '...')]  // ← Properties reference it
-    private ?string $name = null;
-}
+// ✅ CORRECT
+#[DataSourcesStore([
+    new MultiPropDataSource(id: 'source1', ...),
+    new MultiPropDataSource(id: 'source2', ...),
+])]
+class Person { }
+
+// ❌ WRONG - Cannot use directly on class
+#[MultiPropDataSource(id: 'source1', ...)]
+class Person { }
 ```
 
 ## See Also
 
+- [DataSourcesStore](DataSourcesStore.md)
 - [SinglePropDataSource](SinglePropDataSource.md)
 - [DataSource](DataSource.md)
 - [DataSourceRef](DataSourceRef.md)
