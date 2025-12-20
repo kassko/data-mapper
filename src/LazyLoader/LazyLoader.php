@@ -260,9 +260,19 @@ class LazyLoader implements LazyLoaderInterface
         SinglePropDataSource|DataSource $source
     ): void {
         $data = $this->callDataSource($source, $object);
-        $this->setPropertyValue($object, $property, $data);
-        $this->loadedProperties[$object][$property->getName()] = true;
-        $this->handleContextAttribute($property, $data);
+        
+        // Backward compatibility: if result is associative array, hydrate from it
+        // Otherwise, set directly to the property
+        if (is_array($data) && !$this->isListArray($data) && count($data) > 0) {
+            // Associative array - try to hydrate the property from it
+            $this->hydrateProperty($object, $property->getName(), $data);
+            $this->loadedProperties[$object][$property->getName()] = true;
+        } else {
+            // Direct value (could be a list, scalar, object, etc.) - set it directly
+            $this->setPropertyValue($object, $property, $data);
+            $this->loadedProperties[$object][$property->getName()] = true;
+            $this->handleContextAttribute($property, $data);
+        }
     }
 
     /**
@@ -311,22 +321,9 @@ class LazyLoader implements LazyLoaderInterface
                 continue;
             }
             
-            // Get the field name mapping
-            $fieldName = $this->getPropertyNameMapping($property);
-            
-            if (array_key_exists($fieldName, $data)) {
-                $value = $data[$fieldName];
-                
-                // Apply recursive hydration if needed
-                $value = $this->applyRecursiveHydration($property, $value, 0);
-                
-                // Set property value using setter resolution
-                $this->setPropertyValue($object, $property, $value);
-                $this->loadedProperties[$object][$propName] = true;
-                
-                // Handle Context attribute
-                $this->handleContextAttribute($property, $value);
-            }
+            // Use hydrateProperty which handles instance mapping
+            $this->hydrateProperty($object, $propName, $data);
+            $this->loadedProperties[$object][$propName] = true;
         }
     }
 
