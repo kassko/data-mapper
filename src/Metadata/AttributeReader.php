@@ -20,6 +20,8 @@ use Kassko\DataMapper\Attribute\Setter;
 use Kassko\DataMapper\Attribute\SkipProperty;
 use Kassko\DataMapper\Attribute\SkipAllProperties;
 use Kassko\DataMapper\Attribute\KeepAllProperties;
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use ReflectionClass;
 use ReflectionProperty;
 
@@ -40,6 +42,41 @@ class AttributeReader
         }
         
         return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read SinglePropDataSource or DataSource attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return SinglePropDataSource|DataSource|null
+     */
+    public function readSinglePropDataSource(ReflectionProperty $property): SinglePropDataSource|DataSource|null
+    {
+        // Try SinglePropDataSource first
+        $attrs = $property->getAttributes(SinglePropDataSource::class);
+        if (!empty($attrs)) {
+            return $attrs[0]->newInstance();
+        }
+        
+        // Then try DataSource alias
+        $attrs = $property->getAttributes(DataSource::class);
+        if (!empty($attrs)) {
+            return $attrs[0]->newInstance();
+        }
+        
+        return null;
+    }
+
+    /**
+     * Read MultiPropDataSource attributes from a class
+     *
+     * @param ReflectionClass $class
+     * @return array<MultiPropDataSource>
+     */
+    public function readMultiPropDataSources(ReflectionClass $class): array
+    {
+        $attrs = $class->getAttributes(MultiPropDataSource::class);
+        return array_map(fn($a) => $a->newInstance(), $attrs);
     }
 
     /**
@@ -238,7 +275,7 @@ class AttributeReader
      * Build a map of DataSource id => DataSource from DataSourcesStore or repeatable DataSource attributes
      *
      * @param object $object
-     * @return array<string, DataSource>
+     * @return array<string, DataSource|SinglePropDataSource|MultiPropDataSource>
      */
     public function getDataSourceMap(object $object): array
     {
@@ -255,10 +292,9 @@ class AttributeReader
             }
         }
         
-        // Also check for repeatable DataSource attributes on the class
-        $dataSourceAttrs = $reflectionClass->getAttributes(DataSource::class);
-        foreach ($dataSourceAttrs as $attr) {
-            $source = $attr->newInstance();
+        // Check for MultiPropDataSource attributes on the class
+        $multiPropDataSources = $this->readMultiPropDataSources($reflectionClass);
+        foreach ($multiPropDataSources as $source) {
             if ($source->id !== null) {
                 $map[$source->id] = $source;
             }

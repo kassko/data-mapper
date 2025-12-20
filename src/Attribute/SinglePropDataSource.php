@@ -7,19 +7,19 @@ namespace Kassko\DataMapper\Attribute;
 use Attribute;
 
 /**
- * Alias for SinglePropDataSource.
+ * Defines a data source that hydrates a single property.
+ * The source returns a value (object, scalar, or non-associative array) for the property.
  * 
- * Use this when you only need single-property hydration in your project.
- * Use SinglePropDataSource when you mix single and multi-property hydration
- * for clearer code (SinglePropDataSource + MultiPropDataSource).
+ * This attribute is placed on the PROPERTY level.
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]
-final class DataSource
+final class SinglePropDataSource
 {
     public function __construct(
         public readonly ?string $id = null,
         public readonly ?string $class = null,
         public readonly string $method = '',
         public readonly array $args = [],
+        // NO loadingScope/loadingScopeKeys - single property only
     ) {}
 }

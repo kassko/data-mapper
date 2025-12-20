@@ -9,11 +9,10 @@ use Attribute;
 #[Attribute(Attribute::TARGET_CLASS)]
 final class DataSourcesStore
 {
-    /** @var DataSource[] */
-    public readonly array $sources;
-
-    public function __construct(array $sources = [])
-    {
-        $this->sources = $sources;
-    }
+    /**
+     * @param array<SinglePropDataSource|DataSource> $sources
+     */
+    public function __construct(
+        public readonly array $sources = [],
+    ) {}
 }
