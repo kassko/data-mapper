@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Tests\Integration;
 
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
@@ -26,9 +26,9 @@ class DataSourceAggregationTest extends TestCase
         new DataMapper();
         
         $object = new #[DataSourcesStore([
-            new DataSource(id: 'providerA', class: AggregationDataSource::class, method: 'providerA', supplySeveralProperties: true),
-            new DataSource(id: 'providerB', class: AggregationDataSource::class, method: 'providerB', supplySeveralProperties: true),
-            new DataSource(id: 'providerC', class: AggregationDataSource::class, method: 'providerC', supplySeveralProperties: true),
+            new SinglePropDataSource(id: 'providerA', class: AggregationDataSource::class, method: 'providerA'),
+            new SinglePropDataSource(id: 'providerB', class: AggregationDataSource::class, method: 'providerB'),
+            new SinglePropDataSource(id: 'providerC', class: AggregationDataSource::class, method: 'providerC'),
         ])] class {
             use LoadableTrait;
             
@@ -74,8 +74,8 @@ class DataSourceAggregationTest extends TestCase
         new DataMapper();
         
         $object = new #[DataSourcesStore([
-            new DataSource(id: 'providerA', class: AggregationDataSource::class, method: 'providerNestedA', supplySeveralProperties: true),
-            new DataSource(id: 'providerB', class: AggregationDataSource::class, method: 'providerNestedB', supplySeveralProperties: true),
+            new SinglePropDataSource(id: 'providerA', class: AggregationDataSource::class, method: 'providerNestedA'),
+            new SinglePropDataSource(id: 'providerB', class: AggregationDataSource::class, method: 'providerNestedB'),
         ])] class {
             use LoadableTrait;
             

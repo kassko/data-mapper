@@ -614,13 +614,13 @@ class LazyLoader implements LazyLoaderInterface
     /**
      * Execute a DataSource and return the result
      *
-     * @param DataSource $dataSource
+     * @param DataSource|SinglePropDataSource|MultiPropDataSource $dataSource
      * @param object $object
      * @return mixed
      */
-    private function executeDataSource(DataSource $dataSource, object $object)
+    private function executeDataSource(DataSource|SinglePropDataSource|MultiPropDataSource $dataSource, object $object)
     {
-        $dataSourceInstance = $this->resolveDataSource($dataSource->class);
+        $dataSourceInstance = $this->resolveDataSource($dataSource->class ?? '');
         $resolvedArgs = $this->resolveArgs($dataSource->args, $object);
         
         // Validate method exists before calling
