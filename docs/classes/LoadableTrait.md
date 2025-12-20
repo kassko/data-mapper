@@ -199,6 +199,6 @@ $name = $person->getFirstName();  // Now loads from data source
 
 ## See Also
 
-- [DataSource](DataSource.md)
-- [Loading](Loading.md)
+- [DataSource](../attributes/DataSource.md)
+- [Loading](../attributes/Loading.md)
 - [LazyLoader](../advanced/LazyLoader.md)
