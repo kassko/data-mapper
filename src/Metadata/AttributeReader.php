@@ -80,6 +80,18 @@ class AttributeReader
     }
 
     /**
+     * Read SinglePropDataSource attributes from a class
+     *
+     * @param ReflectionClass $class
+     * @return array<SinglePropDataSource>
+     */
+    public function readSinglePropDataSourcesFromClass(ReflectionClass $class): array
+    {
+        $attrs = $class->getAttributes(SinglePropDataSource::class);
+        return array_map(fn($a) => $a->newInstance(), $attrs);
+    }
+
+    /**
      * Read DataSourceRef attribute from a property
      *
      * @param ReflectionProperty $property
@@ -295,6 +307,14 @@ class AttributeReader
         // Check for MultiPropDataSource attributes on the class
         $multiPropDataSources = $this->readMultiPropDataSources($reflectionClass);
         foreach ($multiPropDataSources as $source) {
+            if ($source->id !== null) {
+                $map[$source->id] = $source;
+            }
+        }
+        
+        // Check for SinglePropDataSource attributes on the class
+        $singlePropDataSources = $this->readSinglePropDataSourcesFromClass($reflectionClass);
+        foreach ($singlePropDataSources as $source) {
             if ($source->id !== null) {
                 $map[$source->id] = $source;
             }
