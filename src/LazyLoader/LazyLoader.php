@@ -28,6 +28,9 @@ class LazyLoader implements LazyLoaderInterface
     /** @var WeakMap<object, SourceFunctionProvider> */
     private WeakMap $sourceFunctionProviders;
     
+    /** @var WeakMap<object, object> Track parent-child relationships */
+    private WeakMap $parentRegistry;
+    
     private AttributeReader $attributeReader;
     private ServiceResolver $serviceResolver;
 
@@ -38,6 +41,7 @@ class LazyLoader implements LazyLoaderInterface
     {
         $this->loadedProperties = new WeakMap();
         $this->sourceFunctionProviders = new WeakMap();
+        $this->parentRegistry = new WeakMap();
         $this->attributeReader = new AttributeReader();
         
         // Support backward compatibility: allow ContainerInterface or null
@@ -56,6 +60,17 @@ class LazyLoader implements LazyLoaderInterface
     public function getServiceResolver(): ServiceResolver
     {
         return $this->serviceResolver;
+    }
+
+    /**
+     * Get parent object for a given child object
+     *
+     * @param object $object
+     * @return object|null
+     */
+    public function getParentObject(object $object): ?object
+    {
+        return $this->parentRegistry[$object] ?? null;
     }
 
     /**
@@ -88,6 +103,11 @@ class LazyLoader implements LazyLoaderInterface
      */
     public function loadProperty(object $object, string $propertyName): void
     {
+        // Check if property is locked (prevent loading)
+        if (method_exists($object, 'isPropertyLocked') && $object->isPropertyLocked($propertyName)) {
+            return; // Skip loading - property is locked
+        }
+        
         // Initialize loaded properties registry for this object if needed
         if (!isset($this->loadedProperties[$object])) {
             $this->loadedProperties[$object] = [];
@@ -262,7 +282,7 @@ class LazyLoader implements LazyLoaderInterface
         $data = $this->callDataSource($source, $object);
         
         // Apply recursive hydration if needed (handles PropertyCandidates, nested objects, etc.)
-        $data = $this->applyRecursiveHydration($property, $data, 0);
+        $data = $this->applyRecursiveHydration($property, $data, 0, $object);
         
         $this->setPropertyValue($object, $property, $data);
         $this->loadedProperties[$object][$property->getName()] = true;
@@ -563,7 +583,7 @@ class LazyLoader implements LazyLoaderInterface
             
             // Only proceed if we have mapped data
             if (!empty($mappedData)) {
-                $value = $this->applyRecursiveHydration($property, $mappedData, $currentDepth);
+                $value = $this->applyRecursiveHydration($property, $mappedData, $currentDepth, $object);
                 $this->setPropertyValue($object, $property, $value);
                 $this->handleContextAttribute($property, $value);
             }
@@ -580,7 +600,7 @@ class LazyLoader implements LazyLoaderInterface
         $value = $data[$fieldName];
         
         // Check if we should perform recursive hydration
-        $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
+        $value = $this->applyRecursiveHydration($property, $value, $currentDepth, $object);
         
         // Set property value using setter resolution
         $this->setPropertyValue($object, $property, $value);
@@ -608,7 +628,7 @@ class LazyLoader implements LazyLoaderInterface
         $property = $reflectionClass->getProperty($propertyName);
         
         // Check if we should perform recursive hydration
-        $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
+        $value = $this->applyRecursiveHydration($property, $value, $currentDepth, $object);
         
         // Set property value using setter resolution
         $this->setPropertyValue($object, $property, $value);
@@ -648,9 +668,10 @@ class LazyLoader implements LazyLoaderInterface
      * @param ReflectionProperty $property
      * @param mixed $value
      * @param int $currentDepth
+     * @param object|null $parentObject Parent object for tracking parent-child relationships
      * @return mixed
      */
-    private function applyRecursiveHydration(ReflectionProperty $property, mixed $value, int $currentDepth): mixed
+    private function applyRecursiveHydration(ReflectionProperty $property, mixed $value, int $currentDepth, ?object $parentObject = null): mixed
     {
         // Check for PropertyCandidates first
         $propertyCandidates = $this->attributeReader->readPropertyCandidates($property);
@@ -706,6 +727,11 @@ class LazyLoader implements LazyLoaderInterface
                 // Instantiate the nested object
                 $nestedObject = new $itemPropertyAttr->class();
                 
+                // Track parent-child relationship
+                if ($parentObject !== null) {
+                    $this->parentRegistry[$nestedObject] = $parentObject;
+                }
+                
                 // Execute after_create_object hooks
                 $this->executeClassHooks($nestedObject, 'after_create_object', $itemData);
                 
@@ -733,6 +759,11 @@ class LazyLoader implements LazyLoaderInterface
         
         // Instantiate the nested object
         $nestedObject = new $className();
+        
+        // Track parent-child relationship
+        if ($parentObject !== null) {
+            $this->parentRegistry[$nestedObject] = $parentObject;
+        }
         
         // Execute after_create_object hooks
         $this->executeClassHooks($nestedObject, 'after_create_object', $value);
@@ -853,7 +884,7 @@ class LazyLoader implements LazyLoaderInterface
             $value = $data[$fieldName];
             
             // Apply recursive hydration if needed
-            $value = $this->applyRecursiveHydration($property, $value, $currentDepth);
+            $value = $this->applyRecursiveHydration($property, $value, $currentDepth, $object);
             
             // Set property value using setter resolution
             $this->setPropertyValue($object, $property, $value);
