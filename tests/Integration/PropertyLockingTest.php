@@ -22,17 +22,9 @@ class PropertyLockingTest extends TestCase
 
     public function testLockedPropertyIsNotHydrated(): void
     {
-        // Track what gets loaded
-        $loadedCount = 0;
-        
         // Create a data source
-        $dataSource = new class($loadedCount) {
+        $dataSource = new class {
             private int $loadCount = 0;
-            
-            public function __construct(int $initialCount)
-            {
-                $this->loadCount = $initialCount;
-            }
             
             public function getData(): array
             {
