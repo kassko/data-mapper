@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\ArrayServiceLocator;
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\Needs;
 use Kassko\DataMapper\DataMapperBuilder;
@@ -69,9 +69,9 @@ class NeedsIntegrationTest extends TestCase
         
         // Create test object with Needs dependency
         $testObject = new 
-        #[DataSource(id: 'sourceA', class: 'SourceA', method: 'getData', supplySeveralProperties: true)]
-        #[DataSource(id: 'sourceB', class: 'SourceB', method: 'getData', supplySeveralProperties: true)]
-        #[DataSource(id: 'sourceC', class: 'SourceC', method: 'getData', args: ['#propA', '#propB'], supplySeveralProperties: true)]
+        #[MultiPropDataSource(id: 'sourceA', class: 'SourceA', method: 'getData')]
+        #[MultiPropDataSource(id: 'sourceB', class: 'SourceB', method: 'getData')]
+        #[MultiPropDataSource(id: 'sourceC', class: 'SourceC', method: 'getData', args: ['#propA', '#propB'])]
         class {
             use LoadableTrait;
             
@@ -154,8 +154,8 @@ class NeedsIntegrationTest extends TestCase
         
         // Create test object
         $testObject = new 
-        #[DataSource(id: 'sourceA', class: 'SourceA', method: 'getData', supplySeveralProperties: true)]
-        #[DataSource(id: 'sourceB', class: 'SourceB', method: 'getData', supplySeveralProperties: true)]
+        #[MultiPropDataSource(id: 'sourceA', class: 'SourceA', method: 'getData')]
+        #[MultiPropDataSource(id: 'sourceB', class: 'SourceB', method: 'getData')]
         class {
             use LoadableTrait;
             

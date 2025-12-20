@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\ArrayServiceLocator;
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\Needs;
 use Kassko\DataMapper\DataMapperBuilder;
@@ -69,9 +69,6 @@ class NeedsForGetterTest extends TestCase
         
         // Create test object with Needs for getter use case
         $testObject = new 
-        #[DataSource(id: 'sourceC', class: 'SourceC', method: 'getData', supplySeveralProperties: true)]
-        #[DataSource(id: 'sourceD', class: 'SourceD', method: 'getData', supplySeveralProperties: true)]
-        #[DataSource(id: 'sourceF', class: 'SourceF', method: 'getData', supplySeveralProperties: true)]
         class {
             use LoadableTrait;
             
@@ -162,9 +159,6 @@ class NeedsForGetterTest extends TestCase
         
         // Create test object
         $testObject = new 
-        #[DataSource(id: 'sourceA', class: 'SourceA', method: 'getData', supplySeveralProperties: true)]
-        #[DataSource(id: 'sourceB', class: 'SourceB', method: 'getData', args: ['#propA'], supplySeveralProperties: true)]
-        #[DataSource(id: 'sourceValidator', class: 'SourceValidator', method: 'getData', supplySeveralProperties: true)]
         class {
             use LoadableTrait;
             

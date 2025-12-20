@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\ArrayServiceLocator;
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\Hook;
 use Kassko\DataMapper\DataMapper;
@@ -44,11 +44,10 @@ class HookExternalServiceTest extends TestCase
         
         // Create a test object with hook to external service
         $testObject = new 
-        #[DataSource(
+        #[MultiPropDataSource(
             id: 'emailSource',
             class: EmailDataSource::class,
             method: 'getEmailData',
-            supplySeveralProperties: true
         )]
         class {
             use LoadableTrait;
@@ -96,11 +95,10 @@ class HookExternalServiceTest extends TestCase
         
         // Create test object with hook to external logging service
         $testObject = new 
-        #[DataSource(
+        #[MultiPropDataSource(
             id: 'statusSource',
             class: StatusDataSource::class,
             method: 'getStatusData',
-            supplySeveralProperties: true
         )]
         class {
             use LoadableTrait;
@@ -149,11 +147,10 @@ class HookExternalServiceTest extends TestCase
         
         // Create a test object with hook on itself (no class parameter)
         $testObject = new
-        #[DataSource(
+        #[MultiPropDataSource(
             id: 'nameSource',
             class: NameDataSource::class,
             method: 'getNameData',
-            supplySeveralProperties: true
         )]
         class {
             use LoadableTrait;
