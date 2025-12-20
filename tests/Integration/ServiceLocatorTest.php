@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Tests\Integration;
 
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\Sample\PersonDataSource;
@@ -32,15 +33,17 @@ class ServiceLocatorTest extends TestCase
         };
 
         // Create an entity that uses service locator pattern
-        $entity = new class(1) {
+        $entity = new 
+        #[MultiPropDataSource(id: 'personData', class: '@person.data_source', method: 'getData', args: ['#id'])]
+        class(1) {
             use LoadableTrait;
 
             private int $id;
 
-            #[DataSource(class: '@person.data_source', method: 'getData', args: ['#id'])]
+            #[DataSourceRef(id: 'personData')]
             private ?string $name = null;
 
-            #[DataSource(class: '@person.data_source', method: 'getData', args: ['#id'])]
+            #[DataSourceRef(id: 'personData')]
             private ?string $email = null;
 
             public function __construct(int $id)
@@ -72,12 +75,14 @@ class ServiceLocatorTest extends TestCase
     public function testServiceLocatorThrowsExceptionWithoutContainer(): void
     {
         // Create an entity that uses service locator pattern
-        $entity = new class(1) {
+        $entity = new 
+        #[MultiPropDataSource(id: 'personData', class: '@person.data_source', method: 'getData', args: ['#id'])]
+        class(1) {
             use LoadableTrait;
 
             private int $id;
 
-            #[DataSource(class: '@person.data_source', method: 'getData', args: ['#id'])]
+            #[DataSourceRef(id: 'personData')]
             private ?string $name = null;
 
             public function __construct(int $id)

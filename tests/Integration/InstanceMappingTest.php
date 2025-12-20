@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Tests\Integration;
 
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
@@ -60,32 +61,21 @@ class InstanceMappingTest extends TestCase
     {
         new DataMapper();
         
-        $person = new #[DataSource(
+        $person = new #[MultiPropDataSource(
             id: 'personData',
             class: PersonDataSourceForMapping::class,
-            method: 'getData',
-            supplySeveralProperties: true
+            method: 'getData'
         )] class {
             use LoadableTrait;
             
-            #[DataSource(
-                id: 'personData',
-                class: PersonDataSourceForMapping::class,
-                method: 'getData',
-                supplySeveralProperties: true
-            )]
+            #[DataSourceRef(id: 'personData')]
             #[Property(
                 class: AddressSimple::class,
                 mapping: ['billing_street' => 'street', 'billing_city' => 'city', 'billing_country' => 'country']
             )]
             private ?AddressSimple $billingAddress = null;
             
-            #[DataSource(
-                id: 'personData',
-                class: PersonDataSourceForMapping::class,
-                method: 'getData',
-                supplySeveralProperties: true
-            )]
+            #[DataSourceRef(id: 'personData')]
             #[Property(
                 class: AddressSimple::class,
                 mapping: ['delivery_street' => 'street', 'delivery_city' => 'city', 'delivery_country' => 'country']

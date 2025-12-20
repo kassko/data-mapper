@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace Kassko\Sample;
 
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
-#[DataSource(
+#[MultiPropDataSource(
     id: 'personSource',
     class: PersonDataSource::class,
     method: 'getData',
-    args: ['#id'],
-    supplySeveralProperties: true
+    args: ['#id']
 )]
-#[DataSource(
+#[SinglePropDataSource(
     id: 'carSource',
     class: CarRepository::class,
     method: 'find',

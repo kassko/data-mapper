@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Tests\Integration;
 
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\DataMapper;
@@ -24,13 +24,13 @@ class LoadingScopeTest extends TestCase
     {
         new DataMapper();
         
-        $object = new #[DataSource(
+        $object = new #[MultiPropDataSource(
             id: 'personData',
             class: PersonFullDataSource::class,
             method: 'getFullData',
             args: [1],
-            supplySeveralProperties: true,
-            loadingScope: DataSource::SCOPE_PROPERTY
+            loadingScope: MultiPropDataSource::SCOPE_ONLY_PROPS,
+            loadingScopeProps: ['firstName']
         )] class {
             use LoadableTrait;
             
@@ -64,26 +64,25 @@ class LoadingScopeTest extends TestCase
             }
         };
         
-        // Load firstName - only firstName should be loaded due to SCOPE_PROPERTY
+        // Load firstName - only firstName should be loaded due to SCOPE_ONLY_PROPS
         $this->assertEquals('John', $object->getFirstName());
         
         // lastName and email should not be auto-loaded
-        $this->assertEquals('Doe', $object->getLastName());
-        $this->assertEquals('john@example.com', $object->getEmail());
+        $this->assertNull($object->getLastName());
+        $this->assertNull($object->getEmail());
     }
     
     public function testScopeOnlyKeys(): void
     {
         new DataMapper();
         
-        $object = new #[DataSource(
+        $object = new #[MultiPropDataSource(
             id: 'personData',
             class: PersonFullDataSource::class,
             method: 'getFullData',
             args: [2],
-            supplySeveralProperties: true,
-            loadingScope: DataSource::SCOPE_ONLY_KEYS,
-            loadingScopeKeys: ['firstName', 'lastName']
+            loadingScope: MultiPropDataSource::SCOPE_ONLY_KEYS,
+            loadingScopeKeys: ['first_name', 'last_name']
         )] class {
             use LoadableTrait;
             
@@ -139,13 +138,12 @@ class LoadingScopeTest extends TestCase
     {
         new DataMapper();
         
-        $object = new #[DataSource(
+        $object = new #[MultiPropDataSource(
             id: 'personData',
             class: PersonFullDataSource::class,
             method: 'getFullData',
             args: [1],
-            supplySeveralProperties: true,
-            loadingScope: DataSource::SCOPE_EXCEPT_KEYS,
+            loadingScope: MultiPropDataSource::SCOPE_EXCEPT_KEYS,
             loadingScopeKeys: ['phone']
         )] class {
             use LoadableTrait;

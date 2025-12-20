@@ -21,23 +21,60 @@ $rawData = ['first_name' => 'John', 'last_name' => 'Doe'];
 $person = $hydrator->hydrate(Person::class, $rawData);
 ```
 
-### Lazy Loading with DataSource
+## Lazy Loading
+
+### Single-Property Data Source
+
+Use `DataSource` or `SinglePropDataSource` when each property has its own data source:
 
 ```php
-use Kassko\DataMapper\Attribute\DataSource;
-use Kassko\DataMapper\Attribute\DataSourceRef;
-use Kassko\DataMapper\Attribute\DataSourcesStore;
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
-#[DataSourcesStore([
-    new DataSource(
-        id: 'personData',
-        class: PersonDataSource::class,
-        method: 'findById',
-        args: ['#id'],
-        supplySeveralProperties: true
-    )
-])]
+class User
+{
+    use LoadableTrait;
+    
+    private int $id;
+    
+    #[SinglePropDataSource(
+        class: UserNameService::class,
+        method: 'getName',
+        args: ['#id']
+    )]
+    private ?string $name = null;
+    
+    #[SinglePropDataSource(
+        class: UserAvatarService::class,
+        method: 'getAvatar',
+        args: ['#id']
+    )]
+    private ?string $avatar = null;
+    
+    public function getName(): ?string
+    {
+        $this->loadProperty('name');
+        return $this->name;
+    }
+}
+```
+
+### Multi-Property Data Source
+
+Use `MultiPropDataSource` when multiple properties come from the same source:
+
+```php
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+#[MultiPropDataSource(
+    id: 'personData',
+    class: PersonDataSource::class,
+    method: 'findById',
+    args: ['#id']
+)]
 class Person
 {
     use LoadableTrait;
@@ -52,6 +89,9 @@ class Person
     #[Property(name: 'last_name')]
     private ?string $lastName = null;
     
+    #[DataSourceRef(id: 'personData')]
+    private ?string $email = null;
+    
     public function __construct(int $id)
     {
         $this->id = $id;
@@ -65,15 +105,56 @@ class Person
 }
 ```
 
+### Mixed Single and Multi-Property Sources
+
+```php
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+#[MultiPropDataSource(
+    id: 'personData',
+    class: PersonDataSource::class,
+    method: 'findById',
+    args: ['#id']
+)]
+class Person
+{
+    use LoadableTrait;
+    
+    private int $id;
+    
+    // From multi-property source
+    #[DataSourceRef(id: 'personData')]
+    private ?string $firstName = null;
+    
+    #[DataSourceRef(id: 'personData')]
+    private ?string $lastName = null;
+    
+    // From single-property source
+    #[SinglePropDataSource(
+        class: AvatarService::class,
+        method: 'getAvatar',
+        args: ['#id']
+    )]
+    private ?string $avatar = null;
+}
+```
+
 ## Advanced Features
 
 ### DataSource Chaining (Fallback)
 
 ```php
+use Kassko\DataMapper\Attribute\DataSourcesStore;
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+
 #[DataSourcesStore([
-    new DataSource(id: 'cache', class: CacheSource::class, method: 'get'),
-    new DataSource(id: 'database', class: DbSource::class, method: 'find'),
-    new DataSource(id: 'api', class: ApiSource::class, method: 'fetch'),
+    new SinglePropDataSource(id: 'cache', class: CacheSource::class, method: 'get'),
+    new SinglePropDataSource(id: 'database', class: DbSource::class, method: 'find'),
+    new SinglePropDataSource(id: 'api', class: ApiSource::class, method: 'fetch'),
 ])]
 class Product
 {

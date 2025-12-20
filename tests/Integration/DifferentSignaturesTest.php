@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Tests\Integration;
 
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use PHPUnit\Framework\TestCase;
@@ -35,10 +36,10 @@ class DifferentSignaturesTest extends TestCase
 
             private object $dataSource;
 
-            #[DataSource(class: self::class . 'DataSource', method: 'getData', args: ['profile'])]
+            #[MultiPropDataSource(id: 'profile', class: self::class . 'DataSource', method: 'getData', args: ['profile'])]
             private ?string $profileData = null;
 
-            #[DataSource(class: self::class . 'DataSource', method: 'getData', args: ['settings'])]
+            #[MultiPropDataSource(id: 'settings', class: self::class . 'DataSource', method: 'getData', args: ['settings'])]
             private ?string $settingsData = null;
 
             public function __construct(object $dataSource)
@@ -74,16 +75,19 @@ class DifferentSignaturesTest extends TestCase
     {
         // Create an entity with properties that reference different IDs
         // This means they have different signatures and should be loaded separately
-        $entity = new class(1, 2) {
+        $entity = new 
+        #[MultiPropDataSource(id: 'data1', class: 'Kassko\Sample\PersonDataSource', method: 'getData', args: ['#id1'])]
+        #[MultiPropDataSource(id: 'data2', class: 'Kassko\Sample\PersonDataSource', method: 'getData', args: ['#id2'])]
+        class(1, 2) {
             use LoadableTrait;
 
             private int $id1;
             private int $id2;
 
-            #[DataSource(class: 'Kassko\Sample\PersonDataSource', method: 'getData', args: ['#id1'])]
+            #[DataSourceRef(id: 'data1')]
             private ?string $name = null;
 
-            #[DataSource(class: 'Kassko\Sample\PersonDataSource', method: 'getData', args: ['#id2'])]
+            #[DataSourceRef(id: 'data2')]
             private ?string $email = null;
 
             public function __construct(int $id1, int $id2)

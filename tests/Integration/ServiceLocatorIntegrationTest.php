@@ -6,7 +6,8 @@ namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\DataMapperBuilder;
 use Kassko\DataMapper\ArrayServiceLocator;
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LazyLoaderRegistry;
 use Kassko\Sample\PersonDataSource;
@@ -39,12 +40,14 @@ final class ServiceLocatorIntegrationTest extends TestCase
         };
 
         // Create an entity that uses @service.id pattern
-        $entity = new class(1) {
+        $entity = new 
+        #[MultiPropDataSource(id: 'personData', class: '@person.datasource', method: 'getData', args: ['#id'])]
+        class(1) {
             use LoadableTrait;
 
             private int $id;
 
-            #[DataSource(class: '@person.datasource', method: 'getData', args: ['#id'])]
+            #[DataSourceRef(id: 'personData')]
             private ?string $name = null;
 
             public function __construct(int $id)
@@ -91,12 +94,14 @@ final class ServiceLocatorIntegrationTest extends TestCase
         };
 
         // Create an entity using FQCN in DataSource
-        $entity = new class(2) {
+        $entity = new 
+        #[MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+        class(2) {
             use LoadableTrait;
 
             private int $id;
 
-            #[DataSource(class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+            #[DataSourceRef(id: 'personData')]
             private ?string $name = null;
 
             public function __construct(int $id)
@@ -123,12 +128,14 @@ final class ServiceLocatorIntegrationTest extends TestCase
     public function testDirectInstantiationWithNoContainerOrLocator(): void
     {
         // Create an entity using direct class reference
-        $entity = new class(3) {
+        $entity = new 
+        #[MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+        class(3) {
             use LoadableTrait;
 
             private int $id;
 
-            #[DataSource(class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+            #[DataSourceRef(id: 'personData')]
             private ?string $name = null;
 
             public function __construct(int $id)
@@ -186,12 +193,14 @@ final class ServiceLocatorIntegrationTest extends TestCase
         };
 
         // Create an entity using PersonDataSource
-        $person = new class(1) {
+        $person = new 
+        #[MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+        class(1) {
             use LoadableTrait;
 
             private int $id;
 
-            #[DataSource(class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+            #[DataSourceRef(id: 'personData')]
             private ?string $name = null;
 
             public function __construct(int $id)
@@ -224,12 +233,14 @@ final class ServiceLocatorIntegrationTest extends TestCase
         ]);
 
         // Create an entity using semantic key
-        $entity = new class(1) {
+        $entity = new 
+        #[MultiPropDataSource(id: 'personData', class: 'DIPLOMA', method: 'getData', args: ['#id'])]
+        class(1) {
             use LoadableTrait;
 
             private int $id;
 
-            #[DataSource(class: 'DIPLOMA', method: 'getData', args: ['#id'])]
+            #[DataSourceRef(id: 'personData')]
             private ?string $name = null;
 
             public function __construct(int $id)
@@ -265,12 +276,14 @@ final class ServiceLocatorIntegrationTest extends TestCase
         ]);
 
         // Create an entity
-        $entity = new class(1) {
+        $entity = new 
+        #[MultiPropDataSource(id: 'personData', class: 'TEST_KEY', method: 'getData', args: ['#id'])]
+        class(1) {
             use LoadableTrait;
 
             private int $id;
 
-            #[DataSource(class: 'TEST_KEY', method: 'getData', args: ['#id'])]
+            #[DataSourceRef(id: 'personData')]
             private ?string $name = null;
 
             public function __construct(int $id)
@@ -319,12 +332,14 @@ final class ServiceLocatorIntegrationTest extends TestCase
         };
 
         // Create an entity using semantic key
-        $entity = new class(1) {
+        $entity = new 
+        #[MultiPropDataSource(id: 'personData', class: 'MY_DATASOURCE', method: 'getData', args: ['#id'])]
+        class(1) {
             use LoadableTrait;
 
             private int $id;
 
-            #[DataSource(class: 'MY_DATASOURCE', method: 'getData', args: ['#id'])]
+            #[DataSourceRef(id: 'personData')]
             private ?string $name = null;
 
             public function __construct(int $id)
