@@ -1,45 +1,66 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kassko\DataMapper\ObjectExtension;
 
-use Kassko\DataMapper\Registry\Registry;
+use Kassko\DataMapper\Registry\LazyLoaderRegistry;
 
-/**
- * Add loading feature to an object.
- *
- * @author kko
- */
 trait LoadableTrait
 {
-    public $__isRegistered = false;
+    private array $lockedProperties = [];
 
-    protected function load()
+    /**
+     * Load a property on-demand using the global LazyLoader.
+     */
+    protected function loadProperty(string $propertyName): void
     {
-        if (false === $lazyLoader = $this->__getLoader()) {
-            return; 
+        $lazyLoader = LazyLoaderRegistry::get();
+        
+        if ($lazyLoader === null) {
+            // No DataMapper configured - silently skip
+            // This allows objects to work even without DataMapper
+            return;
         }
-            
-        $lazyLoader->load($this);
-    }
 
-    protected function loadProperty($propertyName)
-    {
-        if (false === $lazyLoader = $this->__getLoader()) {
-            return; 
-        }
-            
         $lazyLoader->loadProperty($this, $propertyName);
     }
 
-    private function __getLoader()
+    /**
+     * Load all eager properties. Call this after instantiation if needed.
+     */
+    public function loadEagerProperties(): void
     {
-        $registry = Registry::getInstance();
-        if (! isset($registry[Registry::KEY_LAZY_LOADER_FACTORY])) {
-            return false;
-        } 
+        $lazyLoader = LazyLoaderRegistry::get();
+        
+        if ($lazyLoader === null) {
+            return;
+        }
+        
+        $lazyLoader->loadEagerProperties($this);
+    }
 
-        $loaderFactory = $registry[Registry::KEY_LAZY_LOADER_FACTORY];
+    /**
+     * Lock a property to prevent lazy/eager loading from modifying its value.
+     */
+    protected function lockProperty(string $propertyName): void
+    {
+        $this->lockedProperties[$propertyName] = true;
+    }
 
-        return $loaderFactory->getInstance(get_called_class());
+    /**
+     * Unlock a property to allow lazy/eager loading to modify its value.
+     */
+    protected function unlockProperty(string $propertyName): void
+    {
+        unset($this->lockedProperties[$propertyName]);
+    }
+
+    /**
+     * Check if a property is locked.
+     */
+    public function isPropertyLocked(string $propertyName): bool
+    {
+        return $this->lockedProperties[$propertyName] ?? false;
     }
 }

@@ -1,0 +1,77 @@
+# PR #8: Implement 8 major evolutions: Property attribute, recursive hydration, eager loading, parent/trait support
+
+**Author:** Copilot  
+**Created:** 2025-12-19  
+**Merged:** 2025-12-19  
+
+---
+
+Modernizes the data-mapper with PHP 8.0+ features including recursive object hydration, eager loading, and comprehensive property control. No backward compatibility needed per requirements.
+
+## Core Changes
+
+**Property Attribute** - Replaces `Field` with extended functionality:
+- `class`: Enables recursive object instantiation and hydration
+- `expand`/`noExpand`: Whitelist/blacklist nested property hydration
+- Field kept as fallback in reader only
+
+**Recursive Hydration** - Nested objects auto-instantiate and hydrate:
+```php
+#[Property(class: Shop::class, expand: 'address')]
+private ?Shop $bestShop = null;
+
+// Data: ['bestShop' => ['name' => 'The best', 'address' => 'Street']]
+// Result: $bestShop is Shop instance with properties hydrated
+```
+
+**Eager Loading** - Load properties immediately vs on-access:
+```php
+#[Loading(type: Loading::TYPE_EAGER, depth: 2)]
+private ?Shop $shop = null;
+
+$obj = new MyClass();
+$obj->loadEagerProperties(); // Triggers all eager properties
+```
+
+**Property Filtering** - Fine-grained control over hydration:
+- `#[SkipProperty]` - Never hydrate this property
+- `#[SkipAllProperties]` - Only hydrate properties with `#[Property]`
+- Default: Hydrate all (KeepAllProperties)
+
+**Parent & Trait Support** - `AttributeReader` now traverses:
+- Parent class properties via `getAllProperties()`
+- Trait properties via `getTraitProperties()`
+
+## Implementation Details
+
+**LazyLoader** enhancements:
+- `applyRecursiveHydration()` - Instantiates nested objects
+- `hydrateObject()` - Handles expand/noExpand filtering
+- `loadEagerProperties()` - Processes eager-marked properties
+- Depth limiting via `Loading(depth: N)`
+
+**DataSource** parameter rename:
+- `supplySeveralFields` → `supplySeveralProps`
+
+**AttributeReader** additions:
+- `readProperty()`, `readLoading()`, `readSkipProperty()`
+- `shouldHydrateProperty()` - Evaluates filtering rules
+- `getAllProperties()` - Traverses inheritance chain
+- `getTraitProperties()` - Recursive trait traversal
+
+## CI Updates
+
+GitHub Actions workflow updated to run tests on `project-experimental` branch alongside `main`.
+
+## Test Coverage
+
+New integration tests:
+- RecursiveHydrationTest - Nested object instantiation
+- EagerLoadingTest - Immediate property loading
+- ParentClassHydrationTest - Inheritance chain hydration
+- TraitHydrationTest - Trait property hydration  
+- PropertyInclusionTest - SkipProperty/SkipAllProperties behavior
+- ExpandNoExpandTest - Property filtering in recursive hydration
+- DepthControlTest - Recursion depth limiting
+
+76 tests passing, 0 vulnerabilities (CodeQL).

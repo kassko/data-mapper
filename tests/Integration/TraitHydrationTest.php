@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kassko\DataMapper\Tests\Integration;
+
+use Kassko\DataMapper\LazyLoader\LazyLoader;
+use Kassko\Sample\ElectricCarWithTrait;
+use PHPUnit\Framework\TestCase;
+
+class TraitHydrationTest extends TestCase
+{
+    public function testTraitPropertiesAreHydrated(): void
+    {
+        $lazyLoader = new LazyLoader();
+        
+        $data = [
+            'id' => 1,
+            'brand' => 'Tesla',
+            'model' => 'Model S',
+            'energyProvider' => 'Tesla Supercharger'
+        ];
+        
+        $electricCar = new ElectricCarWithTrait();
+        
+        // Use reflection to call the private hydrateObject method
+        $reflection = new \ReflectionClass($lazyLoader);
+        $method = $reflection->getMethod('hydrateObject');
+        $method->invoke($lazyLoader, $electricCar, $data, null, 0);
+        
+        // All properties should be hydrated, including trait properties
+        $this->assertEquals(1, $electricCar->getId());
+        $this->assertEquals('Tesla', $electricCar->getBrand());
+        $this->assertEquals('Model S', $electricCar->getModel()); // From trait
+        $this->assertEquals('Tesla Supercharger', $electricCar->getEnergyProvider());
+    }
+}

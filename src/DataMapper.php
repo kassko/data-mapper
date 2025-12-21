@@ -1,54 +1,41 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kassko\DataMapper;
 
-use Kassko\DataMapper\Query\Query;
-use Kassko\DataMapper\ObjectManager;
-use Kassko\DataMapper\Result\ResultBuilder;
+use Kassko\DataMapper\LazyLoader\LazyLoader;
+use Kassko\DataMapper\Registry\LazyLoaderRegistry;
+use Psr\Container\ContainerInterface;
 
-/**
-* DataMapper
-*
-* @author kko
-*/
-class DataMapper implements DataMapperInterface
+final class DataMapper
 {
-    protected $objectManager;
-
-    public function __construct(ObjectManager $objectManager)
-    {
-        $this->objectManager = $objectManager;
-    }
+    private ServiceResolver $serviceResolver;
 
     /**
-    * {@inheritdoc}
-    */
-    public function hydrator($objectClass)
+     * @param ServiceResolver|ContainerInterface|null $serviceResolverOrContainer
+     */
+    public function __construct(ServiceResolver|ContainerInterface|null $serviceResolverOrContainer = null)
     {
-        return $this->objectManager->getHydratorFor($objectClass);
+        // Support backward compatibility: allow ContainerInterface or null
+        if ($serviceResolverOrContainer instanceof ServiceResolver) {
+            $this->serviceResolver = $serviceResolverOrContainer;
+        } elseif ($serviceResolverOrContainer instanceof ContainerInterface || $serviceResolverOrContainer === null) {
+            // Backward compatibility: create a ServiceResolver with just the container
+            $this->serviceResolver = new ServiceResolver($serviceResolverOrContainer, []);
+        } else {
+            throw new \InvalidArgumentException(
+                'Argument must be ServiceResolver, ContainerInterface, or null'
+            );
+        }
+        
+        // Register LazyLoader in the registry for backward compatibility
+        $lazyLoader = new LazyLoader($this->serviceResolver);
+        LazyLoaderRegistry::set($lazyLoader);
     }
 
-    /**
-    * {@inheritdoc}
-    */
-    public function resultBuilder($objectClass, $data = null)
+    public function getServiceResolver(): ServiceResolver
     {
-        return new ResultBuilder($this->objectManager, $objectClass, $data);
-    }
-
-    /**
-    * {@inheritdoc}
-    */
-    public function query($objectClass)
-    {
-        return new Query($this->objectManager, $objectClass);
-    }
-
-    /**
-    * {@inheritdoc}
-    */
-    public function configuration()
-    {
-        return $this->objectManager->getConfiguration();
+        return $this->serviceResolver;
     }
 }
