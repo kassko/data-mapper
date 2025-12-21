@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kassko\DataMapper\Attribute;
+
+use Attribute;
+
+/**
+ * Alias for SinglePropDataSource.
+ * 
+ * Use this when you only need single-property hydration in your project.
+ * Use SinglePropDataSource when you mix single and multi-property hydration
+ * for clearer code (SinglePropDataSource + MultiPropDataSource).
+ */
+#[Attribute(Attribute::TARGET_PROPERTY)]
+final class DataSource
+{
+    public function __construct(
+        public readonly ?string $id = null,
+        public readonly ?string $class = null,
+        public readonly string $method = '',
+        public readonly array $args = [],
+    ) {}
+}
