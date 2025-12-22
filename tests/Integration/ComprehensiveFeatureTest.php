@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\Registry\LazyLoaderRegistry;
+use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\Garage;
 use Kassko\Sample\GasolineCar;
 use Kassko\Sample\ElectricCar;
@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Comprehensive test showcasing all three major features working together:
- * 1. Expression language evolution (##this, _self(), rawDataItem(), rawDataItemExists())
+ * 1. Expression language evolution (##object, object(), rawDataItem(), rawDataItemExists())
  * 2. Hook attribute for lifecycle callbacks
  * 3. PropertyCandidates for polymorphic/runtime property resolution
  */
@@ -21,7 +21,7 @@ class ComprehensiveFeatureTest extends TestCase
 {
     protected function tearDown(): void
     {
-        LazyLoaderRegistry::clear();
+        LoaderRegistry::clear();
     }
 
     public function testAllFeaturesWorkTogether(): void
@@ -35,7 +35,7 @@ class ComprehensiveFeatureTest extends TestCase
         // 1. Execute DataSource with #id argument (expression reference)
         // 2. Use PropertyCandidates with rawDataItemExists() to determine car type
         // 3. Call after_create_object hook on each car as it's hydrated
-        // 4. Call after_set_property hook when cars array is set with ##this and #cars
+        // 4. Call after_set_property hook when cars array is set with ##object and #cars
         $cars = $garage->getCars();
         
         // Verify all features worked correctly
@@ -83,7 +83,7 @@ class ComprehensiveFeatureTest extends TestCase
         
         $garage = new Garage(1);
         
-        // Test that ##this and #id work in DataSource arguments
+        // Test that ##object and #id work in DataSource arguments
         // The DataSource receives #id which references the garage's id property
         $cars = $garage->getCars();
         $this->assertNotEmpty($cars, 'DataSource with #id expression should work');

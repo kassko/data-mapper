@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Tests\Integration;
 
-use Kassko\DataMapper\LazyLoader\LazyLoader;
+use Kassko\DataMapper\Loader\Loader;
 use Kassko\Sample\ProductWithSkip;
 use Kassko\Sample\ProductWithSkipAll;
 use PHPUnit\Framework\TestCase;
@@ -13,7 +13,7 @@ class PropertyInclusionTest extends TestCase
 {
     public function testSkipPropertyIsNotHydrated(): void
     {
-        $lazyLoader = new LazyLoader();
+        $lazyLoader = new Loader();
         
         $data = [
             'name' => 'Widget',
@@ -38,7 +38,7 @@ class PropertyInclusionTest extends TestCase
 
     public function testSkipAllPropertiesOnlyHydratesMarkedProperties(): void
     {
-        $lazyLoader = new LazyLoader();
+        $lazyLoader = new Loader();
         
         $data = [
             'name' => 'Gadget',

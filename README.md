@@ -158,11 +158,11 @@ Lifecycle callbacks with support for external services:
 
 ```php
 // Hook on the data object itself
-#[Hook(name: 'after_create_object', method: 'initialize', args: ['##this'])]
+#[Hook(name: 'after_create_object', method: 'initialize', args: ['##object'])]
 class Entity
 {
     #[Hook(name: 'before_set_property', method: 'validate', args: ["expr(rawDataItem('name'))"])]
-    #[Hook(name: 'after_set_property', method: 'onSet', args: ['##this', '#name'])]
+    #[Hook(name: 'after_set_property', method: 'onSet', args: ['##object', '#name'])]
     private ?string $name = null;
 }
 
@@ -171,7 +171,7 @@ class Entity
     name: 'after_set_property',
     class: ValidationService::class,  // External service
     method: 'validateEmail',
-    args: ['##this', '#email']
+    args: ['##object', '#email']
 )]
 private ?string $email = null;
 ```
@@ -276,7 +276,8 @@ private ?Shop $shop = null;
 |--------|-------------|
 | `#id` | Property value (tries getter → isser → haser → direct) |
 | `!#id` | Property value (direct, bypass getter) |
-| `##this` | Current object |
+| `##object` | Current object |
+| `#parentObject` / `##parentObject` | Parent object |
 
 **Property Reference Resolution Order:**
 1. `getPropertyName()` - Getter method
@@ -292,7 +293,8 @@ private ?Shop $shop = null;
 | `service('id')` | Resolve service |
 | `context('key')` | Get context value |
 | `envVar('KEY')` | Environment variable |
-| `_self()` | Current object |
+| `object()` | Current object |
+| `parentObject()` | Parent object |
 | `rawDataItem('key')` | Raw data value |
 | `rawDataItemExists('key')` | Check raw data key |
 | `strictProperty('name')` | Direct property access |

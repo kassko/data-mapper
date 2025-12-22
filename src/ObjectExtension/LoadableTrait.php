@@ -4,26 +4,26 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\ObjectExtension;
 
-use Kassko\DataMapper\Registry\LazyLoaderRegistry;
+use Kassko\DataMapper\Registry\LoaderRegistry;
 
 trait LoadableTrait
 {
     private array $lockedProperties = [];
 
     /**
-     * Load a property on-demand using the global LazyLoader.
+     * Load a property on-demand using the global Loader.
      */
     protected function loadProperty(string $propertyName): void
     {
-        $lazyLoader = LazyLoaderRegistry::get();
+        $loader = LoaderRegistry::get();
         
-        if ($lazyLoader === null) {
+        if ($loader === null) {
             // No DataMapper configured - silently skip
             // This allows objects to work even without DataMapper
             return;
         }
 
-        $lazyLoader->loadProperty($this, $propertyName);
+        $loader->loadProperty($this, $propertyName);
     }
 
     /**
@@ -31,13 +31,13 @@ trait LoadableTrait
      */
     public function loadEagerProperties(): void
     {
-        $lazyLoader = LazyLoaderRegistry::get();
+        $loader = LoaderRegistry::get();
         
-        if ($lazyLoader === null) {
+        if ($loader === null) {
             return;
         }
         
-        $lazyLoader->loadEagerProperties($this);
+        $loader->loadEagerProperties($this);
     }
 
     /**

@@ -6,11 +6,14 @@ Declares property dependencies that must be loaded before this property.
 
 ```php
 use Kassko\DataMapper\Attribute\Needs;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 
-#[MultiPropDataSource(id: 'userData', class: UserSource::class, method: 'getData')]
-#[MultiPropDataSource(id: 'fullName', class: NameService::class, method: 'buildFullName', args: ['#firstName', '#lastName'])]
+#[DataSourcesStore([
+    new MultiPropDataSource(id: 'userData', class: UserSource::class, method: 'getData'),
+    new MultiPropDataSource(id: 'fullName', class: NameService::class, method: 'buildFullName', args: ['#firstName', '#lastName']),
+])]
 class User
 {
     #[DataSourceRef(id: 'userData')]

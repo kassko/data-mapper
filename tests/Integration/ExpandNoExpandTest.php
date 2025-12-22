@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Tests\Integration;
 
-use Kassko\DataMapper\LazyLoader\LazyLoader;
+use Kassko\DataMapper\Loader\Loader;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\Sample\Shop;
 use PHPUnit\Framework\TestCase;
@@ -13,7 +13,7 @@ class ExpandNoExpandTest extends TestCase
 {
     public function testExpandOnlySpecifiedProperties(): void
     {
-        $lazyLoader = new LazyLoader();
+        $lazyLoader = new Loader();
         
         $data = [
             'name' => 'The best shop',
@@ -40,7 +40,7 @@ class ExpandNoExpandTest extends TestCase
 
     public function testNoExpandExcludesSpecifiedProperties(): void
     {
-        $lazyLoader = new LazyLoader();
+        $lazyLoader = new Loader();
         
         $data = [
             'name' => 'The worst shop',

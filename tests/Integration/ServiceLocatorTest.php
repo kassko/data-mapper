@@ -69,7 +69,7 @@ class ServiceLocatorTest extends TestCase
         $this->assertEquals('foo', $entity->getName());
         $this->assertEquals('foo@aaa.com', $entity->getEmail());
         
-        \Kassko\DataMapper\Registry\LazyLoaderRegistry::clear();
+        \Kassko\DataMapper\Registry\LoaderRegistry::clear();
     }
 
     public function testServiceLocatorThrowsExceptionWithoutContainer(): void
@@ -104,6 +104,6 @@ class ServiceLocatorTest extends TestCase
 
         $entity->getName();
         
-        \Kassko\DataMapper\Registry\LazyLoaderRegistry::clear();
+        \Kassko\DataMapper\Registry\LoaderRegistry::clear();
     }
 }

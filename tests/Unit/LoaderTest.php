@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Tests\Unit;
 
-use Kassko\DataMapper\LazyLoader\LazyLoader;
+use Kassko\DataMapper\Loader\Loader;
 use Kassko\Sample\Person;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
-class LazyLoaderTest extends TestCase
+class LoaderTest extends TestCase
 {
     public function testLoadPropertyHydratesProperty(): void
     {
-        $loader = new LazyLoader();
+        $loader = new Loader();
         $person = new Person(1);
 
         // Verify property is null before loading
@@ -30,7 +30,7 @@ class LazyLoaderTest extends TestCase
 
     public function testLoadPropertyHydratesAllPropertiesWithSameSignature(): void
     {
-        $loader = new LazyLoader();
+        $loader = new Loader();
         $person = new Person(1);
 
         // Load only 'name' property
@@ -48,7 +48,7 @@ class LazyLoaderTest extends TestCase
 
     public function testLoadPropertyDoesNotReloadAlreadyLoadedProperty(): void
     {
-        $loader = new LazyLoader();
+        $loader = new Loader();
         $person = new Person(1);
 
         // Load the property once
@@ -71,7 +71,7 @@ class LazyLoaderTest extends TestCase
 
     public function testDifferentObjectsAreLoadedIndependently(): void
     {
-        $loader = new LazyLoader();
+        $loader = new Loader();
         $person1 = new Person(1);
         $person2 = new Person(2);
 

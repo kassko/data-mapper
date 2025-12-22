@@ -17,6 +17,6 @@ final class Hook
         public readonly string $name,           // Hook name (after_create_object, before_set_property, after_set_property)
         public readonly string $method = '',    // Method to call on the object or a service
         public readonly ?string $class = null,  // Optional: external class/service to call
-        public readonly array $args = [],       // Arguments to pass (supports ##this, #property, expr())
+        public readonly array $args = [],       // Arguments to pass (supports ##object, #property, expr())
     ) {}
 }

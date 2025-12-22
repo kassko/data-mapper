@@ -4,20 +4,24 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Expression;
 
+use Psr\SimpleCache\CacheInterface;
+
 class SourceFunctionProvider
 {
-    /** @var array<string, mixed> Cache of DataSource results by source id */
-    private array $cache = [];
-    
     /** @var callable Callback to execute a DataSource by id: function(string $sourceId): mixed */
     private $dataSourceExecutor;
+    
+    /** @var CacheInterface|null PSR-16 cache for DataSource results */
+    private ?CacheInterface $cache;
 
     /**
      * @param callable $dataSourceExecutor Callback to execute a DataSource: function(string $sourceId): mixed
+     * @param CacheInterface|null $cache Optional PSR-16 cache for storing DataSource results
      */
-    public function __construct(callable $dataSourceExecutor)
+    public function __construct(callable $dataSourceExecutor, ?CacheInterface $cache = null)
     {
         $this->dataSourceExecutor = $dataSourceExecutor;
+        $this->cache = $cache;
     }
 
     /**
@@ -29,19 +33,37 @@ class SourceFunctionProvider
      */
     public function getSourceResult(string $sourceId)
     {
-        if (!isset($this->cache[$sourceId])) {
-            $this->cache[$sourceId] = ($this->dataSourceExecutor)($sourceId);
+        if ($this->cache !== null) {
+            $cacheKey = $this->getCacheKey($sourceId);
+            
+            if ($this->cache->has($cacheKey)) {
+                return $this->cache->get($cacheKey);
+            }
+            
+            $result = ($this->dataSourceExecutor)($sourceId);
+            $this->cache->set($cacheKey, $result);
+            
+            return $result;
         }
         
-        return $this->cache[$sourceId];
+        // No cache provided, execute directly
+        return ($this->dataSourceExecutor)($sourceId);
     }
 
     /**
-     * Clear the cache (useful for testing or when processing a new object)
+     * Clear the cache for a specific source or all sources
+     *
+     * @param string|null $sourceId If null, clears entire cache
      */
-    public function clearCache(): void
+    public function clearCache(?string $sourceId = null): void
     {
-        $this->cache = [];
+        if ($this->cache !== null) {
+            if ($sourceId !== null) {
+                $this->cache->delete($this->getCacheKey($sourceId));
+            } else {
+                $this->cache->clear();
+            }
+        }
     }
 
     /**
@@ -52,6 +74,21 @@ class SourceFunctionProvider
      */
     public function isCached(string $sourceId): bool
     {
-        return isset($this->cache[$sourceId]);
+        if ($this->cache === null) {
+            return false;
+        }
+        
+        return $this->cache->has($this->getCacheKey($sourceId));
+    }
+
+    /**
+     * Generate a cache key for a source ID
+     *
+     * @param string $sourceId
+     * @return string
+     */
+    private function getCacheKey(string $sourceId): string
+    {
+        return 'data_mapper_source_' . $sourceId;
     }
 }

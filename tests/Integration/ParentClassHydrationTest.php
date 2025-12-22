@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Tests\Integration;
 
-use Kassko\DataMapper\LazyLoader\LazyLoader;
+use Kassko\DataMapper\Loader\Loader;
 use Kassko\Sample\ElectricCar;
 use PHPUnit\Framework\TestCase;
 
@@ -12,7 +12,7 @@ class ParentClassHydrationTest extends TestCase
 {
     public function testParentClassPropertiesAreHydrated(): void
     {
-        $lazyLoader = new LazyLoader();
+        $lazyLoader = new Loader();
         
         $data = [
             'id' => 1,

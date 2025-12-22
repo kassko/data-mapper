@@ -6,10 +6,13 @@ Defines a data source that hydrates a single property.
 
 ```php
 use Kassko\DataMapper\Attribute\SinglePropDataSource;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 
-#[MultiPropDataSource(id: 'fullData', class: PersonSource::class, method: 'getAll')]
+#[DataSourcesStore([
+    new MultiPropDataSource(id: 'fullData', class: PersonSource::class, method: 'getAll'),
+])]
 class Person
 {
     // Single property hydration

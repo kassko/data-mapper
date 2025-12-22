@@ -10,7 +10,7 @@ use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\Exception\NoValidDataSourceException;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
-use Kassko\DataMapper\Registry\LazyLoaderRegistry;
+use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\ChainDataSource;
 use Kassko\Sample\UnsuitableSourceException;
 use PHPUnit\Framework\TestCase;
@@ -24,7 +24,7 @@ class DataSourceChainTest extends TestCase
 {
     protected function tearDown(): void
     {
-        LazyLoaderRegistry::clear();
+        LoaderRegistry::clear();
     }
 
     public function testChainFallbackWithSuccess(): void
@@ -37,7 +37,7 @@ class DataSourceChainTest extends TestCase
         ])] class {
             use LoadableTrait;
             
-            #[DataSourceRef(chain: ['sourceA', 'sourceB'], exception: UnsuitableSourceException::class)]
+            #[DataSourceRef(chain: ['sourceA', 'sourceB'], exceptionOnNoValidDataSource: UnsuitableSourceException::class)]
             private ?string $data = null;
             
             public function getData(): ?string
@@ -60,7 +60,7 @@ class DataSourceChainTest extends TestCase
         ])] class {
             use LoadableTrait;
             
-            #[DataSourceRef(chain: ['sourceA', 'sourceB'], exception: UnsuitableSourceException::class)]
+            #[DataSourceRef(chain: ['sourceA', 'sourceB'], exceptionOnNoValidDataSource: UnsuitableSourceException::class)]
             private ?string $data = null;
             
             public function getData(): ?string
@@ -83,7 +83,7 @@ class DataSourceChainTest extends TestCase
         ])] class {
             use LoadableTrait;
             
-            #[DataSourceRef(chain: ['sourceA'], exception: UnsuitableSourceException::class)]
+            #[DataSourceRef(chain: ['sourceA'], exceptionOnNoValidDataSource: UnsuitableSourceException::class)]
             private ?string $data = null;
             
             public function getData(): ?string

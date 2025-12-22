@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kassko\DataMapper\LazyLoader;
+namespace Kassko\DataMapper\Loader;
 
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\SinglePropDataSource;
@@ -20,7 +20,7 @@ use ReflectionClass;
 use ReflectionProperty;
 use WeakMap;
 
-class LazyLoader implements LazyLoaderInterface
+class Loader implements LoaderInterface
 {
     /** @var WeakMap<object, array<string, bool>> */
     private WeakMap $loadedProperties;
@@ -190,7 +190,7 @@ class LazyLoader implements LazyLoaderInterface
     private function loadPropertyWithChain(object $object, string $propertyName, ReflectionProperty $property, $dataSourceRef): void
     {
         $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
-        $exceptionClass = $dataSourceRef->exception;
+        $exceptionClass = $dataSourceRef->exceptionOnNoValidDataSource;
         
         foreach ($dataSourceRef->chain as $sourceId) {
             if (!isset($dataSourceMap[$sourceId])) {
@@ -1080,8 +1080,8 @@ class LazyLoader implements LazyLoaderInterface
      */
     private function resolveSingleArg(string $arg, object $object, callable $propertyLoader, ExpressionParser $expressionParser)
     {
-        // Handle ##this syntax (return current object)
-        if ($arg === '##this') {
+        // Handle ##object syntax (return current object)
+        if ($arg === '##object') {
             return $object;
         }
 

@@ -7,7 +7,7 @@ namespace Kassko\Sample;
 use Kassko\DataMapper\Attribute\Hook;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
-#[Hook(name: 'after_create_object', method: 'initializeObject', args: ['##this'])]
+#[Hook(name: 'after_create_object', method: 'initializeObject', args: ['##object'])]
 class PersonWithHooks
 {
     use LoadableTrait;
@@ -18,7 +18,7 @@ class PersonWithHooks
     private bool $nameSetCalled = false;
 
     #[Hook(name: 'before_set_property', method: 'validateName', args: ["expr(rawDataItem('first_name'))"])]
-    #[Hook(name: 'after_set_property', method: 'onNameSet', args: ['##this', '#firstName'])]
+    #[Hook(name: 'after_set_property', method: 'onNameSet', args: ['##object', '#firstName'])]
     private ?string $firstName = null;
 
     private ?string $lastName = null;
