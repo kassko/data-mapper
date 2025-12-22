@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\Registry\LazyLoaderRegistry;
+use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\Person;
 use PHPUnit\Framework\TestCase;
 
@@ -13,12 +13,12 @@ class DataMapperTest extends TestCase
 {
     protected function tearDown(): void
     {
-        LazyLoaderRegistry::clear();
+        LoaderRegistry::clear();
     }
 
     public function testDataMapperPreparesObjectForLazyLoading(): void
     {
-        new DataMapper(); // Registers LazyLoader automatically
+        new DataMapper(); // Registers Loader automatically
         $person = new Person(1);
 
         // Access properties - they should be lazy loaded (no prepare() needed!)
@@ -28,7 +28,7 @@ class DataMapperTest extends TestCase
 
     public function testSingleCallOptimization(): void
     {
-        new DataMapper(); // Registers LazyLoader automatically
+        new DataMapper(); // Registers Loader automatically
         $person = new Person(1);
 
         // First call to getName() should load both name and email
@@ -43,7 +43,7 @@ class DataMapperTest extends TestCase
 
     public function testMultiplePersonsWithDifferentIds(): void
     {
-        new DataMapper(); // Registers LazyLoader automatically
+        new DataMapper(); // Registers Loader automatically
         
         $person1 = new Person(1);
         $person2 = new Person(2);

@@ -21,10 +21,10 @@ class DataSourceRefValidationTest extends TestCase
     {
         $ref = new DataSourceRef(
             chain: ['sourceA', 'sourceB'],
-            exception: 'SomeException'
+            exceptionOnNoValidDataSource: 'SomeException'
         );
         $this->assertEquals(['sourceA', 'sourceB'], $ref->chain);
-        $this->assertEquals('SomeException', $ref->exception);
+        $this->assertEquals('SomeException', $ref->exceptionOnNoValidDataSource);
         $this->assertNull($ref->id);
         $this->assertNull($ref->providers);
     }
@@ -53,7 +53,7 @@ class DataSourceRefValidationTest extends TestCase
         new DataSourceRef(
             id: 'sourceA',
             chain: ['sourceB'],
-            exception: 'SomeException'
+            exceptionOnNoValidDataSource: 'SomeException'
         );
     }
     
@@ -76,14 +76,14 @@ class DataSourceRefValidationTest extends TestCase
         new DataSourceRef(
             chain: ['sourceA'],
             providers: ['providerB'],
-            exception: 'SomeException'
+            exceptionOnNoValidDataSource: 'SomeException'
         );
     }
     
     public function testChainWithoutExceptionThrowsException(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef: chain and exception must both be present or both absent');
+        $this->expectExceptionMessage('DataSourceRef: chain and exceptionOnNoValidDataSource must both be present or both absent');
         
         new DataSourceRef(chain: ['sourceA', 'sourceB']);
     }
@@ -91,8 +91,8 @@ class DataSourceRefValidationTest extends TestCase
     public function testExceptionWithoutChainThrowsException(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef: chain and exception must both be present or both absent');
+        $this->expectExceptionMessage('DataSourceRef: chain and exceptionOnNoValidDataSource must both be present or both absent');
         
-        new DataSourceRef(exception: 'SomeException');
+        new DataSourceRef(exceptionOnNoValidDataSource: 'SomeException');
     }
 }

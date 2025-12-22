@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kassko\DataMapper\LazyLoader;
+namespace Kassko\DataMapper\Loader;
 
-interface LazyLoaderInterface
+interface LoaderInterface
 {
     /**
      * Load a property on the given object

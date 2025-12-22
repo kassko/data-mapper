@@ -231,11 +231,11 @@ $data = [
 ### Lifecycle Hooks
 
 ```php
-#[Hook(name: 'after_create_object', method: 'init', args: ['##this'])]
+#[Hook(name: 'after_create_object', method: 'init', args: ['##object'])]
 class Entity
 {
     #[Hook(name: 'before_set_property', method: 'validate')]
-    #[Hook(name: 'after_set_property', method: 'log', args: ['##this', '#name'])]
+    #[Hook(name: 'after_set_property', method: 'log', args: ['##object', '#name'])]
     private ?string $name = null;
     
     public function init(self $entity): void
@@ -264,7 +264,7 @@ class Entity
     args: [
         '#id',                              // Property via getter
         '!#internalId',                     // Property direct access
-        '##this',                           // Current object
+        '##object',                         // Current object
         "expr(source('otherSource')['key'])",  // Other DataSource result
         "expr(context('tenant_id'))",       // Context value
         "expr(envVar('API_KEY'))",          // Environment variable
@@ -318,7 +318,7 @@ class Person
         name: Hook::AFTER_SET_PROPERTY,
         class: ValidationService::class,  // External service
         method: 'validateEmail',
-        args: ['##this', '#email']
+        args: ['##object', '#email']
     )]
     private ?string $email = null;
     
@@ -327,7 +327,7 @@ class Person
         name: Hook::AFTER_SET_PROPERTY,
         class: ValidationService::class,
         method: 'validateAge',
-        args: ['##this', '#age']
+        args: ['##object', '#age']
     )]
     private ?int $age = null;
 }

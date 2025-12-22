@@ -10,7 +10,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\Hook;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
-use Kassko\DataMapper\Registry\LazyLoaderRegistry;
+use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\EmailDataSource;
 use Kassko\Sample\NameDataSource;
 use Kassko\Sample\StatusDataSource;
@@ -22,7 +22,7 @@ class HookExternalServiceTest extends TestCase
 {
     protected function tearDown(): void
     {
-        LazyLoaderRegistry::clear();
+        LoaderRegistry::clear();
     }
 
     public function testHookWithExternalServiceClass(): void
@@ -57,7 +57,7 @@ class HookExternalServiceTest extends TestCase
                 name: Hook::AFTER_SET_PROPERTY,
                 class: TestValidationService::class,
                 method: 'validateEmail',
-                args: ['##this', '#email']
+                args: ['##object', '#email']
             )]
             private ?string $email = null;
             
@@ -108,7 +108,7 @@ class HookExternalServiceTest extends TestCase
                 name: Hook::AFTER_SET_PROPERTY,
                 class: TestLogService::class,
                 method: 'logChange',
-                args: ['##this', 'status', 'draft', '#status']
+                args: ['##object', 'status', 'draft', '#status']
             )]
             private string $status = 'draft';
             

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\Registry\LazyLoaderRegistry;
+use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\Garage;
 use Kassko\Sample\GasolineCar;
 use Kassko\Sample\ElectricCar;
@@ -15,7 +15,7 @@ class PropertyCandidatesTest extends TestCase
 {
     protected function tearDown(): void
     {
-        LazyLoaderRegistry::clear();
+        LoaderRegistry::clear();
     }
 
     public function testPropertyCandidatesWithGasolineCar(): void

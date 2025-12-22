@@ -123,6 +123,6 @@ class DifferentSignaturesTest extends TestCase
         $email = $entity->getEmail();
         $this->assertEquals('bar@bbb.com', $email);
         
-        \Kassko\DataMapper\Registry\LazyLoaderRegistry::clear();
+        \Kassko\DataMapper\Registry\LoaderRegistry::clear();
     }
 }

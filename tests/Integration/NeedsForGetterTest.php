@@ -11,14 +11,14 @@ use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Needs;
 use Kassko\DataMapper\DataMapperBuilder;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
-use Kassko\DataMapper\Registry\LazyLoaderRegistry;
+use Kassko\DataMapper\Registry\LoaderRegistry;
 use PHPUnit\Framework\TestCase;
 
 class NeedsForGetterTest extends TestCase
 {
     protected function tearDown(): void
     {
-        LazyLoaderRegistry::clear();
+        LoaderRegistry::clear();
     }
 
     public function testNeedsLoadsPropertiesUsedInGetter(): void

@@ -18,7 +18,7 @@ class ExpressionParserTest extends TestCase
         $object = new \stdClass();
         $object->id = 123;
         
-        $result = $parser->resolveArgs(['##this'], $object, fn() => null);
+        $result = $parser->resolveArgs(['##object'], $object, fn() => null);
         
         $this->assertSame($object, $result[0]);
     }
@@ -31,7 +31,7 @@ class ExpressionParserTest extends TestCase
         $object = new \stdClass();
         $object->name = 'Test';
         
-        $result = $parser->resolveArgs(['expr(_self())'], $object, fn() => null);
+        $result = $parser->resolveArgs(['expr(object())'], $object, fn() => null);
         
         $this->assertSame($object, $result[0]);
     }

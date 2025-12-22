@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Tests\Integration;
 
-use Kassko\DataMapper\LazyLoader\LazyLoader;
+use Kassko\DataMapper\Loader\Loader;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\Loading;
 use Kassko\Sample\Company;
@@ -15,7 +15,7 @@ class DepthControlTest extends TestCase
 {
     public function testDepthLimitPreventsDeepNesting(): void
     {
-        $lazyLoader = new LazyLoader();
+        $lazyLoader = new Loader();
         
         // Create nested data structure
         $data = [

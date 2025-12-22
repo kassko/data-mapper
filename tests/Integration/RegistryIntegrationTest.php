@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\DataMapperBuilder;
-use Kassko\DataMapper\Registry\LazyLoaderRegistry;
+use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\Person;
 use PHPUnit\Framework\TestCase;
 
@@ -13,7 +13,7 @@ final class RegistryIntegrationTest extends TestCase
 {
     protected function tearDown(): void
     {
-        LazyLoaderRegistry::clear();
+        LoaderRegistry::clear();
     }
 
     public function testLazyLoadingWorksWithoutPrepare(): void
@@ -58,7 +58,7 @@ final class RegistryIntegrationTest extends TestCase
     public function testWithoutDataMapperGracefulDegradation(): void
     {
         // Don't build DataMapper - objects should still work but properties won't load
-        LazyLoaderRegistry::clear();
+        LoaderRegistry::clear();
         
         $person = new Person(1);
         

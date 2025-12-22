@@ -33,7 +33,10 @@ final class ServiceResolverTest extends TestCase
         $service = new \stdClass();
         
         $container = $this->createMock(ContainerInterface::class);
-        $container->method('has')->with('person.data_source')->willReturn(true);
+        // Container is checked first, then locator redirects to container with @person.data_source
+        $container->method('has')->willReturnCallback(function ($id) {
+            return $id === 'person.data_source';
+        });
         $container->method('get')->with('person.data_source')->willReturn($service);
 
         $resolver = new ServiceResolver($container, [$locator]);

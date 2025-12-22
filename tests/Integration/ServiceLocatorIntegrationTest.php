@@ -9,7 +9,7 @@ use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
-use Kassko\DataMapper\Registry\LazyLoaderRegistry;
+use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\PersonDataSource;
 use Kassko\Sample\CarRepository;
 use PHPUnit\Framework\TestCase;
@@ -19,7 +19,7 @@ final class ServiceLocatorIntegrationTest extends TestCase
 {
     protected function tearDown(): void
     {
-        LazyLoaderRegistry::clear();
+        LoaderRegistry::clear();
     }
     public function testDirectContainerResolution(): void
     {

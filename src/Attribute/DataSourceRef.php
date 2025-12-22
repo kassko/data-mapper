@@ -12,17 +12,17 @@ final class DataSourceRef
     public readonly ?string $id;
     public readonly ?array $chain;
     public readonly ?array $providers;
-    public readonly ?string $exception;
+    public readonly ?string $exceptionOnNoValidDataSource;
 
     public function __construct(
         ?string $id = null,
         ?array $chain = null,
         ?array $providers = null,
-        ?string $exception = null
+        ?string $exceptionOnNoValidDataSource = null
     ) {
-        // Validation: chain and exception must both be present or both absent (check first)
-        if (($chain !== null) !== ($exception !== null)) {
-            throw new \InvalidArgumentException('DataSourceRef: chain and exception must both be present or both absent');
+        // Validation: chain and exceptionOnNoValidDataSource must both be present or both absent (check first)
+        if (($chain !== null) !== ($exceptionOnNoValidDataSource !== null)) {
+            throw new \InvalidArgumentException('DataSourceRef: chain and exceptionOnNoValidDataSource must both be present or both absent');
         }
         
         // Count how many of the mutually exclusive options are set
@@ -41,6 +41,6 @@ final class DataSourceRef
         $this->id = $id;
         $this->chain = $chain;
         $this->providers = $providers;
-        $this->exception = $exception;
+        $this->exceptionOnNoValidDataSource = $exceptionOnNoValidDataSource;
     }
 }

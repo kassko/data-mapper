@@ -70,14 +70,14 @@ class ExpressionParser
      */
     private function getParentObject(object $object): ?object
     {
-        // Get LazyLoader from registry to access parent tracking
-        $lazyLoader = \Kassko\DataMapper\Registry\LazyLoaderRegistry::get();
+        // Get Loader from registry to access parent tracking
+        $loader = \Kassko\DataMapper\Registry\LoaderRegistry::get();
         
-        if ($lazyLoader === null || !method_exists($lazyLoader, 'getParentObject')) {
+        if ($loader === null || !method_exists($loader, 'getParentObject')) {
             return null;
         }
         
-        return $lazyLoader->getParentObject($object);
+        return $loader->getParentObject($object);
     }
 
     /**
@@ -94,13 +94,13 @@ class ExpressionParser
             return $arg;
         }
 
-        // Handle ##this syntax (return current object)
-        if ($arg === '##this') {
+        // Handle ##object syntax (return current object)
+        if ($arg === '##object') {
             return $object;
         }
         
-        // Handle #parent or ##parent syntax (return parent object)
-        if ($arg === '#parent' || $arg === '##parent') {
+        // Handle #parentObject or ##parentObject syntax (return parent object)
+        if ($arg === '#parentObject' || $arg === '##parentObject') {
             return $this->getParentObject($object);
         }
 
@@ -179,18 +179,13 @@ class ExpressionParser
      */
     private function evaluateExpression(string $expression, object $object, callable $propertyLoader)
     {
-        // Parse _this() - returns the current object (new name)
-        if (preg_match("/^_this\(\)$/", $expression)) {
+        // Parse object() - returns the current object
+        if (preg_match("/^object\(\)$/", $expression)) {
             return $object;
         }
         
-        // Parse _self() - returns the current object (backward compatibility)
-        if (preg_match("/^_self\(\)$/", $expression)) {
-            return $object;
-        }
-        
-        // Parse thisParent() - returns the parent object
-        if (preg_match("/^thisParent\(\)$/", $expression)) {
+        // Parse parentObject() - returns the parent object
+        if (preg_match("/^parentObject\(\)$/", $expression)) {
             return $this->getParentObject($object);
         }
         

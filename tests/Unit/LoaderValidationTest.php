@@ -7,14 +7,14 @@ namespace Kassko\DataMapper\Tests\Unit;
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
-use Kassko\DataMapper\Registry\LazyLoaderRegistry;
+use Kassko\DataMapper\Registry\LoaderRegistry;
 use PHPUnit\Framework\TestCase;
 
-class LazyLoaderValidationTest extends TestCase
+class LoaderValidationTest extends TestCase
 {
     protected function tearDown(): void
     {
-        LazyLoaderRegistry::clear();
+        LoaderRegistry::clear();
     }
     public function testThrowsExceptionForNonExistentClass(): void
     {
