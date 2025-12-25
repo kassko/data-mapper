@@ -13,7 +13,7 @@ class LoaderTest extends TestCase
 {
     public function testLoadPropertyHydratesProperty(): void
     {
-        $loader = new Loader();
+        $loader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         $person = new Person(1);
 
         // Verify property is null before loading
@@ -30,7 +30,7 @@ class LoaderTest extends TestCase
 
     public function testLoadPropertyHydratesAllPropertiesWithSameSignature(): void
     {
-        $loader = new Loader();
+        $loader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         $person = new Person(1);
 
         // Load only 'name' property
@@ -48,7 +48,7 @@ class LoaderTest extends TestCase
 
     public function testLoadPropertyDoesNotReloadAlreadyLoadedProperty(): void
     {
-        $loader = new Loader();
+        $loader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         $person = new Person(1);
 
         // Load the property once
@@ -71,7 +71,7 @@ class LoaderTest extends TestCase
 
     public function testDifferentObjectsAreLoadedIndependently(): void
     {
-        $loader = new Loader();
+        $loader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         $person1 = new Person(1);
         $person2 = new Person(2);
 

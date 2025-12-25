@@ -8,7 +8,8 @@ use Kassko\DataMapper\DataMapperBuilder;
 use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\PersonDataSource;
 use Kassko\Sample\CarRepository;
@@ -41,9 +42,11 @@ final class ServiceLocatorIntegrationTest extends TestCase
 
         // Create an entity that uses @service.id pattern
         $entity = new 
-        #[MultiPropDataSource(id: 'personData', class: '@person.datasource', method: 'getData', args: ['#id'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'personData', class: '@person.datasource', method: 'getData', args: ['#id'])
+        ])]
         class(1) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private int $id;
 
@@ -95,9 +98,11 @@ final class ServiceLocatorIntegrationTest extends TestCase
 
         // Create an entity using FQCN in DataSource
         $entity = new 
-        #[MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])
+        ])]
         class(2) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private int $id;
 
@@ -129,9 +134,11 @@ final class ServiceLocatorIntegrationTest extends TestCase
     {
         // Create an entity using direct class reference
         $entity = new 
-        #[MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])
+        ])]
         class(3) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private int $id;
 
@@ -194,9 +201,11 @@ final class ServiceLocatorIntegrationTest extends TestCase
 
         // Create an entity using PersonDataSource
         $person = new 
-        #[MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])
+        ])]
         class(1) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private int $id;
 
@@ -234,9 +243,11 @@ final class ServiceLocatorIntegrationTest extends TestCase
 
         // Create an entity using semantic key
         $entity = new 
-        #[MultiPropDataSource(id: 'personData', class: 'DIPLOMA', method: 'getData', args: ['#id'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'personData', class: 'DIPLOMA', method: 'getData', args: ['#id'])
+        ])]
         class(1) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private int $id;
 
@@ -277,9 +288,11 @@ final class ServiceLocatorIntegrationTest extends TestCase
 
         // Create an entity
         $entity = new 
-        #[MultiPropDataSource(id: 'personData', class: 'TEST_KEY', method: 'getData', args: ['#id'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'personData', class: 'TEST_KEY', method: 'getData', args: ['#id'])
+        ])]
         class(1) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private int $id;
 
@@ -333,9 +346,11 @@ final class ServiceLocatorIntegrationTest extends TestCase
 
         // Create an entity using semantic key
         $entity = new 
-        #[MultiPropDataSource(id: 'personData', class: 'MY_DATASOURCE', method: 'getData', args: ['#id'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'personData', class: 'MY_DATASOURCE', method: 'getData', args: ['#id'])
+        ])]
         class(1) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private int $id;
 

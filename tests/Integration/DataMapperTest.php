@@ -18,7 +18,7 @@ class DataMapperTest extends TestCase
 
     public function testDataMapperPreparesObjectForLazyLoading(): void
     {
-        new DataMapper(); // Registers Loader automatically
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver()); // Registers Loader automatically
         $person = new Person(1);
 
         // Access properties - they should be lazy loaded (no prepare() needed!)
@@ -28,7 +28,7 @@ class DataMapperTest extends TestCase
 
     public function testSingleCallOptimization(): void
     {
-        new DataMapper(); // Registers Loader automatically
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver()); // Registers Loader automatically
         $person = new Person(1);
 
         // First call to getName() should load both name and email
@@ -43,7 +43,7 @@ class DataMapperTest extends TestCase
 
     public function testMultiplePersonsWithDifferentIds(): void
     {
-        new DataMapper(); // Registers Loader automatically
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver()); // Registers Loader automatically
         
         $person1 = new Person(1);
         $person2 = new Person(2);

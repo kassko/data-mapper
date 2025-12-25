@@ -18,7 +18,7 @@ class FieldMappingTest extends TestCase
 
     public function testFieldAttributeMapsKeyToProperty(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $person = new PersonWithStore(1);
 
         // firstName property should use 'first_name' key from data
@@ -28,7 +28,7 @@ class FieldMappingTest extends TestCase
 
     public function testFieldMappingWithMultipleIds(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $person1 = new PersonWithStore(1);
         $person2 = new PersonWithStore(2);
@@ -41,7 +41,7 @@ class FieldMappingTest extends TestCase
 
     public function testPropertiesWithoutFieldAttributeUsePropertyName(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $person = new PersonWithStore(1);
 
         // name and email properties don't have Field attribute

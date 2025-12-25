@@ -18,7 +18,7 @@ class ExpressionLanguageTest extends TestCase
 
     public function testSimplePropertyReferenceExpression(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $person = new PersonWithCar(1);
 
         // The personSource uses #id which references $id property
@@ -28,7 +28,7 @@ class ExpressionLanguageTest extends TestCase
 
     public function testExprWithSourceFunction(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $person = new PersonWithCar(1);
 
         // The carSource uses expr(source('personSource')['car_id'])
@@ -43,7 +43,7 @@ class ExpressionLanguageTest extends TestCase
 
     public function testDependencyChainResolution(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $person = new PersonWithCar(2);
 
         // Loading car requires loading personSource first (dependency)
@@ -60,7 +60,7 @@ class ExpressionLanguageTest extends TestCase
 
     public function testSourceResultIsCached(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $person = new PersonWithCar(3);
 
         // Load car first (which loads personSource internally)
@@ -79,7 +79,7 @@ class ExpressionLanguageTest extends TestCase
 
     public function testMultipleExpressionEvaluations(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $person1 = new PersonWithCar(1);
         $person2 = new PersonWithCar(2);

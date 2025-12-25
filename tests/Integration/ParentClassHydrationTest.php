@@ -12,7 +12,7 @@ class ParentClassHydrationTest extends TestCase
 {
     public function testParentClassPropertiesAreHydrated(): void
     {
-        $lazyLoader = new Loader();
+        $lazyLoader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         
         $data = [
             'id' => 1,

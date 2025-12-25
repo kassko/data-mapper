@@ -6,9 +6,10 @@ namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use PHPUnit\Framework\TestCase;
 
@@ -59,14 +60,16 @@ class InstanceMappingTest extends TestCase
 
     public function testInstanceMappingWithDifferentPrefixes(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
-        $person = new #[MultiPropDataSource(
-            id: 'personData',
-            class: PersonDataSourceForMapping::class,
-            method: 'getData'
-        )] class {
-            use LoadableTrait;
+        $person = new #[DataSourcesStore([
+            new MultiPropDataSource(
+                id: 'personData',
+                class: PersonDataSourceForMapping::class,
+                method: 'getData'
+            )
+        ])] class {
+            use LoadableInternalTrait;
             
             #[DataSourceRef(id: 'personData')]
             #[Property(

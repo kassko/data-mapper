@@ -19,7 +19,6 @@ use Kassko\DataMapper\Expression\SourceFunctionProvider;
 use Kassko\DataMapper\Metadata\AttributeReader;
 use Kassko\DataMapper\Registry\ContextRegistry;
 use Kassko\DataMapper\ServiceResolver;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use ReflectionClass;
@@ -45,12 +44,12 @@ class Loader implements LoaderInterface
     private array $customHydrators;
 
     /**
-     * @param ServiceResolver|ContainerInterface|null $serviceResolverOrContainer
+     * @param ServiceResolver $serviceResolver
      * @param LoggerInterface|null $logger
      * @param array<string, callable> $customHydrators
      */
     public function __construct(
-        ServiceResolver|ContainerInterface|null $serviceResolverOrContainer = null,
+        ServiceResolver $serviceResolver,
         ?LoggerInterface $logger = null,
         array $customHydrators = []
     ) {
@@ -60,18 +59,7 @@ class Loader implements LoaderInterface
         $this->attributeReader = new AttributeReader();
         $this->logger = $logger ?? new NullLogger();
         $this->customHydrators = $customHydrators;
-        
-        // Support backward compatibility: allow ContainerInterface or null
-        if ($serviceResolverOrContainer instanceof ServiceResolver) {
-            $this->serviceResolver = $serviceResolverOrContainer;
-        } elseif ($serviceResolverOrContainer instanceof ContainerInterface || $serviceResolverOrContainer === null) {
-            // Backward compatibility: create a ServiceResolver with just the container
-            $this->serviceResolver = new ServiceResolver($serviceResolverOrContainer, []);
-        } else {
-            throw new \InvalidArgumentException(
-                'Argument must be ServiceResolver, ContainerInterface, or null'
-            );
-        }
+        $this->serviceResolver = $serviceResolver;
     }
 
     public function getServiceResolver(): ServiceResolver
@@ -167,6 +155,9 @@ class Loader implements LoaderInterface
             $this->loadPropertyWithCustomHydrator($object, $property, $customHydrator);
             return;
         }
+        
+        // Validate DataSource attribute exclusivity
+        $this->validateDataSourceExclusivity($property);
         
         // Check for DataSourceRef with chain or providers
         $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
@@ -1249,6 +1240,54 @@ class Loader implements LoaderInterface
                     $property->getDeclaringClass()->getName(),
                     $property->getName(),
                     implode(', ', $conflictingAttributes)
+                )
+            );
+        }
+    }
+
+    /**
+     * Validate that DataSource attributes are not combined on a property
+     * 
+     * Rules:
+     * - DataSource/SinglePropDataSource + MultiPropDataSource: forbidden  
+     * - DataSource/SinglePropDataSource + DataSourceRef: forbidden
+     * - MultiPropDataSource + DataSourceRef: forbidden
+     * 
+     * Note: DataSource is an alias for SinglePropDataSource, so they count as the same attribute.
+     *
+     * @param ReflectionProperty $property
+     * @throws \InvalidArgumentException
+     */
+    private function validateDataSourceExclusivity(ReflectionProperty $property): void
+    {
+        $presentAttributes = [];
+        
+        // DataSource and SinglePropDataSource are aliases, check for either but count as one
+        $singlePropAttr = $this->attributeReader->readSinglePropDataSource($property);
+        if ($singlePropAttr !== null) {
+            // Use the actual class name to be precise in error messages
+            $presentAttributes[] = $singlePropAttr instanceof DataSource ? 'DataSource' : 'SinglePropDataSource';
+        }
+        
+        if ($this->attributeReader->readDataSourceRef($property) !== null) {
+            $presentAttributes[] = 'DataSourceRef';
+        }
+        
+        // Check for MultiPropDataSource on property
+        $attrs = $property->getAttributes(MultiPropDataSource::class);
+        if (!empty($attrs)) {
+            $presentAttributes[] = 'MultiPropDataSource';
+        }
+        
+        // If more than one DataSource-related attribute, it's an error
+        if (count($presentAttributes) > 1) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'Property %s::%s has multiple DataSource attributes which is forbidden: %s. ' .
+                    'Only one of DataSource, SinglePropDataSource, MultiPropDataSource, or DataSourceRef is allowed per property.',
+                    $property->getDeclaringClass()->getName(),
+                    $property->getName(),
+                    implode(', ', $presentAttributes)
                 )
             );
         }

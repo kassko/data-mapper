@@ -10,7 +10,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Needs;
 use Kassko\DataMapper\DataMapperBuilder;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use PHPUnit\Framework\TestCase;
 
@@ -76,7 +76,7 @@ class NeedsIntegrationTest extends TestCase
             new MultiPropDataSource(id: 'sourceC', class: 'SourceC', method: 'getData', args: ['#propA', '#propB']),
         ])]
         class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(id: 'sourceA')]
             private ?string $propA = null;
@@ -162,7 +162,7 @@ class NeedsIntegrationTest extends TestCase
             new MultiPropDataSource(id: 'sourceB', class: 'SourceB', method: 'getData'),
         ])]
         class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(id: 'sourceA')]
             private ?string $propA = null;

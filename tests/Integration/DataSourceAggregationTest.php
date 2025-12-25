@@ -9,7 +9,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\AggregationDataSource;
 use PHPUnit\Framework\TestCase;
@@ -23,14 +23,14 @@ class DataSourceAggregationTest extends TestCase
 
     public function testAggregationMergesResults(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $object = new #[DataSourcesStore([
             new SinglePropDataSource(id: 'providerA', class: AggregationDataSource::class, method: 'providerA'),
             new SinglePropDataSource(id: 'providerB', class: AggregationDataSource::class, method: 'providerB'),
             new SinglePropDataSource(id: 'providerC', class: AggregationDataSource::class, method: 'providerC'),
         ])] class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(providers: ['providerA', 'providerB', 'providerC'])]
             #[Property(name: 'name')]
@@ -71,13 +71,13 @@ class DataSourceAggregationTest extends TestCase
     
     public function testAggregationWithNestedArrays(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $object = new #[DataSourcesStore([
             new SinglePropDataSource(id: 'providerA', class: AggregationDataSource::class, method: 'providerNestedA'),
             new SinglePropDataSource(id: 'providerB', class: AggregationDataSource::class, method: 'providerNestedB'),
         ])] class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(providers: ['providerA', 'providerB'])]
             #[Property(name: 'config')]

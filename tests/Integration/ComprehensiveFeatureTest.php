@@ -26,7 +26,7 @@ class ComprehensiveFeatureTest extends TestCase
 
     public function testAllFeaturesWorkTogether(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         // Create a garage with mixed car types
         $garage = new Garage(1);
@@ -59,7 +59,7 @@ class ComprehensiveFeatureTest extends TestCase
 
     public function testPropertyCandidatesHandlesDifferentDataShapes(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         // Garage 1 has mixed cars
         $garage1 = new Garage(1);
@@ -79,7 +79,7 @@ class ComprehensiveFeatureTest extends TestCase
 
     public function testExpressionLanguageFeatures(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $garage = new Garage(1);
         

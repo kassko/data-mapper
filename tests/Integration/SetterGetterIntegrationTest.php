@@ -34,7 +34,7 @@ class SetterGetterIntegrationTest extends TestCase
             }
         };
 
-        $lazyLoader = new \Kassko\DataMapper\Loader\Loader();
+        $lazyLoader = new \Kassko\DataMapper\Loader\Loader(new \Kassko\DataMapper\ServiceResolver());
 
         $data = ['firstName' => 'john'];
         
@@ -70,7 +70,7 @@ class SetterGetterIntegrationTest extends TestCase
             }
         };
 
-        $lazyLoader = new \Kassko\DataMapper\Loader\Loader();
+        $lazyLoader = new \Kassko\DataMapper\Loader\Loader(new \Kassko\DataMapper\ServiceResolver());
 
         $data = ['name' => 'jane'];
         
@@ -106,7 +106,7 @@ class SetterGetterIntegrationTest extends TestCase
             }
         };
 
-        $lazyLoader = new \Kassko\DataMapper\Loader\Loader();
+        $lazyLoader = new \Kassko\DataMapper\Loader\Loader(new \Kassko\DataMapper\ServiceResolver());
 
         $data = ['emails' => ['email1@test.com', 'email2@test.com', 'email3@test.com']];
         
@@ -130,7 +130,7 @@ class SetterGetterIntegrationTest extends TestCase
             }
         };
 
-        $lazyLoader = new \Kassko\DataMapper\Loader\Loader();
+        $lazyLoader = new \Kassko\DataMapper\Loader\Loader(new \Kassko\DataMapper\ServiceResolver());
 
         $data = ['name' => 'direct'];
         
@@ -170,7 +170,7 @@ class SetterGetterIntegrationTest extends TestCase
             }
         };
 
-        $lazyLoader = new \Kassko\DataMapper\Loader\Loader();
+        $lazyLoader = new \Kassko\DataMapper\Loader\Loader(new \Kassko\DataMapper\ServiceResolver());
 
         // Associative array should not use adder
         $data = ['config' => ['key1' => 'value1', 'key2' => 'value2']];

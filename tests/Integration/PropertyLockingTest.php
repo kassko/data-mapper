@@ -9,7 +9,7 @@ use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\DataMapperBuilder;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use PHPUnit\Framework\TestCase;
 
@@ -53,7 +53,7 @@ class PropertyLockingTest extends TestCase
             new MultiPropDataSource(id: 'source', class: 'TestSource', method: 'getData'),
         ])]
         class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(id: 'source')]
             private ?string $value = null;
@@ -120,7 +120,7 @@ class PropertyLockingTest extends TestCase
             new MultiPropDataSource(id: 'personData', class: 'PersonSource', method: 'getData'),
         ])]
         class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(id: 'personData')]
             protected ?string $firstName = null;
@@ -169,7 +169,7 @@ class PropertyLockingTest extends TestCase
             new MultiPropDataSource(id: 'personData', class: 'PersonSource', method: 'getData'),
         ])]
         class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(id: 'personData')]
             protected ?string $firstName = null;
@@ -209,7 +209,7 @@ class PropertyLockingTest extends TestCase
     public function testIsPropertyLockedMethod(): void
     {
         $testObject = new class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             private ?string $prop = null;
             

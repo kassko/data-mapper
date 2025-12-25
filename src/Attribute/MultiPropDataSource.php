@@ -11,11 +11,13 @@ use Attribute;
  * The source returns an associative array where keys map to properties.
  * 
  * Can be used:
- * - Inside DataSourcesStore (with id)
- * - On classes (with id, for shared data sources)
- * - On properties (for property-specific multi-value hydration)
+ * - Inside DataSourcesStore (with id) for referencing via DataSourceRef
+ * - Directly on properties (standalone, cannot be combined with DataSourceRef)
+ * 
+ * Scope: ONLY on properties (not on classes)
+ * Cannot be combined with: DataSource, SinglePropDataSource, DataSourceRef
  */
-#[Attribute(Attribute::TARGET_PROPERTY | Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
+#[Attribute(Attribute::TARGET_PROPERTY)]
 final class MultiPropDataSource
 {
     public const SCOPE_ALL = 'all';

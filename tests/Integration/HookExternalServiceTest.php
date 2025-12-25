@@ -7,9 +7,10 @@ namespace Kassko\DataMapper\Tests\Integration;
 use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\EmailDataSource;
 use Kassko\Sample\NameDataSource;
@@ -44,13 +45,15 @@ class HookExternalServiceTest extends TestCase
         
         // Create a test object with hook to external service
         $testObject = new 
-        #[MultiPropDataSource(
-            id: 'emailSource',
-            class: EmailDataSource::class,
-            method: 'getEmailData',
-        )]
+        #[DataSourcesStore([
+            new MultiPropDataSource(
+                id: 'emailSource',
+                class: EmailDataSource::class,
+                method: 'getEmailData',
+            )
+        ])]
         class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(id: 'emailSource')]
             #[PropertySettingHook(
@@ -94,13 +97,15 @@ class HookExternalServiceTest extends TestCase
         
         // Create test object with hook to external logging service
         $testObject = new 
-        #[MultiPropDataSource(
-            id: 'statusSource',
-            class: StatusDataSource::class,
-            method: 'getStatusData',
-        )]
+        #[DataSourcesStore([
+            new MultiPropDataSource(
+                id: 'statusSource',
+                class: StatusDataSource::class,
+                method: 'getStatusData',
+            )
+        ])]
         class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(id: 'statusSource')]
             #[PropertySettingHook(
@@ -145,13 +150,15 @@ class HookExternalServiceTest extends TestCase
         
         // Create a test object with hook on itself (no class parameter)
         $testObject = new
-        #[MultiPropDataSource(
-            id: 'nameSource',
-            class: NameDataSource::class,
-            method: 'getNameData',
-        )]
+        #[DataSourcesStore([
+            new MultiPropDataSource(
+                id: 'nameSource',
+                class: NameDataSource::class,
+                method: 'getNameData',
+            )
+        ])]
         class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             public bool $validated = false;
             

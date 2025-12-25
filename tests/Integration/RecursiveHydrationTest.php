@@ -18,7 +18,7 @@ class RecursiveHydrationTest extends TestCase
 
     public function testRecursiveHydrationWithClassAttribute(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $info = new Information();
 
         // Load the bestShop property (marked as eager but we're testing the recursive hydration)
@@ -32,7 +32,7 @@ class RecursiveHydrationTest extends TestCase
 
     public function testRecursiveHydrationWithMultipleProperties(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $info = new Information();
 
         $bestShop = $info->getBestShop();
