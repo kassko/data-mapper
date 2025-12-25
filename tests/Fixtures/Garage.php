@@ -8,10 +8,11 @@ use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\PropertyCandidates;
 use Kassko\DataMapper\Attribute\PropertyCandidate;
-use Kassko\DataMapper\Attribute\Hook;
+use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
+use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
-#[Hook(name: 'after_create_object', method: 'onCreated', args: ['##object'])]
+#[PropertyInstantiatingHook(after_instantiating: 'onCreated', args: ['##object'])]
 class Garage
 {
     use LoadableTrait;
@@ -31,7 +32,7 @@ class Garage
             property: new Property(class: ElectricCar::class)
         )
     ])]
-    #[Hook(name: 'after_set_property', method: 'onCarsLoaded', args: ['##object', '#cars'])]
+    #[PropertySettingHook(after_set_property: 'onCarsLoaded', args: ['##object', '#cars'])]
     private array $cars = [];
 
     public function __construct(?int $id = null)

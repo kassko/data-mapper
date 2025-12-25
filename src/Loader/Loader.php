@@ -10,12 +10,18 @@ use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\PropertyCandidates;
 use Kassko\DataMapper\Attribute\Loading;
+use Kassko\DataMapper\Attribute\CustomHydrator;
+use Kassko\DataMapper\Attribute\PropertySettingHook;
+use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
+use Kassko\DataMapper\Attribute\PropertyHydratingHook;
 use Kassko\DataMapper\Expression\ExpressionParser;
 use Kassko\DataMapper\Expression\SourceFunctionProvider;
 use Kassko\DataMapper\Metadata\AttributeReader;
 use Kassko\DataMapper\Registry\ContextRegistry;
 use Kassko\DataMapper\ServiceResolver;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use ReflectionClass;
 use ReflectionProperty;
 use WeakMap;
@@ -33,16 +39,27 @@ class Loader implements LoaderInterface
     
     private AttributeReader $attributeReader;
     private ServiceResolver $serviceResolver;
+    private LoggerInterface $logger;
+    
+    /** @var array<string, callable> */
+    private array $customHydrators;
 
     /**
      * @param ServiceResolver|ContainerInterface|null $serviceResolverOrContainer
+     * @param LoggerInterface|null $logger
+     * @param array<string, callable> $customHydrators
      */
-    public function __construct(ServiceResolver|ContainerInterface|null $serviceResolverOrContainer = null)
-    {
+    public function __construct(
+        ServiceResolver|ContainerInterface|null $serviceResolverOrContainer = null,
+        ?LoggerInterface $logger = null,
+        array $customHydrators = []
+    ) {
         $this->loadedProperties = new WeakMap();
         $this->sourceFunctionProviders = new WeakMap();
         $this->parentRegistry = new WeakMap();
         $this->attributeReader = new AttributeReader();
+        $this->logger = $logger ?? new NullLogger();
+        $this->customHydrators = $customHydrators;
         
         // Support backward compatibility: allow ContainerInterface or null
         if ($serviceResolverOrContainer instanceof ServiceResolver) {
@@ -141,6 +158,14 @@ class Loader implements LoaderInterface
             foreach ($needs->properties as $dependencyName) {
                 $this->loadProperty($object, $dependencyName);
             }
+        }
+        
+        // Check for CustomHydrator attribute
+        $customHydrator = $this->attributeReader->readCustomHydrator($property);
+        if ($customHydrator !== null) {
+            $this->validateCustomHydratorExclusivity($property);
+            $this->loadPropertyWithCustomHydrator($object, $property, $customHydrator);
+            return;
         }
         
         // Check for DataSourceRef with chain or providers
@@ -594,6 +619,12 @@ class Loader implements LoaderInterface
         $fieldName = $this->getPropertyNameMapping($property);
         
         if (!array_key_exists($fieldName, $data)) {
+            // Log warning when key is missing
+            $this->logger->warning('Missing raw data key for property hydration', [
+                'class' => $reflectionClass->getName(),
+                'property' => $propertyName,
+                'expected_key' => $fieldName,
+            ]);
             return;
         }
         
@@ -639,23 +670,16 @@ class Loader implements LoaderInterface
 
     /**
      * Get the field/property name mapping from attributes
-     * Supports both Property (new) and Field (backward compatibility) attributes
      *
      * @param ReflectionProperty $property
      * @return string
      */
     private function getPropertyNameMapping(ReflectionProperty $property): string
     {
-        // Try Property attribute first
+        // Use Property attribute
         $propertyAttr = $this->attributeReader->readProperty($property);
         if ($propertyAttr !== null && $propertyAttr->name !== null) {
             return $propertyAttr->name;
-        }
-        
-        // Fall back to Field attribute for backward compatibility
-        $fieldAttr = $this->attributeReader->readField($property);
-        if ($fieldAttr !== null && $fieldAttr->name !== null) {
-            return $fieldAttr->name;
         }
         
         // Default to property name
@@ -732,8 +756,8 @@ class Loader implements LoaderInterface
                     $this->parentRegistry[$nestedObject] = $parentObject;
                 }
                 
-                // Execute after_create_object hooks
-                $this->executeClassHooks($nestedObject, 'after_create_object', $itemData);
+                // Execute after_instantiating hooks
+                $this->executeInstantiatingHooks($nestedObject, $itemData);
                 
                 // Hydrate the nested list item (using mapped data keys)
                 $this->hydrateObject($nestedObject, $itemData, $itemPropertyAttr, $currentDepth + 1);
@@ -765,8 +789,8 @@ class Loader implements LoaderInterface
             $this->parentRegistry[$nestedObject] = $parentObject;
         }
         
-        // Execute after_create_object hooks
-        $this->executeClassHooks($nestedObject, 'after_create_object', $value);
+        // Execute after_instantiating hooks
+        $this->executeInstantiatingHooks($nestedObject, $value);
         
         // Hydrate the single nested object (using mapped data keys)
         $this->hydrateObject($nestedObject, $value, $propertyAttr, $currentDepth + 1);
@@ -847,6 +871,9 @@ class Loader implements LoaderInterface
     {
         $reflectionClass = new ReflectionClass($object);
         
+        // Execute before_hydrate_object hooks
+        $this->executeHydratingHooks($object, 'before', $data);
+        
         // Get all properties including from parent classes
         $allProperties = $this->attributeReader->getAllProperties($reflectionClass);
         
@@ -878,6 +905,12 @@ class Loader implements LoaderInterface
             $fieldName = $this->getPropertyNameMapping($property);
             
             if (!array_key_exists($fieldName, $data)) {
+                // Log warning when key is missing
+                $this->logger->warning('Missing raw data key for property hydration', [
+                    'class' => $reflectionClass->getName(),
+                    'property' => $propName,
+                    'expected_key' => $fieldName,
+                ]);
                 continue;
             }
             
@@ -892,6 +925,9 @@ class Loader implements LoaderInterface
             // Handle Context attribute
             $this->handleContextAttribute($property, $value);
         }
+        
+        // Execute after_hydrate_object hooks (after hydration, before property setting hooks)
+        $this->executeHydratingHooks($object, 'after', $data);
     }
 
     /**
@@ -906,7 +942,7 @@ class Loader implements LoaderInterface
         $propertyName = $property->getName();
         
         // Execute before_set_property hooks
-        $this->executePropertyHooks($object, $property, 'before_set_property', $value);
+        $this->executeSettingHooks($object, $property, 'before', $value);
         
         // 1. Check for explicit Setter attribute
         $setter = $this->attributeReader->readSetter($property);
@@ -915,7 +951,7 @@ class Loader implements LoaderInterface
             if (method_exists($object, $setter->name)) {
                 $object->{$setter->name}($value);
                 // Execute after_set_property hooks
-                $this->executePropertyHooks($object, $property, 'after_set_property', $value);
+                $this->executeSettingHooks($object, $property, 'after', $value);
                 return;
             }
         }
@@ -928,7 +964,7 @@ class Loader implements LoaderInterface
                     $object->$adderMethod($item);
                 }
                 // Execute after_set_property hooks
-                $this->executePropertyHooks($object, $property, 'after_set_property', $value);
+                $this->executeSettingHooks($object, $property, 'after', $value);
                 return;
             }
         }
@@ -938,7 +974,7 @@ class Loader implements LoaderInterface
         if (method_exists($object, $setterMethod)) {
             $object->$setterMethod($value);
             // Execute after_set_property hooks
-            $this->executePropertyHooks($object, $property, 'after_set_property', $value);
+            $this->executeSettingHooks($object, $property, 'after', $value);
             return;
         }
         
@@ -946,7 +982,7 @@ class Loader implements LoaderInterface
         $property->setValue($object, $value);
         
         // Execute after_set_property hooks
-        $this->executePropertyHooks($object, $property, 'after_set_property', $value);
+        $this->executeSettingHooks($object, $property, 'after', $value);
     }
 
     /**
@@ -979,60 +1015,93 @@ class Loader implements LoaderInterface
     }
 
     /**
-     * Execute hooks for a specific event on a class
+     * Execute after_instantiating hooks for a newly created object
      *
      * @param object $object
-     * @param string $hookName
-     * @param array $rawData Optional raw data for expression evaluation
+     * @param array $rawData
      */
-    private function executeClassHooks(object $object, string $hookName, array $rawData = []): void
+    private function executeInstantiatingHooks(object $object, array $rawData): void
     {
         $reflectionClass = new ReflectionClass($object);
-        $hooks = $this->attributeReader->readClassHooks($reflectionClass);
+        $hooks = $this->attributeReader->readPropertyInstantiatingHooks($reflectionClass);
         
         foreach ($hooks as $hook) {
-            if ($hook->name === $hookName) {
-                $this->executeHook($object, $hook, $rawData);
+            if ($hook->after_instantiating !== '') {
+                $this->executeHook($object, $hook->after_instantiating, $hook->class, $hook->args, $rawData);
             }
         }
     }
 
     /**
-     * Execute hooks for a specific event on a property
+     * Execute hydrating hooks (before/after) for an object
+     *
+     * @param object $object
+     * @param string $when 'before' or 'after'
+     * @param array $rawData
+     */
+    private function executeHydratingHooks(object $object, string $when, array $rawData): void
+    {
+        $reflectionClass = new ReflectionClass($object);
+        $hooks = $this->attributeReader->readPropertyHydratingHooks($reflectionClass);
+        
+        foreach ($hooks as $hook) {
+            if ($when === 'before' && $hook->before_hydrate_object !== '') {
+                $this->executeHook($object, $hook->before_hydrate_object, $hook->class, $hook->args, $rawData);
+            } elseif ($when === 'after' && $hook->after_hydrate_object !== '') {
+                // For after hook, pass both object and rawData as special args
+                $this->executeHook($object, $hook->after_hydrate_object, $hook->class, $hook->args, $rawData, true);
+            }
+        }
+    }
+
+    /**
+     * Execute setting hooks for a property
      *
      * @param object $object
      * @param ReflectionProperty $property
-     * @param string $hookName
-     * @param mixed $propertyValue Optional property value to pass
+     * @param string $when 'before' or 'after'
+     * @param mixed $propertyValue
      */
-    private function executePropertyHooks(object $object, ReflectionProperty $property, string $hookName, mixed $propertyValue = null): void
+    private function executeSettingHooks(object $object, ReflectionProperty $property, string $when, mixed $propertyValue): void
     {
-        $hooks = $this->attributeReader->readPropertyHooks($property);
+        $hooks = $this->attributeReader->readPropertySettingHooks($property);
         
         foreach ($hooks as $hook) {
-            if ($hook->name === $hookName) {
-                // Add property value to raw data for expression evaluation
-                $rawData = [$property->getName() => $propertyValue];
-                $this->executeHook($object, $hook, $rawData, $property);
+            $rawData = [$property->getName() => $propertyValue];
+            
+            if ($when === 'before' && $hook->before_set_property !== '') {
+                $this->executeHook($object, $hook->before_set_property, $hook->class, $hook->args, $rawData, false, $property);
+            } elseif ($when === 'after' && $hook->after_set_property !== '') {
+                $this->executeHook($object, $hook->after_set_property, $hook->class, $hook->args, $rawData, false, $property);
             }
         }
     }
 
     /**
-     * Execute a single hook
+     * Execute a hook method
      *
      * @param object $object
-     * @param \Kassko\DataMapper\Attribute\Hook $hook
-     * @param array $rawData Raw data for expression evaluation
-     * @param ReflectionProperty|null $property Optional property for #property reference
+     * @param string $method
+     * @param string|null $class
+     * @param array $args
+     * @param array $rawData
+     * @param bool $includeObjectInArgs For after_hydrate_object, pass object as first arg
+     * @param ReflectionProperty|null $property
      */
-    private function executeHook(object $object, \Kassko\DataMapper\Attribute\Hook $hook, array $rawData = [], ?ReflectionProperty $property = null): void
-    {
+    private function executeHook(
+        object $object,
+        string $method,
+        ?string $class,
+        array $args,
+        array $rawData,
+        bool $includeObjectInArgs = false,
+        ?ReflectionProperty $property = null
+    ): void {
         // Determine which object/service to call the method on
         $target = $object;
-        if ($hook->class !== null) {
+        if ($class !== null) {
             // External service/class
-            $target = $this->serviceResolver->resolve($hook->class);
+            $target = $this->serviceResolver->resolve($class);
         }
         
         // Resolve hook arguments
@@ -1048,12 +1117,17 @@ class Loader implements LoaderInterface
             $this->loadProperty($object, $propertyName);
         };
         
-        // Resolve arguments, but handle #property reference specially
+        // Resolve arguments
         $resolvedArgs = [];
-        foreach ($hook->args as $arg) {
+        
+        // For after_hydrate_object, add object as first argument
+        if ($includeObjectInArgs) {
+            $resolvedArgs[] = $object;
+        }
+        
+        foreach ($args as $arg) {
             if ($property !== null && $arg === '#' . $property->getName()) {
                 // Special case: reference to the property being set
-                // Make property accessible before getting value
                 $property->setAccessible(true);
                 $resolvedArgs[] = $property->getValue($object);
             } else {
@@ -1064,8 +1138,8 @@ class Loader implements LoaderInterface
         }
         
         // Call the hook method
-        if (method_exists($target, $hook->method)) {
-            call_user_func_array([$target, $hook->method], $resolvedArgs);
+        if (method_exists($target, $method)) {
+            call_user_func_array([$target, $method], $resolvedArgs);
         }
     }
 
@@ -1134,5 +1208,97 @@ class Loader implements LoaderInterface
         }
         
         return $mappedData;
+    }
+
+    /**
+     * Validate that CustomHydrator is not combined with conflicting attributes
+     *
+     * @param ReflectionProperty $property
+     * @throws \InvalidArgumentException
+     */
+    private function validateCustomHydratorExclusivity(ReflectionProperty $property): void
+    {
+        $conflictingAttributes = [];
+        
+        if ($this->attributeReader->readProperty($property) !== null) {
+            $conflictingAttributes[] = 'Property';
+        }
+        if ($this->attributeReader->readPropertyCandidates($property) !== null) {
+            $conflictingAttributes[] = 'PropertyCandidates';
+        }
+        if ($this->attributeReader->readDataSource($property) !== null) {
+            $conflictingAttributes[] = 'DataSource';
+        }
+        if ($this->attributeReader->readDataSourceRef($property) !== null) {
+            $conflictingAttributes[] = 'DataSourceRef';
+        }
+        if ($this->attributeReader->readSinglePropDataSource($property) !== null) {
+            $conflictingAttributes[] = 'SinglePropDataSource';
+        }
+        
+        // Check for MultiPropDataSource on property
+        $attrs = $property->getAttributes(MultiPropDataSource::class);
+        if (!empty($attrs)) {
+            $conflictingAttributes[] = 'MultiPropDataSource';
+        }
+        
+        if (!empty($conflictingAttributes)) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'CustomHydrator on property %s::%s cannot be combined with: %s',
+                    $property->getDeclaringClass()->getName(),
+                    $property->getName(),
+                    implode(', ', $conflictingAttributes)
+                )
+            );
+        }
+    }
+
+    /**
+     * Load a property using a custom hydrator
+     *
+     * @param object $object
+     * @param ReflectionProperty $property
+     * @param CustomHydrator $customHydrator
+     */
+    private function loadPropertyWithCustomHydrator(
+        object $object,
+        ReflectionProperty $property,
+        CustomHydrator $customHydrator
+    ): void {
+        if (!isset($this->customHydrators[$customHydrator->key])) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Custom hydrator with key "%s" not found. Make sure to register it with DataMapperBuilder->addCustomHydrator()',
+                    $customHydrator->key
+                )
+            );
+        }
+        
+        $callable = $this->customHydrators[$customHydrator->key];
+        
+        // Get raw data from the current context if available
+        // For now, we'll need to get the data from somewhere - this will typically be called
+        // during object hydration where raw data is available
+        // This is a simplified implementation - in practice, you may need to pass raw data differently
+        $rawData = []; // TODO: This needs to be passed from the hydration context
+        
+        $result = call_user_func($callable, $rawData);
+        
+        // Validate object class if specified
+        if ($customHydrator->objectClass !== null && $result !== null && !($result instanceof $customHydrator->objectClass)) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Custom hydrator "%s" returned object of type %s, but expected %s',
+                    $customHydrator->key,
+                    get_class($result),
+                    $customHydrator->objectClass
+                )
+            );
+        }
+        
+        // Set the property value
+        $this->setPropertyValue($object, $property, $result);
+        $this->loadedProperties[$object][$property->getName()] = true;
     }
 }

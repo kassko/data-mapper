@@ -231,11 +231,22 @@ $data = [
 ### Lifecycle Hooks
 
 ```php
-#[Hook(name: 'after_create_object', method: 'init', args: ['##object'])]
+use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
+use Kassko\DataMapper\Attribute\PropertySettingHook;
+use Kassko\DataMapper\Attribute\PropertyHydratingHook;
+
+#[PropertyInstantiatingHook(after_instantiating: 'init', args: ['##object'])]
+#[PropertyHydratingHook(
+    before_hydrate_object: 'prepare',
+    after_hydrate_object: 'finalize'
+)]
 class Entity
 {
-    #[Hook(name: 'before_set_property', method: 'validate')]
-    #[Hook(name: 'after_set_property', method: 'log', args: ['##object', '#name'])]
+    #[PropertySettingHook(
+        before_set_property: 'validate',
+        after_set_property: 'log',
+        args: ['##object', '#name']
+    )]
     private ?string $name = null;
     
     public function init(self $entity): void
@@ -243,7 +254,12 @@ class Entity
         // Called after instantiation
     }
     
-    public function validate(): void
+    public function prepare(array $rawData): void
+    {
+        // Called before hydration starts
+    }
+    
+    public function validate(self $entity, ?string $name): void
     {
         // Called before setting name
     }
@@ -251,6 +267,11 @@ class Entity
     public function log(self $entity, ?string $name): void
     {
         // Called after setting name
+    }
+    
+    public function finalize(?object $object, array $rawData): void
+    {
+        // Called after hydration completes
     }
 }
 ```
@@ -277,7 +298,7 @@ private ?Result $result = null;
 ## Hook with External Service
 
 ```php
-use Kassko\DataMapper\Attribute\Hook;
+use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 
@@ -314,19 +335,17 @@ class Person
     private int $id;
     
     #[DataSourceRef(id: 'personSource')]
-    #[Hook(
-        name: Hook::AFTER_SET_PROPERTY,
+    #[PropertySettingHook(
+        after_set_property: 'validateEmail',
         class: ValidationService::class,  // External service
-        method: 'validateEmail',
         args: ['##object', '#email']
     )]
     private ?string $email = null;
     
     #[DataSourceRef(id: 'personSource')]
-    #[Hook(
-        name: Hook::AFTER_SET_PROPERTY,
+    #[PropertySettingHook(
+        after_set_property: 'validateAge',
         class: ValidationService::class,
-        method: 'validateAge',
         args: ['##object', '#age']
     )]
     private ?int $age = null;

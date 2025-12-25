@@ -2,9 +2,14 @@
 
 Defines a data source that hydrates multiple properties from an associative array.
 
-**IMPORTANT**: This attribute can ONLY be used inside `DataSourcesStore`. It cannot be used as a standalone attribute on classes.
+**Note**: This attribute can be used in three ways:
+1. Inside `DataSourcesStore` (with `id`)
+2. On classes (with `id`, for shared data sources)
+3. On properties (for property-specific multi-value hydration)
 
-## Usage
+## Usage Patterns
+
+### 1. Inside DataSourcesStore (Recommended for shared sources)
 
 ```php
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
@@ -39,6 +44,43 @@ class Person
 }
 ```
 
+### 2. On Class (Alternative to DataSourcesStore)
+
+```php
+#[MultiPropDataSource(
+    id: 'personData',
+    class: PersonRepository::class,
+    method: 'findById',
+    args: ['#id']
+)]
+class Person
+{
+    private int $id;
+    
+    #[DataSourceRef(id: 'personData')]
+    private ?string $firstName = null;
+    
+    #[DataSourceRef(id: 'personData')]
+    private ?string $lastName = null;
+}
+```
+
+### 3. On Property (New in v2.0)
+
+```php
+class User
+{
+    private int $id;
+    
+    #[MultiPropDataSource(
+        class: UserDataSource::class,
+        method: 'getUserData',
+        args: ['#id']
+    )]
+    private ?array $userData = null;
+}
+```
+
 ## Parameters
 
 | Parameter | Type | Required | Default | Description |
@@ -63,22 +105,31 @@ class Person
 
 ## Scope Rules
 
-- **ONLY** used inside `DataSourcesStore`
-- **NOT** a standalone attribute (no `Attribute::TARGET_CLASS`)
-- **NOT** repeatable
-- Multiple `MultiPropDataSource` instances are grouped in a single `DataSourcesStore`
+**Target:** Can be used on:
+- Inside `DataSourcesStore` (as value object)
+- On classes (with `Attribute::TARGET_CLASS` and `IS_REPEATABLE`)
+- On properties (with `Attribute::TARGET_PROPERTY`)
+
+**Repeatability:** Yes - multiple instances can be applied to a class
 
 ```php
-// ✅ CORRECT
+// ✅ CORRECT - Inside DataSourcesStore
 #[DataSourcesStore([
     new MultiPropDataSource(id: 'source1', ...),
     new MultiPropDataSource(id: 'source2', ...),
 ])]
 class Person { }
 
-// ❌ WRONG - Cannot use directly on class
+// ✅ CORRECT - On class
 #[MultiPropDataSource(id: 'source1', ...)]
+#[MultiPropDataSource(id: 'source2', ...)]
 class Person { }
+
+// ✅ CORRECT - On property
+class Person {
+    #[MultiPropDataSource(class: DataSource::class, method: 'getData')]
+    private $data;
+}
 ```
 
 ## See Also

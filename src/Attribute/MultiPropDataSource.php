@@ -10,9 +10,12 @@ use Attribute;
  * Defines a data source that hydrates multiple properties.
  * The source returns an associative array where keys map to properties.
  * 
- * This attribute is ONLY used inside DataSourcesStore, not as a standalone attribute.
+ * Can be used:
+ * - Inside DataSourcesStore (with id)
+ * - On classes (with id, for shared data sources)
+ * - On properties (for property-specific multi-value hydration)
  */
-#[Attribute]
+#[Attribute(Attribute::TARGET_PROPERTY | Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
 final class MultiPropDataSource
 {
     public const SCOPE_ALL = 'all';

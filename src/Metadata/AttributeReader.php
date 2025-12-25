@@ -8,9 +8,11 @@ use Kassko\DataMapper\Attribute\Context;
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
-use Kassko\DataMapper\Attribute\Field;
 use Kassko\DataMapper\Attribute\Getter;
-use Kassko\DataMapper\Attribute\Hook;
+use Kassko\DataMapper\Attribute\PropertySettingHook;
+use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
+use Kassko\DataMapper\Attribute\PropertyHydratingHook;
+use Kassko\DataMapper\Attribute\CustomHydrator;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\PropertyCandidates;
 use Kassko\DataMapper\Attribute\KeepProperty;
@@ -100,23 +102,6 @@ class AttributeReader
     public function readDataSourceRef(ReflectionProperty $property): ?DataSourceRef
     {
         $attributes = $property->getAttributes(DataSourceRef::class);
-        
-        if (empty($attributes)) {
-            return null;
-        }
-        
-        return $attributes[0]->newInstance();
-    }
-
-    /**
-     * Read Field attribute from a property (backward compatibility)
-     *
-     * @param ReflectionProperty $property
-     * @return Field|null
-     */
-    public function readField(ReflectionProperty $property): ?Field
-    {
-        $attributes = $property->getAttributes(Field::class);
         
         if (empty($attributes)) {
             return null;
@@ -418,14 +403,14 @@ class AttributeReader
     }
 
     /**
-     * Read Hook attributes from a class
+     * Read PropertyInstantiatingHook attributes from a class
      *
      * @param ReflectionClass $reflectionClass
-     * @return Hook[]
+     * @return PropertyInstantiatingHook[]
      */
-    public function readClassHooks(ReflectionClass $reflectionClass): array
+    public function readPropertyInstantiatingHooks(ReflectionClass $reflectionClass): array
     {
-        $attributes = $reflectionClass->getAttributes(Hook::class);
+        $attributes = $reflectionClass->getAttributes(PropertyInstantiatingHook::class);
         
         $hooks = [];
         foreach ($attributes as $attr) {
@@ -436,14 +421,14 @@ class AttributeReader
     }
 
     /**
-     * Read Hook attributes from a property
+     * Read PropertyHydratingHook attributes from a class
      *
-     * @param ReflectionProperty $property
-     * @return Hook[]
+     * @param ReflectionClass $reflectionClass
+     * @return PropertyHydratingHook[]
      */
-    public function readPropertyHooks(ReflectionProperty $property): array
+    public function readPropertyHydratingHooks(ReflectionClass $reflectionClass): array
     {
-        $attributes = $property->getAttributes(Hook::class);
+        $attributes = $reflectionClass->getAttributes(PropertyHydratingHook::class);
         
         $hooks = [];
         foreach ($attributes as $attr) {
@@ -451,6 +436,41 @@ class AttributeReader
         }
         
         return $hooks;
+    }
+
+    /**
+     * Read PropertySettingHook attributes from a property
+     *
+     * @param ReflectionProperty $property
+     * @return PropertySettingHook[]
+     */
+    public function readPropertySettingHooks(ReflectionProperty $property): array
+    {
+        $attributes = $property->getAttributes(PropertySettingHook::class);
+        
+        $hooks = [];
+        foreach ($attributes as $attr) {
+            $hooks[] = $attr->newInstance();
+        }
+        
+        return $hooks;
+    }
+
+    /**
+     * Read CustomHydrator attribute from a property
+     *
+     * @param ReflectionProperty $property
+     * @return CustomHydrator|null
+     */
+    public function readCustomHydrator(ReflectionProperty $property): ?CustomHydrator
+    {
+        $attributes = $property->getAttributes(CustomHydrator::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        return $attributes[0]->newInstance();
     }
 
     /**

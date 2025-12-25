@@ -8,11 +8,13 @@ use Kassko\DataMapper\Loader\Loader;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Psr\Container\ContainerInterface;
 use Psr\SimpleCache\CacheInterface;
+use Psr\Log\LoggerInterface;
 
 final class DataMapperBuilder
 {
     private ?ContainerInterface $container = null;
     private ?CacheInterface $cache = null;
+    private ?LoggerInterface $logger = null;
     
     /** @var ServiceLocatorInterface[] */
     private array $locators = [];
@@ -25,6 +27,9 @@ final class DataMapperBuilder
     
     /** @var callable[] */
     private array $callables = [];
+    
+    /** @var array<string, callable> */
+    private array $customHydrators = [];
 
     public function setContainer(ContainerInterface $container): self
     {
@@ -35,6 +40,12 @@ final class DataMapperBuilder
     public function setCache(CacheInterface $cache): self
     {
         $this->cache = $cache;
+        return $this;
+    }
+
+    public function setLogger(LoggerInterface $logger): self
+    {
+        $this->logger = $logger;
         return $this;
     }
 
@@ -89,6 +100,19 @@ final class DataMapperBuilder
         return $this;
     }
 
+    /**
+     * Add a custom hydrator
+     *
+     * @param string $key The identifier key for the hydrator
+     * @param callable $callable The hydrator callable (receives array $data, returns object|null)
+     * @return self
+     */
+    public function addCustomHydrator(string $key, callable $callable): self
+    {
+        $this->customHydrators[$key] = $callable;
+        return $this;
+    }
+
     public function build(): DataMapper
     {
         $serviceResolver = new ServiceResolver(
@@ -98,7 +122,7 @@ final class DataMapperBuilder
             $this->staticFactories,
             $this->callables
         );
-        $loader = new Loader($serviceResolver);
+        $loader = new Loader($serviceResolver, $this->logger, $this->customHydrators);
         
         // Register the Loader globally
         LoaderRegistry::set($loader);

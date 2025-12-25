@@ -7,7 +7,7 @@ namespace Kassko\DataMapper\Tests\Integration;
 use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
-use Kassko\DataMapper\Attribute\Hook;
+use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
@@ -53,10 +53,9 @@ class HookExternalServiceTest extends TestCase
             use LoadableTrait;
             
             #[DataSourceRef(id: 'emailSource')]
-            #[Hook(
-                name: Hook::AFTER_SET_PROPERTY,
+            #[PropertySettingHook(
+                after_set_property: 'validateEmail',
                 class: TestValidationService::class,
-                method: 'validateEmail',
                 args: ['##object', '#email']
             )]
             private ?string $email = null;
@@ -104,10 +103,9 @@ class HookExternalServiceTest extends TestCase
             use LoadableTrait;
             
             #[DataSourceRef(id: 'statusSource')]
-            #[Hook(
-                name: Hook::AFTER_SET_PROPERTY,
+            #[PropertySettingHook(
+                after_set_property: 'logChange',
                 class: TestLogService::class,
-                method: 'logChange',
                 args: ['##object', 'status', 'draft', '#status']
             )]
             private string $status = 'draft';
@@ -158,9 +156,8 @@ class HookExternalServiceTest extends TestCase
             public bool $validated = false;
             
             #[DataSourceRef(id: 'nameSource')]
-            #[Hook(
-                name: Hook::AFTER_SET_PROPERTY,
-                method: 'validate',
+            #[PropertySettingHook(
+                after_set_property: 'validate',
                 args: ['#name']
             )]
             private ?string $name = null;
