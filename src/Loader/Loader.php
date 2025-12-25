@@ -178,6 +178,14 @@ class Loader implements LoaderInterface
             return;
         }
         
+        // Check for MultiPropDataSource directly on property
+        $multiSourceAttrs = $property->getAttributes(MultiPropDataSource::class);
+        if (!empty($multiSourceAttrs)) {
+            $multiSource = $multiSourceAttrs[0]->newInstance();
+            $this->loadMultipleProperties($object, $multiSource);
+            return;
+        }
+        
         // Check for MultiPropDataSource on class (via DataSourceRef)
         if ($dataSourceRef !== null && $dataSourceRef->id !== null) {
             $multiSource = $this->findMultiPropDataSourceForProperty($object, $dataSourceRef->id);
