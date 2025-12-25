@@ -6,8 +6,11 @@ namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
+use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ServiceResolver;
 use Kassko\Sample\PersonDataSource;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -16,27 +19,18 @@ class ServiceLocatorTest extends TestCase
 {
     public function testServiceLocatorWithContainerPrefix(): void
     {
-        // Create a mock container
-        $container = new class implements ContainerInterface {
-            public function get(string $id): object
-            {
-                if ($id === 'person.data_source') {
-                    return new PersonDataSource();
-                }
-                throw new \RuntimeException("Service not found: {$id}");
-            }
-
-            public function has(string $id): bool
-            {
-                return $id === 'person.data_source';
-            }
-        };
+        // Create a service locator
+        $locator = new ArrayServiceLocator([
+            'person.data_source' => new PersonDataSource()
+        ]);
 
         // Create an entity that uses service locator pattern
         $entity = new 
-        #[MultiPropDataSource(id: 'personData', class: '@person.data_source', method: 'getData', args: ['#id'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'personData', class: '@person.data_source', method: 'getData', args: ['#id'])
+        ])]
         class(1) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private int $id;
 
@@ -64,7 +58,7 @@ class ServiceLocatorTest extends TestCase
             }
         };
 
-        new DataMapper($container);
+        new DataMapper(new ServiceResolver($locator));
 
         $this->assertEquals('foo', $entity->getName());
         $this->assertEquals('foo@aaa.com', $entity->getEmail());
@@ -76,9 +70,11 @@ class ServiceLocatorTest extends TestCase
     {
         // Create an entity that uses service locator pattern
         $entity = new 
-        #[MultiPropDataSource(id: 'personData', class: '@person.data_source', method: 'getData', args: ['#id'])]
+        #[DataSourcesStore([
+            new MultiPropDataSource(id: 'personData', class: '@person.data_source', method: 'getData', args: ['#id'])
+        ])]
         class(1) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private int $id;
 
@@ -97,7 +93,7 @@ class ServiceLocatorTest extends TestCase
             }
         };
 
-        new DataMapper(); // No container provided
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver()); // No container provided
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Cannot resolve service identifier');

@@ -40,7 +40,7 @@ class HookTest extends TestCase
 
     public function testNestedObjectHooks(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         // Create a garage with nested cars
         $garage = new Garage(1);

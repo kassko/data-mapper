@@ -18,7 +18,7 @@ class DataSourcesStoreTest extends TestCase
 
     public function testDataSourcesStoreWithSupplySeveralFields(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $person = new PersonWithStore(1);
 
         // Access firstName with Field mapping
@@ -36,7 +36,7 @@ class DataSourcesStoreTest extends TestCase
 
     public function testSupplySeveralFieldsLoadsAllPropertiesInSingleCall(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $person = new PersonWithStore(2);
 
         // Trigger loading by accessing one property
@@ -50,7 +50,7 @@ class DataSourcesStoreTest extends TestCase
 
     public function testFieldAttributeMapsPropertyToDifferentKey(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $person = new PersonWithStore(3);
 
         // firstName property should be mapped to 'first_name' key in data
@@ -59,7 +59,7 @@ class DataSourcesStoreTest extends TestCase
 
     public function testPropertiesWithoutDataSourceRefAreNotHydrated(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $person = new PersonWithStore(1);
 
         // Load some properties

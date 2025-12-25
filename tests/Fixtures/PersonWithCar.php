@@ -9,23 +9,25 @@ use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 
-#[MultiPropDataSource(
-    id: 'personSource',
-    class: PersonDataSource::class,
-    method: 'getData',
-    args: ['#id']
-)]
-#[SinglePropDataSource(
-    id: 'carSource',
-    class: CarRepository::class,
-    method: 'find',
-    args: ["expr(source('personSource')['car_id'])"]
-)]
+#[DataSourcesStore([
+    new MultiPropDataSource(
+        id: 'personSource',
+        class: PersonDataSource::class,
+        method: 'getData',
+        args: ['#id']
+    ),
+    new SinglePropDataSource(
+        id: 'carSource',
+        class: CarRepository::class,
+        method: 'find',
+        args: ["expr(source('personSource')['car_id'])"]
+    )
+])]
 class PersonWithCar
 {
-    use LoadableTrait;
+    use LoadableInternalTrait;
 
     private int $id;
 

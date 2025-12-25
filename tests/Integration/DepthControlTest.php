@@ -15,7 +15,7 @@ class DepthControlTest extends TestCase
 {
     public function testDepthLimitPreventsDeepNesting(): void
     {
-        $lazyLoader = new Loader();
+        $lazyLoader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         
         // Create nested data structure
         $data = [

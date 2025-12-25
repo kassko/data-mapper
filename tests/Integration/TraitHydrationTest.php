@@ -12,7 +12,7 @@ class TraitHydrationTest extends TestCase
 {
     public function testTraitPropertiesAreHydrated(): void
     {
-        $lazyLoader = new Loader();
+        $lazyLoader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         
         $data = [
             'id' => 1,

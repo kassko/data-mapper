@@ -13,7 +13,7 @@ class PropertyInclusionTest extends TestCase
 {
     public function testSkipPropertyIsNotHydrated(): void
     {
-        $lazyLoader = new Loader();
+        $lazyLoader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         
         $data = [
             'name' => 'Widget',
@@ -38,7 +38,7 @@ class PropertyInclusionTest extends TestCase
 
     public function testSkipAllPropertiesOnlyHydratesMarkedProperties(): void
     {
-        $lazyLoader = new Loader();
+        $lazyLoader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         
         $data = [
             'name' => 'Gadget',

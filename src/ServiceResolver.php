@@ -8,20 +8,34 @@ use Psr\Container\ContainerInterface;
 
 final class ServiceResolver
 {
+    private ?ContainerInterface $container;
+    private array $locators;
+
     /**
-     * @param ContainerInterface|null $container PSR-11 container
-     * @param ServiceLocatorInterface[] $locators Service locators (checked in order)
+     * @param ServiceLocatorInterface|ContainerInterface|null $containerOrLocator PSR-11 container or service locator
+     * @param ServiceLocatorInterface[] $additionalLocators Additional service locators (checked in order)
      * @param array<array{object, string}> $factoryServices Factory services: [[$service, 'methodName'], ...]
      * @param array<array{string|object, string}> $staticFactories Static factories: [['ClassName', 'methodName'], ...]
      * @param callable[] $callables Callable factories
      */
     public function __construct(
-        private ?ContainerInterface $container,
-        private array $locators,
+        ServiceLocatorInterface|ContainerInterface|null $containerOrLocator = null,
+        array $additionalLocators = [],
         private array $factoryServices = [],
         private array $staticFactories = [],
         private array $callables = []
-    ) {}
+    ) {
+        if ($containerOrLocator instanceof ServiceLocatorInterface) {
+            $this->container = null;
+            $this->locators = array_merge([$containerOrLocator], $additionalLocators);
+        } elseif ($containerOrLocator instanceof ContainerInterface) {
+            $this->container = $containerOrLocator;
+            $this->locators = $additionalLocators;
+        } else {
+            $this->container = null;
+            $this->locators = $additionalLocators;
+        }
+    }
 
     /**
      * Resolve a class/service identifier to an actual instance.
@@ -36,10 +50,10 @@ final class ServiceResolver
      */
     public function resolve(string $classOrId): object
     {
-        // Case 1: Starts with "@" - direct container lookup
+        // Case 1: Starts with "@" - service lookup (container or locators)
         if (str_starts_with($classOrId, '@')) {
             $serviceId = substr($classOrId, 1);
-            return $this->resolveFromContainer($serviceId);
+            return $this->resolveServiceIdentifier($serviceId);
         }
 
         // Case 2: Try container first (broadest scope)
@@ -104,6 +118,34 @@ final class ServiceResolver
 
         // Case 7: Try to instantiate directly
         return $this->instantiate($classOrId);
+    }
+
+    private function resolveServiceIdentifier(string $serviceId): object
+    {
+        // Try container first
+        if ($this->container !== null && $this->container->has($serviceId)) {
+            return $this->container->get($serviceId);
+        }
+
+        // Try locators
+        foreach ($this->locators as $locator) {
+            if ($locator->has($serviceId)) {
+                $resolved = $locator->get($serviceId);
+                
+                if (is_object($resolved)) {
+                    return $resolved;
+                }
+                
+                if (is_string($resolved) && class_exists($resolved)) {
+                    return $this->instantiate($resolved);
+                }
+            }
+        }
+
+        // No container or locator has this service
+        throw new \RuntimeException(
+            "Cannot resolve service identifier '{$serviceId}' - not found in container or locators"
+        );
     }
 
     private function resolveFromContainer(string $serviceId): object

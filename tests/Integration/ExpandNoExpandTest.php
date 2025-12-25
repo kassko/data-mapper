@@ -13,7 +13,7 @@ class ExpandNoExpandTest extends TestCase
 {
     public function testExpandOnlySpecifiedProperties(): void
     {
-        $lazyLoader = new Loader();
+        $lazyLoader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         
         $data = [
             'name' => 'The best shop',
@@ -40,7 +40,7 @@ class ExpandNoExpandTest extends TestCase
 
     public function testNoExpandExcludesSpecifiedProperties(): void
     {
-        $lazyLoader = new Loader();
+        $lazyLoader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         
         $data = [
             'name' => 'The worst shop',

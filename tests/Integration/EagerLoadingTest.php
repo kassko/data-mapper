@@ -18,14 +18,11 @@ class EagerLoadingTest extends TestCase
 
     public function testEagerPropertiesAreLoadedImmediately(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         $info = new Information();
         
-        // Call loadEagerProperties to trigger eager loading
-        $info->loadEagerProperties();
-
-        // Access the property without explicitly calling loadProperty
-        // The property should already be loaded because it's marked as eager
+        // Access the eager property - it should be loaded automatically
+        // bestShop is marked with Loading::TYPE_EAGER, so it's loaded when we access any property
         $bestShop = $info->getBestShop();
         
         $this->assertNotNull($bestShop);

@@ -9,7 +9,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\Exception\NoValidDataSourceException;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\ChainDataSource;
 use Kassko\Sample\UnsuitableSourceException;
@@ -29,13 +29,13 @@ class DataSourceChainTest extends TestCase
 
     public function testChainFallbackWithSuccess(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $object = new #[DataSourcesStore([
             new DataSource(id: 'sourceA', class: ChainDataSource::class, method: 'failingSource'),
             new DataSource(id: 'sourceB', class: ChainDataSource::class, method: 'successfulSource'),
         ])] class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(chain: ['sourceA', 'sourceB'], exceptionOnNoValidDataSource: UnsuitableSourceException::class)]
             private ?string $data = null;
@@ -52,13 +52,13 @@ class DataSourceChainTest extends TestCase
     
     public function testChainThrowsExceptionWhenAllFail(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $object = new #[DataSourcesStore([
             new DataSource(id: 'sourceA', class: ChainDataSource::class, method: 'failingSource'),
             new DataSource(id: 'sourceB', class: ChainDataSource::class, method: 'failingSource'),
         ])] class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(chain: ['sourceA', 'sourceB'], exceptionOnNoValidDataSource: UnsuitableSourceException::class)]
             private ?string $data = null;
@@ -76,12 +76,12 @@ class DataSourceChainTest extends TestCase
     
     public function testChainRethrowsUnexpectedException(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $object = new #[DataSourcesStore([
             new DataSource(id: 'sourceA', class: ChainDataSource::class, method: 'unexpectedFailure'),
         ])] class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(chain: ['sourceA'], exceptionOnNoValidDataSource: UnsuitableSourceException::class)]
             private ?string $data = null;

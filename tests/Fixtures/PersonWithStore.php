@@ -8,17 +8,19 @@ use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 
-#[MultiPropDataSource(
-    id: 'personSource',
-    class: PersonDataSource::class,
-    method: 'getData',
-    args: ['#id']
-)]
+#[DataSourcesStore([
+    new MultiPropDataSource(
+        id: 'personSource',
+        class: PersonDataSource::class,
+        method: 'getData',
+        args: ['#id']
+    )
+])]
 class PersonWithStore
 {
-    use LoadableTrait;
+    use LoadableInternalTrait;
 
     private int $id;
 

@@ -9,7 +9,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\PersonFullDataSource;
 use PHPUnit\Framework\TestCase;
@@ -23,7 +23,7 @@ class LoadingScopeTest extends TestCase
 
     public function testScopeProperty(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $object = new #[DataSourcesStore([
             new MultiPropDataSource(
@@ -35,7 +35,7 @@ class LoadingScopeTest extends TestCase
                 loadingScopeProps: ['firstName']
             ),
         ])] class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(id: 'personData')]
             #[Property(name: 'first_name')]
@@ -77,7 +77,7 @@ class LoadingScopeTest extends TestCase
     
     public function testScopeOnlyKeys(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $object = new #[DataSourcesStore([
             new MultiPropDataSource(
@@ -89,7 +89,7 @@ class LoadingScopeTest extends TestCase
                 loadingScopeKeys: ['first_name', 'last_name']
             ),
         ])] class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(id: 'personData')]
             #[Property(name: 'first_name')]
@@ -141,7 +141,7 @@ class LoadingScopeTest extends TestCase
     
     public function testScopeExceptKeys(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $object = new #[DataSourcesStore([
             new MultiPropDataSource(
@@ -153,7 +153,7 @@ class LoadingScopeTest extends TestCase
                 loadingScopeKeys: ['phone']
             ),
         ])] class {
-            use LoadableTrait;
+            use LoadableInternalTrait;
             
             #[DataSourceRef(id: 'personData')]
             #[Property(name: 'first_name')]

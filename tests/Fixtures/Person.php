@@ -6,12 +6,15 @@ namespace Kassko\Sample;
 
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 
-#[MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])]
+#[DataSourcesStore([
+    new MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])
+])]
 class Person
 {
-    use LoadableTrait;
+    use LoadableInternalTrait;
 
     private int $id;
 

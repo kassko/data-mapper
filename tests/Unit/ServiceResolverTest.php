@@ -81,7 +81,7 @@ final class ServiceResolverTest extends TestCase
         $resolver = new ServiceResolver($container, []);
         
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Service "unknown.service" not found in container');
+        $this->expectExceptionMessage("Cannot resolve service identifier 'unknown.service' - not found in container or locators");
         
         $resolver->resolve('@unknown.service');
     }

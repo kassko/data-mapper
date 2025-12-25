@@ -92,29 +92,17 @@ if ($this->isPropertyLocked('property')) {
 }
 ```
 
+**Note:** This method is marked `@internal` and is primarily used by the Loader to check if a property can be hydrated.
+
 ### loadProperty(string $propertyName): void
 
-Loads a property on-demand using the global LazyLoader (if configured).
+Loads a property on-demand using the global Loader (if configured).
 
 ```php
 protected function loadProperty(string $propertyName): void
 ```
 
-**Note:** Automatically called by getters in lazy loading scenarios.
-
-### loadEagerProperties(): void
-
-Loads all properties marked with `Loading::TYPE_EAGER`.
-
-```php
-public function loadEagerProperties(): void
-```
-
-**Example:**
-```php
-$person = new Person();
-$person->loadEagerProperties();  // Load all eager properties
-```
+**Note:** This should be called in your getters to enable lazy loading. The method is automatically skipped if no DataMapper is configured, allowing your objects to work in any context.
 
 ## Property Locking in Child Classes
 

@@ -6,12 +6,22 @@ namespace Kassko\DataMapper\ObjectExtension;
 
 use Kassko\DataMapper\Registry\LoaderRegistry;
 
+/**
+ * Trait for domain objects that need lazy loading capabilities.
+ * 
+ * Usage:
+ * - Use this trait in your domain objects
+ * - Call loadProperty() in your getters to trigger lazy loading
+ * - Use lockProperty()/unlockProperty() to control when properties can be loaded
+ */
 trait LoadableTrait
 {
     private array $lockedProperties = [];
 
     /**
      * Load a property on-demand using the global Loader.
+     * 
+     * Call this method in your getter before returning the property value.
      */
     protected function loadProperty(string $propertyName): void
     {
@@ -24,20 +34,6 @@ trait LoadableTrait
         }
 
         $loader->loadProperty($this, $propertyName);
-    }
-
-    /**
-     * Load all eager properties. Call this after instantiation if needed.
-     */
-    public function loadEagerProperties(): void
-    {
-        $loader = LoaderRegistry::get();
-        
-        if ($loader === null) {
-            return;
-        }
-        
-        $loader->loadEagerProperties($this);
     }
 
     /**
@@ -58,6 +54,7 @@ trait LoadableTrait
 
     /**
      * Check if a property is locked.
+     * @internal Used by the Loader to check if a property should be loaded
      */
     public function isPropertyLocked(string $propertyName): bool
     {

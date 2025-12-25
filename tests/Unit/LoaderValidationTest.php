@@ -6,7 +6,7 @@ namespace Kassko\DataMapper\Tests\Unit;
 
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use PHPUnit\Framework\TestCase;
 
@@ -19,7 +19,7 @@ class LoaderValidationTest extends TestCase
     public function testThrowsExceptionForNonExistentClass(): void
     {
         $entity = new class(1) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private int $id;
 
@@ -38,7 +38,7 @@ class LoaderValidationTest extends TestCase
             }
         };
 
-        $dataMapper = new DataMapper();
+        $dataMapper = new DataMapper(new \Kassko\DataMapper\ServiceResolver());
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage("DataSource class 'NonExistentClass' does not exist");
@@ -49,7 +49,7 @@ class LoaderValidationTest extends TestCase
     public function testThrowsExceptionForNonExistentMethod(): void
     {
         $entity = new class(1) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private int $id;
 
@@ -68,7 +68,7 @@ class LoaderValidationTest extends TestCase
             }
         };
 
-        $dataMapper = new DataMapper();
+        $dataMapper = new DataMapper(new \Kassko\DataMapper\ServiceResolver());
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Method nonExistentMethod does not exist');
@@ -87,7 +87,7 @@ class LoaderValidationTest extends TestCase
         ");
 
         $entity = new class($abstractClassName, 1) {
-            use LoadableTrait;
+            use LoadableInternalTrait;
 
             private string $className;
             private int $id;

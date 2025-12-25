@@ -20,7 +20,7 @@ class PropertyCandidatesTest extends TestCase
 
     public function testPropertyCandidatesWithGasolineCar(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $garage = new Garage(2);
         $cars = $garage->getCars();
@@ -33,7 +33,7 @@ class PropertyCandidatesTest extends TestCase
 
     public function testPropertyCandidatesWithMixedCars(): void
     {
-        new DataMapper();
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
         
         $garage = new Garage(1);
         $cars = $garage->getCars();

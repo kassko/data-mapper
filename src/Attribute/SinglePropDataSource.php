@@ -10,9 +10,11 @@ use Attribute;
  * Defines a data source that hydrates a single property.
  * The source returns a value (object, scalar, or non-associative array) for the property.
  * 
- * This attribute can be placed on the PROPERTY level or CLASS level (when referenced by DataSourceRef).
+ * Scope: ONLY on properties (not on classes)
+ * Cannot be combined with: DataSource, MultiPropDataSource, DataSourceRef
+ * Can be used in DataSourcesStore with an id for referencing via DataSourceRef
  */
-#[Attribute(Attribute::TARGET_PROPERTY | Attribute::TARGET_CLASS)]
+#[Attribute(Attribute::TARGET_PROPERTY)]
 final class SinglePropDataSource
 {
     public function __construct(
