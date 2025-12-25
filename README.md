@@ -13,12 +13,31 @@ It is not affiliated with, nor owned by, any organization.
 ## Requirements
 
 - PHP >= 8.1
-- Symfony ExpressionLanguage component
+- PSR-3 Logger Interface (optional, for logging)
+- PSR-16 Simple Cache (optional, for caching)
 
 ## Installation
 
 ```bash
 composer require kassko/data-mapper-experimental
+```
+
+## Quick Start
+
+```php
+use Kassko\DataMapper\DataMapperBuilder;
+
+$builder = new DataMapperBuilder();
+
+// Optional: Add a PSR-3 logger
+$builder->setLogger($yourLogger);
+
+// Optional: Add custom hydrators
+$builder->addCustomHydrator('my_parser', function(array $data): ?object {
+    return new MyClass($data);
+});
+
+$mapper = $builder->build();
 ```
 
 ## Features
@@ -152,31 +171,115 @@ Custom property access:
 private ?string $name = null;
 ```
 
-#### Hook
+#### PropertyInstantiatingHook
 
-Lifecycle callbacks with support for external services:
+Execute logic after object instantiation, before hydration:
 
 ```php
-// Hook on the data object itself
-#[Hook(name: 'after_create_object', method: 'initialize', args: ['##object'])]
+use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
+
+#[PropertyInstantiatingHook(after_instantiating: 'initialize', args: ['##object'])]
 class Entity
 {
-    #[Hook(name: 'before_set_property', method: 'validate', args: ["expr(rawDataItem('name'))"])]
-    #[Hook(name: 'after_set_property', method: 'onSet', args: ['##object', '#name'])]
+    public function initialize(self $obj): void {
+        // Initialization logic
+    }
+}
+```
+
+See [docs/attributes/PropertyInstantiatingHook.md](docs/attributes/PropertyInstantiatingHook.md) for details.
+
+#### PropertyHydratingHook
+
+Execute logic before and/or after object hydration:
+
+```php
+use Kassko\DataMapper\Attribute\PropertyHydratingHook;
+
+#[PropertyHydratingHook(
+    before_hydrate_object: 'prepare',
+    after_hydrate_object: 'finalize'
+)]
+class Entity
+{
+    public function prepare(array $rawData): void {
+        // Before hydration
+    }
+    
+    public function finalize(?object $object, array $rawData): void {
+        // After hydration
+    }
+}
+```
+
+See [docs/attributes/PropertyHydratingHook.md](docs/attributes/PropertyHydratingHook.md) for details.
+
+#### PropertySettingHook
+
+Property-level lifecycle hooks with support for external services:
+
+```php
+use Kassko\DataMapper\Attribute\PropertySettingHook;
+
+class Entity
+{
+    // Hook on the data object itself
+    #[PropertySettingHook(
+        before_set_property: 'validate',
+        after_set_property: 'onSet',
+        args: ["expr(rawDataItem('name'))", '#name']
+    )]
     private ?string $name = null;
+    
+    public function validate(string $rawName): void {
+        // Validation logic
+    }
+    
+    public function onSet(string $name): void {
+        // Post-set logic
+    }
 }
 
 // Hook on external service
-#[Hook(
-    name: 'after_set_property',
+#[PropertySettingHook(
+    after_set_property: 'validateEmail',
     class: ValidationService::class,  // External service
-    method: 'validateEmail',
     args: ['##object', '#email']
 )]
 private ?string $email = null;
 ```
 
 When `class` is provided, the hook calls the method on the external service instead of the data object.
+
+See [docs/attributes/PropertySettingHook.md](docs/attributes/PropertySettingHook.md) for details.
+
+#### CustomHydrator
+
+Define custom hydration logic for complex scenarios:
+
+```php
+use Kassko\DataMapper\Attribute\CustomHydrator;
+
+class Document
+{
+    #[CustomHydrator(
+        key: 'complex_parser',
+        objectClass: ContentInterface::class
+    )]
+    private ?ContentInterface $content = null;
+}
+
+// Register the hydrator
+$builder->addCustomHydrator('complex_parser', function(array $data): ?object {
+    return match($data['type'] ?? null) {
+        'text' => new TextContent($data),
+        'html' => new HtmlContent($data),
+        default => null,
+    };
+});
+```
+
+See [docs/attributes/CustomHydrator.md](docs/attributes/CustomHydrator.md) for details.
 
 #### Needs
 

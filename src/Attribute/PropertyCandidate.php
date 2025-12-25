@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Attribute;
 
-use Attribute;
-
-#[Attribute(Attribute::TARGET_PROPERTY)]
+/**
+ * PropertyCandidate is used ONLY inside PropertyCandidates attribute.
+ * It cannot be used directly on a property.
+ */
 final class PropertyCandidate
 {
     public function __construct(
