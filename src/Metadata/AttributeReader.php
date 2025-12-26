@@ -70,27 +70,19 @@ class AttributeReader
     }
 
     /**
-     * Read MultiPropDataSource attributes from a class
+     * Read SinglePropDataSource or DataSource attribute from a property
      *
-     * @param ReflectionClass $class
-     * @return array<MultiPropDataSource>
+     * @param ReflectionProperty $property
+     * @return SinglePropDataSource|DataSource|null
      */
-    public function readMultiPropDataSources(ReflectionClass $class): array
+    public function readMultiPropDataSource(ReflectionProperty $property): MultiPropDataSource|null
     {
-        $attrs = $class->getAttributes(MultiPropDataSource::class);
-        return array_map(fn($a) => $a->newInstance(), $attrs);
-    }
+        $attrs = $property->getAttributes(MultiPropDataSource::class);
+        if (!empty($attrs)) {
+            return $attrs[0]->newInstance();
+        }
 
-    /**
-     * Read SinglePropDataSource attributes from a class
-     *
-     * @param ReflectionClass $class
-     * @return array<SinglePropDataSource>
-     */
-    public function readSinglePropDataSourcesFromClass(ReflectionClass $class): array
-    {
-        $attrs = $class->getAttributes(SinglePropDataSource::class);
-        return array_map(fn($a) => $a->newInstance(), $attrs);
+        return null;
     }
 
     /**
@@ -269,7 +261,7 @@ class AttributeReader
     }
 
     /**
-     * Build a map of DataSource id => DataSource from DataSourcesStore or repeatable DataSource attributes
+     * Build a map of DataSource id => DataSource from DataSourcesStore
      *
      * @param object $object
      * @return array<string, DataSource|SinglePropDataSource|MultiPropDataSource>
@@ -279,29 +271,13 @@ class AttributeReader
         $reflectionClass = new ReflectionClass($object);
         $map = [];
         
-        // First try DataSourcesStore (backward compatibility)
+        // Read from DataSourcesStore - the only valid way to define class-level data sources
         $store = $this->readDataSourcesStore($reflectionClass);
         if ($store !== null) {
             foreach ($store->sources as $source) {
                 if ($source->id !== null) {
                     $map[$source->id] = $source;
                 }
-            }
-        }
-        
-        // Check for MultiPropDataSource attributes on the class
-        $multiPropDataSources = $this->readMultiPropDataSources($reflectionClass);
-        foreach ($multiPropDataSources as $source) {
-            if ($source->id !== null) {
-                $map[$source->id] = $source;
-            }
-        }
-        
-        // Check for SinglePropDataSource attributes on the class
-        $singlePropDataSources = $this->readSinglePropDataSourcesFromClass($reflectionClass);
-        foreach ($singlePropDataSources as $source) {
-            if ($source->id !== null) {
-                $map[$source->id] = $source;
             }
         }
         
