@@ -48,6 +48,61 @@ $mapper = $builder->build();
 - **Expression Language**: Dynamic argument resolution
 - **Lifecycle Hooks**: Callbacks during hydration
 - **Polymorphic Hydration**: Runtime type resolution
+- **Priority-Based Hydration**: Control which data sources take precedence
+- **Fallback Pattern**: Graceful degradation with source fallbacks
+
+### v2.0 New Features
+
+#### Priority System
+
+All DataSource attributes now support a `priority` field (integer, default: 0). Higher priority sources can override values from lower priority sources:
+
+```php
+// Low priority - loaded from cache first
+#[DataSource(
+    class: CacheService::class,
+    method: 'getCached',
+    priority: 0
+)]
+private ?string $name = null;
+
+// High priority - overrides cached value when loaded
+#[DataSource(
+    class: ApiService::class,
+    method: 'getFromApi',
+    priority: 10
+)]
+private ?string $name = null;
+```
+
+#### Fallback Pattern
+
+DataSourceRef now uses `id` + `fallbacks` instead of `chain` for clearer semantics:
+
+```php
+#[DataSourceRef(
+    id: 'primarySource',
+    fallbacks: ['backupSource', 'lastResort'],
+    exceptionOnNoValidDataSource: NoValidDataSourceException::class,
+    priority: 5
+)]
+private ?string $data = null;
+```
+
+#### Build-Time Validation
+
+Validate your metadata attributes before runtime:
+
+```bash
+# Validate a single class
+./bin/datamapper datamapper:validate:class 'App\Entity\User'
+
+# Validate all classes in a directory
+./bin/datamapper datamapper:validate src/Entity
+
+# Fail on warnings
+./bin/datamapper datamapper:validate src/Entity --fail-on-warning
+```
 
 ## Hydration Modes
 
@@ -123,9 +178,25 @@ Explicit attributes for single vs. multi-property hydration modes.
 ### DataSourceRef
 
 Reference DataSources with three modes:
-- `id`: Single DataSource
-- `chain`: Fallback chain (with `exception`)
-- `providers`: Aggregation (merge results)
+- `id`: Single DataSource (optionally with `fallbacks`)
+- `fallbacks`: Array of fallback source IDs to try if primary fails
+- `providers`: Aggregation mode (merge results from multiple sources)
+- `priority`: Hydration priority (higher values override lower)
+
+```php
+// Simple reference
+#[DataSourceRef(id: 'userData')]
+
+// With fallbacks (tries primary, then fallbacks in order)
+#[DataSourceRef(
+    id: 'primaryApi',
+    fallbacks: ['cacheBackup', 'defaultValues'],
+    exceptionOnNoValidDataSource: NoValidDataSourceException::class
+)]
+
+// Aggregation (merges all provider results)
+#[DataSourceRef(providers: ['basicInfo', 'extendedInfo', 'preferences'])]
+```
 
 See [docs/attributes/DataSourceRef.md](docs/attributes/DataSourceRef.md) for details.
 

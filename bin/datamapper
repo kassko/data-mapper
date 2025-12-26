@@ -1,0 +1,31 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Kassko\DataMapper\Command\ValidateClassCommand;
+use Kassko\DataMapper\Command\ValidateMetadataCommand;
+use Symfony\Component\Console\Application;
+
+// Autoload
+$autoloadPaths = [
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+];
+
+foreach ($autoloadPaths as $path) {
+    if (file_exists($path)) {
+        require $path;
+        break;
+    }
+}
+
+// Create application
+$application = new Application('DataMapper CLI', '2.0.0-alpha');
+
+// Register commands
+$application->add(new ValidateClassCommand());
+$application->add(new ValidateMetadataCommand());
+
+// Run
+$application->run();
