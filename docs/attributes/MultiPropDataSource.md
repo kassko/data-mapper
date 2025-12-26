@@ -89,6 +89,7 @@ class User
 | `class` | `?string` | No | `null` | Service class to call |
 | `method` | `string` | No | `''` | Method to call on the service |
 | `args` | `array` | No | `[]` | Arguments to pass to the method |
+| `priority` | `int` | No | `0` | Priority for hydration precedence. Higher values override lower values. See [Priority](Priority.md) |
 | `loadingScope` | `string` | No | `'all'` | How to filter properties |
 | `loadingScopeKeys` | `array` | No | `[]` | Raw data keys to include/exclude |
 | `loadingScopeProps` | `array` | No | `[]` | Property names to include/exclude |
@@ -132,9 +133,53 @@ class Person {
 }
 ```
 
+## Priority Usage with Scope
+
+```php
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+
+#[DataSourcesStore([
+    // Load defaults for all properties
+    new MultiPropDataSource(
+        id: 'defaults',
+        class: DefaultsService::class,
+        method: 'getDefaults',
+        priority: 0
+    ),
+    // Override only specific properties with database values
+    new MultiPropDataSource(
+        id: 'database',
+        class: DatabaseService::class,
+        method: 'findUser',
+        args: ['#id'],
+        loadingScope: MultiPropDataSource::SCOPE_ONLY_PROPS,
+        loadingScopeProps: ['firstName', 'lastName'],
+        priority: 10
+    ),
+])]
+class User
+{
+    private int $id;
+    
+    #[DataSourceRef(id: 'defaults')]
+    private ?string $firstName = null;  // Will be overridden by database
+    
+    #[DataSourceRef(id: 'defaults')]
+    private ?string $lastName = null;   // Will be overridden by database
+    
+    #[DataSourceRef(id: 'defaults')]
+    private ?string $email = null;       // Keeps default (not in database scope)
+}
+```
+
+The combination of `priority` and `loadingScope` allows sophisticated hydration strategies where some properties use defaults while others are loaded from authoritative sources.
+
 ## See Also
 
 - [DataSourcesStore](DataSourcesStore.md)
 - [SinglePropDataSource](SinglePropDataSource.md)
 - [DataSource](DataSource.md)
 - [DataSourceRef](DataSourceRef.md)
+- [Priority](Priority.md) - Detailed guide to priority-based hydration

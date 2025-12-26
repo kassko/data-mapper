@@ -477,3 +477,220 @@ class Example
 1. **Properties in args auto-load** - No `Needs` required
 2. **Use `Needs` for properties used in getter** - They're not in args but needed for logic
 3. **Already-loaded properties are not reloaded** - Efficient and safe
+
+
+## v2.0 Features
+
+### Priority-Based Hydration
+
+Control which data sources take precedence when multiple sources can hydrate the same property:
+
+```php
+use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+class Product
+{
+    use LoadableTrait;
+    
+    private int $id = 1;
+    
+    // Load from cache first (priority: 0)
+    #[DataSource(
+        class: CacheService::class,
+        method: 'getPrice',
+        args: ['#id'],
+        priority: 0
+    )]
+    private ?float $price = null;
+    
+    // This will override the cached price (priority: 10)
+    #[DataSource(
+        class: ApiService::class,
+        method: 'getCurrentPrice',
+        args: ['#id'],
+        priority: 10
+    )]
+    private ?float $price = null;
+    
+    public function getPrice(): ?float
+    {
+        $this->loadProperty('price');
+        return $this->price;
+    }
+}
+
+// Usage
+$product = new Product();
+echo $product->getPrice(); // Loads from cache, then overrides with API value
+```
+
+### Fallback Pattern
+
+Use fallbacks for graceful degradation:
+
+```php
+use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
+use Kassko\DataMapper\Exception\NoValidDataSourceException;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+#[DataSourcesStore([
+    new SinglePropDataSource(
+        id: 'primaryApi',
+        class: PrimaryApiService::class,
+        method: 'getData'
+    ),
+    new SinglePropDataSource(
+        id: 'cacheBackup',
+        class: CacheService::class,
+        method: 'getCached'
+    ),
+    new SinglePropDataSource(
+        id: 'defaultValues',
+        class: DefaultsService::class,
+        method: 'getDefaults'
+    ),
+])]
+class Config
+{
+    use LoadableTrait;
+    
+    // Try primary API, then cache, then defaults
+    #[DataSourceRef(
+        id: 'primaryApi',
+        fallbacks: ['cacheBackup', 'defaultValues'],
+        exceptionOnNoValidDataSource: NoValidDataSourceException::class,
+        priority: 5
+    )]
+    private ?array $settings = null;
+    
+    public function getSettings(): ?array
+    {
+        $this->loadProperty('settings');
+        return $this->settings;
+    }
+}
+```
+
+### Provider Aggregation
+
+Merge data from multiple sources:
+
+```php
+use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+#[DataSourcesStore([
+    new MultiPropDataSource(
+        id: 'systemDefaults',
+        class: DefaultsProvider::class,
+        method: 'getDefaults'
+    ),
+    new MultiPropDataSource(
+        id: 'userPreferences',
+        class: UserProvider::class,
+        method: 'getPreferences',
+        args: ['#userId']
+    ),
+    new MultiPropDataSource(
+        id: 'runtimeOverrides',
+        class: RuntimeProvider::class,
+        method: 'getOverrides'
+    ),
+])]
+class ApplicationConfig
+{
+    use LoadableTrait;
+    
+    private int $userId = 123;
+    
+    // Aggregates all three providers (later providers override earlier ones)
+    #[DataSourceRef(
+        providers: ['systemDefaults', 'userPreferences', 'runtimeOverrides']
+    )]
+    private ?array $config = null;
+    
+    public function getConfig(): ?array
+    {
+        $this->loadProperty('config');
+        return $this->config;
+    }
+}
+```
+
+### Build-Time Validation
+
+Validate your metadata before runtime:
+
+```bash
+# Validate a single class
+./bin/datamapper datamapper:validate:class 'App\Entity\User'
+
+# Validate all classes in a directory
+./bin/datamapper datamapper:validate src/Entity
+
+# With namespace option
+./bin/datamapper datamapper:validate src/Entity --namespace='App\Entity'
+
+# Fail on warnings
+./bin/datamapper datamapper:validate src/Entity --fail-on-warning
+```
+
+Example validation output:
+
+```
+DataMapper Metadata Validation
+==============================
+
+ Found 15 classe(s) to validate
+
+App\Entity\User
+  ✗ App\Entity\User::$email: References source 'emailValidator' which does not exist in DataSourcesStore.
+  ⚠ App\Entity\User: DataSourcesStore source at index 2 has no id. It cannot be referenced via DataSourceRef.
+
+Summary
+-------
+
+ Total classes: 15
+ Valid: 14
+ Invalid: 1
+ With warnings: 1
+
+[ERROR] Validation failed!
+```
+
+## Migration from v1.x to v2.0
+
+### Chain → Fallbacks
+
+```php
+// v1.x (DEPRECATED)
+#[DataSourceRef(
+    chain: ['primary', 'backup'],
+    exceptionOnNoValidDataSource: MyException::class
+)]
+
+// v2.0
+#[DataSourceRef(
+    id: 'primary',
+    fallbacks: ['backup'],
+    exceptionOnNoValidDataSource: MyException::class
+)]
+```
+
+### Priority Addition
+
+All DataSource attributes now support priority (default: 0):
+
+```php
+// Add priority to control hydration precedence
+#[DataSource(
+    class: MyService::class,
+    method: 'getData',
+    priority: 10  // Higher priority overrides lower priority
+)]
+```
