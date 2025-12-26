@@ -413,15 +413,21 @@ class Loader implements LoaderInterface
     {
         $reflectionClass = new ReflectionClass($object);
         $properties = [];
-        
+
         foreach ($reflectionClass->getProperties() as $property) {
             // Check if property references this data source
             $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
             if ($dataSourceRef !== null && $dataSourceRef->id === $source->id) {
                 $properties[] = $property;
             }
+
+            // Check if property has a MultiPropDataSource with the same signature
+            $dataSourceRef = $this->attributeReader->readMultiPropDataSource($property);
+            if ($dataSourceRef !== null && $dataSourceRef->id === $source->id) {
+                $properties[] = $property;
+            }
         }
-        
+
         return $properties;
     }
 
