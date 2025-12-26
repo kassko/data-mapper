@@ -13,19 +13,20 @@ class DataSourceRefValidationTest extends TestCase
     {
         $ref = new DataSourceRef(id: 'sourceA');
         $this->assertEquals('sourceA', $ref->id);
-        $this->assertNull($ref->chain);
+        $this->assertNull($ref->fallbacks);
         $this->assertNull($ref->providers);
     }
     
-    public function testChainWithExceptionIsValid(): void
+    public function testIdWithFallbacksIsValid(): void
     {
         $ref = new DataSourceRef(
-            chain: ['sourceA', 'sourceB'],
+            id: 'sourceA',
+            fallbacks: ['sourceB', 'sourceC'],
             exceptionOnNoValidDataSource: 'SomeException'
         );
-        $this->assertEquals(['sourceA', 'sourceB'], $ref->chain);
+        $this->assertEquals('sourceA', $ref->id);
+        $this->assertEquals(['sourceB', 'sourceC'], $ref->fallbacks);
         $this->assertEquals('SomeException', $ref->exceptionOnNoValidDataSource);
-        $this->assertNull($ref->id);
         $this->assertNull($ref->providers);
     }
     
@@ -34,33 +35,21 @@ class DataSourceRefValidationTest extends TestCase
         $ref = new DataSourceRef(providers: ['providerA', 'providerB']);
         $this->assertEquals(['providerA', 'providerB'], $ref->providers);
         $this->assertNull($ref->id);
-        $this->assertNull($ref->chain);
+        $this->assertNull($ref->fallbacks);
     }
     
     public function testNoParametersThrowsException(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef requires one of: id, chain, or providers');
+        $this->expectExceptionMessage('DataSourceRef requires either id or providers');
         
         new DataSourceRef();
-    }
-    
-    public function testIdAndChainAreMutuallyExclusive(): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef: id, chain, and providers are mutually exclusive');
-        
-        new DataSourceRef(
-            id: 'sourceA',
-            chain: ['sourceB'],
-            exceptionOnNoValidDataSource: 'SomeException'
-        );
     }
     
     public function testIdAndProvidersAreMutuallyExclusive(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef: id, chain, and providers are mutually exclusive');
+        $this->expectExceptionMessage('DataSourceRef: id and providers are mutually exclusive');
         
         new DataSourceRef(
             id: 'sourceA',
@@ -68,31 +57,37 @@ class DataSourceRefValidationTest extends TestCase
         );
     }
     
-    public function testChainAndProvidersAreMutuallyExclusive(): void
+    public function testFallbacksWithoutIdThrowsException(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef: id, chain, and providers are mutually exclusive');
+        $this->expectExceptionMessage('DataSourceRef: fallbacks can only be used with id');
         
         new DataSourceRef(
-            chain: ['sourceA'],
-            providers: ['providerB'],
+            fallbacks: ['sourceA'],
+            providers: ['providerB']
+        );
+    }
+    
+    public function testExceptionWithoutFallbacksThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DataSourceRef: exceptionOnNoValidDataSource requires fallbacks to be set');
+        
+        new DataSourceRef(
+            id: 'sourceA',
             exceptionOnNoValidDataSource: 'SomeException'
         );
     }
     
-    public function testChainWithoutExceptionThrowsException(): void
+    public function testPriorityDefaultsToZero(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef: chain and exceptionOnNoValidDataSource must both be present or both absent');
-        
-        new DataSourceRef(chain: ['sourceA', 'sourceB']);
+        $ref = new DataSourceRef(id: 'sourceA');
+        $this->assertEquals(0, $ref->priority);
     }
     
-    public function testExceptionWithoutChainThrowsException(): void
+    public function testPriorityCanBeSet(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef: chain and exceptionOnNoValidDataSource must both be present or both absent');
-        
-        new DataSourceRef(exceptionOnNoValidDataSource: 'SomeException');
+        $ref = new DataSourceRef(id: 'sourceA', priority: 10);
+        $this->assertEquals(10, $ref->priority);
     }
 }

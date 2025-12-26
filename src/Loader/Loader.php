@@ -36,6 +36,9 @@ class Loader implements LoaderInterface
     /** @var WeakMap<object, object> Track parent-child relationships */
     private WeakMap $parentRegistry;
     
+    /** @var WeakMap<object, array<string, array{source: string, priority: int}>> Track property => source info for priority handling */
+    private WeakMap $propertySourceRegistry;
+    
     private AttributeReader $attributeReader;
     private ServiceResolver $serviceResolver;
     private LoggerInterface $logger;
@@ -56,6 +59,7 @@ class Loader implements LoaderInterface
         $this->loadedProperties = new WeakMap();
         $this->sourceFunctionProviders = new WeakMap();
         $this->parentRegistry = new WeakMap();
+        $this->propertySourceRegistry = new WeakMap();
         $this->attributeReader = new AttributeReader();
         $this->logger = $logger ?? new NullLogger();
         $this->customHydrators = $customHydrators;
@@ -65,6 +69,80 @@ class Loader implements LoaderInterface
     public function getServiceResolver(): ServiceResolver
     {
         return $this->serviceResolver;
+    }
+
+    /**
+     * Check if a property can be hydrated based on source priority
+     * 
+     * @param object $object
+     * @param string $propertyName
+     * @param int $incomingPriority
+     * @param string $sourceSignature Unique identifier for the source
+     * @return bool True if property can be hydrated, false if blocked by higher priority
+     */
+    private function canHydrateProperty(object $object, string $propertyName, int $incomingPriority, string $sourceSignature): bool
+    {
+        if (!isset($this->propertySourceRegistry[$object])) {
+            return true; // No prior hydration, allow it
+        }
+        
+        $propertyInfo = $this->propertySourceRegistry[$object][$propertyName] ?? null;
+        
+        if ($propertyInfo === null) {
+            return true; // Property not yet hydrated
+        }
+        
+        // If incoming priority is higher, allow overwrite
+        if ($incomingPriority > $propertyInfo['priority']) {
+            return true;
+        }
+        
+        // If same priority or lower, block
+        return false;
+    }
+
+    /**
+     * Register that a property was hydrated by a specific source
+     * 
+     * @param object $object
+     * @param string $propertyName
+     * @param int $priority
+     * @param string $sourceSignature
+     */
+    private function registerPropertyHydration(object $object, string $propertyName, int $priority, string $sourceSignature): void
+    {
+        if (!isset($this->propertySourceRegistry[$object])) {
+            $this->propertySourceRegistry[$object] = [];
+        }
+        
+        $this->propertySourceRegistry[$object][$propertyName] = [
+            'source' => $sourceSignature,
+            'priority' => $priority,
+        ];
+    }
+
+    /**
+     * Create a signature for a DataSource for tracking purposes
+     * 
+     * @param SinglePropDataSource|DataSource|MultiPropDataSource|DataSourceRef $source
+     * @return string
+     */
+    private function createSourceSignature($source): string
+    {
+        if ($source instanceof \Kassko\DataMapper\Attribute\DataSourceRef) {
+            if ($source->id !== null) {
+                return 'ref:' . $source->id . ($source->fallbacks ? ':fallback' : '');
+            }
+            if ($source->providers !== null) {
+                return 'ref:providers:' . implode(',', $source->providers);
+            }
+        }
+        
+        $class = $source->class ?? 'default';
+        $method = $source->method;
+        $id = $source->id ?? '';
+        
+        return sprintf('%s::%s[%s]', $class, $method, $id);
     }
 
     /**
@@ -159,11 +237,11 @@ class Loader implements LoaderInterface
         // Validate DataSource attribute exclusivity
         $this->validateDataSourceExclusivity($property);
         
-        // Check for DataSourceRef with chain or providers
+        // Check for DataSourceRef with fallbacks or providers
         $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
-        if ($dataSourceRef !== null && $dataSourceRef->chain !== null) {
-            // Handle chain fallback
-            $this->loadPropertyWithChain($object, $propertyName, $property, $dataSourceRef);
+        if ($dataSourceRef !== null && $dataSourceRef->fallbacks !== null) {
+            // Handle id with fallbacks
+            $this->loadPropertyWithFallbacks($object, $propertyName, $property, $dataSourceRef);
             return;
         } elseif ($dataSourceRef !== null && $dataSourceRef->providers !== null) {
             // Handle aggregation
@@ -204,24 +282,42 @@ class Loader implements LoaderInterface
     }
 
     /**
-     * Load a property with chain fallback mechanism
+     * Load a property with fallback pattern (id + optional fallbacks)
      *
      * @param object $object
      * @param string $propertyName
      * @param ReflectionProperty $property
      * @param \Kassko\DataMapper\Attribute\DataSourceRef $dataSourceRef
      */
-    private function loadPropertyWithChain(object $object, string $propertyName, ReflectionProperty $property, $dataSourceRef): void
+    private function loadPropertyWithFallbacks(object $object, string $propertyName, ReflectionProperty $property, $dataSourceRef): void
     {
         $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
         $exceptionClass = $dataSourceRef->exceptionOnNoValidDataSource;
         
-        foreach ($dataSourceRef->chain as $sourceId) {
+        // Build the chain: start with primary id, then add fallbacks if any
+        $sourceChain = [$dataSourceRef->id];
+        if ($dataSourceRef->fallbacks !== null) {
+            $sourceChain = array_merge($sourceChain, $dataSourceRef->fallbacks);
+        }
+        
+        foreach ($sourceChain as $sourceId) {
             if (!isset($dataSourceMap[$sourceId])) {
                 continue;
             }
             
             $dataSource = $dataSourceMap[$sourceId];
+            
+            // Check priority before attempting to load
+            $sourcePriority = $dataSourceRef->priority;
+            $sourceSignature = $this->createSourceSignature($dataSourceRef) . ':' . $sourceId;
+            
+            if (!$this->canHydrateProperty($object, $propertyName, $sourcePriority, $sourceSignature)) {
+                $this->logger->info(
+                    'Skipping property hydration due to lower or equal priority',
+                    ['property' => $propertyName, 'source' => $sourceSignature, 'priority' => $sourcePriority]
+                );
+                return; // Property already hydrated by higher priority source
+            }
             
             try {
                 $result = $this->executeDataSource($dataSource, $object);
@@ -233,12 +329,14 @@ class Loader implements LoaderInterface
                     $this->hydratePropertyWithValue($object, $propertyName, $result);
                 }
                 
+                // Register the successful hydration
+                $this->registerPropertyHydration($object, $propertyName, $sourcePriority, $sourceSignature);
                 $this->loadedProperties[$object][$propertyName] = true;
                 return; // Successfully loaded, exit chain
             } catch (\Throwable $e) {
                 // Check if this is the expected exception type
                 if ($exceptionClass !== null && is_a($e, $exceptionClass)) {
-                    // Continue to next source in chain
+                    // Continue to next source in fallback chain
                     continue;
                 }
                 // If it's a different exception, rethrow it
@@ -248,7 +346,7 @@ class Loader implements LoaderInterface
         
         // If we get here, all sources in the chain failed
         throw new \Kassko\DataMapper\Exception\NoValidDataSourceException(
-            sprintf('No valid DataSource found in chain for property %s', $propertyName)
+            sprintf('No valid DataSource found in fallback chain for property %s', $propertyName)
         );
     }
 
@@ -262,6 +360,18 @@ class Loader implements LoaderInterface
      */
     private function loadPropertyWithProviders(object $object, string $propertyName, ReflectionProperty $property, $dataSourceRef): void
     {
+        $sourcePriority = $dataSourceRef->priority;
+        $sourceSignature = $this->createSourceSignature($dataSourceRef);
+        
+        // Check priority before attempting to load
+        if (!$this->canHydrateProperty($object, $propertyName, $sourcePriority, $sourceSignature)) {
+            $this->logger->info(
+                'Skipping property hydration due to lower or equal priority',
+                ['property' => $propertyName, 'source' => $sourceSignature, 'priority' => $sourcePriority]
+            );
+            return;
+        }
+        
         $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
         $aggregatedResult = [];
         
@@ -288,6 +398,7 @@ class Loader implements LoaderInterface
             }
         }
         
+        $this->registerPropertyHydration($object, $propertyName, $sourcePriority, $sourceSignature);
         $this->loadedProperties[$object][$propertyName] = true;
     }
 
@@ -303,13 +414,27 @@ class Loader implements LoaderInterface
         ReflectionProperty $property,
         SinglePropDataSource|DataSource $source
     ): void {
+        $propertyName = $property->getName();
+        $sourcePriority = $source->priority;
+        $sourceSignature = $this->createSourceSignature($source);
+        
+        // Check priority before attempting to load
+        if (!$this->canHydrateProperty($object, $propertyName, $sourcePriority, $sourceSignature)) {
+            $this->logger->info(
+                'Skipping property hydration due to lower or equal priority',
+                ['property' => $propertyName, 'source' => $sourceSignature, 'priority' => $sourcePriority]
+            );
+            return;
+        }
+        
         $data = $this->callDataSource($source, $object);
         
         // Apply recursive hydration if needed (handles PropertyCandidates, nested objects, etc.)
         $data = $this->applyRecursiveHydration($property, $data, 0, $object);
         
         $this->setPropertyValue($object, $property, $data);
-        $this->loadedProperties[$object][$property->getName()] = true;
+        $this->registerPropertyHydration($object, $propertyName, $sourcePriority, $sourceSignature);
+        $this->loadedProperties[$object][$propertyName] = true;
         $this->handleContextAttribute($property, $data);
     }
 
@@ -342,6 +467,9 @@ class Loader implements LoaderInterface
         object $object,
         MultiPropDataSource $source
     ): void {
+        $sourcePriority = $source->priority;
+        $sourceSignature = $this->createSourceSignature($source);
+        
         $data = $this->callDataSource($source, $object);
         
         if (!is_array($data)) {
@@ -359,8 +487,18 @@ class Loader implements LoaderInterface
                 continue;
             }
             
+            // Check priority before attempting to load
+            if (!$this->canHydrateProperty($object, $propName, $sourcePriority, $sourceSignature)) {
+                $this->logger->info(
+                    'Skipping property hydration due to lower or equal priority',
+                    ['property' => $propName, 'source' => $sourceSignature, 'priority' => $sourcePriority]
+                );
+                continue;
+            }
+            
             // Use hydrateProperty which handles instance mapping
             $this->hydrateProperty($object, $propName, $data);
+            $this->registerPropertyHydration($object, $propName, $sourcePriority, $sourceSignature);
             $this->loadedProperties[$object][$propName] = true;
         }
     }

@@ -10,37 +10,42 @@ use Attribute;
 final class DataSourceRef
 {
     public readonly ?string $id;
-    public readonly ?array $chain;
+    public readonly ?array $fallbacks;
     public readonly ?array $providers;
     public readonly ?string $exceptionOnNoValidDataSource;
+    public readonly int $priority;
 
     public function __construct(
         ?string $id = null,
-        ?array $chain = null,
+        ?array $fallbacks = null,
         ?array $providers = null,
-        ?string $exceptionOnNoValidDataSource = null
+        ?string $exceptionOnNoValidDataSource = null,
+        int $priority = 0
     ) {
-        // Validation: chain and exceptionOnNoValidDataSource must both be present or both absent (check first)
-        if (($chain !== null) !== ($exceptionOnNoValidDataSource !== null)) {
-            throw new \InvalidArgumentException('DataSourceRef: chain and exceptionOnNoValidDataSource must both be present or both absent');
+        // Build-time validation: id and providers are mutually exclusive
+        if ($id !== null && $providers !== null) {
+            throw new \InvalidArgumentException('DataSourceRef: id and providers are mutually exclusive. Use either id (with optional fallbacks) or providers, not both.');
         }
         
-        // Count how many of the mutually exclusive options are set
-        $count = ($id !== null ? 1 : 0) + ($chain !== null ? 1 : 0) + ($providers !== null ? 1 : 0);
-        
-        // Validation: at least one must be set
-        if ($count === 0) {
-            throw new \InvalidArgumentException('DataSourceRef requires one of: id, chain, or providers');
+        // Build-time validation: at least one must be set
+        if ($id === null && $providers === null) {
+            throw new \InvalidArgumentException('DataSourceRef requires either id or providers');
         }
         
-        // Validation: only one can be set
-        if ($count > 1) {
-            throw new \InvalidArgumentException('DataSourceRef: id, chain, and providers are mutually exclusive');
+        // Build-time validation: fallbacks only valid with id
+        if ($fallbacks !== null && $id === null) {
+            throw new \InvalidArgumentException('DataSourceRef: fallbacks can only be used with id');
+        }
+        
+        // Build-time validation: exceptionOnNoValidDataSource requires fallbacks
+        if ($exceptionOnNoValidDataSource !== null && $fallbacks === null) {
+            throw new \InvalidArgumentException('DataSourceRef: exceptionOnNoValidDataSource requires fallbacks to be set');
         }
         
         $this->id = $id;
-        $this->chain = $chain;
+        $this->fallbacks = $fallbacks;
         $this->providers = $providers;
         $this->exceptionOnNoValidDataSource = $exceptionOnNoValidDataSource;
+        $this->priority = $priority;
     }
 }

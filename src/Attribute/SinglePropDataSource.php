@@ -22,6 +22,7 @@ final class SinglePropDataSource
         public readonly ?string $class = null,
         public readonly string $method = '',
         public readonly array $args = [],
+        public readonly int $priority = 0,
         // NO loadingScope/loadingScopeKeys - single property only
     ) {}
 }

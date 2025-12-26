@@ -34,5 +34,6 @@ final class MultiPropDataSource
         public readonly string $loadingScope = self::SCOPE_ALL,
         public readonly array $loadingScopeKeys = [],    // Filter by raw data keys
         public readonly array $loadingScopeProps = [],   // Filter by property names (NEW)
+        public readonly int $priority = 0,
     ) {}
 }
