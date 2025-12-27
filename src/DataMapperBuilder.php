@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper;
 
+use Kassko\DataMapper\DataCollector\DataLineageCollector;
 use Kassko\DataMapper\Loader\Loader;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Psr\Container\ContainerInterface;
@@ -122,11 +123,8 @@ final class DataMapperBuilder
             $this->staticFactories,
             $this->callables
         );
-        $loader = new Loader($serviceResolver, $this->logger, $this->customHydrators);
         
-        // Register the Loader globally
-        LoaderRegistry::set($loader);
-        
-        return new DataMapper($serviceResolver, $this->cache);
+        // Create the DataMapper which will create and register the Loader
+        return new DataMapper($serviceResolver, $this->cache, $this->logger);
     }
 }

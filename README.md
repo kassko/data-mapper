@@ -53,6 +53,42 @@ $mapper = $builder->build();
 
 ### v2.0 New Features
 
+#### Application Context
+
+Set context values from your application before hydration:
+
+```php
+$dataMapper = new DataMapper($serviceResolver);
+
+// Add application-level context
+$dataMapper->addToContext('feature_enabled', $featureFlag->isEnabled());
+$dataMapper->addManyToContext([
+    'env' => 'production',
+    'user_role' => 'admin',
+]);
+
+// Use in expressions
+#[MultiPropDataSource(
+    args: "expr(context('feature_enabled') ? property('propA') : property('propB'))"
+)]
+```
+
+#### Data Lineage Collection
+
+Track data flow during hydration for debugging:
+
+```php
+$dataMapper->enableLineageCollection();
+
+// ... hydration happens ...
+
+$collector = $dataMapper->getLineageCollector();
+$events = $collector->getEvents();
+$summary = $collector->getSummary();
+```
+
+See [DataLineageCollector](docs/classes/DataLineageCollector.md) for details.
+
 #### Priority System
 
 All DataSource attributes now support a `priority` field (integer, default: 0). Higher priority sources can override values from lower priority sources:
@@ -435,12 +471,30 @@ class Person
 
 #### Context
 
-Set context variables:
+Add context variables for conditional hydration behavior:
 
 ```php
-#[Context(['shop_quality' => 'premium'])]
+#[Context(shop_quality: 'premium', region: 'europe')]
 private ?Shop $shop = null;
 ```
+
+Context values accumulate through nested objects and can be accessed in expressions:
+
+```php
+#[PropertyCandidates([
+    new PropertyCandidate(
+        discriminator: "expr(context('shop_quality') === 'premium')",
+        property: new Property(class: PremiumShop::class)
+    ),
+    new PropertyCandidate(
+        discriminator: "expr(contextKeyExists('region'))",
+        property: new Property(class: RegionalShop::class)
+    )
+])]
+private ?Shop $shop = null;
+```
+
+See [Context](docs/attributes/Context.md) for detailed usage.
 
 ### Expression Language
 
@@ -465,7 +519,8 @@ private ?Shop $shop = null;
 |----------|-------------|
 | `source('id')` | Get DataSource result |
 | `service('id')` | Resolve service |
-| `context('key')` | Get context value |
+| `context('key')` | Get context value (null if missing, logs warning) |
+| `contextKeyExists('key')` | Check if context key exists |
 | `envVar('KEY')` | Environment variable |
 | `object()` | Current object |
 | `parentObject()` | Parent object |

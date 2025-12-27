@@ -27,10 +27,10 @@ class ContextTest extends TestCase
         ContextRegistry::clear();
     }
 
-    public function testContextAttributeExists(): void
+    public function testContextAttributeWithNamedArguments(): void
     {
         $testClass = new class {
-            #[Context(['key' => 'value'])]
+            #[Context(key1: 'value1', key2: 'value2')]
             private ?string $name = null;
         };
 
@@ -40,7 +40,7 @@ class ContextTest extends TestCase
         $context = $this->reader->readContext($property);
 
         $this->assertInstanceOf(Context::class, $context);
-        $this->assertEquals(['key' => 'value'], $context->values);
+        $this->assertEquals(['key1' => 'value1', 'key2' => 'value2'], $context->values);
     }
 
     public function testContextAttributeNotPresentReturnsNull(): void

@@ -694,3 +694,139 @@ All DataSource attributes now support priority (default: 0):
     priority: 10  // Higher priority overrides lower priority
 )]
 ```
+
+## Context
+
+### Hydration Context with Named Arguments
+
+Pass contextual information through the object hierarchy:
+
+```php
+use Kassko\DataMapper\Attribute\Context;
+
+class Company
+{
+    #[Context(
+        company_type: 'enterprise',
+        region: 'europe',
+        tier: 'premium'
+    )]
+    private Chief $chief;
+}
+
+class Chief
+{
+    // Access parent context in expressions
+    #[PropertyCandidates([
+        new PropertyCandidate(
+            discriminator: "expr(context('tier') === 'premium')",
+            property: new Property(class: PremiumOffice::class)
+        ),
+        new PropertyCandidate(
+            discriminator: "expr(contextKeyExists('region'))",
+            property: new Property(class: RegionalOffice::class)
+        )
+    ])]
+    private ?Office $office = null;
+    
+    // Override context for nested objects
+    #[Context(tier: 'standard')]  // Overrides 'premium' from parent
+    private ?Department $department = null;
+}
+```
+
+### Application Context
+
+Set context values from your application before hydration:
+
+```php
+use Kassko\DataMapper\DataMapper;
+
+$dataMapper = new DataMapper($serviceResolver);
+
+// Add feature flags, user info, environment variables
+$dataMapper->addToContext('new_api_enabled', $featureFlag->isEnabled());
+$dataMapper->addToContext('current_user_role', $user->getRole());
+
+// Or add multiple at once
+$dataMapper->addManyToContext([
+    'env' => 'production',
+    'debug' => false,
+    'api_version' => 'v2',
+]);
+
+// Access in entities
+class User
+{
+    #[SinglePropDataSource(
+        class: ProfileService::class,
+        method: 'getProfile',
+        args: "expr(context('new_api_enabled') ? ['v2', #id] : ['v1', #id])"
+    )]
+    private ?Profile $profile = null;
+}
+```
+
+## Data Lineage Collection
+
+Track data flow during hydration for debugging:
+
+```php
+use Kassko\DataMapper\DataMapper;
+use Kassko\DataMapper\DataCollector\LineageEvent;
+
+$dataMapper = new DataMapper($serviceResolver);
+
+// Enable lineage collection
+$dataMapper->enableLineageCollection();
+
+// Perform hydration
+$user = new User(123);
+$user->getName();
+$user->getProfile();
+
+// Get lineage information
+$collector = $dataMapper->getLineageCollector();
+
+// Get all events
+$events = $collector->getEvents();
+foreach ($events as $event) {
+    echo sprintf(
+        "[%s] %s::%s - %s\n",
+        $event->type,
+        $event->objectClass,
+        $event->propertyName,
+        $event->reason ?? 'OK'
+    );
+}
+
+// Get summary
+$summary = $collector->getSummary();
+print_r($summary);
+// Output:
+// [
+//     'totalEvents' => 15,
+//     'eventsByType' => [
+//         'datasource_call' => 5,
+//         'property_hydration' => 8,
+//         'property_skipped' => 2,
+//     ],
+//     'skippedReasons' => ['locked' => 1, 'priority' => 1],
+//     'maxDepth' => 3,
+// ]
+
+// Get skipped properties
+$skipped = $collector->getEventsByType(LineageEvent::TYPE_PROPERTY_SKIPPED);
+foreach ($skipped as $event) {
+    echo sprintf(
+        "Skipped %s::%s - Reason: %s\n",
+        $event->objectClass,
+        $event->propertyName,
+        $event->reason
+    );
+}
+
+// Disable when done
+$dataMapper->disableLineageCollection();
+$collector->clear();
+```

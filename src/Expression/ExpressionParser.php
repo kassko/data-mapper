@@ -258,10 +258,15 @@ class ExpressionParser
             return $this->getPropertyValueDirect($this->currentObject, $propertyName);
         }
         
-        // Parse context('key')
+        // Parse contextKeyExists('key') - check if context key exists
+        if (preg_match("/contextKeyExists\('([^']+)'\)/", $expression, $matches)) {
+            $key = $matches[1];
+            return ContextRegistry::has($key);
+        }
+        
+        // Parse context('key') - returns null and logs warning if key doesn't exist
         if (preg_match("/context\('([^']+)'\)/", $expression, $matches)) {
             $key = $matches[1];
-            
             return ContextRegistry::get($key);
         }
         
