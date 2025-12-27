@@ -527,6 +527,16 @@ class Loader implements LoaderInterface
         
         $data = $this->callDataSource($source, $object);
         
+        // Record the data source call for lineage
+        $this->lineageCollector?->recordDataSourceCall(
+            get_class($object),
+            $source->class ?? 'unknown',
+            $source->method,
+            $source->args,
+            $data,
+            $source->id ?? null
+        );
+        
         if (!is_array($data)) {
             return;
         }

@@ -44,7 +44,10 @@ final class LockedPropertyRegistry
     {
         $map = self::getMap();
         if (isset($map[$object])) {
-            unset($map[$object][$propertyName]);
+            // WeakMap doesn't support indirect modification, need to get/modify/set
+            $properties = $map[$object];
+            unset($properties[$propertyName]);
+            $map[$object] = $properties;
         }
     }
 
