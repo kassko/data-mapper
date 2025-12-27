@@ -1,0 +1,75 @@
+@startuml
+' DataMapper — Class / Package overview (high-level)
+
+skinparam packageStyle rectangle
+skinparam linetype ortho
+hide empty members
+
+package "Kassko\\DataMapper" as Root {
+  class DataMapper
+  class DataMapperBuilder
+  class ServiceResolver
+  class ArrayServiceLocator
+  interface ServiceLocatorInterface
+}
+
+package "Kassko\\DataMapper\\Loader" as LoaderPkg {
+  interface LoaderInterface
+  class Loader
+}
+
+package "Kassko\\DataMapper\\Metadata" as MetaPkg {
+  class AttributeReader
+}
+
+package "Kassko\\DataMapper\\Registry" as RegPkg {
+  class LoaderRegistry
+  class ContextRegistry
+  class LockedPropertyRegistry
+}
+
+package "Kassko\\DataMapper\\ObjectExtension" as ObjPkg {
+  class LoadableTrait <<trait>>
+  class LoadableInternalTrait <<trait>>
+}
+
+package "Kassko\\DataMapper\\Expression" as ExprPkg {
+  class ExpressionParser
+  class SourceFunctionProvider
+}
+
+package "Kassko\\DataMapper\\DataCollector" as CollectPkg {
+  class DataLineageCollector
+  class LineageEvent
+}
+
+' --- Core wiring
+DataMapperBuilder --> ServiceResolver : builds
+DataMapperBuilder --> DataMapper : creates
+
+DataMapper --> Loader : creates
+DataMapper --> LoaderRegistry : registers loader
+DataMapper --> ContextRegistry : sets logger/ctx
+DataMapper --> DataLineageCollector : owns
+
+Loader ..|> LoaderInterface
+Loader --> AttributeReader
+Loader --> ServiceResolver
+Loader --> ContextRegistry
+Loader --> LockedPropertyRegistry
+Loader --> ExpressionParser
+Loader --> SourceFunctionProvider
+Loader --> DataLineageCollector : records events
+
+LoadableTrait --> LoaderRegistry : get()
+LoadableTrait --> LockedPropertyRegistry : lock/unlock/isLocked
+LoadableInternalTrait --|> LoadableTrait
+
+ExpressionParser --> ContextRegistry
+ExpressionParser --> ServiceResolver : service('...')
+ExpressionParser --> SourceFunctionProvider : source('...')
+SourceFunctionProvider --> "PSR-16 CacheInterface" : optional
+
+DataLineageCollector --> LineageEvent
+
+@enduml

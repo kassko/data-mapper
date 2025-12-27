@@ -14,10 +14,12 @@ use Kassko\DataMapper\Attribute\CustomHydrator;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
 use Kassko\DataMapper\Attribute\PropertyHydratingHook;
+use Kassko\DataMapper\DataCollector\DataLineageCollector;
 use Kassko\DataMapper\Expression\ExpressionParser;
 use Kassko\DataMapper\Expression\SourceFunctionProvider;
 use Kassko\DataMapper\Metadata\AttributeReader;
 use Kassko\DataMapper\Registry\ContextRegistry;
+use Kassko\DataMapper\Registry\LockedPropertyRegistry;
 use Kassko\DataMapper\ServiceResolver;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -42,6 +44,7 @@ class Loader implements LoaderInterface
     private AttributeReader $attributeReader;
     private ServiceResolver $serviceResolver;
     private LoggerInterface $logger;
+    private ?DataLineageCollector $lineageCollector;
     
     /** @var array<string, callable> */
     private array $customHydrators;
@@ -50,11 +53,13 @@ class Loader implements LoaderInterface
      * @param ServiceResolver $serviceResolver
      * @param LoggerInterface|null $logger
      * @param array<string, callable> $customHydrators
+     * @param DataLineageCollector|null $lineageCollector
      */
     public function __construct(
         ServiceResolver $serviceResolver,
         ?LoggerInterface $logger = null,
-        array $customHydrators = []
+        array $customHydrators = [],
+        ?DataLineageCollector $lineageCollector = null
     ) {
         $this->loadedProperties = new WeakMap();
         $this->sourceFunctionProviders = new WeakMap();
@@ -64,11 +69,20 @@ class Loader implements LoaderInterface
         $this->logger = $logger ?? new NullLogger();
         $this->customHydrators = $customHydrators;
         $this->serviceResolver = $serviceResolver;
+        $this->lineageCollector = $lineageCollector;
     }
 
     public function getServiceResolver(): ServiceResolver
     {
         return $this->serviceResolver;
+    }
+
+    /**
+     * Get the data lineage collector.
+     */
+    public function getLineageCollector(): ?DataLineageCollector
+    {
+        return $this->lineageCollector;
     }
 
     /**
@@ -186,8 +200,20 @@ class Loader implements LoaderInterface
      */
     public function loadProperty(object $object, string $propertyName): void
     {
-        // Check if property is locked (prevent loading)
-        if (method_exists($object, 'isPropertyLocked') && $object->isPropertyLocked($propertyName)) {
+        // Check if property is locked (prevent loading) - use registry first, fallback to method
+        $isLocked = LockedPropertyRegistry::isLocked($object, $propertyName);
+        if (!$isLocked && method_exists($object, 'isPropertyLocked')) {
+            $isLocked = $object->isPropertyLocked($propertyName);
+        }
+        
+        if ($isLocked) {
+            // Record decision point for lineage
+            $this->lineageCollector?->recordPropertySkipped(
+                get_class($object),
+                $propertyName,
+                'locked',
+                ['reason' => 'Property is locked and cannot be modified']
+            );
             return; // Skip loading - property is locked
         }
         
@@ -424,18 +450,47 @@ class Loader implements LoaderInterface
                 'Skipping property hydration due to lower or equal priority',
                 ['property' => $propertyName, 'source' => $sourceSignature, 'priority' => $sourcePriority]
             );
+            
+            // Record decision point for lineage
+            $this->lineageCollector?->recordPropertySkipped(
+                get_class($object),
+                $propertyName,
+                'priority',
+                ['currentPriority' => $sourcePriority, 'source' => $sourceSignature]
+            );
             return;
         }
         
         $data = $this->callDataSource($source, $object);
         
+        // Record the data source call for lineage
+        $this->lineageCollector?->recordDataSourceCall(
+            get_class($object),
+            $source->class ?? 'unknown',
+            $source->method,
+            $source->args,
+            $data,
+            $source->id ?? null
+        );
+        
         // Apply recursive hydration if needed (handles PropertyCandidates, nested objects, etc.)
+        $originalData = $data;
         $data = $this->applyRecursiveHydration($property, $data, 0, $object);
         
         $this->setPropertyValue($object, $property, $data);
         $this->registerPropertyHydration($object, $propertyName, $sourcePriority, $sourceSignature);
         $this->loadedProperties[$object][$propertyName] = true;
         $this->handleContextAttribute($property, $data);
+        
+        // Record property hydration for lineage
+        $this->lineageCollector?->recordPropertyHydration(
+            get_class($object),
+            $propertyName,
+            $originalData,
+            $data,
+            $sourceSignature,
+            $sourcePriority
+        );
     }
 
     /**
@@ -472,6 +527,16 @@ class Loader implements LoaderInterface
         
         $data = $this->callDataSource($source, $object);
         
+        // Record the data source call for lineage
+        $this->lineageCollector?->recordDataSourceCall(
+            get_class($object),
+            $source->class ?? 'unknown',
+            $source->method,
+            $source->args,
+            $data,
+            $source->id ?? null
+        );
+        
         if (!is_array($data)) {
             return;
         }
@@ -484,6 +549,12 @@ class Loader implements LoaderInterface
             
             // Skip if already loaded
             if (isset($this->loadedProperties[$object][$propName])) {
+                $this->lineageCollector?->recordPropertySkipped(
+                    get_class($object),
+                    $propName,
+                    'already_loaded',
+                    ['source' => $sourceSignature]
+                );
                 continue;
             }
             
@@ -492,6 +563,12 @@ class Loader implements LoaderInterface
                 $this->logger->info(
                     'Skipping property hydration due to lower or equal priority',
                     ['property' => $propName, 'source' => $sourceSignature, 'priority' => $sourcePriority]
+                );
+                $this->lineageCollector?->recordPropertySkipped(
+                    get_class($object),
+                    $propName,
+                    'priority',
+                    ['currentPriority' => $sourcePriority, 'source' => $sourceSignature]
                 );
                 continue;
             }
@@ -978,11 +1055,17 @@ class Loader implements LoaderInterface
                     } else {
                         $result = (bool)$value;
                     }
+                } elseif (preg_match("/contextKeyExists\('([^']+)'\)/", $expression, $keyMatches)) {
+                    // Support contextKeyExists() expression
+                    $key = $keyMatches[1];
+                    $result = ContextRegistry::has($key);
                 } elseif (preg_match("/context\('([^']+)'\)/", $expression, $keyMatches)) {
                     $key = $keyMatches[1];
                     $contextValue = ContextRegistry::get($key);
-                    // Evaluate the full expression - for now handle simple equality
-                    if (preg_match("/context\('([^']+)'\)\s*==\s*'([^']+)'/", $expression, $eqMatches)) {
+                    // Evaluate the full expression - handle equality comparisons
+                    if (preg_match("/context\('([^']+)'\)\s*===\s*'([^']+)'/", $expression, $eqMatches)) {
+                        $result = ($contextValue === $eqMatches[2]);
+                    } elseif (preg_match("/context\('([^']+)'\)\s*==\s*'([^']+)'/", $expression, $eqMatches)) {
                         $result = ($contextValue == $eqMatches[2]);
                     } else {
                         $result = (bool)$contextValue;
@@ -1147,14 +1230,29 @@ class Loader implements LoaderInterface
      */
     private function handleContextAttribute(ReflectionProperty $property, mixed $value): void
     {
-        $context = $this->attributeReader->readContext($property);
+        $contexts = $this->attributeReader->readAllContexts($property);
         
-        if ($context === null) {
+        if (empty($contexts)) {
             return;
         }
         
-        // Set all context values
-        ContextRegistry::setMany($context->values);
+        $objectClass = $property->getDeclaringClass()->getName();
+        $propertyName = $property->getName();
+        
+        // Set all context values from all Context attributes
+        foreach ($contexts as $context) {
+            foreach ($context->values as $key => $contextValue) {
+                ContextRegistry::set($key, $contextValue);
+                
+                // Record context set for lineage
+                $this->lineageCollector?->recordContextSet(
+                    $objectClass,
+                    $propertyName,
+                    $key,
+                    $contextValue
+                );
+            }
+        }
     }
 
     /**
@@ -1282,6 +1380,15 @@ class Loader implements LoaderInterface
         
         // Call the hook method
         if (method_exists($target, $method)) {
+            // Record hook execution for lineage
+            $this->lineageCollector?->recordHookExecution(
+                get_class($object),
+                $property !== null ? 'property_setting' : ($includeObjectInArgs ? 'hydrating' : 'instantiating'),
+                $method,
+                $class,
+                $resolvedArgs
+            );
+            
             call_user_func_array([$target, $method], $resolvedArgs);
         }
     }
@@ -1487,6 +1594,14 @@ class Loader implements LoaderInterface
                 )
             );
         }
+        
+        // Record custom hydrator for lineage
+        $this->lineageCollector?->recordCustomHydrator(
+            get_class($object),
+            $property->getName(),
+            $customHydrator->key,
+            $result
+        );
         
         // Set the property value
         $this->setPropertyValue($object, $property, $result);

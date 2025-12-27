@@ -137,6 +137,23 @@ class AttributeReader
     }
 
     /**
+     * Read all Context attributes from a property (supports IS_REPEATABLE)
+     *
+     * @param ReflectionProperty $property
+     * @return Context[]
+     */
+    public function readAllContexts(ReflectionProperty $property): array
+    {
+        $attributes = $property->getAttributes(Context::class);
+        
+        if (empty($attributes)) {
+            return [];
+        }
+        
+        return array_map(fn($attr) => $attr->newInstance(), $attributes);
+    }
+
+    /**
      * Read Getter attribute from a property
      *
      * @param ReflectionProperty $property
