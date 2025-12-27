@@ -1,0 +1,56 @@
+@startuml
+' DataMapper — Data flow (lazy loading) as a sequence diagram
+
+skinparam linetype ortho
+hide footbox
+
+actor Caller
+participant "Domain Object\n(using LoadableTrait)" as Domain
+participant "LoadableTrait" as Trait
+participant "LoaderRegistry" as LoaderRegistry
+participant "Loader" as Loader
+participant "LockedPropertyRegistry" as LockReg
+participant "AttributeReader" as Attr
+participant "ServiceResolver" as Resolver
+participant "DataSource (service)" as DS
+participant "ExpressionParser" as Expr
+participant "ContextRegistry" as Ctx
+participant "DataLineageCollector" as Lineage
+
+Caller -> Domain : getX()
+Domain -> Trait : loadProperty('x')
+Trait -> LoaderRegistry : get()
+LoaderRegistry --> Trait : Loader
+Trait -> Loader : loadProperty(domain,'x')
+
+Loader -> LockReg : isLocked(domain,'x')
+alt property locked
+  Loader -> Lineage : recordPropertySkipped(..., reason=locked)
+  Loader --> Trait : return
+  Trait --> Domain
+  Domain --> Caller : current value
+else not locked
+  Loader -> Attr : read* attributes (DataSourceRef, ...)
+  Loader -> Resolver : resolve(DataSource class/id)
+  Resolver --> Loader : dataSource instance
+
+  opt args need evaluation
+    Loader -> Expr : resolveArgs(...)
+    Expr -> Ctx : context()/contextKeyExists()
+  end
+
+  Loader -> DS : method(...)
+  DS --> Loader : raw data
+
+  Loader -> Ctx : set hydration context (#[Context])
+  opt lineage enabled
+    Loader -> Lineage : recordDataSourceCall(...)
+    Loader -> Lineage : recordPropertyHydration(...)
+  end
+
+  Loader --> Trait : return
+  Trait --> Domain
+  Domain --> Caller : hydrated value
+end
+
+@enduml
