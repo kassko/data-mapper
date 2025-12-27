@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of Data Mapper.
+ * This file is part of DataMapper.
  *
  * Copyright 2025 kassko 
  *

@@ -1,11 +1,11 @@
-# Library Name
+# DataMapper
 
 A general-purpose data access and mapping library designed to handle
 multiple heterogeneous data sources with a consistent programming model.
 
 ## Overview
 
-Library Name is an open-source library that provides a unified approach to:
+DataMapper is an open-source library that provides a unified approach to:
 
 - managing multiple data sources (SQL, NoSQL, APIs, files, etc.)
 - mapping data to domain models
@@ -48,7 +48,7 @@ It is not affiliated with, nor owned by, any organization.
 
 ## Non-Goals
 
-Library Name does not aim to:
+DataMapper does not aim to:
 
 - provide business or industry-specific features
 - enforce a specific architectural style
@@ -65,7 +65,7 @@ Library Name does not aim to:
 
 ## License & Authorship
 
-Library Name is authored and maintained by **Kassko**.
+DataMapper is authored and maintained by **Kassko**.
 
 It is released under the **[License Name]** license.  
 See the [LICENSE](./LICENSE) file for details.
