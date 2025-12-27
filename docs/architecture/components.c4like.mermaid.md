@@ -47,8 +47,8 @@ flowchart LR
 
   %% Main relationships
   Caller -->|build + configure| Builder
-  Builder -->|build()| Resolver
-  Builder -->|build()| DM
+  Builder -->|func_build| Resolver
+  Builder -->|func_build| DM
 
   DM -->|creates| Loader
   DM -->|registers| LoaderReg
@@ -56,8 +56,8 @@ flowchart LR
 
   Caller -->|calls getters| Domain
   Domain -->|uses| Loadable
-  Loadable -->|get()| LoaderReg
-  Loadable -->|loadProperty()| Loader
+  Loadable -->|func_get| LoaderReg
+  Loadable -->|func_loadProperty| Loader
   Loadable -->|lock/unlock/isLocked| LockReg
 
   Loader -->|read attributes| Attr
@@ -67,9 +67,9 @@ flowchart LR
   Loader -->|check locks| LockReg
   Loader -->|record events| Lineage
 
-  Expr -->|context()| CtxReg
-  Expr -->|source('id')| SourceFP
-  Expr -->|service('id')| Resolver
+  Expr -->|func_context| CtxReg
+  Expr -->|func_source_param_id| SourceFP
+  Expr -->|func_service_param_id| Resolver
 ```
 
 ## Lecture rapide (où regarder)
