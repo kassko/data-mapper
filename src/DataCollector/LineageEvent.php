@@ -26,6 +26,7 @@ final class LineageEvent
     public const TYPE_CUSTOM_HYDRATOR = 'custom_hydrator';
     public const TYPE_CONTEXT_SET = 'context_set';
     public const TYPE_DECISION_POINT = 'decision_point';
+    public const TYPE_CANDIDATE_RESOLUTION = 'candidate_resolution';
 
     public function __construct(
         public readonly string $type,

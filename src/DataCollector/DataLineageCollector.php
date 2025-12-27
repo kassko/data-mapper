@@ -335,6 +335,47 @@ final class DataLineageCollector
     }
 
     /**
+     * Record a candidate resolution (DataSourceRef with candidates).
+     *
+     * @param string $objectClass The class being hydrated
+     * @param string $propertyName The property being hydrated
+     * @param array $allCandidates All candidates that were evaluated
+     * @param array|null $electedCandidate The candidate that was elected (null if none)
+     * @param int $basePriority The base priority from DataSourceRef
+     * @param int $effectivePriority The effective priority used (candidate's or base)
+     */
+    public function recordCandidateResolution(
+        string $objectClass,
+        string $propertyName,
+        array $allCandidates,
+        ?array $electedCandidate,
+        int $basePriority,
+        int $effectivePriority
+    ): void {
+        if (!$this->enabled) {
+            return;
+        }
+
+        $this->events[] = new LineageEvent(
+            type: LineageEvent::TYPE_CANDIDATE_RESOLUTION,
+            objectClass: $objectClass,
+            propertyName: $propertyName,
+            source: $electedCandidate['id'] ?? null,
+            originalValue: $allCandidates,
+            finalValue: $electedCandidate,
+            reason: $electedCandidate !== null ? 'candidate_elected' : 'no_candidate_matched',
+            metadata: [
+                'basePriority' => $basePriority,
+                'effectivePriority' => $effectivePriority,
+                'candidatesCount' => count($allCandidates),
+                'electedCandidatePriority' => $electedCandidate['priority'] ?? null,
+            ],
+            timestamp: microtime(true) - $this->startTime,
+            depth: $this->currentDepth
+        );
+    }
+
+    /**
      * Get all recorded events.
      * 
      * @return LineageEvent[]
