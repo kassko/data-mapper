@@ -49,13 +49,15 @@ class Person
 | `id` | `?string` | Conditional | Primary data source ID |
 | `fallbacks` | `?array` | No | Array of fallback source IDs (requires `id`) |
 | `providers` | `?array` | Conditional | Array of IDs for aggregation |
+| `candidates` | `?array` | Conditional | Array of candidates with discriminator expressions |
 | `exceptionOnNoValidDataSource` | `?string` | No | Exception class for fallback handling |
 | `priority` | `int` | No | Hydration priority (default: 0) |
 
 **Validation Rules:**
-- `id` and `providers` are mutually exclusive
+- `id`, `providers`, and `candidates` are mutually exclusive
 - `fallbacks` can only be used with `id`
 - `exceptionOnNoValidDataSource` requires `fallbacks` to be set
+- Each candidate must have `id` and `discriminator` keys
 
 ## Modes
 
@@ -107,6 +109,42 @@ private ?string $value = null;
 #[DataSourceRef(id: 'apiSource', priority: 10)]
 private ?string $value = null;
 ```
+
+### Candidates (Discriminator-Based Selection)
+
+Select a data source dynamically based on expression evaluation. The first candidate whose `discriminator` evaluates to `true` is elected:
+
+```php
+#[DataSourcesStore([
+    new MultiPropDataSource(id: 'newFeatureSource', class: NewFeatureSource::class, method: 'getData'),
+    new MultiPropDataSource(id: 'oldFeatureSource', class: OldFeatureSource::class, method: 'getData'),
+])]
+class User
+{
+    #[DataSourceRef(
+        candidates: [
+            ['id' => 'newFeatureSource', 'discriminator' => "expr(context('new_feature_enabled'))", 'priority' => 15],
+            ['id' => 'oldFeatureSource', 'discriminator' => 'expr(true)'],
+        ],
+        priority: 10
+    )]
+    private ?string $name = null;
+}
+```
+
+**Candidate Structure:**
+- `id` (required): The data source ID to use if this candidate is elected
+- `discriminator` (required): An expression that returns a boolean
+- `priority` (optional): Overrides the base `priority` if this candidate is elected
+
+**Priority Resolution:**
+If an elected candidate defines its own `priority`, it takes precedence over the base `priority` defined at the attribute level.
+
+**Lineage Collection:**
+When lineage collection is enabled, candidate resolution events are recorded with:
+- All candidates that were evaluated
+- Which candidate was elected (or none)
+- Base priority vs effective priority used
 
 ## See Also
 

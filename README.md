@@ -129,6 +129,23 @@ DataSourceRef now uses `id` + `fallbacks` instead of `chain` for clearer semanti
 private ?string $data = null;
 ```
 
+#### Candidates (Discriminator-Based Selection)
+
+Select a data source dynamically based on context or conditions:
+
+```php
+#[DataSourceRef(
+    candidates: [
+        ['id' => 'newFeatureSource', 'discriminator' => "expr(context('new_feature_enabled'))", 'priority' => 15],
+        ['id' => 'oldFeatureSource', 'discriminator' => 'expr(true)'],
+    ],
+    priority: 10
+)]
+private ?string $name = null;
+```
+
+The first candidate whose `discriminator` evaluates to `true` is elected. If a candidate defines its own `priority`, it overrides the base priority.
+
 #### Build-Time Validation
 
 Validate your metadata attributes before runtime:

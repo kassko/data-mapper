@@ -8,6 +8,21 @@
             "name":"kassko"
         }
     ],
+    "keywords": [
+        "mapper",
+        "data",
+        "object",
+        "lazy",
+        "loading",
+        "hydration",
+        "source",
+        "model",
+        "lineage",
+        "orm",
+        "entity",
+        "repository",
+        "dao"
+    ],
     "require": {
         "php": ">=8.1",
         "psr/container": "^1.1|^2.0",

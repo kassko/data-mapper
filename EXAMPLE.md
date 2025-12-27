@@ -159,8 +159,9 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 class Product
 {
     #[DataSourceRef(
-        chain: ['cache', 'database', 'api'],
-        exception: NotFoundException::class
+        id: 'cache',
+        fallbacks: ['database', 'api'],
+        exceptionOnNoValidDataSource: NotFoundException::class
     )]
     private ?ProductData $data = null;
 }
@@ -173,6 +174,41 @@ class Product
     providers: ['basicInfo', 'extendedInfo', 'metaInfo']
 )]
 private array $fullProfile = [];
+```
+
+### DataSource Candidates (Discriminator-Based Selection)
+
+Select a data source dynamically based on context or conditions:
+
+```php
+use Kassko\DataMapper\Attribute\DataSourcesStore;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+
+#[DataSourcesStore([
+    new MultiPropDataSource(id: 'newFeatureSource', class: NewFeatureSource::class, method: 'getData'),
+    new MultiPropDataSource(id: 'oldFeatureSource', class: OldFeatureSource::class, method: 'getData'),
+])]
+class User
+{
+    #[DataSourceRef(
+        candidates: [
+            // First candidate: selected if new_feature_enabled context is true
+            ['id' => 'newFeatureSource', 'discriminator' => "expr(context('new_feature_enabled'))", 'priority' => 15],
+            // Second candidate: fallback (always true)
+            ['id' => 'oldFeatureSource', 'discriminator' => 'expr(true)'],
+        ],
+        priority: 10
+    )]
+    private ?string $name = null;
+}
+
+// Usage with context
+$dataMapper->addToContext('new_feature_enabled', true);
+// -> Will use 'newFeatureSource' with priority 15
+
+$dataMapper->addToContext('new_feature_enabled', false);
+// -> Will use 'oldFeatureSource' with base priority 10
 ```
 
 ### Instance Mapping

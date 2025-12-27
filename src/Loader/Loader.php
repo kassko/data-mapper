@@ -272,9 +272,13 @@ class Loader implements LoaderInterface
         // Validate DataSource attribute exclusivity
         $this->validateDataSourceExclusivity($property);
         
-        // Check for DataSourceRef with fallbacks or providers
+        // Check for DataSourceRef with candidates, fallbacks, or providers
         $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
-        if ($dataSourceRef !== null && $dataSourceRef->fallbacks !== null) {
+        if ($dataSourceRef !== null && $dataSourceRef->candidates !== null) {
+            // Handle candidates (discriminator-based source selection)
+            $this->loadPropertyWithCandidates($object, $propertyName, $property, $dataSourceRef);
+            return;
+        } elseif ($dataSourceRef !== null && $dataSourceRef->fallbacks !== null) {
             // Handle id with fallbacks
             $this->loadPropertyWithFallbacks($object, $propertyName, $property, $dataSourceRef);
             return;
@@ -382,6 +386,140 @@ class Loader implements LoaderInterface
         // If we get here, all sources in the chain failed
         throw new \Kassko\DataMapper\Exception\NoValidDataSourceException(
             sprintf('No valid DataSource found in fallback chain for property %s', $propertyName)
+        );
+    }
+
+    /**
+     * Load a property with candidates (discriminator-based source selection)
+     *
+     * Evaluates each candidate's discriminator expression and uses the first matching source.
+     * If a candidate defines its own priority, it takes precedence over the base priority.
+     *
+     * @param object $object
+     * @param string $propertyName
+     * @param ReflectionProperty $property
+     * @param \Kassko\DataMapper\Attribute\DataSourceRef $dataSourceRef
+     */
+    private function loadPropertyWithCandidates(object $object, string $propertyName, ReflectionProperty $property, $dataSourceRef): void
+    {
+        $basePriority = $dataSourceRef->priority;
+        $candidates = $dataSourceRef->candidates;
+        $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
+        
+        // Create expression parser for evaluating discriminators
+        $expressionParser = new ExpressionParser(
+            $this->sourceFunctionProviders[$object] ?? new SourceFunctionProvider(
+                fn(string $sourceId) => $this->executeDataSourceById($object, $sourceId)
+            ),
+            $this->serviceResolver
+        );
+        $expressionParser->setCurrentObject($object);
+        
+        // Property loader callback for expression resolution
+        $propertyLoader = fn(string $propName) => $this->loadProperty($object, $propName);
+        
+        // Find the first matching candidate
+        $electedCandidate = null;
+        foreach ($candidates as $candidate) {
+            $discriminator = $candidate['discriminator'];
+            
+            // Evaluate the discriminator expression
+            $result = $expressionParser->resolveArgs([$discriminator], $object, $propertyLoader)[0];
+            
+            if ($result === true || $result === 'true' || $result === 1 || $result === '1') {
+                $electedCandidate = $candidate;
+                break;
+            }
+        }
+        
+        // Determine effective priority (candidate's priority takes precedence if defined)
+        $effectivePriority = $basePriority;
+        if ($electedCandidate !== null && isset($electedCandidate['priority'])) {
+            $effectivePriority = (int) $electedCandidate['priority'];
+        }
+        
+        // Record candidate resolution for lineage
+        $this->lineageCollector?->recordCandidateResolution(
+            get_class($object),
+            $propertyName,
+            $candidates,
+            $electedCandidate,
+            $basePriority,
+            $effectivePriority
+        );
+        
+        // If no candidate matched, skip property loading
+        if ($electedCandidate === null) {
+            $this->logger->info(
+                'No candidate matched for property, skipping hydration',
+                ['property' => $propertyName, 'candidatesCount' => count($candidates)]
+            );
+            $this->lineageCollector?->recordPropertySkipped(
+                get_class($object),
+                $propertyName,
+                'no_candidate_matched',
+                ['candidatesCount' => count($candidates)]
+            );
+            return;
+        }
+        
+        $sourceId = $electedCandidate['id'];
+        $sourceSignature = 'candidates:' . $sourceId;
+        
+        // Check priority before attempting to load
+        if (!$this->canHydrateProperty($object, $propertyName, $effectivePriority, $sourceSignature)) {
+            $this->logger->info(
+                'Skipping property hydration due to lower or equal priority',
+                ['property' => $propertyName, 'source' => $sourceSignature, 'priority' => $effectivePriority]
+            );
+            $this->lineageCollector?->recordPropertySkipped(
+                get_class($object),
+                $propertyName,
+                'priority',
+                ['currentPriority' => $effectivePriority, 'source' => $sourceSignature]
+            );
+            return;
+        }
+        
+        // Resolve the elected source
+        if (!isset($dataSourceMap[$sourceId])) {
+            throw new \Kassko\DataMapper\Exception\NoValidDataSourceException(
+                sprintf('DataSource "%s" not found in DataSourcesStore for property %s', $sourceId, $propertyName)
+            );
+        }
+        
+        $dataSource = $dataSourceMap[$sourceId];
+        $result = $this->executeDataSource($dataSource, $object);
+        
+        // Record the data source call for lineage
+        $this->lineageCollector?->recordDataSourceCall(
+            get_class($object),
+            $dataSource->class ?? 'unknown',
+            $dataSource->method,
+            $dataSource->args,
+            $result,
+            $sourceId
+        );
+        
+        // Hydrate the property
+        if (is_array($result) && !$this->isListArray($result) && count($result) > 0) {
+            $this->hydrateProperty($object, $propertyName, $result);
+        } else {
+            $this->hydratePropertyWithValue($object, $propertyName, $result);
+        }
+        
+        // Register the successful hydration
+        $this->registerPropertyHydration($object, $propertyName, $effectivePriority, $sourceSignature);
+        $this->loadedProperties[$object][$propertyName] = true;
+        
+        // Record property hydration for lineage
+        $this->lineageCollector?->recordPropertyHydration(
+            get_class($object),
+            $propertyName,
+            null,
+            $result,
+            $sourceSignature,
+            $effectivePriority
         );
     }
 

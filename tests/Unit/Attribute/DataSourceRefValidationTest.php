@@ -50,7 +50,7 @@ class DataSourceRefValidationTest extends TestCase
     public function testNoParametersThrowsException(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef requires either id or providers');
+        $this->expectExceptionMessage('DataSourceRef requires one of: id, providers, or candidates');
         
         new DataSourceRef();
     }
@@ -58,7 +58,7 @@ class DataSourceRefValidationTest extends TestCase
     public function testIdAndProvidersAreMutuallyExclusive(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef: id and providers are mutually exclusive');
+        $this->expectExceptionMessage('DataSourceRef: id, providers, and candidates are mutually exclusive');
         
         new DataSourceRef(
             id: 'sourceA',
@@ -98,5 +98,71 @@ class DataSourceRefValidationTest extends TestCase
     {
         $ref = new DataSourceRef(id: 'sourceA', priority: 10);
         $this->assertEquals(10, $ref->priority);
+    }
+
+    public function testCandidatesOnlyIsValid(): void
+    {
+        $ref = new DataSourceRef(candidates: [
+            ['id' => 'sourceA', 'discriminator' => 'expr(true)'],
+            ['id' => 'sourceB', 'discriminator' => 'expr(false)', 'priority' => 15],
+        ]);
+        $this->assertCount(2, $ref->candidates);
+        $this->assertNull($ref->id);
+        $this->assertNull($ref->providers);
+        $this->assertNull($ref->fallbacks);
+    }
+
+    public function testCandidatesAndIdAreMutuallyExclusive(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DataSourceRef: id, providers, and candidates are mutually exclusive');
+
+        new DataSourceRef(
+            id: 'sourceA',
+            candidates: [['id' => 'sourceB', 'discriminator' => 'expr(true)']]
+        );
+    }
+
+    public function testCandidatesAndProvidersAreMutuallyExclusive(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DataSourceRef: id, providers, and candidates are mutually exclusive');
+
+        new DataSourceRef(
+            providers: ['providerA'],
+            candidates: [['id' => 'sourceB', 'discriminator' => 'expr(true)']]
+        );
+    }
+
+    public function testCandidatesMustHaveId(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('candidate at index 0 must have an "id" key');
+
+        new DataSourceRef(candidates: [
+            ['discriminator' => 'expr(true)'],
+        ]);
+    }
+
+    public function testCandidatesMustHaveDiscriminator(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('candidate at index 0 must have a "discriminator" key');
+
+        new DataSourceRef(candidates: [
+            ['id' => 'sourceA'],
+        ]);
+    }
+
+    public function testCandidatesWithPriorityIsValid(): void
+    {
+        $ref = new DataSourceRef(
+            candidates: [
+                ['id' => 'sourceA', 'discriminator' => 'expr(true)', 'priority' => 20],
+            ],
+            priority: 5
+        );
+        $this->assertEquals(5, $ref->priority);
+        $this->assertEquals(20, $ref->candidates[0]['priority']);
     }
 }
