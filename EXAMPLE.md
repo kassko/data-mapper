@@ -1,4 +1,4 @@
-# Data Mapper Examples
+# DataMapper Examples
 
 ## Basic Usage
 
