@@ -1,3 +1,7 @@
+[![Tests](https://github.com/kassko/data-mapper/actions/workflows/tests.yml/badge.svg)](
+https://github.com/kassko/data-mapper/actions/workflows/tests.yml
+)
+
 # Data Mapper 2
 
 A powerful PHP 8.1+ library for mapping and hydrating data objects with lazy loading, expression language, and advanced features.
