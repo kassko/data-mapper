@@ -23,7 +23,7 @@ use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
 use Kassko\DataMapper\Attribute\PropertyHydratingHook;
 use Kassko\DataMapper\Attribute\CustomHydrator;
 use Kassko\DataMapper\Attribute\Property;
-use Kassko\DataMapper\Attribute\PropertyCandidates;
+use Kassko\DataMapper\Attribute\PropertyConfigStore;
 use Kassko\DataMapper\Attribute\KeepProperty;
 use Kassko\DataMapper\Attribute\Loading;
 use Kassko\DataMapper\Attribute\Needs;
@@ -476,14 +476,14 @@ class AttributeReader
     }
 
     /**
-     * Read PropertyCandidates attribute from a property
+     * Read PropertyConfigStore attribute from a class
      *
-     * @param ReflectionProperty $property
-     * @return PropertyCandidates|null
+     * @param ReflectionClass $reflectionClass
+     * @return PropertyConfigStore|null
      */
-    public function readPropertyCandidates(ReflectionProperty $property): ?PropertyCandidates
+    public function readPropertyConfigStore(ReflectionClass $reflectionClass): ?PropertyConfigStore
     {
-        $attributes = $property->getAttributes(PropertyCandidates::class);
+        $attributes = $reflectionClass->getAttributes(PropertyConfigStore::class);
         
         if (empty($attributes)) {
             return null;

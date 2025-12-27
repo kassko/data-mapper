@@ -24,6 +24,8 @@ class DataSourceRefValidationTest extends TestCase
         $this->assertEquals('sourceA', $ref->id);
         $this->assertNull($ref->fallbacks);
         $this->assertNull($ref->providers);
+        $this->assertNull($ref->candidates);
+        $this->assertNull($ref->defaultCandidate);
     }
     
     public function testIdWithFallbacksIsValid(): void
@@ -100,16 +102,41 @@ class DataSourceRefValidationTest extends TestCase
         $this->assertEquals(10, $ref->priority);
     }
 
-    public function testCandidatesOnlyIsValid(): void
+    public function testCandidatesWithDefaultCandidateIsValid(): void
     {
-        $ref = new DataSourceRef(candidates: [
-            ['id' => 'sourceA', 'discriminator' => 'expr(true)'],
-            ['id' => 'sourceB', 'discriminator' => 'expr(false)', 'priority' => 15],
-        ]);
+        $ref = new DataSourceRef(
+            candidates: [
+                ['id' => 'sourceA', 'rule' => 'expr(true)'],
+                ['id' => 'sourceB', 'rule' => 'expr(false)', 'priority' => 15],
+            ],
+            defaultCandidate: ['id' => 'sourceC']
+        );
         $this->assertCount(2, $ref->candidates);
+        $this->assertEquals('sourceC', $ref->defaultCandidate['id']);
         $this->assertNull($ref->id);
         $this->assertNull($ref->providers);
         $this->assertNull($ref->fallbacks);
+    }
+
+    public function testCandidatesWithoutDefaultCandidateThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DataSourceRef: candidates and defaultCandidate must both be present or both absent');
+
+        new DataSourceRef(candidates: [
+            ['id' => 'sourceA', 'rule' => 'expr(true)'],
+        ]);
+    }
+
+    public function testDefaultCandidateWithoutCandidatesThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DataSourceRef: candidates and defaultCandidate must both be present or both absent');
+
+        new DataSourceRef(
+            candidates: null,
+            defaultCandidate: ['id' => 'sourceB']
+        );
     }
 
     public function testCandidatesAndIdAreMutuallyExclusive(): void
@@ -119,7 +146,8 @@ class DataSourceRefValidationTest extends TestCase
 
         new DataSourceRef(
             id: 'sourceA',
-            candidates: [['id' => 'sourceB', 'discriminator' => 'expr(true)']]
+            candidates: [['id' => 'sourceB', 'rule' => 'expr(true)']],
+            defaultCandidate: ['id' => 'sourceC']
         );
     }
 
@@ -130,7 +158,8 @@ class DataSourceRefValidationTest extends TestCase
 
         new DataSourceRef(
             providers: ['providerA'],
-            candidates: [['id' => 'sourceB', 'discriminator' => 'expr(true)']]
+            candidates: [['id' => 'sourceB', 'rule' => 'expr(true)']],
+            defaultCandidate: ['id' => 'sourceC']
         );
     }
 
@@ -139,30 +168,78 @@ class DataSourceRefValidationTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('candidate at index 0 must have an "id" key');
 
-        new DataSourceRef(candidates: [
-            ['discriminator' => 'expr(true)'],
-        ]);
+        new DataSourceRef(
+            candidates: [
+                ['rule' => 'expr(true)'],
+            ],
+            defaultCandidate: ['id' => 'sourceB']
+        );
     }
 
-    public function testCandidatesMustHaveDiscriminator(): void
+    public function testCandidatesMustHaveRule(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('candidate at index 0 must have a "discriminator" key');
+        $this->expectExceptionMessage('candidate at index 0 must have a "rule" key');
 
-        new DataSourceRef(candidates: [
-            ['id' => 'sourceA'],
-        ]);
+        new DataSourceRef(
+            candidates: [
+                ['id' => 'sourceA'],
+            ],
+            defaultCandidate: ['id' => 'sourceB']
+        );
+    }
+
+    public function testDefaultCandidateMustHaveId(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DataSourceRef: defaultCandidate must have an "id" key');
+
+        new DataSourceRef(
+            candidates: [
+                ['id' => 'sourceA', 'rule' => 'expr(true)'],
+            ],
+            defaultCandidate: ['priority' => 10]
+        );
     }
 
     public function testCandidatesWithPriorityIsValid(): void
     {
         $ref = new DataSourceRef(
             candidates: [
-                ['id' => 'sourceA', 'discriminator' => 'expr(true)', 'priority' => 20],
+                ['id' => 'sourceA', 'rule' => 'expr(true)', 'priority' => 20],
             ],
+            defaultCandidate: ['id' => 'sourceB'],
             priority: 5
         );
         $this->assertEquals(5, $ref->priority);
         $this->assertEquals(20, $ref->candidates[0]['priority']);
+    }
+
+    public function testCandidatesCannotUseFallbacks(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DataSourceRef: fallbacks cannot be used with candidates');
+
+        new DataSourceRef(
+            candidates: [
+                ['id' => 'sourceA', 'rule' => 'expr(true)'],
+            ],
+            defaultCandidate: ['id' => 'sourceB'],
+            fallbacks: ['sourceC']
+        );
+    }
+
+    public function testCandidatesCannotUseExceptionOnNoValidDataSource(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DataSourceRef: exceptionOnNoValidDataSource cannot be used with candidates');
+
+        new DataSourceRef(
+            candidates: [
+                ['id' => 'sourceA', 'rule' => 'expr(true)'],
+            ],
+            defaultCandidate: ['id' => 'sourceB'],
+            exceptionOnNoValidDataSource: 'SomeException'
+        );
     }
 }

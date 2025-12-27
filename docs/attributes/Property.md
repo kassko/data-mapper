@@ -1,8 +1,10 @@
 # Property
 
-Maps a property name to a different key in the raw data and configures hydration behavior.
+Maps a property name to a different key in the raw data and configures hydration behavior. Supports direct configuration or references to reusable configurations via `PropertyConfigStore`.
 
 ## Usage
+
+### Direct Configuration
 
 ```php
 use Kassko\DataMapper\Attribute\Property;
@@ -21,45 +23,122 @@ class Person
 }
 ```
 
+### Using PropertyConfigStore Reference
+
+```php
+use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\PropertyConfig;
+use Kassko\DataMapper\Attribute\PropertyConfigStore;
+
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'address', class: Address::class),
+])]
+class Person
+{
+    #[Property(config: 'address')]
+    private ?Address $mainAddress = null;
+}
+```
+
+### Polymorphic Hydration with configCandidates
+
+```php
+use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\PropertyConfig;
+use Kassko\DataMapper\Attribute\PropertyConfigStore;
+
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'gasolineCar', class: GasolineCar::class),
+    new PropertyConfig(id: 'electricCar', class: ElectricCar::class),
+])]
+class Garage
+{
+    #[Property(
+        configCandidates: [
+            ['id' => 'gasolineCar', 'rule' => "expr(rawDataItemExists('gasolineKind'))"],
+            ['id' => 'electricCar', 'rule' => "expr(rawDataItemExists('energyProvider'))"],
+        ],
+        defaultConfigCandidate: 'gasolineCar'
+    )]
+    private array $cars = [];
+}
+```
+
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `name` | `?string` | No | Key in raw data array |
 | `class` | `?string` | No | Class for nested object hydration |
-| `mapping` | `?array` | No | Instance-specific key mapping |
+| `mapping` | `?array` | No | Instance-specific key mapping (requires `class`) |
 | `expand` | `?string` | No | Comma-separated fields to expand |
 | `noExpand` | `?string` | No | Comma-separated fields to skip |
+| `config` | `?string` | No | Reference to a PropertyConfig by ID |
+| `configCandidates` | `?array` | No | Array of config candidates with rule expressions |
+| `defaultConfigCandidate` | `?string` | No | Default config ID if no rule matches |
 
-## Examples
+## Validation Rules
 
-### Simple Name Mapping
+- `mapping` can only be set when `class` is also specified
+- `config` is mutually exclusive with `class`, `expand`, `noExpand`, and `mapping`
+- `configCandidates` is mutually exclusive with `class`, `expand`, `noExpand`, `mapping`, and `config`
+- `configCandidates` and `defaultConfigCandidate` must both be present or both absent
+- Each configCandidate must have `id` and `rule` keys
 
-```php
-#[Property(name: 'user_email')]
-private ?string $email = null;
-```
+## Modes
 
-### Nested Object Hydration
+### Direct Configuration
+
+Set `class`, `mapping`, etc. directly on the property:
 
 ```php
 #[Property(class: Address::class)]
 private ?Address $address = null;
 ```
 
-### Instance Mapping
+### Config Reference
 
-Extract specific keys from flat data into nested object:
+Reference a PropertyConfig by ID:
+
+```php
+#[Property(config: 'address')]
+private ?Address $address = null;
+```
+
+### Polymorphic Resolution (configCandidates)
+
+Select a configuration based on runtime data evaluation:
 
 ```php
 #[Property(
-    class: Address::class,
-    mapping: ['delivery_street' => 'street', 'delivery_city' => 'city']
+    configCandidates: [
+        ['id' => 'typeA', 'rule' => "expr(rawDataItem('type') == 'A')"],
+        ['id' => 'typeB', 'rule' => "expr(rawDataItem('type') == 'B')"],
+    ],
+    defaultConfigCandidate: 'typeDefault'
 )]
-private ?Address $deliveryAddress = null;
+private ?Item $item = null;
 ```
+
+**configCandidate Structure:**
+- `id` (required): Reference to a PropertyConfig ID
+- `rule` (required): Expression that returns a boolean
+
+**Resolution Logic:**
+1. Each candidate's `rule` is evaluated against the raw data item
+2. First candidate whose `rule` evaluates to `true` is selected
+3. If no rule matches, `defaultConfigCandidate` is used
+
+## Expression Functions for Rules
+
+- `rawDataItemExists('key')` - Check if key exists in data item
+- `rawDataItem('key')` - Get value of key from data item
+- `context('key')` - Get value from context registry
+- `contextKeyExists('key')` - Check if key exists in context
 
 ## See Also
 
+- [PropertyConfig](PropertyConfig.md) - Individual configuration definitions
+- [PropertyConfigStore](PropertyConfigStore.md) - Class-level attribute for storing configs
 - [KeepProperty](KeepProperty.md)
 - [SkipProperty](SkipProperty.md)

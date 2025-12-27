@@ -27,7 +27,8 @@ Le runtime est volontairement léger et découplé d’un framework : l’intég
   - `DataSourceRef` (niveau propriété) : référence vers une source stockée.
   - `SinglePropDataSource` / `MultiPropDataSource` : sources directes.
   - `Context` : injection de valeurs contextuelles pendant l’hydratation.
-  - `Needs`, `Loading`, `PropertyCandidates`, hooks (`PropertySettingHook`, etc.).
+  - `PropertyConfigStore` / `PropertyConfig` : configurations de propriété réutilisables pour l'hydratation polymorphe.
+  - `Needs`, `Loading`, hooks (`PropertySettingHook`, etc.).
 
 ### 4) Métadonnées
 - **`Metadata\AttributeReader`** : encapsule Reflection + lecture des attributs et fournit un accès uniforme au Loader.

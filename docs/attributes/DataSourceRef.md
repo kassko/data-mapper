@@ -49,15 +49,18 @@ class Person
 | `id` | `?string` | Conditional | Primary data source ID |
 | `fallbacks` | `?array` | No | Array of fallback source IDs (requires `id`) |
 | `providers` | `?array` | Conditional | Array of IDs for aggregation |
-| `candidates` | `?array` | Conditional | Array of candidates with discriminator expressions |
+| `candidates` | `?array` | Conditional | Array of candidates with rule expressions |
+| `defaultCandidate` | `?array` | Conditional | Default candidate if no rule matches (required with `candidates`) |
 | `exceptionOnNoValidDataSource` | `?string` | No | Exception class for fallback handling |
 | `priority` | `int` | No | Hydration priority (default: 0) |
 
 **Validation Rules:**
 - `id`, `providers`, and `candidates` are mutually exclusive
+- `candidates` and `defaultCandidate` must both be present or both absent
+- `fallbacks` and `exceptionOnNoValidDataSource` cannot be used with `candidates`
 - `fallbacks` can only be used with `id`
 - `exceptionOnNoValidDataSource` requires `fallbacks` to be set
-- Each candidate must have `id` and `discriminator` keys
+- Each candidate must have `id` and `rule` keys
 
 ## Modes
 
@@ -110,9 +113,9 @@ private ?string $value = null;
 private ?string $value = null;
 ```
 
-### Candidates (Discriminator-Based Selection)
+### Candidates (Rule-Based Selection)
 
-Select a data source dynamically based on expression evaluation. The first candidate whose `discriminator` evaluates to `true` is elected:
+Select a data source dynamically based on expression evaluation. The first candidate whose `rule` evaluates to `true` is elected. If no rule matches, `defaultCandidate` is used:
 
 ```php
 #[DataSourcesStore([
@@ -123,9 +126,9 @@ class User
 {
     #[DataSourceRef(
         candidates: [
-            ['id' => 'newFeatureSource', 'discriminator' => "expr(context('new_feature_enabled'))", 'priority' => 15],
-            ['id' => 'oldFeatureSource', 'discriminator' => 'expr(true)'],
+            ['id' => 'newFeatureSource', 'rule' => "expr(context('new_feature_enabled'))", 'priority' => 15],
         ],
+        defaultCandidate: ['id' => 'oldFeatureSource'],
         priority: 10
     )]
     private ?string $name = null;
@@ -134,8 +137,12 @@ class User
 
 **Candidate Structure:**
 - `id` (required): The data source ID to use if this candidate is elected
-- `discriminator` (required): An expression that returns a boolean
+- `rule` (required): An expression that returns a boolean
 - `priority` (optional): Overrides the base `priority` if this candidate is elected
+
+**defaultCandidate Structure:**
+- `id` (required): The data source ID to use when no rule matches
+- `priority` (optional): Overrides the base `priority` for the default candidate
 
 **Priority Resolution:**
 If an elected candidate defines its own `priority`, it takes precedence over the base `priority` defined at the attribute level.

@@ -69,10 +69,12 @@ class DataSourceRefCandidatesTest extends TestCase
         class {
             use LoadableInternalTrait;
 
-            #[DataSourceRef(candidates: [
-                ['id' => 'newFeatureSource', 'discriminator' => "expr(context('new_feature_enabled'))"],
-                ['id' => 'oldFeatureSource', 'discriminator' => 'expr(true)'],
-            ])]
+            #[DataSourceRef(
+                candidates: [
+                    ['id' => 'newFeatureSource', 'rule' => "expr(context('new_feature_enabled'))"],
+                ],
+                defaultCandidate: ['id' => 'oldFeatureSource']
+            )]
             private ?string $name = null;
 
             public function getName(): ?string
@@ -86,7 +88,7 @@ class DataSourceRefCandidatesTest extends TestCase
         $this->assertSame('from-new-feature', $result);
     }
 
-    public function testCandidatesFallsBackToSecondIfFirstDoesNotMatch(): void
+    public function testCandidatesFallsBackToDefaultIfNoRuleMatches(): void
     {
         $newFeatureSource = new class {
             public function getData(): array {
@@ -119,10 +121,12 @@ class DataSourceRefCandidatesTest extends TestCase
         class {
             use LoadableInternalTrait;
 
-            #[DataSourceRef(candidates: [
-                ['id' => 'newFeatureSource', 'discriminator' => "expr(context('new_feature_enabled'))"],
-                ['id' => 'oldFeatureSource', 'discriminator' => 'expr(true)'],
-            ])]
+            #[DataSourceRef(
+                candidates: [
+                    ['id' => 'newFeatureSource', 'rule' => "expr(context('new_feature_enabled'))"],
+                ],
+                defaultCandidate: ['id' => 'oldFeatureSource']
+            )]
             private ?string $name = null;
 
             public function getName(): ?string
@@ -156,14 +160,16 @@ class DataSourceRefCandidatesTest extends TestCase
 
         $testObject = new #[DataSourcesStore([
             new MultiPropDataSource(id: 'testSource', class: 'TestSource', method: 'getData'),
+            new MultiPropDataSource(id: 'fallbackSource', class: 'TestSource', method: 'getData'),
         ])]
         class {
             use LoadableInternalTrait;
 
             #[DataSourceRef(
                 candidates: [
-                    ['id' => 'testSource', 'discriminator' => "expr(context('use_high_priority'))", 'priority' => 50],
+                    ['id' => 'testSource', 'rule' => "expr(context('use_high_priority'))", 'priority' => 50],
                 ],
+                defaultCandidate: ['id' => 'fallbackSource'],
                 priority: 10
             )]
             private ?string $name = null;
@@ -189,11 +195,11 @@ class DataSourceRefCandidatesTest extends TestCase
         $this->assertEquals(50, $event->metadata['electedCandidatePriority']);
     }
 
-    public function testNoCandidateMatchedSkipsHydration(): void
+    public function testDefaultCandidateUsedWhenNoRuleMatches(): void
     {
         $source = new class {
             public function getData(): array {
-                return ['name' => 'from-source'];
+                return ['name' => 'from-fallback'];
             }
         };
 
@@ -208,15 +214,19 @@ class DataSourceRefCandidatesTest extends TestCase
         $dataMapper->addToContext('never_matches', false);
 
         $testObject = new #[DataSourcesStore([
-            new MultiPropDataSource(id: 'testSource', class: 'TestSource', method: 'getData'),
+            new MultiPropDataSource(id: 'primarySource', class: 'TestSource', method: 'getData'),
+            new MultiPropDataSource(id: 'fallbackSource', class: 'TestSource', method: 'getData'),
         ])]
         class {
             use LoadableInternalTrait;
 
-            #[DataSourceRef(candidates: [
-                ['id' => 'testSource', 'discriminator' => "expr(context('never_matches'))"],
-            ])]
-            private ?string $name = 'default-value';
+            #[DataSourceRef(
+                candidates: [
+                    ['id' => 'primarySource', 'rule' => "expr(context('never_matches'))"],
+                ],
+                defaultCandidate: ['id' => 'fallbackSource']
+            )]
+            private ?string $name = null;
 
             public function getName(): ?string
             {
@@ -226,20 +236,8 @@ class DataSourceRefCandidatesTest extends TestCase
         };
 
         $result = $testObject->getName();
-        // Property should keep its default value since no candidate matched
-        $this->assertSame('default-value', $result);
-
-        // Verify lineage recorded the skip
-        $collector = $dataMapper->getLineageCollector();
-        $skipEvents = $collector->getEventsByType('property_skipped');
-        $hasNoMatchSkip = false;
-        foreach ($skipEvents as $event) {
-            if ($event->reason === 'no_candidate_matched') {
-                $hasNoMatchSkip = true;
-                break;
-            }
-        }
-        $this->assertTrue($hasNoMatchSkip, 'Expected a property_skipped event with reason no_candidate_matched');
+        // Should use defaultCandidate when no rule matches
+        $this->assertSame('from-fallback', $result);
     }
 
     public function testCandidateResolutionIsRecordedInLineage(): void
@@ -267,10 +265,12 @@ class DataSourceRefCandidatesTest extends TestCase
         class {
             use LoadableInternalTrait;
 
-            #[DataSourceRef(candidates: [
-                ['id' => 'sourceA', 'discriminator' => "expr(context('feature_flag'))"],
-                ['id' => 'sourceB', 'discriminator' => 'expr(true)'],
-            ])]
+            #[DataSourceRef(
+                candidates: [
+                    ['id' => 'sourceA', 'rule' => "expr(context('feature_flag'))"],
+                ],
+                defaultCandidate: ['id' => 'sourceB']
+            )]
             private ?string $name = null;
 
             public function getName(): ?string
@@ -292,7 +292,7 @@ class DataSourceRefCandidatesTest extends TestCase
         $this->assertEquals('name', $event->propertyName);
         $this->assertEquals('sourceA', $event->source); // elected candidate id
         $this->assertEquals('candidate_elected', $event->reason);
-        $this->assertCount(2, $event->originalValue); // all candidates
+        $this->assertCount(1, $event->originalValue); // all candidates (excluding defaultCandidate)
         $this->assertEquals('sourceA', $event->finalValue['id']); // elected candidate
     }
 }
