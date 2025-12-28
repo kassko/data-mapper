@@ -18,7 +18,7 @@ use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\DataMapperBuilder;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use PHPUnit\Framework\TestCase;
 
@@ -74,7 +74,7 @@ class AutoLoadArgsTest extends TestCase
             new MultiPropDataSource(id: 'sourceB', class: 'SourceB', method: 'getData', args: ['#propA']),
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
             
             #[DataSourceRef(id: 'sourceA')]
             private ?string $propA = null;
@@ -163,7 +163,7 @@ class AutoLoadArgsTest extends TestCase
             new MultiPropDataSource(id: 'sourceC', class: 'SourceC', method: 'calculate', args: ['#propA', '#propB']),
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
             
             #[DataSourceRef(id: 'sourceA')]
             private ?int $propA = null;

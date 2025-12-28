@@ -18,7 +18,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\Loading;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 #[DataSourcesStore([
     new MultiPropDataSource(
@@ -29,7 +29,7 @@ use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 ])]
 class Information
 {
-    use LoadableInternalTrait;
+    use LoadableTrait;
 
     #[DataSourceRef(id: 'infoSource')]
     #[Property(class: Shop::class)]

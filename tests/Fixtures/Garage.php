@@ -19,7 +19,7 @@ use Kassko\DataMapper\Attribute\PropertyConfig;
 use Kassko\DataMapper\Attribute\PropertyConfigStore;
 use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 #[PropertyInstantiatingHook(after_instantiating: 'onCreated', args: ['##object'])]
 #[PropertyConfigStore([
@@ -28,7 +28,7 @@ use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 ])]
 class Garage
 {
-    use LoadableInternalTrait;
+    use LoadableTrait;
 
     private ?int $id = null;
     private bool $created = false;

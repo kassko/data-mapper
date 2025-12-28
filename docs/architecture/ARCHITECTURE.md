@@ -1,71 +1,72 @@
-# Architecture — DataMapper (librairie PHP)
+# Architecture — DataMapper (PHP Library)
 
-## Vue d’ensemble
+## Overview
 
-Le projet est une librairie d’hydratation/lazy-loading orientée **attributs PHP 8** : l’objet métier déclare *quoi charger* et *comment* via des attributs (DataSource, DataSourceRef, Context, hooks…), et un **Loader** applique ces règles au moment opportun (lazy via getters ou eager via `Loading::TYPE_EAGER`).
+The project is an hydration/lazy-loading library based on **PHP 8 attributes**: the domain object declares *what to load* and *how* via attributes (DataSource, DataSourceRef, Context, hooks…), and a **Loader** applies these rules at the appropriate time (lazy via getters or eager via `Loading::TYPE_EAGER`).
 
-Le runtime est volontairement léger et découplé d’un framework : l’intégration Symfony se fait principalement via la conformité PSR (PSR-11 container, PSR-3 logger, PSR-16 cache) et un `ServiceResolver` qui sait résoudre des services depuis plusieurs sources.
+The runtime is intentionally lightweight and decoupled from any framework: Symfony integration is primarily achieved through PSR compliance (PSR-11 container, PSR-3 logger, PSR-16 cache) and a `ServiceResolver` that can resolve services from multiple sources.
 
-## Modules (packages) principaux
+## Main Modules (Packages)
 
-### 1) Point d’entrée / configuration
-- **`DataMapperBuilder`** : assemble la stratégie de résolution de services (container, locators, factories…) et construit un `DataMapper`.
-- **`DataMapper`** : façade runtime.
-  - Instancie un `Loader` et l’enregistre globalement via `LoaderRegistry`.
-  - Gère le **contexte applicatif** (`addToContext`, `addManyToContext`), et l’activation de la **collecte de lineage** (`enableLineageCollection`).
+### 1) Entry Point / Configuration
+- **`DataMapperBuilder`**: assembles the service resolution strategy (container, locators, factories…) and builds a `DataMapper`.
+- **`DataMapper`**: runtime facade.
+  - Instantiates a `Loader` and registers it globally via `LoaderRegistry`.
+  - Manages **application context** (`addToContext`, `addManyToContext`), and **lineage collection** activation (`enableLineageCollection`).
 
-### 2) Hydratation / exécution
-- **`Loader`** : cœur de l’exécution.
-  - Déclenche l’hydratation d’une propriété (`loadProperty`) ou d’un groupe (`MultiPropDataSource`).
-  - Lit la “métadonnée attributs” via `Metadata\AttributeReader`.
-  - Résout et exécute les DataSources via `ServiceResolver`.
-  - Applique la récursivité (hydrater des objets imbriqués), la sélection par priorité, les hooks, la mise à jour du contexte et l’anti-écrasement via verrouillage.
+### 2) Hydration / Execution
+- **`Loader`**: execution core.
+  - Triggers property hydration (`loadProperty`) or group hydration (`MultiPropDataSource`).
+  - Reads attribute metadata via `Metadata\AttributeReader`.
+  - Resolves and executes DataSources via `ServiceResolver`.
+  - Applies recursion (hydrating nested objects), priority selection, hooks, context updates, and anti-overwrite via locking.
 
-### 3) Déclaration (attributs)
-- **`Attribute/*`** : ensemble des attributs configurant la stratégie d’hydratation.
-  - `DataSourcesStore` (niveau classe) : registre local des sources.
-  - `DataSourceRef` (niveau propriété) : référence vers une source stockée.
-  - `SinglePropDataSource` / `MultiPropDataSource` : sources directes.
-  - `Context` : injection de valeurs contextuelles pendant l’hydratation.
-  - `PropertyConfigStore` / `PropertyConfig` : configurations de propriété réutilisables pour l'hydratation polymorphe.
+### 3) Declaration (Attributes)
+- **`Attribute/*`**: set of attributes configuring the hydration strategy.
+  - `DataSourcesStore` (class level): local source registry.
+  - `DataSourceRef` (property level): reference to a stored source.
+  - `SinglePropDataSource` / `MultiPropDataSource`: direct sources.
+  - `Context`: injection of contextual values during hydration.
+  - `PropertyConfigStore` / `PropertyConfig`: reusable property configurations for polymorphic hydration.
   - `Needs`, `Loading`, hooks (`PropertySettingHook`, etc.).
+  - `Param`: parameter injection for constructors, getters, and setters.
 
-### 4) Métadonnées
-- **`Metadata\AttributeReader`** : encapsule Reflection + lecture des attributs et fournit un accès uniforme au Loader.
+### 4) Metadata
+- **`Metadata\AttributeReader`**: encapsulates Reflection + attribute reading and provides uniform access to the Loader.
 
-### 5) Registres (état global, faible couplage)
-- **`LoaderRegistry`** : stockage global du Loader actif (permet à `LoadableTrait` de rester simple).
-- **`ContextRegistry`** : stocke deux sources de contexte :
-  - *application context* (persistant, défini via `DataMapper`),
-  - *hydration context* (défini via `#[Context]`, priorité sur l’application).
-- **`LockedPropertyRegistry`** : verrouillage de propriété via `WeakMap` (état externe à l’objet → évite la sérialisation involontaire).
+### 5) Registries (Global State, Loose Coupling)
+- **`LoaderRegistry`**: global storage of the active Loader (allows `LoadableTrait` to remain simple).
+- **`ContextRegistry`**: stores two context sources:
+  - *application context* (persistent, defined via `DataMapper`),
+  - *hydration context* (defined via `#[Context]`, takes priority over application).
+- **`LockedPropertyRegistry`**: property locking via `WeakMap` (state external to the object → avoids unintended serialization).
 
 ### 6) Expressions
-- **`Expression\ExpressionParser`** : résout des arguments "dynamiques" (références de propriétés `#prop`, expressions `expr(...)`, accès `context('k')`, `source('id')`, `service('id')`, etc.).
-- **`Expression\SourceFunctionProvider`** : exécute et éventuellement cache les résultats de sources `source('id')`.
+- **`Expression\ExpressionParser`**: resolves "dynamic" arguments (property references `#prop`, expressions `expr(...)`, access `context('k')`, `source('id')`, `service('id')`, etc.).
+- **`Expression\SourceFunctionProvider`**: executes and optionally caches source results `source('id')`.
 
-### 7) Observabilité
-- **`DataCollector\DataLineageCollector` + `LineageEvent`** : collecte optionnelle d’événements (calls DataSource, hydrations, skips, hooks, context set…). Le Loader appelle le collecteur si activé.
+### 7) Observability
+- **`DataCollector\DataLineageCollector` + `LineageEvent`**: optional event collection (DataSource calls, hydrations, skips, hooks, context set…). The Loader calls the collector when enabled.
 
-## Flux de données (runtime)
+## Data Flow (Runtime)
 
-### Scénario "lazy load" typique
-1. Un getter côté objet métier appelle `loadProperty('x')` (via `LoadableTrait`).
-2. `LoadableTrait` récupère le `Loader` global via `LoaderRegistry`.
-3. `Loader::loadProperty()` :
-   - vérifie le verrouillage (`LockedPropertyRegistry` / `isPropertyLocked()`),
-   - vérifie si la propriété est déjà chargée,
-   - lit les attributs de la propriété (`AttributeReader`).
-4. Résolution de la source :
-   - `DataSourceRef` → lookup dans `DataSourcesStore` (niveau classe),
-   - ou source directe (Single/MultiProp) sur la propriété.
-5. Exécution de la source : le Loader utilise `ServiceResolver` pour instancier/récupérer la classe source puis appelle la méthode.
-   - Si des args sont présents, `ExpressionParser` peut évaluer `expr(...)`, `context(...)`, `source(...)`, etc.
-6. Hydratation : mapping éventuel, récursivité, hooks, mise à jour du contexte (`ContextRegistry`), puis écriture de la propriété (setter ou accès direct selon stratégie).
-7. Marquage “loaded” et, si activé, enregistrement des events dans `DataLineageCollector`.
+### Typical "Lazy Load" Scenario
+1. A getter on the domain object calls `loadProperty('x')` (via `LoadableTrait`).
+2. `LoadableTrait` retrieves the global `Loader` via `LoaderRegistry`.
+3. `Loader::loadProperty()`:
+   - checks locking (`LockedPropertyRegistry` / `isPropertyLocked()`),
+   - checks if the property is already loaded,
+   - reads property attributes (`AttributeReader`).
+4. Source resolution:
+   - `DataSourceRef` → lookup in `DataSourcesStore` (class level),
+   - or direct source (Single/MultiProp) on the property.
+5. Source execution: the Loader uses `ServiceResolver` to instantiate/retrieve the source class then calls the method.
+   - If args are present, `ExpressionParser` can evaluate `expr(...)`, `context(...)`, `source(...)`, etc.
+6. Hydration: optional mapping, recursion, hooks, context update (`ContextRegistry`), then property writing (setter or direct access depending on strategy).
+7. "Loaded" marking and, if enabled, event recording in `DataLineageCollector`.
 
-### Points clés de conception
-- **Découplage** via PSR et registres : le domaine n’a pas besoin de connaître le Loader concret.
-- **État externe** (locks via WeakMap) pour éviter la pollution des objets.
-- **Contexte à deux niveaux** (application vs hydration) pour permettre des expressions pilotées par l’environnement.
-- **Observabilité** intégrée sans impacter le chemin critique quand désactivée.
+### Key Design Points
+- **Decoupling** via PSR and registries: the domain doesn't need to know the concrete Loader.
+- **External state** (locks via WeakMap) to avoid polluting objects.
+- **Two-level context** (application vs hydration) to allow environment-driven expressions.
+- **Built-in observability** without impacting the critical path when disabled.
