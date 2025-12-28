@@ -18,7 +18,7 @@ use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\DataMapperBuilder;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\ContextRegistry;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use PHPUnit\Framework\TestCase;
@@ -67,7 +67,7 @@ class DataSourceRefCandidatesTest extends TestCase
             new MultiPropDataSource(id: 'oldFeatureSource', class: 'OldFeatureSource', method: 'getData'),
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             #[DataSourceRef(
                 candidates: [
@@ -119,7 +119,7 @@ class DataSourceRefCandidatesTest extends TestCase
             new MultiPropDataSource(id: 'oldFeatureSource', class: 'OldFeatureSource', method: 'getData'),
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             #[DataSourceRef(
                 candidates: [
@@ -163,7 +163,7 @@ class DataSourceRefCandidatesTest extends TestCase
             new MultiPropDataSource(id: 'fallbackSource', class: 'TestSource', method: 'getData'),
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             #[DataSourceRef(
                 candidates: [
@@ -218,7 +218,7 @@ class DataSourceRefCandidatesTest extends TestCase
             new MultiPropDataSource(id: 'fallbackSource', class: 'TestSource', method: 'getData'),
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             #[DataSourceRef(
                 candidates: [
@@ -263,7 +263,7 @@ class DataSourceRefCandidatesTest extends TestCase
             new MultiPropDataSource(id: 'sourceB', class: 'TestSource', method: 'getData'),
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             #[DataSourceRef(
                 candidates: [

@@ -18,7 +18,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use PHPUnit\Framework\TestCase;
 
@@ -78,7 +78,7 @@ class InstanceMappingTest extends TestCase
                 method: 'getData'
             )
         ])] class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
             
             #[DataSourceRef(id: 'personData')]
             #[Property(

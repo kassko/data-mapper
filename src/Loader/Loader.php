@@ -24,6 +24,7 @@ use Kassko\DataMapper\Attribute\CustomHydrator;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
 use Kassko\DataMapper\Attribute\PropertyHydratingHook;
+use Kassko\DataMapper\Attribute\Param;
 use Kassko\DataMapper\DataCollector\DataLineageCollector;
 use Kassko\DataMapper\Expression\ExpressionParser;
 use Kassko\DataMapper\Expression\SourceFunctionProvider;
@@ -51,6 +52,9 @@ class Loader implements LoaderInterface
     /** @var WeakMap<object, array<string, array{source: string, priority: int}>> Track property => source info for priority handling */
     private WeakMap $propertySourceRegistry;
     
+    /** @var WeakMap<object, bool> Track objects that have had hydrating hooks called */
+    private WeakMap $hydratingHooksExecuted;
+    
     private AttributeReader $attributeReader;
     private ServiceResolver $serviceResolver;
     private LoggerInterface $logger;
@@ -75,6 +79,7 @@ class Loader implements LoaderInterface
         $this->sourceFunctionProviders = new WeakMap();
         $this->parentRegistry = new WeakMap();
         $this->propertySourceRegistry = new WeakMap();
+        $this->hydratingHooksExecuted = new WeakMap();
         $this->attributeReader = new AttributeReader();
         $this->logger = $logger ?? new NullLogger();
         $this->customHydrators = $customHydrators;
@@ -85,6 +90,291 @@ class Loader implements LoaderInterface
     public function getServiceResolver(): ServiceResolver
     {
         return $this->serviceResolver;
+    }
+
+    /**
+     * Check if a property is locked via reflection (to access protected method)
+     *
+     * @param object $object
+     * @param string $propertyName
+     * @return bool
+     */
+    private function checkPropertyLockedViaReflection(object $object, string $propertyName): bool
+    {
+        if (!method_exists($object, 'isPropertyLocked')) {
+            return false;
+        }
+        
+        try {
+            $reflectionMethod = new \ReflectionMethod($object, 'isPropertyLocked');
+            $reflectionMethod->setAccessible(true);
+            return (bool) $reflectionMethod->invoke($object, $propertyName);
+        } catch (\ReflectionException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Instantiate an object with constructor parameters resolved via Param attributes.
+     * 
+     * @param string $className The class to instantiate
+     * @return object The instantiated object
+     * @throws \InvalidArgumentException If constructor has parameters without Param attribute
+     *                                   or if forbidden expressions are used
+     */
+    public function instantiateWithParams(string $className): object
+    {
+        $reflectionClass = new ReflectionClass($className);
+        $constructor = $reflectionClass->getConstructor();
+        
+        // No constructor or no parameters - simple instantiation
+        if ($constructor === null || $constructor->getNumberOfParameters() === 0) {
+            return new $className();
+        }
+        
+        $parameters = $constructor->getParameters();
+        $resolvedArgs = [];
+        
+        foreach ($parameters as $param) {
+            $paramAttrs = $param->getAttributes(Param::class);
+            
+            if (empty($paramAttrs)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Constructor parameter "%s" in class "%s" must have a #[Param] attribute. ' .
+                    'DataMapper does not support constructor parameters without Param attributes.',
+                    $param->getName(),
+                    $className
+                ));
+            }
+            
+            /** @var Param $paramAttr */
+            $paramAttr = $paramAttrs[0]->newInstance();
+            $value = $paramAttr->value;
+            
+            // Validate: property references are forbidden in constructor
+            $this->validateNoPropertyReferences($value, $param->getName(), $className, 'constructor');
+            
+            // Resolve the expression value
+            $resolvedArgs[] = $this->resolveParamValue($value);
+        }
+        
+        return $reflectionClass->newInstanceArgs($resolvedArgs);
+    }
+
+    /**
+     * Validate that a Param value does not contain property references (for constructor)
+     * 
+     * @param string $value The Param value
+     * @param string $paramName The parameter name
+     * @param string $className The class name
+     * @param string $context Context description for error message
+     * @throws \InvalidArgumentException If property references are found
+     */
+    private function validateNoPropertyReferences(string $value, string $paramName, string $className, string $context): void
+    {
+        // Check for simple property references: #id, #name, ##object, etc.
+        if (preg_match('/^#\w+|##\w+/', $value)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Param value for %s parameter "%s" in class "%s" contains forbidden property reference "%s". ' .
+                'Constructor parameters cannot reference object properties.',
+                $context,
+                $paramName,
+                $className,
+                $value
+            ));
+        }
+        
+        // Check for property() expressions inside expr()
+        if (preg_match('/property\s*\(/', $value)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Param value for %s parameter "%s" in class "%s" contains forbidden property() expression. ' .
+                'Constructor parameters cannot reference object properties.',
+                $context,
+                $paramName,
+                $className
+            ));
+        }
+    }
+
+    /**
+     * Resolve a Param value (static or expression)
+     * 
+     * @param string $value The Param value
+     * @return mixed The resolved value
+     */
+    private function resolveParamValue(string $value): mixed
+    {
+        // Check if it's an expression
+        if (preg_match('/^expr\((.+)\)$/s', $value, $matches)) {
+            $expression = $matches[1];
+            
+            // Create a minimal expression parser for context/service resolution
+            $sourceFunctionProvider = new SourceFunctionProvider(fn() => null);
+            $expressionParser = new ExpressionParser($sourceFunctionProvider, $this->serviceResolver);
+            
+            // Handle context() expression
+            if (preg_match("/^context\('([^']+)'\)$/", $expression, $contextMatches)) {
+                return \Kassko\DataMapper\Registry\ContextRegistry::get($contextMatches[1]);
+            }
+            
+            // Handle service() expression  
+            if (preg_match("/^service\('([^']+)'\)$/", $expression, $serviceMatches)) {
+                return $this->serviceResolver->resolve($serviceMatches[1]);
+            }
+            
+            // Handle source() expression (less common in constructors but supported)
+            if (preg_match("/^source\('([^']+)'\)$/", $expression, $sourceMatches)) {
+                // Can't execute source without an object context
+                return null;
+            }
+            
+            // For more complex expressions, return as-is or evaluate
+            return $value;
+        }
+        
+        // Static value
+        return $value;
+    }
+
+    /**
+     * Resolve Param-annotated parameters for a method call
+     * 
+     * @param object $object The object context
+     * @param \ReflectionMethod $method The method to resolve parameters for
+     * @param bool $isSetter Whether this is a setter (first param must not have Param)
+     * @param mixed|null $setterValue The value for the first setter parameter
+     * @return array The resolved parameter values
+     * @throws \InvalidArgumentException If parameter rules are violated
+     */
+    public function resolveMethodParams(object $object, \ReflectionMethod $method, bool $isSetter = false, mixed $setterValue = null): array
+    {
+        $parameters = $method->getParameters();
+        $resolvedArgs = [];
+        
+        foreach ($parameters as $index => $param) {
+            $paramAttrs = $param->getAttributes(Param::class);
+            $hasParamAttr = !empty($paramAttrs);
+            
+            if ($isSetter && $index === 0) {
+                // First setter parameter must NOT have Param attribute
+                if ($hasParamAttr) {
+                    throw new \InvalidArgumentException(sprintf(
+                        'First parameter "%s" of setter "%s" in class "%s" must not have a #[Param] attribute. ' .
+                        'Only additional parameters (from 2nd) can have Param.',
+                        $param->getName(),
+                        $method->getName(),
+                        $method->getDeclaringClass()->getName()
+                    ));
+                }
+                $resolvedArgs[] = $setterValue;
+                continue;
+            }
+            
+            // For getters or setter's additional params, Param is required if method has params
+            if (!$hasParamAttr) {
+                if ($param->isOptional()) {
+                    $resolvedArgs[] = $param->getDefaultValue();
+                } else {
+                    throw new \InvalidArgumentException(sprintf(
+                        'Parameter "%s" of method "%s" in class "%s" must have a #[Param] attribute.',
+                        $param->getName(),
+                        $method->getName(),
+                        $method->getDeclaringClass()->getName()
+                    ));
+                }
+                continue;
+            }
+            
+            /** @var Param $paramAttr */
+            $paramAttr = $paramAttrs[0]->newInstance();
+            $value = $paramAttr->value;
+            
+            // Resolve the expression value with object context
+            $resolvedArgs[] = $this->resolveParamValueWithContext($value, $object);
+        }
+        
+        return $resolvedArgs;
+    }
+
+    /**
+     * Resolve a Param value with object context (for getters/setters)
+     * 
+     * @param string $value The Param value
+     * @param object $object The object context
+     * @return mixed The resolved value
+     */
+    private function resolveParamValueWithContext(string $value, object $object): mixed
+    {
+        // Check if it's an expression
+        if (preg_match('/^expr\((.+)\)$/s', $value, $matches)) {
+            $expression = $matches[1];
+            
+            // Create expression parser with object context
+            $sourceFunctionProvider = $this->sourceFunctionProviders[$object] ?? new SourceFunctionProvider(
+                fn(string $sourceId) => $this->executeDataSourceById($object, $sourceId)
+            );
+            $expressionParser = new ExpressionParser($sourceFunctionProvider, $this->serviceResolver);
+            $expressionParser->setCurrentObject($object);
+            
+            // Handle context() expression
+            if (preg_match("/^context\('([^']+)'\)$/", $expression, $contextMatches)) {
+                return \Kassko\DataMapper\Registry\ContextRegistry::get($contextMatches[1]);
+            }
+            
+            // Handle service() expression  
+            if (preg_match("/^service\('([^']+)'\)$/", $expression, $serviceMatches)) {
+                return $this->serviceResolver->resolve($serviceMatches[1]);
+            }
+            
+            // Handle source() expression
+            if (preg_match("/^source\('([^']+)'\)$/", $expression, $sourceMatches)) {
+                return $sourceFunctionProvider->executeSource($sourceMatches[1]);
+            }
+            
+            // Handle property() expression
+            if (preg_match("/^property\('([^']+)'\)$/", $expression, $propMatches)) {
+                $this->loadProperty($object, $propMatches[1]);
+                return $this->getPropertyValue($object, $propMatches[1]);
+            }
+            
+            // For more complex expressions, try resolving via expression parser
+            $propertyLoader = fn(string $propName) => $this->loadProperty($object, $propName);
+            return $expressionParser->resolveArgs([$value], $object, $propertyLoader)[0];
+        }
+        
+        // Handle simple property references
+        if (preg_match('/^#(\w+)$/', $value, $matches)) {
+            $propName = $matches[1];
+            $this->loadProperty($object, $propName);
+            return $this->getPropertyValue($object, $propName);
+        }
+        
+        if ($value === '##object') {
+            return $object;
+        }
+        
+        // Static value
+        return $value;
+    }
+
+    /**
+     * Get a property value from an object using reflection
+     * 
+     * @param object $object
+     * @param string $propertyName
+     * @return mixed
+     */
+    private function getPropertyValue(object $object, string $propertyName): mixed
+    {
+        $reflectionClass = new ReflectionClass($object);
+        
+        if (!$reflectionClass->hasProperty($propertyName)) {
+            return null;
+        }
+        
+        $property = $reflectionClass->getProperty($propertyName);
+        $property->setAccessible(true);
+        return $property->getValue($object);
     }
 
     /**
@@ -210,10 +500,10 @@ class Loader implements LoaderInterface
      */
     public function loadProperty(object $object, string $propertyName): void
     {
-        // Check if property is locked (prevent loading) - use registry first, fallback to method
+        // Check if property is locked (prevent loading) - use registry first, fallback to method via reflection
         $isLocked = LockedPropertyRegistry::isLocked($object, $propertyName);
-        if (!$isLocked && method_exists($object, 'isPropertyLocked')) {
-            $isLocked = $object->isPropertyLocked($propertyName);
+        if (!$isLocked) {
+            $isLocked = $this->checkPropertyLockedViaReflection($object, $propertyName);
         }
         
         if ($isLocked) {
@@ -687,6 +977,12 @@ class Loader implements LoaderInterface
             return;
         }
         
+        // Execute before_hydrate_object hooks (only once per object)
+        $hooksAlreadyExecuted = $this->hydratingHooksExecuted[$object] ?? false;
+        if (!$hooksAlreadyExecuted) {
+            $this->executeHydratingHooks($object, 'before', $data);
+        }
+        
         // Filter properties based on loadingScope
         $properties = $this->filterProperties($object, $source, $data);
         
@@ -723,6 +1019,12 @@ class Loader implements LoaderInterface
             $this->hydrateProperty($object, $propName, $data);
             $this->registerPropertyHydration($object, $propName, $sourcePriority, $sourceSignature);
             $this->loadedProperties[$object][$propName] = true;
+        }
+        
+        // Execute after_hydrate_object hooks (only once per object)
+        if (!$hooksAlreadyExecuted) {
+            $this->executeHydratingHooks($object, 'after', $data);
+            $this->hydratingHooksExecuted[$object] = true;
         }
     }
 
@@ -1123,8 +1425,8 @@ class Loader implements LoaderInterface
                     continue;
                 }
                 
-                // Instantiate the nested object
-                $nestedObject = new $itemPropertyAttr->class();
+                // Instantiate the nested object with Param attribute support
+                $nestedObject = $this->instantiateWithParams($itemPropertyAttr->class);
                 
                 // Track parent-child relationship
                 if ($parentObject !== null) {
@@ -1167,8 +1469,8 @@ class Loader implements LoaderInterface
         // Get the actual class to instantiate
         $className = $effectivePropertyAttr->class;
         
-        // Instantiate the nested object
-        $nestedObject = new $className();
+        // Instantiate the nested object with Param attribute support
+        $nestedObject = $this->instantiateWithParams($className);
         
         // Track parent-child relationship
         if ($parentObject !== null) {
@@ -1477,10 +1779,10 @@ class Loader implements LoaderInterface
         
         foreach ($hooks as $hook) {
             if ($when === 'before' && $hook->before_hydrate_object !== '') {
-                $this->executeHook($object, $hook->before_hydrate_object, $hook->class, $hook->args, $rawData);
+                $this->executeHook($object, $hook->before_hydrate_object, $hook->class, $hook->args, $rawData, false, null, true);
             } elseif ($when === 'after' && $hook->after_hydrate_object !== '') {
                 // For after hook, pass both object and rawData as special args
-                $this->executeHook($object, $hook->after_hydrate_object, $hook->class, $hook->args, $rawData, true);
+                $this->executeHook($object, $hook->after_hydrate_object, $hook->class, $hook->args, $rawData, true, null, true);
             }
         }
     }
@@ -1518,6 +1820,7 @@ class Loader implements LoaderInterface
      * @param array $rawData
      * @param bool $includeObjectInArgs For after_hydrate_object, pass object as first arg
      * @param ReflectionProperty|null $property
+     * @param bool $isHydratingHook Whether this is a hydrating hook (receives rawData as arg)
      */
     private function executeHook(
         object $object,
@@ -1526,7 +1829,8 @@ class Loader implements LoaderInterface
         array $args,
         array $rawData,
         bool $includeObjectInArgs = false,
-        ?ReflectionProperty $property = null
+        ?ReflectionProperty $property = null,
+        bool $isHydratingHook = false
     ): void {
         // Determine which object/service to call the method on
         $target = $object;
@@ -1551,9 +1855,16 @@ class Loader implements LoaderInterface
         // Resolve arguments
         $resolvedArgs = [];
         
-        // For after_hydrate_object, add object as first argument
-        if ($includeObjectInArgs) {
-            $resolvedArgs[] = $object;
+        // For hydrating hooks, first argument is always rawData
+        // For after_hydrate_object, add object as first argument, then rawData
+        if ($isHydratingHook) {
+            if ($includeObjectInArgs) {
+                $resolvedArgs[] = $object;
+                $resolvedArgs[] = $rawData;
+            } else {
+                // For before_hydrate_object, rawData is first argument
+                $resolvedArgs[] = $rawData;
+            }
         }
         
         foreach ($args as $arg) {

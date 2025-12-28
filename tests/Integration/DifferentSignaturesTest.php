@@ -17,7 +17,7 @@ use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use PHPUnit\Framework\TestCase;
 
 class DifferentSignaturesTest extends TestCase
@@ -42,7 +42,7 @@ class DifferentSignaturesTest extends TestCase
 
         // Create an entity with properties that have different signatures
         $entity = new class($dataSource) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private object $dataSource;
 
@@ -91,7 +91,7 @@ class DifferentSignaturesTest extends TestCase
             new MultiPropDataSource(id: 'data2', class: 'Kassko\Sample\PersonDataSource', method: 'getData', args: ['#id2']),
         ])]
         class(1, 2) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id1;
             private int $id2;

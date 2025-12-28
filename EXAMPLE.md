@@ -872,3 +872,95 @@ foreach ($skipped as $event) {
 $dataMapper->disableLineageCollection();
 $collector->clear();
 ```
+
+## Parameter Injection with Param Attribute
+
+### Constructor Parameter Injection
+
+Use `#[Param]` to inject values into constructor parameters. All constructor parameters MUST have a Param attribute:
+
+```php
+use Kassko\DataMapper\Attribute\Param;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+class User
+{
+    use LoadableTrait;
+    
+    private string $userId;
+    
+    public function __construct(
+        #[Param(value: "expr(context('requestedUserId'))")]
+        string $userId
+    ) {
+        $this->userId = $userId;
+    }
+}
+
+// Set context before instantiation
+ContextRegistry::set('requestedUserId', '12345');
+
+// Instantiate via Loader
+$loader = LoaderRegistry::get();
+$user = $loader->instantiateWithParams(User::class);
+echo $user->userId; // "12345"
+```
+
+### Getter Parameter Injection
+
+Inject services or context values into getter parameters:
+
+```php
+use Kassko\DataMapper\Attribute\Param;
+
+class Person
+{
+    use LoadableTrait;
+    
+    private ?string $name = null;
+    
+    public function getName(
+        #[Param(value: "expr(service('nameFormatter'))")]
+        $formatter = null
+    ): ?string {
+        $this->loadProperty('name');
+        return $formatter?->format($this->name) ?? $this->name;
+    }
+}
+```
+
+### Setter Parameter Injection
+
+The first setter parameter receives the hydrated value (no Param). Additional parameters can have Param:
+
+```php
+use Kassko\DataMapper\Attribute\Param;
+
+class Person
+{
+    private ?string $email = null;
+    
+    public function setEmail(
+        $email,  // First parameter: value from hydration, NO Param
+        #[Param(value: "expr(context('emailDomain'))")]
+        $domain = null
+    ): void {
+        $this->email = $domain ? $email . '@' . $domain : $email;
+    }
+}
+```
+
+### Supported Param Values
+
+| Value Type | Example |
+|------------|---------|
+| Static | `"fixed value"` |
+| Context | `"expr(context('key'))"` |
+| Service | `"expr(service('serviceId'))"` |
+| Source | `"expr(source('sourceId'))"` |
+| Property* | `"#propertyName"` or `"expr(property('name'))"` |
+| Object* | `"##object"` |
+
+\* Property references are forbidden in constructor parameters.
+
+See [Param Attribute Documentation](docs/attributes/Param.md) for more details.

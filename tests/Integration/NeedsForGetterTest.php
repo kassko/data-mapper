@@ -19,7 +19,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Needs;
 use Kassko\DataMapper\DataMapperBuilder;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use PHPUnit\Framework\TestCase;
 
@@ -85,7 +85,7 @@ class NeedsForGetterTest extends TestCase
             new MultiPropDataSource(id: 'sourceF', class: 'SourceF', method: 'getData'),
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
             
             // propD and propF are NOT in args, but are used in the getter
             // So we need Needs to load them before propC
@@ -180,7 +180,7 @@ class NeedsForGetterTest extends TestCase
             new MultiPropDataSource(id: 'sourceValidator', class: 'SourceValidator', method: 'getData'),
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
             
             #[DataSourceRef(id: 'sourceA')]
             private ?string $propA = null;

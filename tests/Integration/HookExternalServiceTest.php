@@ -19,7 +19,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\EmailDataSource;
 use Kassko\Sample\NameDataSource;
@@ -62,7 +62,7 @@ class HookExternalServiceTest extends TestCase
             )
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
             
             #[DataSourceRef(id: 'emailSource')]
             #[PropertySettingHook(
@@ -114,7 +114,7 @@ class HookExternalServiceTest extends TestCase
             )
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
             
             #[DataSourceRef(id: 'statusSource')]
             #[PropertySettingHook(
@@ -167,7 +167,7 @@ class HookExternalServiceTest extends TestCase
             )
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
             
             public bool $validated = false;
             

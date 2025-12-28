@@ -18,7 +18,7 @@ use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Property;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 #[DataSourcesStore([
     new MultiPropDataSource(
@@ -36,7 +36,7 @@ use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 ])]
 class PersonWithCar
 {
-    use LoadableInternalTrait;
+    use LoadableTrait;
 
     private int $id;
 

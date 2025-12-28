@@ -68,7 +68,7 @@ trait LoadableTrait
      * Check if a property is locked.
      * @internal Used by the Loader to check if a property should be loaded
      */
-    public function isPropertyLocked(string $propertyName): bool
+    protected function isPropertyLocked(string $propertyName): bool
     {
         return LockedPropertyRegistry::isLocked($this, $propertyName);
     }

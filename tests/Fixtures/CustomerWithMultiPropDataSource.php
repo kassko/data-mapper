@@ -14,11 +14,11 @@ declare(strict_types=1);
 namespace Kassko\Sample;
 
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 class CustomerWithMultiPropDataSource 
 {
-    use LoadableInternalTrait;
+    use LoadableTrait;
 
     #[MultiPropDataSource(class: '\Kassko\Sample\CustomerMultiPropDataSource', method: 'fetchMultipleData')]
     private ?string $name = null;

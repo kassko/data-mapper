@@ -15,7 +15,7 @@ namespace Kassko\DataMapper\Tests\Unit;
 
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use PHPUnit\Framework\TestCase;
 
@@ -28,7 +28,7 @@ class LoaderValidationTest extends TestCase
     public function testThrowsExceptionForNonExistentClass(): void
     {
         $entity = new class(1) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id;
 
@@ -58,7 +58,7 @@ class LoaderValidationTest extends TestCase
     public function testThrowsExceptionForNonExistentMethod(): void
     {
         $entity = new class(1) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id;
 
@@ -96,7 +96,7 @@ class LoaderValidationTest extends TestCase
         ");
 
         $entity = new class($abstractClassName, 1) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private string $className;
             private int $id;

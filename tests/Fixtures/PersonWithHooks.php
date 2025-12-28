@@ -15,12 +15,12 @@ namespace Kassko\Sample;
 
 use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 
 #[PropertyInstantiatingHook(after_instantiating: 'initializeObject', args: ['##object'])]
 class PersonWithHooks
 {
-    use LoadableInternalTrait;
+    use LoadableTrait;
 
     private ?int $id = null;
     private bool $initialized = false;

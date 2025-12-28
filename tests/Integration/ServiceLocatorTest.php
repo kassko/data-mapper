@@ -18,7 +18,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\DataMapper;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\ServiceResolver;
 use Kassko\Sample\PersonDataSource;
 use PHPUnit\Framework\TestCase;
@@ -39,7 +39,7 @@ class ServiceLocatorTest extends TestCase
             new MultiPropDataSource(id: 'personData', class: '@person.data_source', method: 'getData', args: ['#id'])
         ])]
         class(1) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id;
 
@@ -83,7 +83,7 @@ class ServiceLocatorTest extends TestCase
             new MultiPropDataSource(id: 'personData', class: '@person.data_source', method: 'getData', args: ['#id'])
         ])]
         class(1) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id;
 

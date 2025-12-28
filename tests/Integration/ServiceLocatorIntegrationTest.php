@@ -18,7 +18,7 @@ use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\Sample\PersonDataSource;
 use Kassko\Sample\CarRepository;
@@ -55,7 +55,7 @@ final class ServiceLocatorIntegrationTest extends TestCase
             new MultiPropDataSource(id: 'personData', class: '@person.datasource', method: 'getData', args: ['#id'])
         ])]
         class(1) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id;
 
@@ -111,7 +111,7 @@ final class ServiceLocatorIntegrationTest extends TestCase
             new MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])
         ])]
         class(2) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id;
 
@@ -147,7 +147,7 @@ final class ServiceLocatorIntegrationTest extends TestCase
             new MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])
         ])]
         class(3) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id;
 
@@ -214,7 +214,7 @@ final class ServiceLocatorIntegrationTest extends TestCase
             new MultiPropDataSource(id: 'personData', class: PersonDataSource::class, method: 'getData', args: ['#id'])
         ])]
         class(1) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id;
 
@@ -256,7 +256,7 @@ final class ServiceLocatorIntegrationTest extends TestCase
             new MultiPropDataSource(id: 'personData', class: 'DIPLOMA', method: 'getData', args: ['#id'])
         ])]
         class(1) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id;
 
@@ -301,7 +301,7 @@ final class ServiceLocatorIntegrationTest extends TestCase
             new MultiPropDataSource(id: 'personData', class: 'TEST_KEY', method: 'getData', args: ['#id'])
         ])]
         class(1) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id;
 
@@ -359,7 +359,7 @@ final class ServiceLocatorIntegrationTest extends TestCase
             new MultiPropDataSource(id: 'personData', class: 'MY_DATASOURCE', method: 'getData', args: ['#id'])
         ])]
         class(1) {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             private int $id;
 

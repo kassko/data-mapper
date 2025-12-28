@@ -23,7 +23,7 @@ use Kassko\DataMapper\Attribute\PropertyCandidate;
 use Kassko\DataMapper\Attribute\PropertyCandidates;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\DataMapperBuilder;
-use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\ContextRegistry;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\DataMapper\ServiceResolver;
@@ -64,7 +64,7 @@ class ContextIntegrationTest extends TestCase
             new MultiPropDataSource(id: 'source', class: 'TestSource', method: 'getData'),
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             #[Context(role: 'admin', level: 'high')]
             #[DataSourceRef(id: 'source')]
@@ -179,7 +179,7 @@ class ContextIntegrationTest extends TestCase
             new MultiPropDataSource(id: 'source', class: 'TestSource', method: 'getData'),
         ])]
         class {
-            use LoadableInternalTrait;
+            use LoadableTrait;
 
             #[DataSourceRef(id: 'source')]
             private ?string $name = null;
