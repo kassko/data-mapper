@@ -15,13 +15,17 @@ namespace Kassko\Sample;
 
 use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\Property;
-use Kassko\DataMapper\Attribute\PropertyCandidates;
-use Kassko\DataMapper\Attribute\PropertyCandidate;
+use Kassko\DataMapper\Attribute\PropertyConfig;
+use Kassko\DataMapper\Attribute\PropertyConfigStore;
 use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\ObjectExtension\LoadableInternalTrait;
 
 #[PropertyInstantiatingHook(after_instantiating: 'onCreated', args: ['##object'])]
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'gasolineCar', class: GasolineCar::class),
+    new PropertyConfig(id: 'electricCar', class: ElectricCar::class),
+])]
 class Garage
 {
     use LoadableInternalTrait;
@@ -31,16 +35,13 @@ class Garage
     private bool $carsLoaded = false;
 
     #[SinglePropDataSource(class: GarageDataSource::class, method: 'getCars', args: ['#id'])]
-    #[PropertyCandidates([
-        new PropertyCandidate(
-            discriminator: "expr(rawDataItemExists('gasolineKind'))",
-            property: new Property(class: GasolineCar::class)
-        ),
-        new PropertyCandidate(
-            discriminator: "expr(rawDataItemExists('energyProvider'))",
-            property: new Property(class: ElectricCar::class)
-        )
-    ])]
+    #[Property(
+        configCandidates: [
+            ['id' => 'gasolineCar', 'rule' => "expr(rawDataItemExists('gasolineKind'))"],
+            ['id' => 'electricCar', 'rule' => "expr(rawDataItemExists('energyProvider'))"],
+        ],
+        defaultConfigCandidate: 'gasolineCar'
+    )]
     #[PropertySettingHook(after_set_property: 'onCarsLoaded', args: ['##object', '#cars'])]
     private array $cars = [];
 

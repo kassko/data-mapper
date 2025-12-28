@@ -176,9 +176,9 @@ class Product
 private array $fullProfile = [];
 ```
 
-### DataSource Candidates (Discriminator-Based Selection)
+### DataSource Candidates (Rule-Based Selection)
 
-Select a data source dynamically based on context or conditions:
+Select a data source dynamically based on context or conditions. When no rule matches, `defaultCandidate` is used:
 
 ```php
 use Kassko\DataMapper\Attribute\DataSourcesStore;
@@ -193,11 +193,11 @@ class User
 {
     #[DataSourceRef(
         candidates: [
-            // First candidate: selected if new_feature_enabled context is true
-            ['id' => 'newFeatureSource', 'discriminator' => "expr(context('new_feature_enabled'))", 'priority' => 15],
-            // Second candidate: fallback (always true)
-            ['id' => 'oldFeatureSource', 'discriminator' => 'expr(true)'],
+            // Candidate: selected if new_feature_enabled context is true
+            ['id' => 'newFeatureSource', 'rule' => "expr(context('new_feature_enabled'))", 'priority' => 15],
         ],
+        // Default: used when no rule matches
+        defaultCandidate: ['id' => 'oldFeatureSource'],
         priority: 10
     )]
     private ?string $name = null;
@@ -208,7 +208,7 @@ $dataMapper->addToContext('new_feature_enabled', true);
 // -> Will use 'newFeatureSource' with priority 15
 
 $dataMapper->addToContext('new_feature_enabled', false);
-// -> Will use 'oldFeatureSource' with base priority 10
+// -> Will use 'oldFeatureSource' (defaultCandidate) with base priority 10
 ```
 
 ### Instance Mapping
@@ -240,18 +240,22 @@ class Order
 ### Polymorphic Collections
 
 ```php
+use Kassko\DataMapper\Attribute\PropertyConfig;
+use Kassko\DataMapper\Attribute\PropertyConfigStore;
+
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'gasolineCar', class: GasolineCar::class),
+    new PropertyConfig(id: 'electricCar', class: ElectricCar::class),
+])]
 class Garage
 {
-    #[PropertyCandidates([
-        new PropertyCandidate(
-            discriminator: "expr(rawDataItemExists('fuel_type'))",
-            property: new Property(class: GasolineCar::class)
-        ),
-        new PropertyCandidate(
-            discriminator: "expr(rawDataItemExists('battery_capacity'))",
-            property: new Property(class: ElectricCar::class)
-        )
-    ])]
+    #[Property(
+        configCandidates: [
+            ['id' => 'gasolineCar', 'rule' => "expr(rawDataItemExists('fuel_type'))"],
+            ['id' => 'electricCar', 'rule' => "expr(rawDataItemExists('battery_capacity'))"],
+        ],
+        defaultConfigCandidate: 'gasolineCar'
+    )]
     private array $vehicles = [];
 }
 
@@ -750,19 +754,21 @@ class Company
     private Chief $chief;
 }
 
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'premium', class: PremiumOffice::class),
+    new PropertyConfig(id: 'regional', class: RegionalOffice::class),
+    new PropertyConfig(id: 'default', class: Office::class),
+])]
 class Chief
 {
     // Access parent context in expressions
-    #[PropertyCandidates([
-        new PropertyCandidate(
-            discriminator: "expr(context('tier') === 'premium')",
-            property: new Property(class: PremiumOffice::class)
-        ),
-        new PropertyCandidate(
-            discriminator: "expr(contextKeyExists('region'))",
-            property: new Property(class: RegionalOffice::class)
-        )
-    ])]
+    #[Property(
+        configCandidates: [
+            ['id' => 'premium', 'rule' => "expr(context('tier') === 'premium')"],
+            ['id' => 'regional', 'rule' => "expr(contextKeyExists('region'))"],
+        ],
+        defaultConfigCandidate: 'default'
+    )]
     private ?Office $office = null;
     
     // Override context for nested objects

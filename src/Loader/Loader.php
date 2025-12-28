@@ -17,7 +17,8 @@ use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\Property;
-use Kassko\DataMapper\Attribute\PropertyCandidates;
+use Kassko\DataMapper\Attribute\PropertyConfigStore;
+use Kassko\DataMapper\Attribute\PropertyConfig;
 use Kassko\DataMapper\Attribute\Loading;
 use Kassko\DataMapper\Attribute\CustomHydrator;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
@@ -390,9 +391,10 @@ class Loader implements LoaderInterface
     }
 
     /**
-     * Load a property with candidates (discriminator-based source selection)
+     * Load a property with candidates (rule-based source selection)
      *
-     * Evaluates each candidate's discriminator expression and uses the first matching source.
+     * Evaluates each candidate's rule expression and uses the first matching source.
+     * If no rule matches, uses defaultCandidate.
      * If a candidate defines its own priority, it takes precedence over the base priority.
      *
      * @param object $object
@@ -404,9 +406,10 @@ class Loader implements LoaderInterface
     {
         $basePriority = $dataSourceRef->priority;
         $candidates = $dataSourceRef->candidates;
+        $defaultCandidate = $dataSourceRef->defaultCandidate;
         $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
         
-        // Create expression parser for evaluating discriminators
+        // Create expression parser for evaluating rules
         $expressionParser = new ExpressionParser(
             $this->sourceFunctionProviders[$object] ?? new SourceFunctionProvider(
                 fn(string $sourceId) => $this->executeDataSourceById($object, $sourceId)
@@ -421,15 +424,26 @@ class Loader implements LoaderInterface
         // Find the first matching candidate
         $electedCandidate = null;
         foreach ($candidates as $candidate) {
-            $discriminator = $candidate['discriminator'];
+            $rule = $candidate['rule'];
             
-            // Evaluate the discriminator expression
-            $result = $expressionParser->resolveArgs([$discriminator], $object, $propertyLoader)[0];
+            // Evaluate the rule expression
+            $result = $expressionParser->resolveArgs([$rule], $object, $propertyLoader)[0];
             
             if ($result === true || $result === 'true' || $result === 1 || $result === '1') {
                 $electedCandidate = $candidate;
                 break;
             }
+        }
+        
+        // Determine effective priority (candidate's priority takes precedence if defined)
+        $effectivePriority = $basePriority;
+        // If no candidate matched, use defaultCandidate
+        if ($electedCandidate === null) {
+            $this->logger->info(
+                'No candidate matched for property, using defaultCandidate',
+                ['property' => $propertyName, 'candidatesCount' => count($candidates), 'defaultCandidateId' => $defaultCandidate['id']]
+            );
+            $electedCandidate = $defaultCandidate;
         }
         
         // Determine effective priority (candidate's priority takes precedence if defined)
@@ -447,21 +461,6 @@ class Loader implements LoaderInterface
             $basePriority,
             $effectivePriority
         );
-        
-        // If no candidate matched, skip property loading
-        if ($electedCandidate === null) {
-            $this->logger->info(
-                'No candidate matched for property, skipping hydration',
-                ['property' => $propertyName, 'candidatesCount' => count($candidates)]
-            );
-            $this->lineageCollector?->recordPropertySkipped(
-                get_class($object),
-                $propertyName,
-                'no_candidate_matched',
-                ['candidatesCount' => count($candidates)]
-            );
-            return;
-        }
         
         $sourceId = $electedCandidate['id'];
         $sourceSignature = 'candidates:' . $sourceId;
@@ -1064,19 +1063,14 @@ class Loader implements LoaderInterface
      */
     private function applyRecursiveHydration(ReflectionProperty $property, mixed $value, int $currentDepth, ?object $parentObject = null): mixed
     {
-        // Check for PropertyCandidates first
-        $propertyCandidates = $this->attributeReader->readPropertyCandidates($property);
-        $propertyAttr = null;
-        
-        // Note: Don't try to resolve PropertyCandidate here for the whole value
-        // It will be resolved per-item if this is a list array
-        
-        // Fall back to direct Property attribute
+        // Read the Property attribute
         $propertyAttr = $this->attributeReader->readProperty($property);
         
-        // If no direct Property attribute and we have PropertyCandidates, 
-        // we'll handle it in the list processing below
-        if ($propertyAttr === null && $propertyCandidates === null) {
+        // Check if this property has configCandidates (polymorphic hydration)
+        $hasConfigCandidates = $propertyAttr !== null && $propertyAttr->configCandidates !== null;
+        
+        // If no Property attribute, return value as-is
+        if ($propertyAttr === null) {
             return $value;
         }
         
@@ -1091,6 +1085,13 @@ class Loader implements LoaderInterface
             return $value;
         }
         
+        // Get PropertyConfigStore for the parent class if we have configCandidates or config reference
+        $configStore = null;
+        if ($hasConfigCandidates || $propertyAttr->config !== null) {
+            $reflectionClass = new \ReflectionClass($parentObject ?? $property->getDeclaringClass()->getName());
+            $configStore = $this->attributeReader->readPropertyConfigStore($reflectionClass);
+        }
+        
         // Handle array of objects (collection)
         if ($this->isListArray($value)) {
             $result = [];
@@ -1100,16 +1101,23 @@ class Loader implements LoaderInterface
                     continue;
                 }
                 
-                // Resolve property config for each item if PropertyCandidates exists
+                // Resolve property config for each item if configCandidates exists
                 $itemPropertyAttr = $propertyAttr;
-                if ($propertyCandidates !== null) {
-                    $resolved = $this->resolvePropertyCandidate($propertyCandidates, $itemData);
-                    if ($resolved !== null) {
-                        $itemPropertyAttr = $resolved;
+                if ($hasConfigCandidates && $configStore !== null) {
+                    $resolvedConfig = $this->resolvePropertyConfig($propertyAttr, $configStore, $itemData);
+                    if ($resolvedConfig !== null) {
+                        // Merge config into a new Property-like object
+                        $itemPropertyAttr = $this->mergePropertyConfig($propertyAttr, $resolvedConfig);
+                    }
+                } elseif ($propertyAttr->config !== null && $configStore !== null) {
+                    // Single config reference
+                    $config = $configStore->configs[$propertyAttr->config] ?? null;
+                    if ($config !== null) {
+                        $itemPropertyAttr = $this->mergePropertyConfig($propertyAttr, $config);
                     }
                 }
                 
-                // If still no property config, skip this item
+                // If still no class defined, skip this item
                 if ($itemPropertyAttr === null || $itemPropertyAttr->class === null) {
                     $result[] = $itemData;
                     continue;
@@ -1135,18 +1143,29 @@ class Loader implements LoaderInterface
         }
         
         // Single object (not a list)
-        // If no propertyAttr and we have PropertyCandidates, try to resolve
-        if ($propertyAttr === null && $propertyCandidates !== null) {
-            $propertyAttr = $this->resolvePropertyCandidate($propertyCandidates, $value);
+        $effectivePropertyAttr = $propertyAttr;
+        
+        // Resolve config if using configCandidates
+        if ($hasConfigCandidates && $configStore !== null) {
+            $resolvedConfig = $this->resolvePropertyConfig($propertyAttr, $configStore, $value);
+            if ($resolvedConfig !== null) {
+                $effectivePropertyAttr = $this->mergePropertyConfig($propertyAttr, $resolvedConfig);
+            }
+        } elseif ($propertyAttr->config !== null && $configStore !== null) {
+            // Single config reference
+            $config = $configStore->configs[$propertyAttr->config] ?? null;
+            if ($config !== null) {
+                $effectivePropertyAttr = $this->mergePropertyConfig($propertyAttr, $config);
+            }
         }
         
-        // If still no propertyAttr or no class, return as-is
-        if ($propertyAttr === null || $propertyAttr->class === null) {
+        // If no class defined, return as-is
+        if ($effectivePropertyAttr === null || $effectivePropertyAttr->class === null) {
             return $value;
         }
         
         // Get the actual class to instantiate
-        $className = $propertyAttr->class;
+        $className = $effectivePropertyAttr->class;
         
         // Instantiate the nested object
         $nestedObject = new $className();
@@ -1160,31 +1179,32 @@ class Loader implements LoaderInterface
         $this->executeInstantiatingHooks($nestedObject, $value);
         
         // Hydrate the single nested object (using mapped data keys)
-        $this->hydrateObject($nestedObject, $value, $propertyAttr, $currentDepth + 1);
+        $this->hydrateObject($nestedObject, $value, $effectivePropertyAttr, $currentDepth + 1);
         
         return $nestedObject;
     }
 
     /**
-     * Resolve property configuration from PropertyCandidates based on discriminator evaluation
+     * Resolve property configuration from configCandidates based on rule evaluation
      *
-     * @param PropertyCandidates $propertyCandidates
-     * @param array $rawDataItem
-     * @return Property|null
+     * @param Property $propertyAttr The Property attribute with configCandidates
+     * @param PropertyConfigStore $configStore The store containing all configs
+     * @param array $rawDataItem Raw data to evaluate rules against
+     * @return PropertyConfig|null
      */
-    private function resolvePropertyCandidate(PropertyCandidates $propertyCandidates, array $rawDataItem): ?Property
+    private function resolvePropertyConfig(Property $propertyAttr, PropertyConfigStore $configStore, array $rawDataItem): ?PropertyConfig
     {
-        // Create a temporary expression parser for discriminator evaluation
+        // Create a temporary expression parser for rule evaluation
         $sourceFunctionProvider = new SourceFunctionProvider(fn() => null);
         $expressionParser = new ExpressionParser($sourceFunctionProvider, $this->serviceResolver);
         $expressionParser->setRawData($rawDataItem);
         
-        foreach ($propertyCandidates->candidates as $candidate) {
-            // Evaluate the discriminator expression
-            $discriminator = $candidate->discriminator;
+        foreach ($propertyAttr->configCandidates as $candidate) {
+            $rule = $candidate['rule'];
+            $configId = $candidate['id'];
             
             // Check if it's an expression
-            if (preg_match('/^expr\((.+)\)$/s', $discriminator, $matches)) {
+            if (preg_match('/^expr\((.+)\)$/s', $rule, $matches)) {
                 $expression = $matches[1];
                 
                 // Parse and evaluate the expression
@@ -1224,12 +1244,35 @@ class Loader implements LoaderInterface
                 }
                 
                 if ($result === true) {
-                    return $candidate->property;
+                    return $configStore->configs[$configId] ?? null;
                 }
             }
         }
         
+        // No rule matched, use defaultConfigCandidate
+        if ($propertyAttr->defaultConfigCandidate !== null) {
+            return $configStore->configs[$propertyAttr->defaultConfigCandidate] ?? null;
+        }
+        
         return null;
+    }
+
+    /**
+     * Merge a PropertyConfig into a new Property-like object
+     *
+     * @param Property $propertyAttr Original Property attribute
+     * @param PropertyConfig $config PropertyConfig to merge
+     * @return Property
+     */
+    private function mergePropertyConfig(Property $propertyAttr, PropertyConfig $config): Property
+    {
+        return new Property(
+            name: $config->name ?? $propertyAttr->name,
+            class: $config->class ?? $propertyAttr->class,
+            expand: $config->expand ?? $propertyAttr->expand,
+            noExpand: $config->noExpand ?? $propertyAttr->noExpand,
+            mapping: $config->mapping ?? $propertyAttr->mapping,
+        );
     }
 
     /**

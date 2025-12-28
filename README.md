@@ -129,22 +129,22 @@ DataSourceRef now uses `id` + `fallbacks` instead of `chain` for clearer semanti
 private ?string $data = null;
 ```
 
-#### Candidates (Discriminator-Based Selection)
+#### Candidates (Rule-Based Selection)
 
-Select a data source dynamically based on context or conditions:
+Select a data source dynamically based on context or conditions. When no rule matches, `defaultCandidate` is used:
 
 ```php
 #[DataSourceRef(
     candidates: [
-        ['id' => 'newFeatureSource', 'discriminator' => "expr(context('new_feature_enabled'))", 'priority' => 15],
-        ['id' => 'oldFeatureSource', 'discriminator' => 'expr(true)'],
+        ['id' => 'newFeatureSource', 'rule' => "expr(context('new_feature_enabled'))", 'priority' => 15],
     ],
+    defaultCandidate: ['id' => 'oldFeatureSource'],
     priority: 10
 )]
 private ?string $name = null;
 ```
 
-The first candidate whose `discriminator` evaluates to `true` is elected. If a candidate defines its own `priority`, it overrides the base priority.
+The first candidate whose `rule` evaluates to `true` is elected. If a candidate defines its own `priority`, it overrides the base priority. If no rule matches, `defaultCandidate` is used as fallback.
 
 #### Build-Time Validation
 
@@ -457,22 +457,26 @@ class Order
 
 Properties listed in `Needs` are loaded before the annotated property. Already-loaded properties are not reloaded.
 
-#### PropertyCandidates (Polymorphism)
+#### PropertyConfigStore + Property configCandidates (Polymorphism)
 
-Runtime type resolution:
+Runtime type resolution using PropertyConfigStore and configCandidates:
 
 ```php
-#[PropertyCandidates([
-    new PropertyCandidate(
-        discriminator: "expr(rawDataItemExists('gasoline_kind'))",
-        property: new Property(class: GasolineCar::class)
-    ),
-    new PropertyCandidate(
-        discriminator: "expr(rawDataItemExists('energy_provider'))",
-        property: new Property(class: ElectricCar::class)
-    )
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'gasolineCar', class: GasolineCar::class),
+    new PropertyConfig(id: 'electricCar', class: ElectricCar::class),
 ])]
-private array $cars = [];
+class Garage
+{
+    #[Property(
+        configCandidates: [
+            ['id' => 'gasolineCar', 'rule' => "expr(rawDataItemExists('gasoline_kind'))"],
+            ['id' => 'electricCar', 'rule' => "expr(rawDataItemExists('energy_provider'))"],
+        ],
+        defaultConfigCandidate: 'gasolineCar'
+    )]
+    private array $cars = [];
+}
 ```
 
 #### KeepAllProperties, SkipAllProperties, SkipProperty, KeepProperty
@@ -502,17 +506,22 @@ private ?Shop $shop = null;
 Context values accumulate through nested objects and can be accessed in expressions:
 
 ```php
-#[PropertyCandidates([
-    new PropertyCandidate(
-        discriminator: "expr(context('shop_quality') === 'premium')",
-        property: new Property(class: PremiumShop::class)
-    ),
-    new PropertyCandidate(
-        discriminator: "expr(contextKeyExists('region'))",
-        property: new Property(class: RegionalShop::class)
-    )
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'premium', class: PremiumShop::class),
+    new PropertyConfig(id: 'regional', class: RegionalShop::class),
+    new PropertyConfig(id: 'default', class: Shop::class),
 ])]
-private ?Shop $shop = null;
+class Container
+{
+    #[Property(
+        configCandidates: [
+            ['id' => 'premium', 'rule' => "expr(context('shop_quality') === 'premium')"],
+            ['id' => 'regional', 'rule' => "expr(contextKeyExists('region'))"],
+        ],
+        defaultConfigCandidate: 'default'
+    )]
+    private ?Shop $shop = null;
+}
 ```
 
 See [Context](docs/attributes/Context.md) for detailed usage.
