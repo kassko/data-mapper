@@ -1,12 +1,12 @@
 # Param Attribute
 
-L'attribut `#[Param]` permet d'injecter des valeurs dans les paramètres de constructeur, getter ou setter.
+The `#[Param]` attribute allows you to inject values into constructor, getter, or setter parameters.
 
-## Utilisation
+## Usage
 
-### Dans un constructeur
+### In a constructor
 
-Tous les paramètres du constructeur **doivent** avoir l'attribut `#[Param]`. Les références aux propriétés de l'objet (`#id`, `property('id')`, `##object`) sont **interdites** car l'objet n'existe pas encore.
+All constructor parameters **must** have the `#[Param]` attribute. Object property references (`#id`, `property('id')`, `##object`) are **forbidden** because the object does not exist yet.
 
 ```php
 use Kassko\DataMapper\Attribute\Param;
@@ -24,9 +24,9 @@ class Person
 }
 ```
 
-### Dans un getter
+### In a getter
 
-Les paramètres avec `#[Param]` sont injectés automatiquement. Les références aux propriétés sont autorisées.
+Parameters with `#[Param]` are automatically injected. Property references are allowed.
 
 ```php
 use Kassko\DataMapper\Attribute\Param;
@@ -48,9 +48,9 @@ class Person
 }
 ```
 
-### Dans un setter
+### In a setter
 
-Le **premier** paramètre du setter **ne doit pas** avoir `#[Param]` (c'est la valeur à assigner). Les paramètres supplémentaires **doivent** avoir `#[Param]`.
+The **first** setter parameter **must not** have `#[Param]` (it's the value to assign). Additional parameters **must** have `#[Param]`.
 
 ```php
 use Kassko\DataMapper\Attribute\Param;
@@ -60,7 +60,7 @@ class Person
     private ?string $email = null;
     
     public function setEmail(
-        $email,  // Premier paramètre : valeur normale, pas de Param
+        $email,  // First parameter: normal value, no Param
         #[Param(value: "expr(context('enforcedEmail'))")]
         $enforcedEmail = null
     ): void {
@@ -69,63 +69,63 @@ class Person
 }
 ```
 
-## Valeurs supportées
+## Supported values
 
-### Valeur statique
+### Static value
 
 ```php
-#[Param(value: "valeur fixe")]
+#[Param(value: "fixed value")]
 ```
 
-### Expression context()
+### context() expression
 
-Récupère une valeur du contexte (défini via `ContextRegistry` ou `DataMapper::addToContext()`).
+Retrieves a value from context (defined via `ContextRegistry` or `DataMapper::addToContext()`).
 
 ```php
 #[Param(value: "expr(context('userId'))")]
 ```
 
-### Expression service()
+### service() expression
 
-Injecte un service depuis le ServiceResolver.
+Injects a service from the ServiceResolver.
 
 ```php
 #[Param(value: "expr(service('myService'))")]
 ```
 
-### Expression source()
+### source() expression
 
-Exécute une data source et retourne son résultat.
+Executes a data source and returns its result.
 
 ```php
 #[Param(value: "expr(source('dataSourceId'))")]
 ```
 
-### Expression property() (getters/setters uniquement)
+### property() expression (getters/setters only)
 
-Référence une propriété de l'objet (interdit dans les constructeurs).
+References an object property (forbidden in constructors).
 
 ```php
 #[Param(value: "expr(property('name'))")]
-// ou syntaxe courte
+// or short syntax
 #[Param(value: "#name")]
 ```
 
-### Référence à l'objet courant (getters/setters uniquement)
+### Current object reference (getters/setters only)
 
 ```php
 #[Param(value: "##object")]
 ```
 
-## Règles de validation
+## Validation rules
 
-| Contexte | Règles |
-|----------|--------|
-| Constructeur | Tous les paramètres **doivent** avoir `#[Param]`. `#id`, `property()`, `##object` interdits. |
-| Getter | Paramètres avec `#[Param]` sont injectés ; paramètres sans Param doivent avoir une valeur par défaut. |
-| Setter | Premier paramètre **sans** `#[Param]` ; paramètres suivants **avec** `#[Param]`. |
+| Context | Rules |
+|---------|-------|
+| Constructor | All parameters **must** have `#[Param]`. `#id`, `property()`, `##object` are forbidden. |
+| Getter | Parameters with `#[Param]` are injected; parameters without Param must have a default value. |
+| Setter | First parameter **without** `#[Param]`; subsequent parameters **with** `#[Param]`. |
 
-## Exemple complet
+## Complete example
 
 ```php
 use Kassko\DataMapper\Attribute\DataSourceRef;
