@@ -1,8 +1,8 @@
-# Main Components — C4-like View (Mermaid)
+# Composants principaux — Vue C4-like (Mermaid)
 
-This view shows **the exact same components** as the previous view, but organizes them into "boundaries" (groups) to make it closer to a C4-style reading (Context/Containers/Components) while staying in standard Mermaid.
+Cette vue reprend **exactement les mêmes composants** que la vue précédente, mais les organise en "boundaries" (groupes) pour se rapprocher d’une lecture C4 (Contexte/Conteneurs/Composants) tout en restant en Mermaid standard.
 
-## Diagram (C4-like using `flowchart`)
+## Diagramme (C4-like en `flowchart`)
 ```mermaid
 flowchart LR
   %% External actor
@@ -58,7 +58,7 @@ flowchart LR
   DM -->|owns/enables| Lineage
 
   Caller -->|calls getters| Domain
-  Caller -->|hydrates raw data| Hydrator
+  Caller -->|hydrate raw data| Hydrator
   Domain -->|uses| Loadable
   Loadable -->|func_get| LoaderReg
   Loadable -->|func_loadProperty| Loader
@@ -76,11 +76,10 @@ flowchart LR
   Expr -->|func_service_param_id| Resolver
 ```
 
-## Quick Reading (where to look)
-- **Domain Model**: does not depend directly on the concrete Loader; it goes through `LoaderRegistry`.
-- **DataMapper Runtime**: wires the Loader and exposes the `DataMapper` facade.
-- **Hydrator**: user-facing API to hydrate objects from raw data; delegates to `Loader`.
-- **Hydrator**: user-facing API to hydrate objects from raw data (obtained via `DataMapper::getHydrator()`); delegates to `Loader`.
-- **Registries**: intentionally minimal global state (current Loader, context, locks).
-- **Metadata & Expression**: attribute reading + expression/argument evaluation.
-- **Observability**: event collection, can be enabled/disabled.
+## Lecture rapide (où regarder)
+- **Domain Model** : ne dépend pas directement du Loader concret; passe par `LoaderRegistry`.
+- **DataMapper Runtime** : construit/branche le Loader et expose la façade `DataMapper`.
+- **Hydrator** : API orientée utilisateur pour hydrater des objets à partir de données brutes; délègue au `Loader`.
+- **Registries** : état global volontairement minimal (Loader courant, context, locks).
+- **Metadata & Expression** : lecture des attributs + évaluation des expressions/arguments.
+- **Observability** : collecte d’événements, activable/désactivable.

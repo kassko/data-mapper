@@ -107,7 +107,6 @@ class Loader implements LoaderInterface
         
         try {
             $reflectionMethod = new \ReflectionMethod($object, 'isPropertyLocked');
-            $reflectionMethod->setAccessible(true);
             return (bool) $reflectionMethod->invoke($object, $propertyName);
         } catch (\ReflectionException $e) {
             return false;
@@ -373,7 +372,6 @@ class Loader implements LoaderInterface
         }
         
         $property = $reflectionClass->getProperty($propertyName);
-        $property->setAccessible(true);
         return $property->getValue($object);
     }
 
@@ -1870,7 +1868,6 @@ class Loader implements LoaderInterface
         foreach ($args as $arg) {
             if ($property !== null && $arg === '#' . $property->getName()) {
                 // Special case: reference to the property being set
-                $property->setAccessible(true);
                 $resolvedArgs[] = $property->getValue($object);
             } else {
                 // Use standard resolution via expression parser

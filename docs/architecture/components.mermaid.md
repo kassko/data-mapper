@@ -1,40 +1,46 @@
-# Composants principaux — DataMapper (Mermaid)
+# Main Components — DataMapper (Mermaid)
 
-## Rôles
-- **DataMapperBuilder** : assemble la résolution de services et construit le runtime.
-- **DataMapper** : façade; instancie le `Loader`, gère contexte applicatif + lineage.
-- **Loader** : exécute l’hydratation (lazy/eager), applique règles, hooks, contexte.
-- **AttributeReader** : lit les attributs PHP (métadonnées) via Reflection.
-- **ServiceResolver** : résout une DataSource/service (PSR-11, locators, factories…).
-- **ExpressionParser** : évalue `expr(...)`, `context(...)`, `source('id')`, `service('id')`.
-- **SourceFunctionProvider** : exécute (et optionnellement cache) `source('id')`.
-- **Registries** : état global minimal (Loader, Context, Locked properties).
-- **LoadableTrait** : côté domaine; déclenche le lazy-load en appelant le Loader global.
-- **DataLineageCollector** : collecte d’événements (si activée).
+## Roles
+- **DataMapperBuilder**: assembles service resolution and builds the runtime.
+- **DataMapper**: facade; instantiates the `Loader`, manages application context + lineage, and exposes a `Hydrator`.
+- **Hydrator**: user-facing hydration API (obtained via `DataMapper::getHydrator()`); instantiates objects and hydrates them from raw data.
+- **Loader**: executes hydration (lazy/eager), applies rules, hooks, and context.
+- **AttributeReader**: reads PHP attributes (metadata) via Reflection.
+- **ServiceResolver**: resolves a DataSource/service (PSR-11, locators, factories…).
+- **ExpressionParser**: evaluates `expr(...)`, `context(...)`, `source('id')`, `service('id')`.
+- **SourceFunctionProvider**: executes (and optionally caches) `source('id')`.
+- **Registries**: minimal global state (Loader, Context, Locked properties).
+- **LoadableTrait**: domain-side; triggers lazy-load by calling the global Loader.
+- **DataLineageCollector**: event collection (when enabled).
 
-## Explication des liens
-- **DataMapperBuilder → ServiceResolver** : construit la stratégie de résolution (container/locators/factories).
-- **DataMapperBuilder → DataMapper** : crée le runtime qui orchestre le reste.
-- **DataMapper → Loader** : instancie le cœur d’exécution (avec logger/cache/collector).
-- **DataMapper → LoaderRegistry** : enregistre le Loader global pour que les objets métiers puissent déclencher des chargements sans dépendance directe.
-- **LoadableTrait → LoaderRegistry** : récupère le Loader actif pour appeler `loadProperty(...)`.
-- **LoadableTrait → LockedPropertyRegistry** : verrouille/déverrouille des propriétés pour empêcher l’écrasement par hydratation.
-- **Loader → AttributeReader** : lit `DataSourceRef`, `Context`, `Needs`, hooks… pour décider comment hydrater.
-- **Loader → ServiceResolver** : obtient l’instance de DataSource/service à exécuter.
-- **Loader → ExpressionParser** : résout les arguments dynamiques (références propriétés, contexte, sources, services).
-- **ExpressionParser → ContextRegistry** : lit le contexte (applicatif + hydratation) utilisé dans les expressions.
-- **ExpressionParser → SourceFunctionProvider** : exécute/récupère le résultat `source('id')`.
-- **ExpressionParser → ServiceResolver** : résout `service('id')` lorsqu’une expression le demande.
-- **Loader → ContextRegistry** : écrit le contexte d’hydratation issu des attributs `#[Context]`.
-- **Loader → LockedPropertyRegistry** : vérifie le verrouillage avant toute hydratation (skip si verrouillé).
-- **Loader → DataLineageCollector** : enregistre les événements (calls DataSource, hydrations, skips…) si la collecte est activée.
+## Link Explanations
+- **DataMapperBuilder → ServiceResolver**: builds the resolution strategy (container/locators/factories).
+- **DataMapperBuilder → DataMapper**: creates the runtime that orchestrates the rest.
+- **DataMapper → Loader**: instantiates the execution core (with logger/cache/collector).
+- **DataMapper → Hydrator**: exposes a dedicated hydration API for turning raw data into objects.
+- **Hydrator → Loader**: delegates the actual hydration work to the Loader (instantiation, hooks, property setting).
+- **DataMapper → LoaderRegistry**: registers the global Loader so domain objects can trigger loads without a direct dependency.
+- **LoadableTrait → LoaderRegistry**: retrieves the active Loader to call `loadProperty(...)`.
+- **LoadableTrait → LockedPropertyRegistry**: locks/unlocks properties to prevent being overwritten by hydration.
+- **Loader → AttributeReader**: reads `DataSourceRef`, `Context`, `Needs`, hooks… to decide how to hydrate.
+- **Loader → ServiceResolver**: obtains the DataSource/service instance to execute.
+- **Loader → ExpressionParser**: resolves dynamic arguments (property references, context, sources, services).
+- **ExpressionParser → ContextRegistry**: reads context (application + hydration) used in expressions.
+- **ExpressionParser → SourceFunctionProvider**: executes/returns the result of `source('id')`.
+- **ExpressionParser → ServiceResolver**: resolves `service('id')` when requested by an expression.
+- **Loader → ContextRegistry**: writes hydration context coming from `#[Context]` attributes.
+- **Loader → LockedPropertyRegistry**: checks locking before any hydration (skip if locked).
+- **Loader → DataLineageCollector**: records events (DataSource calls, hydrations, skips…) when collection is enabled.
 
-## Diagramme Mermaid
+## Mermaid Diagram
 ```mermaid
 flowchart LR
   %% Main facade
   Builder[DataMapperBuilder]
   DM[DataMapper]
+
+  %% User-facing hydration API
+  Hydrator[Hydrator]
 
   %% Core execution
   Loader[Loader]
@@ -61,6 +67,8 @@ flowchart LR
   Builder -->|func_build| Resolver
   Builder -->|func_build| DM
   DM -->|creates| Loader
+  DM -->|exposes| Hydrator
+  Hydrator -->|delegates| Loader
   DM -->|registers| LoaderReg
   DM -->|owns/enables| Lineage
 

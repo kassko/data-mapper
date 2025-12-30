@@ -26,16 +26,20 @@ final class DataMapper
     private ?CacheInterface $cache;
     private ?LoggerInterface $logger;
     private DataLineageCollector $lineageCollector;
+    private Loader $loader;
+    private ?Hydrator $hydrator = null;
 
     /**
      * @param ServiceResolver $serviceResolver
      * @param CacheInterface|null $cache PSR-16 cache interface
      * @param LoggerInterface|null $logger PSR-3 logger interface
+     * @param array<string, callable> $customHydrators Custom hydrators (key => callable)
      */
     public function __construct(
         ServiceResolver $serviceResolver,
         ?CacheInterface $cache = null,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface $logger = null,
+        array $customHydrators = []
     ) {
         $this->cache = $cache;
         $this->logger = $logger;
@@ -43,8 +47,8 @@ final class DataMapper
         $this->lineageCollector = new DataLineageCollector();
         
         // Register Loader in the registry
-        $loader = new Loader($this->serviceResolver, $this->logger, [], $this->lineageCollector);
-        LoaderRegistry::set($loader);
+        $this->loader = new Loader($this->serviceResolver, $this->logger, $customHydrators, $this->lineageCollector);
+        LoaderRegistry::set($this->loader);
         
         // Set logger for context registry
         if ($this->logger !== null) {
@@ -157,5 +161,26 @@ final class DataMapper
     public function hasContext(string $key): bool
     {
         return ContextRegistry::has($key);
+    }
+
+    /**
+     * Get the hydrator for hydrating objects from raw data.
+     *
+     * The Hydrator provides a simple interface for creating and hydrating objects:
+     *
+     * ```php
+     * $hydrator = $dataMapper->getHydrator();
+     * $person = $hydrator->hydrate(Person::class, ['first_name' => 'John']);
+     * ```
+     *
+     * @return Hydrator
+     */
+    public function getHydrator(): Hydrator
+    {
+        if ($this->hydrator === null) {
+            $this->hydrator = new Hydrator($this->loader);
+        }
+        
+        return $this->hydrator;
     }
 }
