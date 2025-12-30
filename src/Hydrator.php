@@ -95,7 +95,6 @@ final class Hydrator
     {
         // Use reflection to call the private method on Loader
         $reflectionMethod = new \ReflectionMethod($this->loader, 'executeInstantiatingHooks');
-        // $reflectionMethod->setAccessible(true);
         $reflectionMethod->invoke($this->loader, $object, $rawData);
     }
 
@@ -109,7 +108,6 @@ final class Hydrator
     {
         // Use reflection to call the private method on Loader
         $reflectionMethod = new \ReflectionMethod($this->loader, 'hydrateObject');
-        // $reflectionMethod->setAccessible(true);
         $reflectionMethod->invoke($this->loader, $object, $rawData, null, 0);
     }
 }
