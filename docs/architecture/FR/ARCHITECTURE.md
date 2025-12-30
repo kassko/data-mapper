@@ -12,7 +12,12 @@ Le runtime est volontairement léger et découplé d’un framework : l’intég
 - **`DataMapperBuilder`** : assemble la stratégie de résolution de services (container, locators, factories…) et construit un `DataMapper`.
 - **`DataMapper`** : façade runtime.
   - Instancie un `Loader` et l’enregistre globalement via `LoaderRegistry`.
+  - Expose un `Hydrator` orienté utilisateur via `getHydrator()`.
   - Gère le **contexte applicatif** (`addToContext`, `addManyToContext`), et l’activation de la **collecte de lineage** (`enableLineageCollection`).
+
+- **`Hydrator`** : API d’hydratation orientée utilisateur.
+  - Instancie les objets (avec support de `#[Param]`) et les hydrate à partir de données brutes.
+  - Délègue l’exécution de l’hydratation au `Loader` (hooks, contexte, affectation des propriétés).
 
 ### 2) Hydratation / exécution
 - **`Loader`** : cœur de l’exécution.
@@ -29,6 +34,7 @@ Le runtime est volontairement léger et découplé d’un framework : l’intég
   - `Context` : injection de valeurs contextuelles pendant l’hydratation.
   - `PropertyConfigStore` / `PropertyConfig` : configurations de propriété réutilisables pour l'hydratation polymorphe.
   - `Needs`, `Loading`, hooks (`PropertySettingHook`, etc.).
+  - `Param` : injection de paramètres pour constructeurs, getters et setters.
 
 ### 4) Métadonnées
 - **`Metadata\AttributeReader`** : encapsule Reflection + lecture des attributs et fournit un accès uniforme au Loader.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The project is an hydration/lazy-loading library based on **PHP 8 attributes**: the domain object declares *what to load* and *how* via attributes (DataSource, DataSourceRef, Context, hooks…), and a **Loader** applies these rules at the appropriate time (lazy via getters or eager via `Loading::TYPE_EAGER`).
+This project is a hydration/lazy-loading library based on **PHP 8 attributes**: the domain object declares *what to load* and *how* via attributes (DataSource, DataSourceRef, Context, hooks…), and a **Loader** applies these rules at the appropriate time (lazy via getters or eager via `Loading::TYPE_EAGER`).
 
 The runtime is intentionally lightweight and decoupled from any framework: Symfony integration is primarily achieved through PSR compliance (PSR-11 container, PSR-3 logger, PSR-16 cache) and a `ServiceResolver` that can resolve services from multiple sources.
 
@@ -12,7 +12,12 @@ The runtime is intentionally lightweight and decoupled from any framework: Symfo
 - **`DataMapperBuilder`**: assembles the service resolution strategy (container, locators, factories…) and builds a `DataMapper`.
 - **`DataMapper`**: runtime facade.
   - Instantiates a `Loader` and registers it globally via `LoaderRegistry`.
+  - Exposes a user-facing `Hydrator` via `getHydrator()`.
   - Manages **application context** (`addToContext`, `addManyToContext`), and **lineage collection** activation (`enableLineageCollection`).
+
+- **`Hydrator`**: user-facing hydration API.
+  - Instantiates objects (with `#[Param]` support) and hydrates them from raw data.
+  - Delegates the actual hydration work to the `Loader` (hooks, context, property setting).
 
 ### 2) Hydration / Execution
 - **`Loader`**: execution core.

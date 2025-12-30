@@ -2,7 +2,8 @@
 
 ## Rôles
 - **DataMapperBuilder** : assemble la résolution de services et construit le runtime.
-- **DataMapper** : façade; instancie le `Loader`, gère contexte applicatif + lineage.
+- **DataMapper** : façade; instancie le `Loader`, gère contexte applicatif + lineage, et expose un `Hydrator`.
+- **Hydrator** : API d’hydratation orientée utilisateur; instancie des objets et les hydrate à partir de données brutes.
 - **Loader** : exécute l’hydratation (lazy/eager), applique règles, hooks, contexte.
 - **AttributeReader** : lit les attributs PHP (métadonnées) via Reflection.
 - **ServiceResolver** : résout une DataSource/service (PSR-11, locators, factories…).
@@ -16,6 +17,8 @@
 - **DataMapperBuilder → ServiceResolver** : construit la stratégie de résolution (container/locators/factories).
 - **DataMapperBuilder → DataMapper** : crée le runtime qui orchestre le reste.
 - **DataMapper → Loader** : instancie le cœur d’exécution (avec logger/cache/collector).
+- **DataMapper → Hydrator** : expose une API dédiée pour transformer des données brutes en objets.
+- **Hydrator → Loader** : délègue l’exécution de l’hydratation au Loader (instanciation, hooks, affectation des propriétés).
 - **DataMapper → LoaderRegistry** : enregistre le Loader global pour que les objets métiers puissent déclencher des chargements sans dépendance directe.
 - **LoadableTrait → LoaderRegistry** : récupère le Loader actif pour appeler `loadProperty(...)`.
 - **LoadableTrait → LockedPropertyRegistry** : verrouille/déverrouille des propriétés pour empêcher l’écrasement par hydratation.
@@ -35,6 +38,9 @@ flowchart LR
   %% Main facade
   Builder[DataMapperBuilder]
   DM[DataMapper]
+
+  %% API d’hydratation orientée utilisateur
+  Hydrator[Hydrator]
 
   %% Core execution
   Loader[Loader]
@@ -61,6 +67,8 @@ flowchart LR
   Builder -->|func_build| Resolver
   Builder -->|func_build| DM
   DM -->|creates| Loader
+  DM -->|exposes| Hydrator
+  Hydrator -->|delegates| Loader
   DM -->|registers| LoaderReg
   DM -->|owns/enables| Lineage
 
