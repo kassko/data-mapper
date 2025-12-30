@@ -190,11 +190,11 @@ class MetadataValidator
         }
 
         // Validate exception class if specified
-        if ($ref->exceptionOnNoValidDataSource !== null) {
-            if (!class_exists($ref->exceptionOnNoValidDataSource)) {
-                $this->errors[] = "{$context}: Exception class '{$ref->exceptionOnNoValidDataSource}' does not exist.";
-            } elseif (!is_subclass_of($ref->exceptionOnNoValidDataSource, \Throwable::class)) {
-                $this->errors[] = "{$context}: Exception class '{$ref->exceptionOnNoValidDataSource}' must implement Throwable.";
+        if ($ref->exceptionOnNoValidFallback !== null) {
+            if (!class_exists($ref->exceptionOnNoValidFallback)) {
+                $this->errors[] = "{$context}: Exception class '{$ref->exceptionOnNoValidFallback}' does not exist.";
+            } elseif (!is_subclass_of($ref->exceptionOnNoValidFallback, \Throwable::class)) {
+                $this->errors[] = "{$context}: Exception class '{$ref->exceptionOnNoValidFallback}' must implement Throwable.";
             }
         }
     }

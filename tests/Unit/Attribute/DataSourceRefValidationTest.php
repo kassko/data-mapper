@@ -33,11 +33,11 @@ class DataSourceRefValidationTest extends TestCase
         $ref = new DataSourceRef(
             id: 'sourceA',
             fallbacks: ['sourceB', 'sourceC'],
-            exceptionOnNoValidDataSource: 'SomeException'
+            exceptionOnNoValidFallback: 'SomeException'
         );
         $this->assertEquals('sourceA', $ref->id);
         $this->assertEquals(['sourceB', 'sourceC'], $ref->fallbacks);
-        $this->assertEquals('SomeException', $ref->exceptionOnNoValidDataSource);
+        $this->assertEquals('SomeException', $ref->exceptionOnNoValidFallback);
         $this->assertNull($ref->providers);
     }
     
@@ -82,11 +82,11 @@ class DataSourceRefValidationTest extends TestCase
     public function testExceptionWithoutFallbacksThrowsException(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef: exceptionOnNoValidDataSource requires fallbacks to be set');
+        $this->expectExceptionMessage('DataSourceRef: exceptionOnNoValidFallback requires fallbacks to be set');
         
         new DataSourceRef(
             id: 'sourceA',
-            exceptionOnNoValidDataSource: 'SomeException'
+            exceptionOnNoValidFallback: 'SomeException'
         );
     }
     
@@ -232,14 +232,14 @@ class DataSourceRefValidationTest extends TestCase
     public function testCandidatesCannotUseExceptionOnNoValidDataSource(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DataSourceRef: exceptionOnNoValidDataSource cannot be used with candidates');
+        $this->expectExceptionMessage('DataSourceRef: exceptionOnNoValidFallback cannot be used with candidates');
 
         new DataSourceRef(
             candidates: [
                 ['id' => 'sourceA', 'rule' => 'expr(true)'],
             ],
             defaultCandidate: ['id' => 'sourceB'],
-            exceptionOnNoValidDataSource: 'SomeException'
+            exceptionOnNoValidFallback: 'SomeException'
         );
     }
 }

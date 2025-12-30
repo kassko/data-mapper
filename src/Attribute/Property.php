@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Attribute;
 
 use Attribute;
+use Kassko\DataMapper\Enum\SensitiveLevel;
 
 #[Attribute(Attribute::TARGET_PROPERTY)]
 final class Property
@@ -28,6 +29,7 @@ final class Property
         /** @var array<array{id: string, rule: string}>|null Config candidates with rules */
         public readonly ?array $configCandidates = null,
         public readonly ?string $defaultConfigCandidate = null,  // Default config ID when no rule matches
+        public readonly ?SensitiveLevel $sensitiveLevel = null,  // Sensitivity level for lineage collection
     ) {
         // Validation: mapping requires class to be set
         if ($mapping !== null && $class === null) {

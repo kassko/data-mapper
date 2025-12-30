@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Attribute;
 
 use Attribute;
+use Kassko\DataMapper\Enum\SensitiveLevel;
 
 /**
  * Defines a data source that hydrates multiple properties.
@@ -44,5 +45,7 @@ final class MultiPropDataSource
         public readonly array $loadingScopeKeys = [],    // Filter by raw data keys
         public readonly array $loadingScopeProps = [],   // Filter by property names (NEW)
         public readonly int $priority = 0,
+        /** @var array<string, SensitiveLevel> Keys to mark as sensitive (exact name or regex pattern) */
+        public readonly array $sensitiveKeys = [],
     ) {}
 }

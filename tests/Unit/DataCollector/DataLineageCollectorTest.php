@@ -15,6 +15,7 @@ namespace Kassko\DataMapper\Tests\Unit\DataCollector;
 
 use Kassko\DataMapper\DataCollector\DataLineageCollector;
 use Kassko\DataMapper\DataCollector\LineageEvent;
+use Kassko\DataMapper\Enum\SensitiveLevel;
 use PHPUnit\Framework\TestCase;
 
 class DataLineageCollectorTest extends TestCase
@@ -221,5 +222,213 @@ class DataLineageCollectorTest extends TestCase
 
         $this->assertFalse($this->collector->isEnabled());
         $this->assertEmpty($this->collector->getEvents());
+    }
+
+    public function testSensitiveLevelHide(): void
+    {
+        $collector = new DataLineageCollector([
+            'password' => SensitiveLevel::HIDE,
+        ]);
+        $collector->enable();
+
+        $collector->recordPropertyHydration('Test', 'password', null, 'secret123', 'source');
+
+        $events = $collector->getEvents();
+        $this->assertCount(1, $events);
+        
+        $array = $events[0]->toArray();
+        $this->assertEquals('[SENSITIVE]', $array['finalValue']);
+    }
+
+    public function testSensitiveLevelMask(): void
+    {
+        $collector = new DataLineageCollector([
+            'ssn' => SensitiveLevel::MASK,
+        ]);
+        $collector->enable();
+
+        $collector->recordPropertyHydration('Test', 'ssn', null, '123-45-6789', 'source');
+
+        $events = $collector->getEvents();
+        $array = $events[0]->toArray();
+        
+        // Should mask the middle
+        $this->assertStringStartsWith('12', $array['finalValue']);
+        $this->assertStringEndsWith('89', $array['finalValue']);
+        $this->assertStringContainsString('*', $array['finalValue']);
+    }
+
+    public function testSensitiveLevelTypeOnly(): void
+    {
+        $collector = new DataLineageCollector([
+            'data' => SensitiveLevel::TYPE_ONLY,
+        ]);
+        $collector->enable();
+
+        $collector->recordPropertyHydration('Test', 'data', null, 'some value', 'source');
+
+        $events = $collector->getEvents();
+        $array = $events[0]->toArray();
+        
+        $this->assertStringContainsString('[string', $array['finalValue']);
+    }
+
+    public function testSensitivePatternMatching(): void
+    {
+        $collector = new DataLineageCollector([
+            '*password*' => SensitiveLevel::HIDE,
+        ]);
+        $collector->enable();
+
+        $collector->recordPropertyHydration('Test', 'user_password_hash', null, 'hashvalue', 'source');
+
+        $events = $collector->getEvents();
+        $array = $events[0]->toArray();
+        
+        $this->assertEquals('[SENSITIVE]', $array['finalValue']);
+    }
+
+    public function testDatetimeIsRecorded(): void
+    {
+        $this->collector->enable();
+
+        $this->collector->recordPropertyHydration('Test', 'prop', null, 'value', 'source');
+
+        $events = $this->collector->getEvents();
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf(\DateTimeImmutable::class, $events[0]->datetime);
+        
+        $array = $events[0]->toArray();
+        $this->assertArrayHasKey('datetime', $array);
+        $this->assertNotNull($array['datetime']);
+    }
+
+    public function testFlowTracking(): void
+    {
+        $this->collector->enable();
+
+        // Start a flow
+        $flowId = $this->collector->startFlow('TestClass', 'Test hydration');
+        $this->assertNotEmpty($flowId);
+        $this->assertEquals($flowId, $this->collector->getCurrentFlowId());
+
+        // Record an event - should have the flow ID
+        $this->collector->recordPropertyHydration('TestClass', 'prop', null, 'value', 'source');
+
+        // End the flow
+        $this->collector->endFlow('completed');
+
+        $events = $this->collector->getEvents();
+        
+        // Flow start + property hydration + flow end = 3 events
+        $this->assertCount(3, $events);
+        
+        // Check flow start event
+        $this->assertEquals(LineageEvent::TYPE_FLOW_START, $events[0]->type);
+        $this->assertEquals($flowId, $events[0]->flowId);
+        
+        // Check hydration event has flow ID
+        $this->assertEquals($flowId, $events[1]->flowId);
+        
+        // Check flow end event
+        $this->assertEquals(LineageEvent::TYPE_FLOW_END, $events[2]->type);
+        $this->assertEquals($flowId, $events[2]->flowId);
+    }
+
+    public function testAddAndRemoveSensitiveKeyAtRuntime(): void
+    {
+        $this->collector->enable();
+        
+        // Add a sensitive key at runtime
+        $this->collector->addSensitiveKey('secret', SensitiveLevel::HIDE);
+        
+        $this->collector->recordPropertyHydration('Test', 'secret', null, 'value', 'source');
+        
+        $events = $this->collector->getEvents();
+        $array = $events[0]->toArray();
+        $this->assertEquals('[SENSITIVE]', $array['finalValue']);
+        
+        // Remove the key and verify
+        $this->collector->removeSensitiveKey('secret');
+        $this->assertArrayNotHasKey('secret', $this->collector->getSensitiveKeys());
+    }
+
+    public function testDefaultSensitiveLevel(): void
+    {
+        $collector = new DataLineageCollector([], SensitiveLevel::TYPE_ONLY);
+        $collector->enable();
+
+        $collector->recordPropertyHydration('Test', 'anyProperty', null, 'any value', 'source');
+
+        $events = $collector->getEvents();
+        $array = $events[0]->toArray();
+        
+        $this->assertStringContainsString('[string', $array['finalValue']);
+    }
+
+    public function testDataSourceSensitiveKeys(): void
+    {
+        $this->collector->enable();
+
+        // Record a DataSource call with sensitiveKeys
+        $this->collector->recordDataSourceCall(
+            'TestClass',
+            'UserRepository',
+            'findUser',
+            ['id' => 123],
+            [
+                'name' => 'John Doe',
+                'email' => 'john@example.com',
+                'password' => 'secret123',
+                'apiToken' => 'token-abc-123',
+            ],
+            'userSource',
+            [
+                'password' => SensitiveLevel::HIDE,
+                '*Token' => SensitiveLevel::MASK,
+            ]
+        );
+
+        $events = $this->collector->getEvents();
+        $this->assertCount(1, $events);
+        
+        $array = $events[0]->toArray();
+        
+        // password should be hidden
+        $this->assertEquals('[SENSITIVE]', $array['finalValue']['password']);
+        
+        // apiToken should be masked (pattern match *Token)
+        $this->assertStringContainsString('***', $array['finalValue']['apiToken']);
+        
+        // name and email should be shown as-is
+        $this->assertEquals('John Doe', $array['finalValue']['name']);
+        $this->assertEquals('john@example.com', $array['finalValue']['email']);
+        
+        // metadata should indicate hasSensitiveKeys
+        $this->assertTrue($array['metadata']['hasSensitiveKeys']);
+    }
+
+    public function testDataSourceWithoutSensitiveKeys(): void
+    {
+        $this->collector->enable();
+
+        $this->collector->recordDataSourceCall(
+            'TestClass',
+            'Repository',
+            'findAll',
+            [],
+            ['data' => 'value'],
+            'source',
+            [] // No sensitive keys
+        );
+
+        $events = $this->collector->getEvents();
+        $array = $events[0]->toArray();
+        
+        // Data should be shown as-is
+        $this->assertEquals(['data' => 'value'], $array['finalValue']);
+        
+        // metadata should indicate no sensitive keys
+        $this->assertFalse($array['metadata']['hasSensitiveKeys']);
     }
 }

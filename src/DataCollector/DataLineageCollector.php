@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\DataCollector;
 
+use Kassko\DataMapper\Enum\SensitiveLevel;
+
 /**
  * Collector for data lineage and audit information.
  * 
@@ -43,9 +45,29 @@ final class DataLineageCollector
     /** @var float Start time of collection */
     private float $startTime;
 
-    public function __construct()
-    {
+    /** @var string|null Current flow ID for grouping related events */
+    private ?string $currentFlowId = null;
+
+    /** @var string[] Stack of flow IDs for nested flows */
+    private array $flowStack = [];
+
+    /** @var array<string, SensitiveLevel> Global sensitive keys configuration */
+    private array $sensitiveKeys;
+
+    /** @var SensitiveLevel Default sensitive level for all properties */
+    private SensitiveLevel $defaultSensitiveLevel;
+
+    /**
+     * @param array<string, SensitiveLevel> $sensitiveKeys Global sensitive keys configuration
+     * @param SensitiveLevel $defaultSensitiveLevel Default sensitive level for all properties
+     */
+    public function __construct(
+        array $sensitiveKeys = [],
+        SensitiveLevel $defaultSensitiveLevel = SensitiveLevel::SHOW
+    ) {
         $this->startTime = microtime(true);
+        $this->sensitiveKeys = $sensitiveKeys;
+        $this->defaultSensitiveLevel = $defaultSensitiveLevel;
     }
 
     /**
@@ -100,7 +122,99 @@ final class DataLineageCollector
     }
 
     /**
+     * Start a new flow for grouping related events.
+     * 
+     * @param string $objectClass The class being hydrated
+     * @param string|null $label Optional descriptive label for the flow
+     * @return string The generated flow ID
+     */
+    public function startFlow(string $objectClass, ?string $label = null): string
+    {
+        $flowId = uniqid('flow_', true);
+        
+        // Push current flow onto stack if any
+        if ($this->currentFlowId !== null) {
+            $this->flowStack[] = $this->currentFlowId;
+        }
+        
+        $this->currentFlowId = $flowId;
+        
+        if ($this->enabled) {
+            $this->events[] = new LineageEvent(
+                type: LineageEvent::TYPE_FLOW_START,
+                objectClass: $objectClass,
+                propertyName: null,
+                source: null,
+                originalValue: null,
+                finalValue: null,
+                reason: $label,
+                metadata: [
+                    'parentFlowId' => $this->flowStack[count($this->flowStack) - 1] ?? null,
+                ],
+                timestamp: microtime(true) - $this->startTime,
+                depth: $this->currentDepth,
+                flowId: $flowId,
+                datetime: $this->createDatetime()
+            );
+        }
+        
+        return $flowId;
+    }
+
+    /**
+     * End the current flow.
+     * 
+     * @param string|null $result Optional result/summary of the flow
+     */
+    public function endFlow(?string $result = null): void
+    {
+        if ($this->currentFlowId === null) {
+            return;
+        }
+        
+        $endingFlowId = $this->currentFlowId;
+        
+        if ($this->enabled) {
+            $this->events[] = new LineageEvent(
+                type: LineageEvent::TYPE_FLOW_END,
+                objectClass: '',
+                propertyName: null,
+                source: null,
+                originalValue: null,
+                finalValue: null,
+                reason: $result,
+                metadata: [],
+                timestamp: microtime(true) - $this->startTime,
+                depth: $this->currentDepth,
+                flowId: $endingFlowId,
+                datetime: $this->createDatetime()
+            );
+        }
+        
+        // Restore parent flow if any
+        $this->currentFlowId = array_pop($this->flowStack);
+    }
+
+    /**
+     * Get the current flow ID.
+     */
+    public function getCurrentFlowId(): ?string
+    {
+        return $this->currentFlowId;
+    }
+
+    /**
+     * Create the current datetime for events.
+     */
+    private function createDatetime(): \DateTimeImmutable
+    {
+        return new \DateTimeImmutable();
+    }
+
+    /**
      * Record a DataSource call.
+     * 
+     * @param array<string, SensitiveLevel> $sensitiveKeys Keys to mask in the result (exact name or regex pattern)
      */
     public function recordDataSourceCall(
         string $objectClass,
@@ -108,11 +222,15 @@ final class DataLineageCollector
         string $sourceMethod,
         array $args,
         mixed $result,
-        ?string $sourceId = null
+        ?string $sourceId = null,
+        array $sensitiveKeys = []
     ): void {
         if (!$this->enabled) {
             return;
         }
+
+        // Apply sensitive masking to result
+        $maskedResult = $this->applySensitiveKeysToResult($result, $sensitiveKeys);
 
         $this->events[] = new LineageEvent(
             type: LineageEvent::TYPE_DATASOURCE_CALL,
@@ -120,14 +238,17 @@ final class DataLineageCollector
             propertyName: null,
             source: sprintf('%s::%s', $sourceClass, $sourceMethod),
             originalValue: $args,
-            finalValue: $result,
+            finalValue: $maskedResult,
             reason: null,
             metadata: [
                 'sourceId' => $sourceId,
                 'argsCount' => count($args),
+                'hasSensitiveKeys' => !empty($sensitiveKeys),
             ],
             timestamp: microtime(true) - $this->startTime,
-            depth: $this->currentDepth
+            depth: $this->currentDepth,
+            flowId: $this->currentFlowId,
+            datetime: $this->createDatetime()
         );
     }
 
@@ -140,11 +261,15 @@ final class DataLineageCollector
         mixed $originalValue,
         mixed $finalValue,
         string $source,
-        int $priority = 0
+        int $priority = 0,
+        ?SensitiveLevel $sensitiveLevel = null
     ): void {
         if (!$this->enabled) {
             return;
         }
+
+        // Resolve the sensitive level for this property
+        $resolvedLevel = $this->getSensitiveLevelForProperty($propertyName, $sensitiveLevel);
 
         $this->events[] = new LineageEvent(
             type: LineageEvent::TYPE_PROPERTY_HYDRATION,
@@ -158,7 +283,10 @@ final class DataLineageCollector
                 'priority' => $priority,
             ],
             timestamp: microtime(true) - $this->startTime,
-            depth: $this->currentDepth
+            depth: $this->currentDepth,
+            flowId: $this->currentFlowId,
+            sensitiveLevel: $resolvedLevel,
+            datetime: $this->createDatetime()
         );
     }
 
@@ -185,7 +313,9 @@ final class DataLineageCollector
             reason: $reason,
             metadata: $metadata,
             timestamp: microtime(true) - $this->startTime,
-            depth: $this->currentDepth
+            depth: $this->currentDepth,
+            flowId: $this->currentFlowId,
+            datetime: $this->createDatetime()
         );
     }
 
@@ -198,11 +328,15 @@ final class DataLineageCollector
         mixed $originalValue,
         mixed $transformedValue,
         string $transformer,
-        string $transformerType = 'hook'
+        string $transformerType = 'hook',
+        ?SensitiveLevel $sensitiveLevel = null
     ): void {
         if (!$this->enabled) {
             return;
         }
+
+        // Resolve the sensitive level for this property
+        $resolvedLevel = $this->getSensitiveLevelForProperty($propertyName, $sensitiveLevel);
 
         $this->events[] = new LineageEvent(
             type: LineageEvent::TYPE_PROPERTY_TRANSFORMED,
@@ -216,7 +350,10 @@ final class DataLineageCollector
                 'transformerType' => $transformerType,
             ],
             timestamp: microtime(true) - $this->startTime,
-            depth: $this->currentDepth
+            depth: $this->currentDepth,
+            flowId: $this->currentFlowId,
+            sensitiveLevel: $resolvedLevel,
+            datetime: $this->createDatetime()
         );
     }
 
@@ -246,7 +383,9 @@ final class DataLineageCollector
                 'hookType' => $hookType,
             ],
             timestamp: microtime(true) - $this->startTime,
-            depth: $this->currentDepth
+            depth: $this->currentDepth,
+            flowId: $this->currentFlowId,
+            datetime: $this->createDatetime()
         );
     }
 
@@ -273,7 +412,9 @@ final class DataLineageCollector
             reason: null,
             metadata: [],
             timestamp: microtime(true) - $this->startTime,
-            depth: $this->currentDepth
+            depth: $this->currentDepth,
+            flowId: $this->currentFlowId,
+            datetime: $this->createDatetime()
         );
     }
 
@@ -284,11 +425,15 @@ final class DataLineageCollector
         string $objectClass,
         string $propertyName,
         string $key,
-        mixed $value
+        mixed $value,
+        ?SensitiveLevel $sensitiveLevel = null
     ): void {
         if (!$this->enabled) {
             return;
         }
+
+        // Resolve the sensitive level for this property
+        $resolvedLevel = $this->getSensitiveLevelForProperty($propertyName, $sensitiveLevel);
 
         $this->events[] = new LineageEvent(
             type: LineageEvent::TYPE_CONTEXT_SET,
@@ -302,7 +447,10 @@ final class DataLineageCollector
                 'contextKey' => $key,
             ],
             timestamp: microtime(true) - $this->startTime,
-            depth: $this->currentDepth
+            depth: $this->currentDepth,
+            flowId: $this->currentFlowId,
+            sensitiveLevel: $resolvedLevel,
+            datetime: $this->createDatetime()
         );
     }
 
@@ -330,7 +478,9 @@ final class DataLineageCollector
             reason: $reason,
             metadata: array_merge(['decisionType' => $decisionType], $metadata),
             timestamp: microtime(true) - $this->startTime,
-            depth: $this->currentDepth
+            depth: $this->currentDepth,
+            flowId: $this->currentFlowId,
+            datetime: $this->createDatetime()
         );
     }
 
@@ -371,7 +521,9 @@ final class DataLineageCollector
                 'electedCandidatePriority' => $electedCandidate['priority'] ?? null,
             ],
             timestamp: microtime(true) - $this->startTime,
-            depth: $this->currentDepth
+            depth: $this->currentDepth,
+            flowId: $this->currentFlowId,
+            datetime: $this->createDatetime()
         );
     }
 
@@ -449,6 +601,176 @@ final class DataLineageCollector
                 ? $this->events[count($this->events) - 1]->timestamp 
                 : 0,
         ];
+    }
+
+    /**
+     * Get the sensitive level for a property.
+     * 
+     * @param string $propertyName The property name (can include class prefix like 'User.password')
+     * @param SensitiveLevel|null $attributeLevel The level specified in the Property/PropertyConfig attribute
+     * @return SensitiveLevel The resolved sensitive level
+     */
+    public function getSensitiveLevelForProperty(string $propertyName, ?SensitiveLevel $attributeLevel = null): SensitiveLevel
+    {
+        // Attribute-level configuration takes highest precedence
+        if ($attributeLevel !== null) {
+            return $attributeLevel;
+        }
+
+        // Check for exact match in global sensitive keys
+        if (isset($this->sensitiveKeys[$propertyName])) {
+            return $this->sensitiveKeys[$propertyName];
+        }
+
+        // Check for pattern matches (e.g., '*password*')
+        foreach ($this->sensitiveKeys as $pattern => $level) {
+            if ($this->matchesPattern($propertyName, $pattern)) {
+                return $level;
+            }
+        }
+
+        return $this->defaultSensitiveLevel;
+    }
+
+    /**
+     * Apply sensitive level to a value.
+     * 
+     * @param mixed $value The value to process
+     * @param string $propertyName The property name
+     * @param SensitiveLevel|null $attributeLevel The level specified in the attribute
+     * @return mixed The processed value
+     */
+    public function applySensitiveLevel(mixed $value, string $propertyName, ?SensitiveLevel $attributeLevel = null): mixed
+    {
+        $level = $this->getSensitiveLevelForProperty($propertyName, $attributeLevel);
+        return $level->apply($value);
+    }
+
+    /**
+     * Check if a property name matches a pattern.
+     * 
+     * Supports patterns like:
+     * - 'password' - exact match
+     * - '*password*' - contains 'password'
+     * - 'password*' - starts with 'password'
+     * - '*password' - ends with 'password'
+     * - 'User.*' - all properties of User class
+     * 
+     * @param string $propertyName The property name to check
+     * @param string $pattern The pattern to match against
+     * @return bool True if the property matches the pattern
+     */
+    private function matchesPattern(string $propertyName, string $pattern): bool
+    {
+        // Convert pattern to regex
+        $regex = '/^' . str_replace(
+            ['\\*', '\\?'],
+            ['.*', '.'],
+            preg_quote($pattern, '/')
+        ) . '$/i';
+
+        return preg_match($regex, $propertyName) === 1;
+    }
+
+    /**
+     * Add a sensitive key at runtime.
+     * 
+     * @param string $key The property name or pattern
+     * @param SensitiveLevel $level The sensitive level
+     */
+    public function addSensitiveKey(string $key, SensitiveLevel $level): void
+    {
+        $this->sensitiveKeys[$key] = $level;
+    }
+
+    /**
+     * Remove a sensitive key at runtime.
+     * 
+     * @param string $key The property name or pattern to remove
+     */
+    public function removeSensitiveKey(string $key): void
+    {
+        unset($this->sensitiveKeys[$key]);
+    }
+
+    /**
+     * Get all configured sensitive keys.
+     * 
+     * @return array<string, SensitiveLevel>
+     */
+    public function getSensitiveKeys(): array
+    {
+        return $this->sensitiveKeys;
+    }
+
+    /**
+     * Get the default sensitive level.
+     * 
+     * @return SensitiveLevel
+     */
+    public function getDefaultSensitiveLevel(): SensitiveLevel
+    {
+        return $this->defaultSensitiveLevel;
+    }
+
+    /**
+     * Set the default sensitive level.
+     * 
+     * @param SensitiveLevel $level
+     */
+    public function setDefaultSensitiveLevel(SensitiveLevel $level): void
+    {
+        $this->defaultSensitiveLevel = $level;
+    }
+
+    /**
+     * Apply sensitive keys masking to a DataSource result.
+     * 
+     * @param mixed $result The result from the DataSource call
+     * @param array<string, SensitiveLevel> $sensitiveKeys Keys to mask (exact name or pattern)
+     * @return mixed The result with sensitive keys masked
+     */
+    private function applySensitiveKeysToResult(mixed $result, array $sensitiveKeys): mixed
+    {
+        if (empty($sensitiveKeys)) {
+            return $result;
+        }
+
+        if (!is_array($result)) {
+            return $result;
+        }
+
+        $masked = [];
+        foreach ($result as $key => $value) {
+            $level = $this->getSensitiveLevelForKey((string) $key, $sensitiveKeys);
+            $masked[$key] = $level->apply($value);
+        }
+
+        return $masked;
+    }
+
+    /**
+     * Get the sensitive level for a specific key in a DataSource result.
+     * 
+     * @param string $key The key name
+     * @param array<string, SensitiveLevel> $sensitiveKeys The sensitive keys configuration
+     * @return SensitiveLevel The resolved sensitive level
+     */
+    private function getSensitiveLevelForKey(string $key, array $sensitiveKeys): SensitiveLevel
+    {
+        // Check for exact match
+        if (isset($sensitiveKeys[$key])) {
+            return $sensitiveKeys[$key];
+        }
+
+        // Check for pattern matches
+        foreach ($sensitiveKeys as $pattern => $level) {
+            if ($this->matchesPattern($key, $pattern)) {
+                return $level;
+            }
+        }
+
+        return SensitiveLevel::SHOW;
     }
 
     /**
