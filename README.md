@@ -44,7 +44,7 @@ $builder->addCustomHydrator('my_parser', function(array $data): ?object {
     return new MyClass($data);
 });
 
-$mapper = $builder->build();
+$dataMapper = $builder->build();
 ```
 
 ### Configure your data object
