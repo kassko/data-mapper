@@ -134,6 +134,6 @@ final class DataMapperBuilder
         );
         
         // Create the DataMapper which will create and register the Loader
-        return new DataMapper($serviceResolver, $this->cache, $this->logger);
+        return new DataMapper($serviceResolver, $this->cache, $this->logger, $this->customHydrators);
     }
 }

@@ -23,11 +23,14 @@ It is not affiliated with, nor owned by, any organization.
 ## Installation
 
 ```bash
-composer require kassko/data-mapper-experimental
+composer require kassko/data-mapper:^2.35-alpha@alpha
 ```
 
 ## Quick Start
 
+### Boot DataMapper
+
+If you're in a Symfony app and use kassko/data-mapper-bundle, DataMapper is booted and you can skip this section.
 ```php
 use Kassko\DataMapper\DataMapperBuilder;
 
@@ -43,6 +46,58 @@ $builder->addCustomHydrator('my_parser', function(array $data): ?object {
 
 $mapper = $builder->build();
 ```
+
+### Configure your data object
+
+```php
+use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+class Person
+{
+    use LoadableTrait;
+
+    private int $id;
+    private ?string $firstName = null;
+    private ?string $lastName = null;
+    #[DataSource(class: '\Kassko\Sample\NickNameReferential', method: 'getNickNameByPerson', args: ['#id'])]
+    private ?string $nickName = null;
+
+    public function getNickName()
+    {
+        $this->loadProperty('nickName');
+        return $this->nickName;
+    }
+}
+```
+
+### Hydrate properties from raw data
+```php
+$hydrator = $dataMapper->getHydrator();
+
+$rawData = ['first_name' => 'John', 'last_name' => 'Doe'];
+$person = $hydrator->hydrate(Person::class, $rawData);
+```
+
+### Or lazy load a property
+
+```php
+$person = new Person();
+$person->setId(1);
+$person->getNickName(); // Trigger lazy loading from the nick name referential source 
+```
+
+For this last example to work, you need to provide a service provider if your data source class cannot be instantiated directly.
+```php
+// Add one or more service provider(s) using DataMapperBuilder: container, locator, or factory
+$builder->setContainer($container);
+$builder->addLocator($serviceLocator);
+$builder->addFactoryService($factoryService, 'create');
+```
+
+Discover everything you can do with DataMapper in the following section **Features**.
+See in more detail how to use DataMapper with examples [here](EXAMPLE.md).
+Get an overview of DataMapper's architecture and operating principles [here](docs/architecture/ARCHITECTURE.md).
 
 ## Features
 
