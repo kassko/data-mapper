@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Kassko\DataMapper\Attribute;
 
+use Kassko\DataMapper\Enum\SensitiveLevel;
+
 /**
  * PropertyConfig defines a reusable property configuration with an ID.
  * Used inside PropertyConfigStore at class level.
@@ -26,6 +28,7 @@ final class PropertyConfig
         public readonly ?string $expand = null,
         public readonly ?string $noExpand = null,
         public readonly ?array $mapping = null,
+        public readonly ?SensitiveLevel $sensitiveLevel = null,  // Sensitivity level for lineage collection
     ) {
         // Validation: mapping requires class to be set
         if ($mapping !== null && $class === null) {

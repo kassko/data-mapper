@@ -161,7 +161,7 @@ class Product
     #[DataSourceRef(
         id: 'cache',
         fallbacks: ['database', 'api'],
-        exceptionOnNoValidDataSource: NotFoundException::class
+        exceptionOnNoValidFallback: NotFoundException::class
     )]
     private ?ProductData $data = null;
 }
@@ -361,13 +361,14 @@ class ValidationService
 }
 
 // Use the service in hooks
-#[DataSource(
-    id: 'personSource',
-    class: PersonDataSource::class,
-    method: 'getData',
-    args: ['#id'],
-    supplySeveralProperties: true
-)]
+#[DataSourcesStore([
+    new MultiPropDataSource(
+        id: 'personSource',
+        class: PersonDataSource::class,
+        method: 'getData',
+        args: ['#id']
+    )
+])]
 class Person
 {
     use LoadableTrait;
@@ -403,11 +404,14 @@ class Person
 ### Example 1: Auto-Loading in Args (No Needs Required)
 
 ```php
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
 
-#[DataSource(id: 'userSource', class: UserDataSource::class, method: 'getUser', args: ['#userId'], supplySeveralProperties: true)]
-#[DataSource(id: 'preferencesSource', class: PreferencesDataSource::class, method: 'getPreferences', args: ['#userId', '#role'], supplySeveralProperties: true)]
+#[DataSourcesStore([
+    new MultiPropDataSource(id: 'userSource', class: UserDataSource::class, method: 'getUser', args: ['#userId']),
+    new MultiPropDataSource(id: 'preferencesSource', class: PreferencesDataSource::class, method: 'getPreferences', args: ['#userId', '#role'])
+])]
 class UserProfile
 {
     use LoadableTrait;
@@ -434,12 +438,15 @@ class UserProfile
 
 ```php
 use Kassko\DataMapper\Attribute\Needs;
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
 
-#[DataSource(id: 'discountSource', class: DiscountDataSource::class, method: 'getDiscount', args: ['#customerId'], supplySeveralProperties: true)]
-#[DataSource(id: 'customerSource', class: CustomerDataSource::class, method: 'getCustomer', args: ['#customerId'], supplySeveralProperties: true)]
-#[DataSource(id: 'orderSource', class: OrderDataSource::class, method: 'getOrder', args: ['#orderId'], supplySeveralProperties: true)]
+#[DataSourcesStore([
+    new MultiPropDataSource(id: 'discountSource', class: DiscountDataSource::class, method: 'getDiscount', args: ['#customerId']),
+    new MultiPropDataSource(id: 'customerSource', class: CustomerDataSource::class, method: 'getCustomer', args: ['#customerId']),
+    new MultiPropDataSource(id: 'orderSource', class: OrderDataSource::class, method: 'getOrder', args: ['#orderId'])
+])]
 class Order
 {
     use LoadableTrait;
@@ -476,12 +483,15 @@ class Order
 
 ```php
 use Kassko\DataMapper\Attribute\Needs;
-use Kassko\DataMapper\Attribute\DataSource;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\DataSourcesStore;
 
-#[DataSource(id: 'sourceA', class: SourceA::class, method: 'getData', supplySeveralProperties: true)]
-#[DataSource(id: 'sourceB', class: SourceB::class, method: 'getData', supplySeveralProperties: true)]
-#[DataSource(id: 'sourceC', class: SourceC::class, method: 'process', args: ['#propA'], supplySeveralProperties: true)]
+#[DataSourcesStore([
+    new MultiPropDataSource(id: 'sourceA', class: SourceA::class, method: 'getData'),
+    new MultiPropDataSource(id: 'sourceB', class: SourceB::class, method: 'getData'),
+    new MultiPropDataSource(id: 'sourceC', class: SourceC::class, method: 'process', args: ['#propA'])
+])]
 class Example
 {
     use LoadableTrait;
@@ -601,7 +611,7 @@ class Config
     #[DataSourceRef(
         id: 'primaryApi',
         fallbacks: ['cacheBackup', 'defaultValues'],
-        exceptionOnNoValidDataSource: NoValidDataSourceException::class,
+        exceptionOnNoValidFallback: NoValidDataSourceException::class,
         priority: 5
     )]
     private ?array $settings = null;
@@ -711,14 +721,14 @@ Summary
 // v1.x (DEPRECATED)
 #[DataSourceRef(
     chain: ['primary', 'backup'],
-    exceptionOnNoValidDataSource: MyException::class
+    exceptionOnNoValidFallback: MyException::class
 )]
 
 // v2.0
 #[DataSourceRef(
     id: 'primary',
     fallbacks: ['backup'],
-    exceptionOnNoValidDataSource: MyException::class
+    exceptionOnNoValidFallback: MyException::class
 )]
 ```
 

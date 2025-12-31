@@ -620,7 +620,7 @@ class Loader implements LoaderInterface
     private function loadPropertyWithFallbacks(object $object, string $propertyName, ReflectionProperty $property, $dataSourceRef): void
     {
         $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
-        $exceptionClass = $dataSourceRef->exceptionOnNoValidDataSource;
+        $exceptionClass = $dataSourceRef->exceptionOnNoValidFallback;
         
         // Build the chain: start with primary id, then add fallbacks if any
         $sourceChain = [$dataSourceRef->id];
@@ -785,7 +785,8 @@ class Loader implements LoaderInterface
             $dataSource->method,
             $dataSource->args,
             $result,
-            $sourceId
+            $sourceId,
+            $dataSource->sensitiveKeys
         );
         
         // Hydrate the property
@@ -834,14 +835,35 @@ class Loader implements LoaderInterface
         
         $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
         $aggregatedResult = [];
-        
+        $ignoreNotFound = $dataSourceRef->ignoreProviderOnNotFound;
+
         foreach ($dataSourceRef->providers as $sourceId) {
             if (!isset($dataSourceMap[$sourceId])) {
+                if ($ignoreNotFound) {
+                    $this->logger->info(
+                        'Skipping unknown provider (ignoreProviderOnNotFound is enabled)',
+                        ['property' => $propertyName, 'provider' => $sourceId]
+                    );
+                    continue;
+                }
+                // Default behavior: skip silently (existing behavior)
                 continue;
             }
             
             $dataSource = $dataSourceMap[$sourceId];
-            $result = $this->executeDataSource($dataSource, $object);
+            
+            try {
+                $result = $this->executeDataSource($dataSource, $object);
+            } catch (\Throwable $e) {
+                if ($ignoreNotFound) {
+                    $this->logger->info(
+                        'Skipping failed provider (ignoreProviderOnNotFound is enabled)',
+                        ['property' => $propertyName, 'provider' => $sourceId, 'error' => $e->getMessage()]
+                    );
+                    continue;
+                }
+                throw $e;
+            }
             
             // Only aggregate arrays
             if (is_array($result)) {
@@ -904,7 +926,8 @@ class Loader implements LoaderInterface
             $source->method,
             $source->args,
             $data,
-            $source->id ?? null
+            $source->id ?? null,
+            $source->sensitiveKeys
         );
         
         // Apply recursive hydration if needed (handles PropertyCandidates, nested objects, etc.)
@@ -968,7 +991,8 @@ class Loader implements LoaderInterface
             $source->method,
             $source->args,
             $data,
-            $source->id ?? null
+            $source->id ?? null,
+            $source->sensitiveKeys
         );
         
         if (!is_array($data)) {
@@ -1560,6 +1584,9 @@ class Loader implements LoaderInterface
     /**
      * Merge a PropertyConfig into a new Property-like object
      *
+     * Property attribute values take precedence over PropertyConfig values.
+     * This allows Property to override specific PropertyConfig settings.
+     *
      * @param Property $propertyAttr Original Property attribute
      * @param PropertyConfig $config PropertyConfig to merge
      * @return Property
@@ -1567,11 +1594,12 @@ class Loader implements LoaderInterface
     private function mergePropertyConfig(Property $propertyAttr, PropertyConfig $config): Property
     {
         return new Property(
-            name: $config->name ?? $propertyAttr->name,
-            class: $config->class ?? $propertyAttr->class,
-            expand: $config->expand ?? $propertyAttr->expand,
-            noExpand: $config->noExpand ?? $propertyAttr->noExpand,
-            mapping: $config->mapping ?? $propertyAttr->mapping,
+            // Property.name takes precedence over PropertyConfig.name
+            name: $propertyAttr->name ?? $config->name,
+            class: $propertyAttr->class ?? $config->class,
+            expand: $propertyAttr->expand ?? $config->expand,
+            noExpand: $propertyAttr->noExpand ?? $config->noExpand,
+            mapping: $propertyAttr->mapping ?? $config->mapping,
         );
     }
 
@@ -1970,9 +1998,6 @@ class Loader implements LoaderInterface
         
         if ($this->attributeReader->readProperty($property) !== null) {
             $conflictingAttributes[] = 'Property';
-        }
-        if ($this->attributeReader->readPropertyCandidates($property) !== null) {
-            $conflictingAttributes[] = 'PropertyCandidates';
         }
         if ($this->attributeReader->readDataSource($property) !== null) {
             $conflictingAttributes[] = 'DataSource';

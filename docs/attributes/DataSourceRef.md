@@ -51,15 +51,17 @@ class Person
 | `providers` | `?array` | Conditional | Array of IDs for aggregation |
 | `candidates` | `?array` | Conditional | Array of candidates with rule expressions |
 | `defaultCandidate` | `?array` | Conditional | Default candidate if no rule matches (required with `candidates`) |
-| `exceptionOnNoValidDataSource` | `?string` | No | Exception class for fallback handling |
+| `exceptionOnNoValidFallback` | `?string` | No | Exception class for fallback handling |
+| `ignoreProviderOnNotFound` | `bool` | No | Silently skip missing providers (requires `providers`, default: false) |
 | `priority` | `int` | No | Hydration priority (default: 0) |
 
 **Validation Rules:**
 - `id`, `providers`, and `candidates` are mutually exclusive
 - `candidates` and `defaultCandidate` must both be present or both absent
-- `fallbacks` and `exceptionOnNoValidDataSource` cannot be used with `candidates`
+- `fallbacks` and `exceptionOnNoValidFallback` cannot be used with `candidates`
 - `fallbacks` can only be used with `id`
-- `exceptionOnNoValidDataSource` requires `fallbacks` to be set
+- `exceptionOnNoValidFallback` requires `fallbacks` to be set
+- `ignoreProviderOnNotFound` can only be used with `providers`
 - Each candidate must have `id` and `rule` keys
 
 ## Modes
@@ -79,7 +81,7 @@ Try primary source, then fallbacks in order until one succeeds:
 #[DataSourceRef(
     id: 'primaryApi',
     fallbacks: ['cacheBackup', 'defaultValues'],
-    exceptionOnNoValidDataSource: NoValidDataSourceException::class
+    exceptionOnNoValidFallback: NoValidDataSourceException::class
 )]
 private ?string $data = null;
 ```
@@ -97,6 +99,50 @@ Merge results from multiple sources (uses `array_replace_recursive`):
 ```php
 #[DataSourceRef(providers: ['basicConfig', 'userPreferences', 'overrides'])]
 private ?array $config = null;
+```
+
+#### Complete Providers Example
+
+```php
+use Kassko\DataMapper\Attribute\DataSourcesStore;
+use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+#[DataSourcesStore([
+    new MultiPropDataSource(id: 'basicInfo', class: UserBasicDataSource::class, method: 'getBasic', args: ['#userId']),
+    new MultiPropDataSource(id: 'extendedInfo', class: UserExtendedDataSource::class, method: 'getExtended', args: ['#userId']),
+    new MultiPropDataSource(id: 'preferences', class: UserPreferencesDataSource::class, method: 'getPrefs', args: ['#userId']),
+])]
+class UserProfile
+{
+    use LoadableTrait;
+    
+    private int $userId;
+    
+    /**
+     * Aggregates data from all three sources.
+     * Later providers override earlier ones for conflicting keys.
+     */
+    #[DataSourceRef(providers: ['basicInfo', 'extendedInfo', 'preferences'])]
+    private ?array $userData = null;
+    
+    /**
+     * With ignoreProviderOnNotFound: true, missing providers are silently skipped.
+     * Useful when some providers may not be available in all environments.
+     */
+    #[DataSourceRef(
+        providers: ['basicInfo', 'optionalProvider', 'preferences'],
+        ignoreProviderOnNotFound: true
+    )]
+    private ?array $partialData = null;
+    
+    public function getUserData(): ?array
+    {
+        $this->loadProperty('userData');
+        return $this->userData;
+    }
+}
 ```
 
 ### Priority-Based Hydration

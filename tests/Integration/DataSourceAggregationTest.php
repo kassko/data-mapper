@@ -106,4 +106,33 @@ class DataSourceAggregationTest extends TestCase
         $this->assertEquals(5432, $config['db']['port']); // providerB overwrites
         $this->assertEquals('admin', $config['db']['user']); // Added by providerB
     }
+
+    public function testIgnoreProviderOnNotFoundSkipsMissingProviders(): void
+    {
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
+        
+        // One provider exists, one doesn't, but ignoreProviderOnNotFound is true
+        $object = new #[DataSourcesStore([
+            new SinglePropDataSource(id: 'providerA', class: AggregationDataSource::class, method: 'providerA'),
+            // 'providerX' is NOT defined in the store
+        ])] class {
+            use LoadableTrait;
+            
+            #[DataSourceRef(
+                providers: ['providerA', 'providerX'], 
+                ignoreProviderOnNotFound: true
+            )]
+            #[Property(name: 'name')]
+            private ?string $name = null;
+            
+            public function getName(): ?string
+            {
+                $this->loadProperty('name');
+                return $this->name;
+            }
+        };
+        
+        // Should work despite missing providerX
+        $this->assertEquals('Alice', $object->getName());
+    }
 }

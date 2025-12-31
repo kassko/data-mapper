@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper;
 
 use Kassko\DataMapper\DataCollector\DataLineageCollector;
+use Kassko\DataMapper\Enum\SensitiveLevel;
 use Kassko\DataMapper\Loader\Loader;
 use Kassko\DataMapper\Registry\ContextRegistry;
 use Kassko\DataMapper\Registry\LoaderRegistry;
@@ -34,17 +35,21 @@ final class DataMapper
      * @param CacheInterface|null $cache PSR-16 cache interface
      * @param LoggerInterface|null $logger PSR-3 logger interface
      * @param array<string, callable> $customHydrators Custom hydrators (key => callable)
+     * @param array<string, SensitiveLevel> $sensitiveKeys Global sensitive keys configuration
+     * @param SensitiveLevel $defaultSensitiveLevel Default sensitive level for all properties
      */
     public function __construct(
         ServiceResolver $serviceResolver,
         ?CacheInterface $cache = null,
         ?LoggerInterface $logger = null,
-        array $customHydrators = []
+        array $customHydrators = [],
+        array $sensitiveKeys = [],
+        SensitiveLevel $defaultSensitiveLevel = SensitiveLevel::SHOW
     ) {
         $this->cache = $cache;
         $this->logger = $logger;
         $this->serviceResolver = $serviceResolver;
-        $this->lineageCollector = new DataLineageCollector();
+        $this->lineageCollector = new DataLineageCollector($sensitiveKeys, $defaultSensitiveLevel);
         
         // Register Loader in the registry
         $this->loader = new Loader($this->serviceResolver, $this->logger, $customHydrators, $this->lineageCollector);

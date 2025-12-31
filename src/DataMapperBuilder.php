@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper;
 
 use Kassko\DataMapper\DataCollector\DataLineageCollector;
+use Kassko\DataMapper\Enum\SensitiveLevel;
 use Kassko\DataMapper\Loader\Loader;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Psr\Container\ContainerInterface;
@@ -40,6 +41,12 @@ final class DataMapperBuilder
     
     /** @var array<string, callable> */
     private array $customHydrators = [];
+
+    /** @var array<string, SensitiveLevel> Global sensitive keys configuration */
+    private array $sensitiveKeys = [];
+
+    /** @var SensitiveLevel Default sensitive level for all properties */
+    private SensitiveLevel $defaultSensitiveLevel = SensitiveLevel::SHOW;
 
     public function setContainer(ContainerInterface $container): self
     {
@@ -123,6 +130,79 @@ final class DataMapperBuilder
         return $this;
     }
 
+    /**
+     * Set the default sensitive level for all properties.
+     * This is used when no specific level is set for a property.
+     *
+     * @param SensitiveLevel $level The default sensitive level
+     * @return self
+     */
+    public function setDefaultSensitiveLevel(SensitiveLevel $level): self
+    {
+        $this->defaultSensitiveLevel = $level;
+        return $this;
+    }
+
+    /**
+     * Set all sensitive keys at once.
+     * Replaces any existing sensitive keys configuration.
+     *
+     * @param array<string, SensitiveLevel> $sensitiveKeys Map of property names to their sensitive levels
+     * @return self
+     */
+    public function setSensitiveKeys(array $sensitiveKeys): self
+    {
+        $this->sensitiveKeys = $sensitiveKeys;
+        return $this;
+    }
+
+    /**
+     * Add a sensitive key with its level.
+     *
+     * @param string $key The property name (can be a pattern like 'password', '*password*', 'user.ssn')
+     * @param SensitiveLevel $level The sensitive level for this key
+     * @return self
+     */
+    public function addSensitiveKey(string $key, SensitiveLevel $level): self
+    {
+        $this->sensitiveKeys[$key] = $level;
+        return $this;
+    }
+
+    /**
+     * Remove one or more sensitive keys.
+     *
+     * @param string ...$keys The property names to remove from sensitive configuration
+     * @return self
+     */
+    public function removeSensitiveKeys(string ...$keys): self
+    {
+        foreach ($keys as $key) {
+            unset($this->sensitiveKeys[$key]);
+        }
+        return $this;
+    }
+
+    /**
+     * Get the configured sensitive keys.
+     *
+     * @return array<string, SensitiveLevel>
+     */
+    public function getSensitiveKeys(): array
+    {
+        return $this->sensitiveKeys;
+    }
+
+    /**
+     * Get the default sensitive level.
+     *
+     * @return SensitiveLevel
+     */
+    public function getDefaultSensitiveLevel(): SensitiveLevel
+    {
+        return $this->defaultSensitiveLevel;
+    }
+
     public function build(): DataMapper
     {
         $serviceResolver = new ServiceResolver(
@@ -134,6 +214,13 @@ final class DataMapperBuilder
         );
         
         // Create the DataMapper which will create and register the Loader
-        return new DataMapper($serviceResolver, $this->cache, $this->logger, $this->customHydrators);
+        return new DataMapper(
+            $serviceResolver,
+            $this->cache,
+            $this->logger,
+            $this->customHydrators,
+            $this->sensitiveKeys,
+            $this->defaultSensitiveLevel
+        );
     }
 }

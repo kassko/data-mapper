@@ -46,7 +46,7 @@ class DataSourceChainTest extends TestCase
         ])] class {
             use LoadableTrait;
             
-            #[DataSourceRef(id: 'sourceA', fallbacks: ['sourceB'], exceptionOnNoValidDataSource: UnsuitableSourceException::class)]
+            #[DataSourceRef(id: 'sourceA', fallbacks: ['sourceB'], exceptionOnNoValidFallback: UnsuitableSourceException::class)]
             private ?string $data = null;
             
             public function getData(): ?string
@@ -69,7 +69,7 @@ class DataSourceChainTest extends TestCase
         ])] class {
             use LoadableTrait;
             
-            #[DataSourceRef(id: 'sourceA', fallbacks: ['sourceB'], exceptionOnNoValidDataSource: UnsuitableSourceException::class)]
+            #[DataSourceRef(id: 'sourceA', fallbacks: ['sourceB'], exceptionOnNoValidFallback: UnsuitableSourceException::class)]
             private ?string $data = null;
             
             public function getData(): ?string
@@ -92,7 +92,7 @@ class DataSourceChainTest extends TestCase
         ])] class {
             use LoadableTrait;
             
-            #[DataSourceRef(id: 'sourceA', fallbacks: [], exceptionOnNoValidDataSource: UnsuitableSourceException::class)]
+            #[DataSourceRef(id: 'sourceA', fallbacks: [], exceptionOnNoValidFallback: UnsuitableSourceException::class)]
             private ?string $data = null;
             
             public function getData(): ?string

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Attribute;
 
 use Attribute;
+use Kassko\DataMapper\Enum\SensitiveLevel;
 
 /**
  * Defines a data source that hydrates a single property.
@@ -32,6 +33,8 @@ final class SinglePropDataSource
         public readonly string $method = '',
         public readonly array $args = [],
         public readonly int $priority = 0,
+        /** @var array<string, SensitiveLevel> Keys to mark as sensitive (exact name or regex pattern) */
+        public readonly array $sensitiveKeys = [],
         // NO loadingScope/loadingScopeKeys - single property only
     ) {}
 }

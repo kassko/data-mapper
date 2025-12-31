@@ -23,7 +23,8 @@ final class DataSourceRef
     public readonly ?array $providers;
     public readonly ?array $candidates;
     public readonly ?array $defaultCandidate;
-    public readonly ?string $exceptionOnNoValidDataSource;
+    public readonly ?string $exceptionOnNoValidFallback;
+    public readonly bool $ignoreProviderOnNotFound;
     public readonly int $priority;
 
     /**
@@ -34,7 +35,8 @@ final class DataSourceRef
      *                               Each candidate: ['id' => string, 'rule' => string, 'priority' => int (optional)]
      * @param array|null $defaultCandidate Default candidate if no rule matches.
      *                                      Structure: ['id' => string, 'priority' => int (optional)]
-     * @param string|null $exceptionOnNoValidDataSource Exception class for fallbacks
+     * @param string|null $exceptionOnNoValidFallback Exception class for fallbacks (thrown when all fallbacks fail)
+     * @param bool $ignoreProviderOnNotFound If true, missing providers are silently skipped (requires providers)
      * @param int $priority Base priority for hydration
      */
     public function __construct(
@@ -43,7 +45,8 @@ final class DataSourceRef
         ?array $providers = null,
         ?array $candidates = null,
         ?array $defaultCandidate = null,
-        ?string $exceptionOnNoValidDataSource = null,
+        ?string $exceptionOnNoValidFallback = null,
+        bool $ignoreProviderOnNotFound = false,
         int $priority = 0
     ) {
         // Count how many "modes" are set
@@ -70,8 +73,8 @@ final class DataSourceRef
             if ($fallbacks !== null) {
                 throw new \InvalidArgumentException('DataSourceRef: fallbacks cannot be used with candidates');
             }
-            if ($exceptionOnNoValidDataSource !== null) {
-                throw new \InvalidArgumentException('DataSourceRef: exceptionOnNoValidDataSource cannot be used with candidates');
+            if ($exceptionOnNoValidFallback !== null) {
+                throw new \InvalidArgumentException('DataSourceRef: exceptionOnNoValidFallback cannot be used with candidates');
             }
         }
 
@@ -80,9 +83,14 @@ final class DataSourceRef
             throw new \InvalidArgumentException('DataSourceRef: fallbacks can only be used with id');
         }
 
-        // Build-time validation: exceptionOnNoValidDataSource requires fallbacks
-        if ($exceptionOnNoValidDataSource !== null && $fallbacks === null) {
-            throw new \InvalidArgumentException('DataSourceRef: exceptionOnNoValidDataSource requires fallbacks to be set');
+        // Build-time validation: exceptionOnNoValidFallback requires fallbacks
+        if ($exceptionOnNoValidFallback !== null && $fallbacks === null) {
+            throw new \InvalidArgumentException('DataSourceRef: exceptionOnNoValidFallback requires fallbacks to be set');
+        }
+
+        // Build-time validation: ignoreProviderOnNotFound requires providers
+        if ($ignoreProviderOnNotFound && $providers === null) {
+            throw new \InvalidArgumentException('DataSourceRef: ignoreProviderOnNotFound can only be used with providers');
         }
 
         // Build-time validation: candidates structure
@@ -115,7 +123,8 @@ final class DataSourceRef
         $this->providers = $providers;
         $this->candidates = $candidates;
         $this->defaultCandidate = $defaultCandidate;
-        $this->exceptionOnNoValidDataSource = $exceptionOnNoValidDataSource;
+        $this->exceptionOnNoValidFallback = $exceptionOnNoValidFallback;
+        $this->ignoreProviderOnNotFound = $ignoreProviderOnNotFound;
         $this->priority = $priority;
     }
 }

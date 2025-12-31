@@ -178,7 +178,7 @@ DataSourceRef now uses `id` + `fallbacks` instead of `chain` for clearer semanti
 #[DataSourceRef(
     id: 'primarySource',
     fallbacks: ['backupSource', 'lastResort'],
-    exceptionOnNoValidDataSource: NoValidDataSourceException::class,
+    exceptionOnNoValidFallback: NoValidDataSourceException::class,
     priority: 5
 )]
 private ?string $data = null;
@@ -303,7 +303,7 @@ Reference DataSources with three modes:
 #[DataSourceRef(
     id: 'primaryApi',
     fallbacks: ['cacheBackup', 'defaultValues'],
-    exceptionOnNoValidDataSource: NoValidDataSourceException::class
+    exceptionOnNoValidFallback: NoValidDataSourceException::class
 )]
 
 // Aggregation (merges all provider results)
