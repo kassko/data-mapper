@@ -34,17 +34,17 @@ If you're in a Symfony app and use kassko/data-mapper-bundle, DataMapper is boot
 ```php
 use Kassko\DataMapper\DataMapperBuilder;
 
-$builder = new DataMapperBuilder();
+$dataMapperbuilder = new DataMapperBuilder();
 
 // Optional: Add a PSR-3 logger
-$builder->setLogger($yourLogger);
+$dataMapperbuilder->setLogger($yourLogger);
 
 // Optional: Add custom hydrators
-$builder->addCustomHydrator('my_parser', function(array $data): ?object {
+$dataMapperbuilder->addCustomHydrator('my_parser', function(array $data): ?object {
     return new MyClass($data);
 });
 
-$dataMapper = $builder->build();
+$dataMapper = $dataMapperbuilder->build();
 ```
 
 ### Configure your data object
@@ -87,13 +87,14 @@ $person->setId(1);
 $person->getNickName(); // Trigger lazy loading from the nick name referential source 
 ```
 
-For this last example to work, you need to provide a service provider if your data source class cannot be instantiated directly.
+If your data source class has dependencies and so cannot be instantiated directly (which is a common), you need to configure a service provider which can provide it.
 ```php
-// Add one or more service provider(s) using DataMapperBuilder: container, locator, or factory
-$builder->setContainer($container);
-$builder->addLocator($serviceLocator);
-$builder->addFactoryService($factoryService, 'create');
+$dataMapperbuilder->setContainer($container);
+$dataMapperbuilder->addLocator($serviceLocator);
+$dataMapperbuilder->addFactoryService($factoryService, 'create');
 ```
+See the other ways to provide a service provider and detailed examples [here](docs/classes/DataMapperBuilder.md#configuration-methods).
+
 
 Discover everything you can do with DataMapper in the following section **Features**.
 See in more detail how to use DataMapper with examples [here](EXAMPLE.md).
@@ -109,8 +110,44 @@ Get an overview of DataMapper's architecture and operating principles [here](doc
 - **Polymorphic Hydration**: Runtime type resolution
 - **Priority-Based Hydration**: Control which data sources take precedence
 - **Fallback Pattern**: Graceful degradation with source fallbacks
+- **Attribute Cascading**: Inherit `DataSourcesStore` and `PropertyConfigStore` from parent classes and traits
 
 ### v2.0 New Features
+
+#### Attribute Cascading
+
+DataMapper now supports cascading PHP 8 attributes from parent classes and traits:
+
+```php
+// Parent class defines data sources
+#[DataSourcesStore([
+    new SinglePropDataSource(id: 'parentSource', class: ParentDataSource::class, method: 'getData'),
+])]
+abstract class BaseEntity {}
+
+// Trait defines additional data sources
+#[DataSourcesStore([
+    new SinglePropDataSource(id: 'traitSource', class: TraitDataSource::class, method: 'getData'),
+])]
+trait DataSourceTrait {}
+
+// Child class inherits both and can add its own
+#[DataSourcesStore([
+    new SinglePropDataSource(id: 'childSource', class: ChildDataSource::class, method: 'getData'),
+])]
+class ChildEntity extends BaseEntity
+{
+    use DataSourceTrait;
+    
+    #[DataSourceRef(id: 'parentSource')] // Reference parent's source
+    private ?string $parentData = null;
+    
+    #[DataSourceRef(id: 'traitSource')] // Reference trait's source
+    private ?string $traitData = null;
+}
+```
+
+See [Attribute Cascading](docs/concepts/AttributeCascading.md) for details.
 
 #### Application Context
 
@@ -453,7 +490,7 @@ class Document
 }
 
 // Register the hydrator
-$builder->addCustomHydrator('complex_parser', function(array $data): ?object {
+$dataMapperbuilder->addCustomHydrator('complex_parser', function(array $data): ?object {
     return match($data['type'] ?? null) {
         'text' => new TextContent($data),
         'html' => new HtmlContent($data),

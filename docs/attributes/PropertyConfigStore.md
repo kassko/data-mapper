@@ -85,7 +85,49 @@ The `rule` expression can use:
 - `context('key')` - Get value from context registry
 - `contextKeyExists('key')` - Check if key exists in context
 
+## Attribute Cascading
+
+`PropertyConfigStore` supports cascading from parent classes and traits. Child classes can reference PropertyConfigs defined in:
+
+- Parent class `PropertyConfigStore`
+- Trait `PropertyConfigStore`
+- Their own `PropertyConfigStore`
+
+When the same ID is defined in multiple places, the child's definition wins.
+
+```php
+// Parent defines configs
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'parentConfig', class: ParentProduct::class),
+])]
+abstract class BaseContainer {}
+
+// Trait defines additional configs
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'traitConfig', class: TraitProduct::class),
+])]
+trait ConfigTrait {}
+
+// Child can reference configs from parent and trait
+class ChildContainer extends BaseContainer
+{
+    use ConfigTrait;
+    
+    #[Property(
+        configCandidates: [
+            ['id' => 'parentConfig', 'rule' => "expr(rawDataItemExists('parentType'))"], // Works!
+            ['id' => 'traitConfig', 'rule' => "expr(rawDataItemExists('traitType'))"], // Works!
+        ],
+        defaultConfigCandidate: 'parentConfig'
+    )]
+    private ?object $item = null;
+}
+```
+
+See [Attribute Cascading](AttributeCascading.md) for full details.
+
 ## See Also
 
 - [PropertyConfig](PropertyConfig.md) - Individual configuration definitions
 - [Property](Property.md) - Property attribute that references configs
+- [Attribute Cascading](AttributeCascading.md)

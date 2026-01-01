@@ -974,3 +974,108 @@ class Person
 \* Property references are forbidden in constructor parameters.
 
 See [Param Attribute Documentation](docs/attributes/Param.md) for more details.
+## Attribute Cascading
+
+DataMapper supports cascading PHP 8 attributes from parent classes and traits.
+
+### DataSourcesStore Inheritance
+
+```php
+use Kassko\DataMapper\Attribute\DataSourcesStore;
+use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+// Parent class defines data sources
+#[DataSourcesStore([
+    new SinglePropDataSource(id: 'parentSource', class: ParentDataSource::class, method: 'getData'),
+    new SinglePropDataSource(id: 'sharedSource', class: ParentDataSource::class, method: 'getShared'),
+])]
+abstract class BaseEntity
+{
+    private ?int $id = null;
+}
+
+// Trait defines additional data sources
+#[DataSourcesStore([
+    new SinglePropDataSource(id: 'traitSource', class: TraitDataSource::class, method: 'getData'),
+])]
+trait DataSourceTrait {}
+
+// Child class inherits from parent and trait, can add its own
+#[DataSourcesStore([
+    new SinglePropDataSource(id: 'childSource', class: ChildDataSource::class, method: 'getData'),
+    new SinglePropDataSource(id: 'sharedSource', class: ChildDataSource::class, method: 'getShared'), // Overrides parent
+])]
+class ChildEntity extends BaseEntity
+{
+    use LoadableTrait;
+    use DataSourceTrait;
+    
+    #[DataSourceRef(id: 'parentSource')] // Reference parent's source - works!
+    private ?string $fromParent = null;
+    
+    #[DataSourceRef(id: 'traitSource')] // Reference trait's source - works!
+    private ?string $fromTrait = null;
+    
+    #[DataSourceRef(id: 'childSource')] // Reference own source
+    private ?string $fromChild = null;
+    
+    #[DataSourceRef(id: 'sharedSource')] // Uses child's override, not parent's
+    private ?string $sharedValue = null;
+    
+    public function getFromParent(): ?string
+    {
+        $this->loadProperty('fromParent');
+        return $this->fromParent;
+    }
+}
+```
+
+### PropertyConfigStore Inheritance
+
+```php
+use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\PropertyConfig;
+use Kassko\DataMapper\Attribute\PropertyConfigStore;
+
+// Parent defines configs
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'parentConfig', class: ParentProduct::class),
+])]
+abstract class BaseContainer {}
+
+// Trait defines additional configs
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'traitConfig', class: TraitProduct::class),
+])]
+trait ConfigTrait {}
+
+// Child can reference configs from parent, trait, and self
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'childConfig', class: ChildProduct::class),
+])]
+class ChildContainer extends BaseContainer
+{
+    use ConfigTrait;
+    
+    #[Property(
+        configCandidates: [
+            ['id' => 'childConfig', 'rule' => "expr(rawDataItemExists('childType'))"],
+            ['id' => 'parentConfig', 'rule' => "expr(rawDataItemExists('parentType'))"], // Works!
+            ['id' => 'traitConfig', 'rule' => "expr(rawDataItemExists('traitType'))"], // Works!
+        ],
+        defaultConfigCandidate: 'childConfig'
+    )]
+    private ?object $item = null;
+}
+```
+
+### Conflict Resolution
+
+When child and parent/trait define the same ID:
+
+- **Child wins**: The child's definition takes precedence
+- **Logged**: A warning is logged for debugging
+
+See [Attribute Cascading Documentation](docs/concepts/AttributeCascading.md) for more details.

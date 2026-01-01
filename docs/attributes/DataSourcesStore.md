@@ -83,9 +83,37 @@ class Person
 }
 ```
 
+## Attribute Cascading
+
+`DataSourcesStore` supports cascading from parent classes and traits. Child classes can reference DataSources defined in:
+
+- Parent class `DataSourcesStore`
+- Trait `DataSourcesStore`
+- Their own `DataSourcesStore`
+
+When the same ID is defined in multiple places, the child's definition wins.
+
+```php
+// Parent defines sources
+#[DataSourcesStore([
+    new SinglePropDataSource(id: 'parentSource', class: ParentService::class, method: 'get'),
+])]
+abstract class BaseEntity {}
+
+// Child can reference parent's sources
+class ChildEntity extends BaseEntity
+{
+    #[DataSourceRef(id: 'parentSource')] // Works!
+    private ?string $data = null;
+}
+```
+
+See [Attribute Cascading](AttributeCascading.md) for full details.
+
 ## See Also
 
 - [DataSource](DataSource.md)
 - [SinglePropDataSource](SinglePropDataSource.md)
 - [MultiPropDataSource](MultiPropDataSource.md)
 - [DataSourceRef](DataSourceRef.md)
+- [Attribute Cascading](AttributeCascading.md)
