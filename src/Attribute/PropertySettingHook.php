@@ -23,5 +23,6 @@ final class PropertySettingHook
         public readonly string $after_set_property = '',   // Method to call after setting property
         public readonly ?string $class = null,             // Optional: external class/service to call
         public readonly array $args = [],                  // Arguments to pass (supports ##object, #property, expr())
+        public readonly bool $cascade = true,              // Whether this attribute cascades to child classes
     ) {}
 }

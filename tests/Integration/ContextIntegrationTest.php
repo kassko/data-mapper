@@ -66,7 +66,7 @@ class ContextIntegrationTest extends TestCase
         class {
             use LoadableTrait;
 
-            #[Context(role: 'admin', level: 'high')]
+            #[Context(['key' => 'role', 'value' => 'admin'], ['key' => 'level', 'value' => 'high'])]
             #[DataSourceRef(id: 'source')]
             private ?string $name = null;
 

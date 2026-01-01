@@ -49,7 +49,7 @@ class Person
 | `id` | `?string` | Conditional | Primary data source ID |
 | `fallbacks` | `?array` | No | Array of fallback source IDs (requires `id`) |
 | `providers` | `?array` | Conditional | Array of IDs for aggregation |
-| `candidates` | `?array` | Conditional | Array of candidates with rule expressions |
+| `candidates` | `?array` | Conditional | Array of candidates with `when` expressions |
 | `defaultCandidate` | `?array` | Conditional | Default candidate if no rule matches (required with `candidates`) |
 | `exceptionOnNoValidFallback` | `?string` | No | Exception class for fallback handling |
 | `ignoreProviderOnNotFound` | `bool` | No | Silently skip missing providers (requires `providers`, default: false) |
@@ -62,7 +62,7 @@ class Person
 - `fallbacks` can only be used with `id`
 - `exceptionOnNoValidFallback` requires `fallbacks` to be set
 - `ignoreProviderOnNotFound` can only be used with `providers`
-- Each candidate must have `id` and `rule` keys
+- Each candidate must have `id` and `when` keys
 
 ## Modes
 
@@ -159,9 +159,9 @@ private ?string $value = null;
 private ?string $value = null;
 ```
 
-### Candidates (Rule-Based Selection)
+### Candidates (Expression-Based Selection)
 
-Select a data source dynamically based on expression evaluation. The first candidate whose `rule` evaluates to `true` is elected. If no rule matches, `defaultCandidate` is used:
+Select a data source dynamically based on expression evaluation. The first candidate whose `when` expression evaluates to `true` is elected. If no expression matches, `defaultCandidate` is used:
 
 ```php
 #[DataSourcesStore([
@@ -172,7 +172,7 @@ class User
 {
     #[DataSourceRef(
         candidates: [
-            ['id' => 'newFeatureSource', 'rule' => "expr(context('new_feature_enabled'))", 'priority' => 15],
+            ['id' => 'newFeatureSource', 'when' => "expr(context('new_feature_enabled'))", 'priority' => 15],
         ],
         defaultCandidate: ['id' => 'oldFeatureSource'],
         priority: 10
@@ -183,7 +183,7 @@ class User
 
 **Candidate Structure:**
 - `id` (required): The data source ID to use if this candidate is elected
-- `rule` (required): An expression that returns a boolean
+- `when` (required): An expression that returns a boolean
 - `priority` (optional): Overrides the base `priority` if this candidate is elected
 
 **defaultCandidate Structure:**

@@ -106,8 +106,8 @@ class DataSourceRefValidationTest extends TestCase
     {
         $ref = new DataSourceRef(
             candidates: [
-                ['id' => 'sourceA', 'rule' => 'expr(true)'],
-                ['id' => 'sourceB', 'rule' => 'expr(false)', 'priority' => 15],
+                ['id' => 'sourceA', 'when' => 'expr(true)'],
+                ['id' => 'sourceB', 'when' => 'expr(false)', 'priority' => 15],
             ],
             defaultCandidate: ['id' => 'sourceC']
         );
@@ -124,7 +124,7 @@ class DataSourceRefValidationTest extends TestCase
         $this->expectExceptionMessage('DataSourceRef: candidates and defaultCandidate must both be present or both absent');
 
         new DataSourceRef(candidates: [
-            ['id' => 'sourceA', 'rule' => 'expr(true)'],
+            ['id' => 'sourceA', 'when' => 'expr(true)'],
         ]);
     }
 
@@ -146,7 +146,7 @@ class DataSourceRefValidationTest extends TestCase
 
         new DataSourceRef(
             id: 'sourceA',
-            candidates: [['id' => 'sourceB', 'rule' => 'expr(true)']],
+            candidates: [['id' => 'sourceB', 'when' => 'expr(true)']],
             defaultCandidate: ['id' => 'sourceC']
         );
     }
@@ -158,7 +158,7 @@ class DataSourceRefValidationTest extends TestCase
 
         new DataSourceRef(
             providers: ['providerA'],
-            candidates: [['id' => 'sourceB', 'rule' => 'expr(true)']],
+            candidates: [['id' => 'sourceB', 'when' => 'expr(true)']],
             defaultCandidate: ['id' => 'sourceC']
         );
     }
@@ -170,7 +170,7 @@ class DataSourceRefValidationTest extends TestCase
 
         new DataSourceRef(
             candidates: [
-                ['rule' => 'expr(true)'],
+                ['when' => 'expr(true)'],
             ],
             defaultCandidate: ['id' => 'sourceB']
         );
@@ -179,7 +179,7 @@ class DataSourceRefValidationTest extends TestCase
     public function testCandidatesMustHaveRule(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('candidate at index 0 must have a "rule" key');
+        $this->expectExceptionMessage('candidate at index 0 must have a "when" key');
 
         new DataSourceRef(
             candidates: [
@@ -196,7 +196,7 @@ class DataSourceRefValidationTest extends TestCase
 
         new DataSourceRef(
             candidates: [
-                ['id' => 'sourceA', 'rule' => 'expr(true)'],
+                ['id' => 'sourceA', 'when' => 'expr(true)'],
             ],
             defaultCandidate: ['priority' => 10]
         );
@@ -206,7 +206,7 @@ class DataSourceRefValidationTest extends TestCase
     {
         $ref = new DataSourceRef(
             candidates: [
-                ['id' => 'sourceA', 'rule' => 'expr(true)', 'priority' => 20],
+                ['id' => 'sourceA', 'when' => 'expr(true)', 'priority' => 20],
             ],
             defaultCandidate: ['id' => 'sourceB'],
             priority: 5
@@ -222,7 +222,7 @@ class DataSourceRefValidationTest extends TestCase
 
         new DataSourceRef(
             candidates: [
-                ['id' => 'sourceA', 'rule' => 'expr(true)'],
+                ['id' => 'sourceA', 'when' => 'expr(true)'],
             ],
             defaultCandidate: ['id' => 'sourceB'],
             fallbacks: ['sourceC']
@@ -236,7 +236,7 @@ class DataSourceRefValidationTest extends TestCase
 
         new DataSourceRef(
             candidates: [
-                ['id' => 'sourceA', 'rule' => 'expr(true)'],
+                ['id' => 'sourceA', 'when' => 'expr(true)'],
             ],
             defaultCandidate: ['id' => 'sourceB'],
             exceptionOnNoValidFallback: 'SomeException'

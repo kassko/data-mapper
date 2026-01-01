@@ -26,10 +26,11 @@ final class Property
         public readonly ?string $noExpand = null,  // Comma-separated props to NOT expand
         public readonly ?array $mapping = null,    // Instance-specific key mapping
         public readonly ?string $config = null,    // Reference to PropertyConfig by ID
-        /** @var array<array{id: string, rule: string}>|null Config candidates with rules */
+        /** @var array<array{id: string, when: string}>|null Config candidates with expressions */
         public readonly ?array $configCandidates = null,
-        public readonly ?string $defaultConfigCandidate = null,  // Default config ID when no rule matches
+        public readonly null|string|array $defaultConfigCandidate = null,  // Default config ID when no rule matches (empty array for no-op)
         public readonly ?SensitiveLevel $sensitiveLevel = null,  // Sensitivity level for lineage collection
+        public readonly bool $cascade = true,      // Whether this attribute cascades to child classes
     ) {
         // Validation: mapping requires class to be set
         if ($mapping !== null && $class === null) {
@@ -53,16 +54,17 @@ final class Property
         // Validation: configCandidates and defaultConfigCandidate must both be present or both absent
         if (($configCandidates === null) !== ($defaultConfigCandidate === null)) {
             throw new \InvalidArgumentException(
-                'Property: configCandidates and defaultConfigCandidate must both be present or both absent'
+                'Property: configCandidates and defaultConfigCandidate must both be present or both absent. '
+                . 'Set defaultConfigCandidate to an empty array [] if you intentionally want no default action.'
             );
         }
 
-        // Validation: each configCandidate must have 'id' and 'rule' keys
+        // Validation: each configCandidate must have 'id' and 'when' keys
         if ($configCandidates !== null) {
             foreach ($configCandidates as $index => $candidate) {
-                if (!is_array($candidate) || !isset($candidate['id']) || !isset($candidate['rule'])) {
+                if (!is_array($candidate) || !isset($candidate['id']) || !isset($candidate['when'])) {
                     throw new \InvalidArgumentException(
-                        sprintf('Property: each configCandidate must be an array with "id" and "rule" keys (index %d)', $index)
+                        sprintf('Property: each configCandidate must be an array with "id" and "when" keys (index %d)', $index)
                     );
                 }
             }

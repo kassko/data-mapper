@@ -18,4 +18,7 @@ use Attribute;
 #[Attribute(Attribute::TARGET_CLASS)]
 final class KeepAllProperties
 {
+    public function __construct(
+        public readonly bool $cascade = true,  // Whether this attribute cascades to child classes
+    ) {}
 }

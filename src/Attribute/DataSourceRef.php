@@ -26,18 +26,20 @@ final class DataSourceRef
     public readonly ?string $exceptionOnNoValidFallback;
     public readonly bool $ignoreProviderOnNotFound;
     public readonly int $priority;
+    public readonly bool $cascade;  // Whether this attribute cascades to child classes
 
     /**
      * @param string|null $id Single source ID (with optional fallbacks)
      * @param array|null $fallbacks Fallback source IDs (requires id)
      * @param array|null $providers Aggregation providers
-     * @param array|null $candidates Candidates with rule expressions.
-     *                               Each candidate: ['id' => string, 'rule' => string, 'priority' => int (optional)]
-     * @param array|null $defaultCandidate Default candidate if no rule matches.
+     * @param array|null $candidates Candidates with 'when' expressions.
+     *                               Each candidate: ['id' => string, 'when' => string, 'priority' => int (optional)]
+     * @param array|null $defaultCandidate Default candidate if no expression matches.
      *                                      Structure: ['id' => string, 'priority' => int (optional)]
      * @param string|null $exceptionOnNoValidFallback Exception class for fallbacks (thrown when all fallbacks fail)
      * @param bool $ignoreProviderOnNotFound If true, missing providers are silently skipped (requires providers)
      * @param int $priority Base priority for hydration
+     * @param bool $cascade Whether this attribute cascades to child classes
      */
     public function __construct(
         ?string $id = null,
@@ -47,7 +49,8 @@ final class DataSourceRef
         ?array $defaultCandidate = null,
         ?string $exceptionOnNoValidFallback = null,
         bool $ignoreProviderOnNotFound = false,
-        int $priority = 0
+        int $priority = 0,
+        bool $cascade = true
     ) {
         // Count how many "modes" are set
         $modesSet = 0;
@@ -102,8 +105,8 @@ final class DataSourceRef
                 if (!isset($candidate['id'])) {
                     throw new \InvalidArgumentException(sprintf('DataSourceRef: candidate at index %d must have an "id" key', $index));
                 }
-                if (!isset($candidate['rule'])) {
-                    throw new \InvalidArgumentException(sprintf('DataSourceRef: candidate at index %d must have a "rule" key', $index));
+                if (!isset($candidate['when'])) {
+                    throw new \InvalidArgumentException(sprintf('DataSourceRef: candidate at index %d must have a "when" key', $index));
                 }
             }
         }
@@ -126,5 +129,6 @@ final class DataSourceRef
         $this->exceptionOnNoValidFallback = $exceptionOnNoValidFallback;
         $this->ignoreProviderOnNotFound = $ignoreProviderOnNotFound;
         $this->priority = $priority;
+        $this->cascade = $cascade;
     }
 }

@@ -26,8 +26,8 @@ class Garage
 {
     #[Property(
         configCandidates: [
-            ['id' => 'gasolineCar', 'rule' => "expr(rawDataItemExists('gasolineKind'))"],
-            ['id' => 'electricCar', 'rule' => "expr(rawDataItemExists('energyProvider'))"],
+            ['id' => 'gasolineCar', 'when' => "expr(rawDataItemExists('gasolineKind'))"],
+            ['id' => 'electricCar', 'when' => "expr(rawDataItemExists('energyProvider'))"],
         ],
         defaultConfigCandidate: 'gasolineCar'
     )]

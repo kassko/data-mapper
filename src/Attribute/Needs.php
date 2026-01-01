@@ -24,8 +24,10 @@ final class Needs
 {
     /**
      * @param string[] $properties List of property names to load first
+     * @param bool $cascade Whether this attribute cascades to child classes
      */
     public function __construct(
         public readonly array $properties = [],
+        public readonly bool $cascade = true,
     ) {}
 }

@@ -24,11 +24,13 @@ final class PropertyConfigStore
 {
     /** @var array<string, PropertyConfig> Indexed by config ID */
     public readonly array $configs;
+    public readonly bool $cascade;  // Whether this store cascades to child classes
 
     /**
      * @param PropertyConfig[] $configs Array of PropertyConfig instances
+     * @param bool $cascade Whether this store cascades to child classes
      */
-    public function __construct(array $configs)
+    public function __construct(array $configs, bool $cascade = true)
     {
         $indexed = [];
         foreach ($configs as $config) {
@@ -41,5 +43,6 @@ final class PropertyConfigStore
             $indexed[$config->id] = $config;
         }
         $this->configs = $indexed;
+        $this->cascade = $cascade;
     }
 }

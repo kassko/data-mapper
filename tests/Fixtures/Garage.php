@@ -37,8 +37,8 @@ class Garage
     #[SinglePropDataSource(class: GarageDataSource::class, method: 'getCars', args: ['#id'])]
     #[Property(
         configCandidates: [
-            ['id' => 'gasolineCar', 'rule' => "expr(rawDataItemExists('gasolineKind'))"],
-            ['id' => 'electricCar', 'rule' => "expr(rawDataItemExists('energyProvider'))"],
+            ['id' => 'gasolineCar', 'when' => "expr(rawDataItemExists('gasolineKind'))"],
+            ['id' => 'electricCar', 'when' => "expr(rawDataItemExists('energyProvider'))"],
         ],
         defaultConfigCandidate: 'gasolineCar'
     )]

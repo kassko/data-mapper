@@ -18,6 +18,7 @@ use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Getter;
+use Kassko\DataMapper\Attribute\MethodAlias;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
 use Kassko\DataMapper\Attribute\PropertyHydratingHook;
@@ -184,6 +185,71 @@ class AttributeReader
         }
         
         return array_map(fn($attr) => $attr->newInstance(), $attributes);
+    }
+
+    /**
+     * Read all Context attributes from a class (supports IS_REPEATABLE)
+     *
+     * @param ReflectionClass $reflectionClass
+     * @return Context[]
+     */
+    public function readClassContexts(ReflectionClass $reflectionClass): array
+    {
+        $attributes = $reflectionClass->getAttributes(Context::class);
+        
+        if (empty($attributes)) {
+            return [];
+        }
+        
+        return array_map(fn($attr) => $attr->newInstance(), $attributes);
+    }
+
+    /**
+     * Read all MethodAlias attributes from a class (supports IS_REPEATABLE)
+     *
+     * @param ReflectionClass $reflectionClass
+     * @return MethodAlias[]
+     */
+    public function readMethodAliases(ReflectionClass $reflectionClass): array
+    {
+        $attributes = $reflectionClass->getAttributes(MethodAlias::class);
+        
+        if (empty($attributes)) {
+            return [];
+        }
+        
+        return array_map(fn($attr) => $attr->newInstance(), $attributes);
+    }
+
+    /**
+     * Get MethodAlias map indexed by alias name (with cascading from parent classes)
+     *
+     * @param ReflectionClass $reflectionClass
+     * @return array<string, MethodAlias>
+     */
+    public function getMethodAliasMap(ReflectionClass $reflectionClass): array
+    {
+        $allAliases = [];
+        $classHierarchy = $this->getClassHierarchy($reflectionClass);
+        
+        // Process from top (oldest ancestor) to bottom (current class)
+        // so that child classes override parent aliases with same name
+        $classHierarchy = array_reverse($classHierarchy);
+        
+        foreach ($classHierarchy as $classInfo) {
+            $class = $classInfo['class'];
+            
+            $aliases = $this->readMethodAliases($class);
+            foreach ($aliases as $alias) {
+                // Check cascade for parent classes
+                if (!$classInfo['isCurrent'] && !$alias->cascade) {
+                    continue;  // Skip non-cascading aliases from parent classes
+                }
+                $allAliases[$alias->name] = $alias;
+            }
+        }
+        
+        return $allAliases;
     }
 
     /**

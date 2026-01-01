@@ -692,10 +692,10 @@ class Loader implements LoaderInterface
     }
 
     /**
-     * Load a property with candidates (rule-based source selection)
+     * Load a property with candidates (expression-based source selection)
      *
-     * Evaluates each candidate's rule expression and uses the first matching source.
-     * If no rule matches, uses defaultCandidate.
+     * Evaluates each candidate's 'when' expression and uses the first matching source.
+     * If no expression matches, uses defaultCandidate.
      * If a candidate defines its own priority, it takes precedence over the base priority.
      *
      * @param object $object
@@ -710,7 +710,7 @@ class Loader implements LoaderInterface
         $defaultCandidate = $dataSourceRef->defaultCandidate;
         $dataSourceMap = $this->attributeReader->getDataSourceMap($object);
         
-        // Create expression parser for evaluating rules
+        // Create expression parser for evaluating expressions
         $expressionParser = new ExpressionParser(
             $this->sourceFunctionProviders[$object] ?? new SourceFunctionProvider(
                 fn(string $sourceId) => $this->executeDataSourceById($object, $sourceId)
@@ -725,10 +725,10 @@ class Loader implements LoaderInterface
         // Find the first matching candidate
         $electedCandidate = null;
         foreach ($candidates as $candidate) {
-            $rule = $candidate['rule'];
+            $when = $candidate['when'];
             
-            // Evaluate the rule expression
-            $result = $expressionParser->resolveArgs([$rule], $object, $propertyLoader)[0];
+            // Evaluate the 'when' expression
+            $result = $expressionParser->resolveArgs([$when], $object, $propertyLoader)[0];
             
             if ($result === true || $result === 'true' || $result === 1 || $result === '1') {
                 $electedCandidate = $candidate;
@@ -950,7 +950,7 @@ class Loader implements LoaderInterface
         $this->setPropertyValue($object, $property, $data);
         $this->registerPropertyHydration($object, $propertyName, $sourcePriority, $sourceSignature);
         $this->loadedProperties[$object][$propertyName] = true;
-        $this->handleContextAttribute($property, $data);
+        $this->handleContextAttribute($property, $data, $object);
         
         // Record property hydration for lineage
         $this->lineageCollector?->recordPropertyHydration(
@@ -1313,7 +1313,7 @@ class Loader implements LoaderInterface
             if (!empty($mappedData)) {
                 $value = $this->applyRecursiveHydration($property, $mappedData, $currentDepth, $object);
                 $this->setPropertyValue($object, $property, $value);
-                $this->handleContextAttribute($property, $value);
+                $this->handleContextAttribute($property, $value, $object);
             }
             return;
         }
@@ -1340,7 +1340,7 @@ class Loader implements LoaderInterface
         $this->setPropertyValue($object, $property, $value);
         
         // Handle Context attribute
-        $this->handleContextAttribute($property, $value);
+        $this->handleContextAttribute($property, $value, $object);
     }
 
     /**
@@ -1368,7 +1368,7 @@ class Loader implements LoaderInterface
         $this->setPropertyValue($object, $property, $value);
         
         // Handle Context attribute
-        $this->handleContextAttribute($property, $value);
+        $this->handleContextAttribute($property, $value, $object);
     }
 
     /**
@@ -1523,26 +1523,26 @@ class Loader implements LoaderInterface
     }
 
     /**
-     * Resolve property configuration from configCandidates based on rule evaluation
+     * Resolve property configuration from configCandidates based on 'when' expression evaluation
      *
      * @param Property $propertyAttr The Property attribute with configCandidates
      * @param PropertyConfigStore $configStore The store containing all configs
-     * @param array $rawDataItem Raw data to evaluate rules against
-     * @return PropertyConfig|null
+     * @param array $rawDataItem Raw data to evaluate expressions against
+     * @return PropertyConfig|null Returns null for no-op (empty array defaultConfigCandidate)
      */
     private function resolvePropertyConfig(Property $propertyAttr, PropertyConfigStore $configStore, array $rawDataItem): ?PropertyConfig
     {
-        // Create a temporary expression parser for rule evaluation
+        // Create a temporary expression parser for expression evaluation
         $sourceFunctionProvider = new SourceFunctionProvider(fn() => null);
         $expressionParser = new ExpressionParser($sourceFunctionProvider, $this->serviceResolver);
         $expressionParser->setRawData($rawDataItem);
         
         foreach ($propertyAttr->configCandidates as $candidate) {
-            $rule = $candidate['rule'];
+            $when = $candidate['when'];
             $configId = $candidate['id'];
             
             // Check if it's an expression
-            if (preg_match('/^expr\((.+)\)$/s', $rule, $matches)) {
+            if (preg_match('/^expr\((.+)\)$/s', $when, $matches)) {
                 $expression = $matches[1];
                 
                 // Parse and evaluate the expression
@@ -1587,9 +1587,16 @@ class Loader implements LoaderInterface
             }
         }
         
-        // No rule matched, use defaultConfigCandidate
+        // No expression matched, use defaultConfigCandidate
         if ($propertyAttr->defaultConfigCandidate !== null) {
-            return $configStore->configs[$propertyAttr->defaultConfigCandidate] ?? null;
+            // Handle no-op: empty array means intentionally do nothing
+            if (is_array($propertyAttr->defaultConfigCandidate) && empty($propertyAttr->defaultConfigCandidate)) {
+                return null;  // No-op: don't apply any config
+            }
+            // String config ID
+            if (is_string($propertyAttr->defaultConfigCandidate)) {
+                return $configStore->configs[$propertyAttr->defaultConfigCandidate] ?? null;
+            }
         }
         
         return null;
@@ -1681,7 +1688,7 @@ class Loader implements LoaderInterface
             $this->setPropertyValue($object, $property, $value);
             
             // Handle Context attribute
-            $this->handleContextAttribute($property, $value);
+            $this->handleContextAttribute($property, $value, $object);
         }
         
         // Execute after_hydrate_object hooks (after hydration, before property setting hooks)
@@ -1759,8 +1766,9 @@ class Loader implements LoaderInterface
      *
      * @param ReflectionProperty $property
      * @param mixed $value
+     * @param object|null $object The current object being hydrated (for evaluating method-based context)
      */
-    private function handleContextAttribute(ReflectionProperty $property, mixed $value): void
+    private function handleContextAttribute(ReflectionProperty $property, mixed $value, ?object $object = null): void
     {
         $contexts = $this->attributeReader->readAllContexts($property);
         
@@ -1773,18 +1781,82 @@ class Loader implements LoaderInterface
         
         // Set all context values from all Context attributes
         foreach ($contexts as $context) {
-            foreach ($context->values as $key => $contextValue) {
-                ContextRegistry::set($key, $contextValue);
-                
-                // Record context set for lineage
-                $this->lineageCollector?->recordContextSet(
-                    $objectClass,
-                    $propertyName,
-                    $key,
-                    $contextValue
-                );
-            }
+            $this->processContextEntries($context->entries, $objectClass, $propertyName, $object);
         }
+    }
+
+    /**
+     * Process context entries and set them in the ContextRegistry.
+     * 
+     * @param array $entries The context entries to process
+     * @param string $objectClass The class name for lineage tracking
+     * @param string $propertyName The property name for lineage tracking
+     * @param object|null $object The current object for method-based context
+     */
+    private function processContextEntries(array $entries, string $objectClass, string $propertyName, ?object $object = null): void
+    {
+        foreach ($entries as $entry) {
+            $key = $entry['key'];
+            $contextValue = null;
+            
+            if (array_key_exists('value', $entry)) {
+                // Simple key-value entry
+                $contextValue = $entry['value'];
+            } elseif (isset($entry['class']) && isset($entry['method'])) {
+                // Method-based entry - call the method to get the value
+                $contextValue = $this->evaluateContextMethodEntry($entry, $object);
+            }
+            
+            ContextRegistry::set($key, $contextValue);
+            
+            // Record context set for lineage
+            $this->lineageCollector?->recordContextSet(
+                $objectClass,
+                $propertyName,
+                $key,
+                $contextValue
+            );
+        }
+    }
+
+    /**
+     * Evaluate a method-based context entry.
+     * 
+     * @param array $entry The context entry with 'class', 'method', and optionally 'args'
+     * @param object|null $object The current object being hydrated
+     * @return mixed The result of the method call
+     */
+    private function evaluateContextMethodEntry(array $entry, ?object $object): mixed
+    {
+        $class = $entry['class'];
+        $method = $entry['method'];
+        $args = $entry['args'] ?? [];
+        
+        // Handle ##object reference
+        if ($class === '##object') {
+            if ($object === null) {
+                throw new \RuntimeException('Context entry uses ##object but no object is available');
+            }
+            $service = $object;
+        } else {
+            // Resolve the service
+            $service = $this->serviceResolver->resolve($class);
+        }
+        
+        // Resolve arguments
+        if (!empty($args) && $object !== null) {
+            $expressionParser = new ExpressionParser(
+                $this->sourceFunctionProviders[$object] ?? new SourceFunctionProvider(
+                    fn(string $sourceId) => $this->executeDataSourceById($object, $sourceId)
+                ),
+                $this->serviceResolver
+            );
+            $expressionParser->setCurrentObject($object);
+            $propertyLoader = fn(string $propName) => $this->loadProperty($object, $propName);
+            $args = $expressionParser->resolveArgs($args, $object, $propertyLoader);
+        }
+        
+        return $service->$method(...$args);
     }
 
     /**

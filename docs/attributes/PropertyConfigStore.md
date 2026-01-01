@@ -31,8 +31,8 @@ class Garage
     // Use polymorphic resolution with configCandidates
     #[Property(
         configCandidates: [
-            ['id' => 'gasolineCar', 'rule' => "expr(rawDataItemExists('gasolineKind'))"],
-            ['id' => 'electricCar', 'rule' => "expr(rawDataItemExists('energyProvider'))"],
+            ['id' => 'gasolineCar', 'when' => "expr(rawDataItemExists('gasolineKind'))"],
+            ['id' => 'electricCar', 'when' => "expr(rawDataItemExists('energyProvider'))"],
         ],
         defaultConfigCandidate: 'hybridCar'
     )]
@@ -44,9 +44,9 @@ class Garage
 
 The `configCandidates` mechanism allows runtime selection of property configuration based on the data being hydrated:
 
-1. Each candidate has a `rule` expression that is evaluated against the raw data item
-2. The first candidate whose rule evaluates to `true` is selected
-3. If no rule matches, `defaultConfigCandidate` is used as fallback
+1. Each candidate has a `when` expression that is evaluated against the raw data item
+2. The first candidate whose expression evaluates to `true` is selected
+3. If no expression matches, `defaultConfigCandidate` is used as fallback
 
 ```php
 #[PropertyConfigStore([
@@ -57,7 +57,7 @@ class UserContainer
 {
     #[Property(
         configCandidates: [
-            ['id' => 'admin', 'rule' => "expr(rawDataItem('role') == 'admin')"],
+            ['id' => 'admin', 'when' => "expr(rawDataItem('role') == 'admin')"],
         ],
         defaultConfigCandidate: 'regular'
     )]
@@ -77,9 +77,9 @@ class UserContainer
 - Config IDs must be unique within the store
 - Duplicate IDs will throw an exception
 
-## Expression Functions for Rules
+## Expression Functions
 
-The `rule` expression can use:
+The `when` expression can use:
 - `rawDataItemExists('key')` - Check if key exists in data item
 - `rawDataItem('key')` - Get value of key from data item
 - `context('key')` - Get value from context registry
@@ -115,8 +115,8 @@ class ChildContainer extends BaseContainer
     
     #[Property(
         configCandidates: [
-            ['id' => 'parentConfig', 'rule' => "expr(rawDataItemExists('parentType'))"], // Works!
-            ['id' => 'traitConfig', 'rule' => "expr(rawDataItemExists('traitType'))"], // Works!
+            ['id' => 'parentConfig', 'when' => "expr(rawDataItemExists('parentType'))"], // Works!
+            ['id' => 'traitConfig', 'when' => "expr(rawDataItemExists('traitType'))"], // Works!
         ],
         defaultConfigCandidate: 'parentConfig'
     )]
