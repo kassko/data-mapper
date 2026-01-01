@@ -25,6 +25,7 @@ use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
 use Kassko\DataMapper\Attribute\PropertyHydratingHook;
 use Kassko\DataMapper\Attribute\Param;
+use Kassko\DataMapper\DataCollector\AttributeCascadeCollector;
 use Kassko\DataMapper\DataCollector\DataLineageCollector;
 use Kassko\DataMapper\Expression\ExpressionParser;
 use Kassko\DataMapper\Expression\SourceFunctionProvider;
@@ -59,6 +60,7 @@ class Loader implements LoaderInterface
     private ServiceResolver $serviceResolver;
     private LoggerInterface $logger;
     private ?DataLineageCollector $lineageCollector;
+    private ?AttributeCascadeCollector $cascadeCollector;
     
     /** @var array<string, callable> */
     private array $customHydrators;
@@ -68,28 +70,39 @@ class Loader implements LoaderInterface
      * @param LoggerInterface|null $logger
      * @param array<string, callable> $customHydrators
      * @param DataLineageCollector|null $lineageCollector
+     * @param AttributeCascadeCollector|null $cascadeCollector
      */
     public function __construct(
         ServiceResolver $serviceResolver,
         ?LoggerInterface $logger = null,
         array $customHydrators = [],
-        ?DataLineageCollector $lineageCollector = null
+        ?DataLineageCollector $lineageCollector = null,
+        ?AttributeCascadeCollector $cascadeCollector = null
     ) {
         $this->loadedProperties = new WeakMap();
         $this->sourceFunctionProviders = new WeakMap();
         $this->parentRegistry = new WeakMap();
         $this->propertySourceRegistry = new WeakMap();
         $this->hydratingHooksExecuted = new WeakMap();
-        $this->attributeReader = new AttributeReader();
         $this->logger = $logger ?? new NullLogger();
         $this->customHydrators = $customHydrators;
         $this->serviceResolver = $serviceResolver;
         $this->lineageCollector = $lineageCollector;
+        $this->cascadeCollector = $cascadeCollector ?? new AttributeCascadeCollector($this->logger);
+        $this->attributeReader = new AttributeReader($this->cascadeCollector);
     }
 
     public function getServiceResolver(): ServiceResolver
     {
         return $this->serviceResolver;
+    }
+
+    /**
+     * Get the attribute cascade collector.
+     */
+    public function getCascadeCollector(): ?AttributeCascadeCollector
+    {
+        return $this->cascadeCollector;
     }
 
     /**
@@ -1410,10 +1423,11 @@ class Loader implements LoaderInterface
         }
         
         // Get PropertyConfigStore for the parent class if we have configCandidates or config reference
+        // Use cascaded version to include configs from parent classes and traits
         $configStore = null;
         if ($hasConfigCandidates || $propertyAttr->config !== null) {
             $reflectionClass = new \ReflectionClass($parentObject ?? $property->getDeclaringClass()->getName());
-            $configStore = $this->attributeReader->readPropertyConfigStore($reflectionClass);
+            $configStore = $this->attributeReader->readCascadedPropertyConfigStore($reflectionClass);
         }
         
         // Handle array of objects (collection)

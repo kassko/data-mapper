@@ -23,6 +23,7 @@ use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
 use Kassko\DataMapper\Attribute\PropertyHydratingHook;
 use Kassko\DataMapper\Attribute\CustomHydrator;
 use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\PropertyConfig;
 use Kassko\DataMapper\Attribute\PropertyConfigStore;
 use Kassko\DataMapper\Attribute\KeepProperty;
 use Kassko\DataMapper\Attribute\Loading;
@@ -33,11 +34,34 @@ use Kassko\DataMapper\Attribute\SkipAllProperties;
 use Kassko\DataMapper\Attribute\KeepAllProperties;
 use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\DataCollector\AttributeCascadeCollector;
 use ReflectionClass;
 use ReflectionProperty;
 
 class AttributeReader
 {
+    private ?AttributeCascadeCollector $cascadeCollector;
+
+    public function __construct(?AttributeCascadeCollector $cascadeCollector = null)
+    {
+        $this->cascadeCollector = $cascadeCollector;
+    }
+
+    /**
+     * Set the cascade collector for tracking attribute inheritance events.
+     */
+    public function setCascadeCollector(?AttributeCascadeCollector $cascadeCollector): void
+    {
+        $this->cascadeCollector = $cascadeCollector;
+    }
+
+    /**
+     * Get the cascade collector.
+     */
+    public function getCascadeCollector(): ?AttributeCascadeCollector
+    {
+        return $this->cascadeCollector;
+    }
     /**
      * Read DataSource attribute from a property
      *
@@ -270,7 +294,7 @@ class AttributeReader
     }
 
     /**
-     * Read DataSourcesStore attribute from a class
+     * Read DataSourcesStore attribute from a class (without cascading)
      *
      * @param ReflectionClass $reflectionClass
      * @return DataSourcesStore|null
@@ -287,7 +311,113 @@ class AttributeReader
     }
 
     /**
-     * Build a map of DataSource id => DataSource from DataSourcesStore
+     * Read DataSourcesStore with full cascading from parent classes and traits.
+     * 
+     * Cascading rules:
+     * - Merges DataSources from parent classes and traits
+     * - Child class DataSources override parent/trait DataSources with same ID
+     * - Logs info for merges, warning for ID conflicts
+     *
+     * @param ReflectionClass $reflectionClass
+     * @return DataSourcesStore|null
+     */
+    public function readCascadedDataSourcesStore(ReflectionClass $reflectionClass): ?DataSourcesStore
+    {
+        $allSources = [];
+        $targetClassName = $reflectionClass->getName();
+        
+        // Collect sources from class hierarchy (bottom-up: child first, then parents)
+        $classHierarchy = $this->getClassHierarchy($reflectionClass);
+        
+        // Process from top (oldest ancestor) to bottom (current class)
+        // so that child classes override parent sources with same ID
+        $classHierarchy = array_reverse($classHierarchy);
+        
+        foreach ($classHierarchy as $classInfo) {
+            $class = $classInfo['class'];
+            $isCurrentClass = $classInfo['isCurrent'];
+            
+            // Read traits for this class
+            $this->collectDataSourcesFromTraits($class, $targetClassName, $allSources);
+            
+            // Read direct class attribute
+            $store = $this->readDataSourcesStore($class);
+            if ($store !== null) {
+                foreach ($store->sources as $source) {
+                    if ($source->id !== null) {
+                        // Check for ID conflict
+                        if (isset($allSources[$source->id]) && !$isCurrentClass) {
+                            $this->cascadeCollector?->recordDataSourceIdConflict(
+                                $targetClassName,
+                                $class->getName(),
+                                'parent',
+                                $source->id
+                            );
+                        }
+                        $allSources[$source->id] = $source;
+                    }
+                }
+                
+                if (!$isCurrentClass && !empty($store->sources)) {
+                    $this->cascadeCollector?->recordDataSourcesStoreMerge(
+                        $targetClassName,
+                        $class->getName(),
+                        'parent',
+                        count($store->sources)
+                    );
+                }
+            }
+        }
+        
+        if (empty($allSources)) {
+            return null;
+        }
+        
+        return new DataSourcesStore(array_values($allSources));
+    }
+
+    /**
+     * Collect DataSources from traits (recursively).
+     */
+    private function collectDataSourcesFromTraits(
+        ReflectionClass $class,
+        string $targetClassName,
+        array &$allSources
+    ): void {
+        foreach ($class->getTraits() as $trait) {
+            // Recursively collect from traits used by this trait
+            $this->collectDataSourcesFromTraits($trait, $targetClassName, $allSources);
+            
+            // Read DataSourcesStore from trait
+            $traitStore = $this->readDataSourcesStore($trait);
+            if ($traitStore !== null) {
+                foreach ($traitStore->sources as $source) {
+                    if ($source->id !== null) {
+                        // Check for ID conflict
+                        if (isset($allSources[$source->id])) {
+                            $this->cascadeCollector?->recordDataSourceIdConflict(
+                                $targetClassName,
+                                $trait->getName(),
+                                'trait',
+                                $source->id
+                            );
+                        }
+                        $allSources[$source->id] = $source;
+                    }
+                }
+                
+                $this->cascadeCollector?->recordDataSourcesStoreMerge(
+                    $targetClassName,
+                    $trait->getName(),
+                    'trait',
+                    count($traitStore->sources)
+                );
+            }
+        }
+    }
+
+    /**
+     * Build a map of DataSource id => DataSource from DataSourcesStore (with cascading)
      *
      * @param object $object
      * @return array<string, DataSource|SinglePropDataSource|MultiPropDataSource>
@@ -297,8 +427,8 @@ class AttributeReader
         $reflectionClass = new ReflectionClass($object);
         $map = [];
         
-        // Read from DataSourcesStore - the only valid way to define class-level data sources
-        $store = $this->readDataSourcesStore($reflectionClass);
+        // Read from cascaded DataSourcesStore - includes parent classes and traits
+        $store = $this->readCascadedDataSourcesStore($reflectionClass);
         if ($store !== null) {
             foreach ($store->sources as $source) {
                 if ($source->id !== null) {
@@ -332,7 +462,10 @@ class AttributeReader
     }
 
     /**
-     * Get all properties from a class including parent classes
+     * Get all properties from a class including parent classes.
+     * 
+     * When a child class defines a property with the same name as a parent's private property,
+     * the child's property (and its attributes) take precedence. This is logged as a warning.
      *
      * @param ReflectionClass $reflectionClass
      * @return array<string, ReflectionProperty>
@@ -340,19 +473,65 @@ class AttributeReader
     public function getAllProperties(ReflectionClass $reflectionClass): array
     {
         $properties = [];
+        $propertyOrigins = []; // Track where each property came from for conflict detection
+        $targetClassName = $reflectionClass->getName();
         
         $class = $reflectionClass;
         while ($class !== false) {
             foreach ($class->getProperties() as $property) {
+                $propName = $property->getName();
+                
                 // Don't override child properties with parent ones
-                if (!isset($properties[$property->getName()])) {
-                    $properties[$property->getName()] = $property;
+                if (!isset($properties[$propName])) {
+                    $properties[$propName] = $property;
+                    $propertyOrigins[$propName] = $class->getName();
+                } else {
+                    // Property with same name exists in child - check if parent has attributes
+                    if ($this->propertyHasAttributes($property) && $class->getName() !== $targetClassName) {
+                        // Parent property has attributes but child shadows it
+                        $this->cascadeCollector?->recordPropertyAttributeOverride(
+                            $targetClassName,
+                            $class->getName(),
+                            $propName
+                        );
+                    }
                 }
             }
             $class = $class->getParentClass();
         }
         
         return $properties;
+    }
+
+    /**
+     * Check if a property has any DataMapper attributes.
+     */
+    private function propertyHasAttributes(ReflectionProperty $property): bool
+    {
+        $attributeClasses = [
+            Property::class,
+            DataSource::class,
+            SinglePropDataSource::class,
+            MultiPropDataSource::class,
+            DataSourceRef::class,
+            Context::class,
+            Getter::class,
+            Setter::class,
+            Loading::class,
+            Needs::class,
+            KeepProperty::class,
+            SkipProperty::class,
+            CustomHydrator::class,
+            PropertySettingHook::class,
+        ];
+        
+        foreach ($attributeClasses as $attrClass) {
+            if (!empty($property->getAttributes($attrClass))) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -476,7 +655,7 @@ class AttributeReader
     }
 
     /**
-     * Read PropertyConfigStore attribute from a class
+     * Read PropertyConfigStore attribute from a class (without cascading)
      *
      * @param ReflectionClass $reflectionClass
      * @return PropertyConfigStore|null
@@ -490,6 +669,133 @@ class AttributeReader
         }
         
         return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read PropertyConfigStore with full cascading from parent classes and traits.
+     * 
+     * Cascading rules:
+     * - Merges PropertyConfigs from parent classes and traits
+     * - Child class configs override parent/trait configs with same ID
+     * - Logs info for merges, warning for ID conflicts
+     *
+     * @param ReflectionClass $reflectionClass
+     * @return PropertyConfigStore|null
+     */
+    public function readCascadedPropertyConfigStore(ReflectionClass $reflectionClass): ?PropertyConfigStore
+    {
+        $allConfigs = [];
+        $targetClassName = $reflectionClass->getName();
+        
+        // Collect configs from class hierarchy (bottom-up: child first, then parents)
+        $classHierarchy = $this->getClassHierarchy($reflectionClass);
+        
+        // Process from top (oldest ancestor) to bottom (current class)
+        // so that child classes override parent configs with same ID
+        $classHierarchy = array_reverse($classHierarchy);
+        
+        foreach ($classHierarchy as $classInfo) {
+            $class = $classInfo['class'];
+            $isCurrentClass = $classInfo['isCurrent'];
+            
+            // Read traits for this class
+            $this->collectPropertyConfigsFromTraits($class, $targetClassName, $allConfigs);
+            
+            // Read direct class attribute
+            $store = $this->readPropertyConfigStore($class);
+            if ($store !== null) {
+                foreach ($store->configs as $id => $config) {
+                    // Check for ID conflict
+                    if (isset($allConfigs[$id]) && !$isCurrentClass) {
+                        $this->cascadeCollector?->recordPropertyConfigIdConflict(
+                            $targetClassName,
+                            $class->getName(),
+                            'parent',
+                            $id
+                        );
+                    }
+                    $allConfigs[$id] = $config;
+                }
+                
+                if (!$isCurrentClass && !empty($store->configs)) {
+                    $this->cascadeCollector?->recordPropertyConfigStoreMerge(
+                        $targetClassName,
+                        $class->getName(),
+                        'parent',
+                        count($store->configs)
+                    );
+                }
+            }
+        }
+        
+        if (empty($allConfigs)) {
+            return null;
+        }
+        
+        // Convert back to PropertyConfig array format for constructor
+        return new PropertyConfigStore(array_values($allConfigs));
+    }
+
+    /**
+     * Collect PropertyConfigs from traits (recursively).
+     */
+    private function collectPropertyConfigsFromTraits(
+        ReflectionClass $class,
+        string $targetClassName,
+        array &$allConfigs
+    ): void {
+        foreach ($class->getTraits() as $trait) {
+            // Recursively collect from traits used by this trait
+            $this->collectPropertyConfigsFromTraits($trait, $targetClassName, $allConfigs);
+            
+            // Read PropertyConfigStore from trait
+            $traitStore = $this->readPropertyConfigStore($trait);
+            if ($traitStore !== null) {
+                foreach ($traitStore->configs as $id => $config) {
+                    // Check for ID conflict
+                    if (isset($allConfigs[$id])) {
+                        $this->cascadeCollector?->recordPropertyConfigIdConflict(
+                            $targetClassName,
+                            $trait->getName(),
+                            'trait',
+                            $config->id
+                        );
+                    }
+                    $allConfigs[$id] = $config;
+                }
+                
+                $this->cascadeCollector?->recordPropertyConfigStoreMerge(
+                    $targetClassName,
+                    $trait->getName(),
+                    'trait',
+                    count($traitStore->configs)
+                );
+            }
+        }
+    }
+
+    /**
+     * Get class hierarchy from current class up to root.
+     * 
+     * @param ReflectionClass $reflectionClass
+     * @return array<array{class: ReflectionClass, isCurrent: bool}>
+     */
+    private function getClassHierarchy(ReflectionClass $reflectionClass): array
+    {
+        $hierarchy = [];
+        $class = $reflectionClass;
+        $isFirst = true;
+        
+        while ($class !== false) {
+            $hierarchy[] = [
+                'class' => $class,
+                'isCurrent' => $isFirst,
+            ];
+            $isFirst = false;
+            $class = $class->getParentClass();
+        }
+        
+        return $hierarchy;
     }
 
     /**

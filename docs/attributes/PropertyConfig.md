@@ -55,3 +55,4 @@ class Garage
 
 - [PropertyConfigStore](PropertyConfigStore.md) - Class-level attribute that holds PropertyConfig instances
 - [Property](Property.md) - Property attribute that references configs via `config`, `configCandidates`
+- [Attribute Cascading](AttributeCascading.md) - Inherit PropertyConfigs from parent classes and traits
