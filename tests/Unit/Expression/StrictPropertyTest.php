@@ -77,9 +77,13 @@ class StrictPropertyTest extends TestCase
         $result = $parser->resolveArgs(["expr(envVar('TEST_VAR'))"], $object, fn() => null);
         $this->assertEquals(['test-value'], $result);
         
-        // env_var() should still work for backward compatibility
-        $result2 = $parser->resolveArgs(["expr(env_var('TEST_VAR'))"], $object, fn() => null);
-        $this->assertEquals(['test-value'], $result2);
+        // envVarExists() should return true for existing variable
+        $result2 = $parser->resolveArgs(["expr(envVarExists('TEST_VAR'))"], $object, fn() => null);
+        $this->assertEquals([true], $result2);
+        
+        // envVarExists() should return false for non-existing variable
+        $result3 = $parser->resolveArgs(["expr(envVarExists('NON_EXISTENT_VAR'))"], $object, fn() => null);
+        $this->assertEquals([false], $result3);
         
         unset($_ENV['TEST_VAR']);
     }

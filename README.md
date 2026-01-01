@@ -562,8 +562,8 @@ class Garage
 {
     #[Property(
         configCandidates: [
-            ['id' => 'gasolineCar', 'rule' => "expr(rawDataItemExists('gasoline_kind'))"],
-            ['id' => 'electricCar', 'rule' => "expr(rawDataItemExists('energy_provider'))"],
+            ['id' => 'gasolineCar', 'when' => "expr(rawDataItemExists('gasoline_kind'))"],
+            ['id' => 'electricCar', 'when' => "expr(rawDataItemExists('energy_provider'))"],
         ],
         defaultConfigCandidate: 'gasolineCar'
     )]
@@ -573,16 +573,44 @@ class Garage
 
 #### KeepAllProperties, SkipAllProperties, SkipProperty, KeepProperty
 
-Control property inclusion:
+Control property inclusion with optional conditional expressions:
 
 ```php
 #[SkipAllProperties]
 class Person
 {
-    #[KeepProperty]  // Explicitly include
+    #[KeepProperty]  // Always include
     private ?string $name = null;
     
+    #[KeepProperty(when: "expr(contextKeyExists('show_email'))")]  // Conditionally include
+    private ?string $email = null;
+    
     private ?string $internal = null;  // Excluded
+}
+```
+
+You can also use `SkipProperty` with `when` expression to conditionally skip:
+
+```php
+#[KeepAllProperties]  // Default behavior
+class Entity
+{
+    private ?string $firstName = null;   // Hydrated
+    private ?string $lastName = null;    // Hydrated
+    
+    #[SkipProperty(when: "expr(contextKeyExists('hide_email'))")]
+    private ?string $email = null;  // Skipped only if 'hide_email' context key exists
+}
+```
+
+And `Property.keepWhen` to conditionally enable the Property attribute:
+
+```php
+#[SkipAllProperties]
+class Entity
+{
+    #[Property(name: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
+    private ?string $name = null;  // Only hydrated if 'include_name' context key exists
 }
 ```
 
@@ -607,8 +635,8 @@ class Container
 {
     #[Property(
         configCandidates: [
-            ['id' => 'premium', 'rule' => "expr(context('shop_quality') === 'premium')"],
-            ['id' => 'regional', 'rule' => "expr(contextKeyExists('region'))"],
+            ['id' => 'premium', 'when' => "expr(context('shop_quality') === 'premium')"],
+            ['id' => 'regional', 'when' => "expr(contextKeyExists('region'))"],
         ],
         defaultConfigCandidate: 'default'
     )]
@@ -640,10 +668,11 @@ See [Context](docs/attributes/Context.md) for detailed usage.
 | Function | Description |
 |----------|-------------|
 | `source('id')` | Get DataSource result |
-| `service('id')` | Resolve service |
+| `service('id')` or `serviceId('id')` | Resolve service |
 | `context('key')` | Get context value (null if missing, logs warning) |
 | `contextKeyExists('key')` | Check if context key exists |
-| `envVar('KEY')` | Environment variable |
+| `envVar('KEY')` | Get environment variable |
+| `envVarExists('KEY')` | Check if environment variable exists |
 | `object()` | Current object |
 | `parentObject()` | Parent object |
 | `rawDataItem('key')` | Raw data value |

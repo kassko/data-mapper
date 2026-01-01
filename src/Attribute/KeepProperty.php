@@ -23,7 +23,15 @@ use Attribute;
 #[Attribute(Attribute::TARGET_PROPERTY)]
 final class KeepProperty
 {
+    /**
+     * @param string|null $when Optional expression to conditionally keep the property. 
+     *                          If null (default), property is always kept.
+     *                          If expression evaluates to true, property is kept.
+     *                          If expression evaluates to false, property is not kept.
+     * @param bool $cascade Whether this attribute cascades to child classes
+     */
     public function __construct(
-        public readonly bool $cascade = true,  // Whether this attribute cascades to child classes
+        public readonly ?string $when = null,
+        public readonly bool $cascade = true,
     ) {}
 }

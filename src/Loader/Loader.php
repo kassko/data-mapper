@@ -482,6 +482,163 @@ class Loader implements LoaderInterface
     }
 
     /**
+     * Check if a property should be hydrated based on attributes and expressions.
+     * This method evaluates 'when' expressions in SkipProperty, KeepProperty, and Property.keepWhen.
+     *
+     * @param ReflectionClass $reflectionClass
+     * @param ReflectionProperty $property
+     * @param object $object
+     * @param array $rawData
+     * @return bool
+     */
+    private function shouldHydratePropertyWithExpressions(
+        ReflectionClass $reflectionClass,
+        ReflectionProperty $property,
+        object $object,
+        array $rawData
+    ): bool {
+        $decisionInfo = $this->attributeReader->getHydrationDecisionInfo($reflectionClass, $property);
+        
+        // Create an expression parser for evaluating 'when' expressions
+        $sourceFunctionProvider = $this->sourceFunctionProviders[$object] ?? new SourceFunctionProvider(
+            fn(string $sourceId) => $this->executeDataSourceById($object, $sourceId)
+        );
+        $expressionParser = new ExpressionParser($sourceFunctionProvider, $this->serviceResolver);
+        $expressionParser->setRawData($rawData);
+        $expressionParser->setCurrentObject($object);
+        
+        $propertyLoader = fn(string $propName) => $this->loadProperty($object, $propName);
+        
+        // 1. Check SkipProperty with optional 'when' expression
+        if ($decisionInfo['hasSkipProperty']) {
+            if ($decisionInfo['skipWhen'] !== null) {
+                // Evaluate the 'when' expression
+                $skipResult = $this->evaluateWhenExpression(
+                    $decisionInfo['skipWhen'],
+                    $expressionParser,
+                    $object,
+                    $propertyLoader,
+                    'SkipProperty',
+                    $property->getName()
+                );
+                if ($skipResult) {
+                    return false; // Skip this property
+                }
+                // If expression is false, don't skip - continue to other checks
+            } else {
+                // No 'when' expression means always skip
+                return false;
+            }
+        }
+        
+        // 2. If class has SkipAllProperties, check Property.keepWhen and KeepProperty.when
+        if ($decisionInfo['hasSkipAllProperties']) {
+            // Check Property with keepWhen
+            if ($decisionInfo['hasProperty']) {
+                if ($decisionInfo['propertyKeepWhen'] !== null) {
+                    $keepResult = $this->evaluateWhenExpression(
+                        $decisionInfo['propertyKeepWhen'],
+                        $expressionParser,
+                        $object,
+                        $propertyLoader,
+                        'Property.keepWhen',
+                        $property->getName()
+                    );
+                    if ($keepResult) {
+                        return true; // Keep this property
+                    }
+                    // If expression is false, Property is treated as absent
+                } else {
+                    // Property without keepWhen is always considered present
+                    return true;
+                }
+            }
+            
+            // Check KeepProperty with when
+            if ($decisionInfo['hasKeepProperty']) {
+                if ($decisionInfo['keepWhen'] !== null) {
+                    $keepResult = $this->evaluateWhenExpression(
+                        $decisionInfo['keepWhen'],
+                        $expressionParser,
+                        $object,
+                        $propertyLoader,
+                        'KeepProperty',
+                        $property->getName()
+                    );
+                    if ($keepResult) {
+                        return true; // Keep this property
+                    }
+                    // If expression is false, KeepProperty is treated as absent
+                } else {
+                    // KeepProperty without 'when' is always considered present
+                    return true;
+                }
+            }
+            
+            // Neither Property nor KeepProperty effectively present
+            return false;
+        }
+        
+        // Default behavior (KeepAllProperties or no class-level attribute): hydrate
+        return true;
+    }
+
+    /**
+     * Evaluate a 'when' expression and log warning if result is not boolean.
+     *
+     * @param string $expression
+     * @param ExpressionParser $expressionParser
+     * @param object $object
+     * @param callable $propertyLoader
+     * @param string $attributeName For logging purposes
+     * @param string $propertyName For logging purposes
+     * @return bool
+     */
+    private function evaluateWhenExpression(
+        string $expression,
+        ExpressionParser $expressionParser,
+        object $object,
+        callable $propertyLoader,
+        string $attributeName,
+        string $propertyName
+    ): bool {
+        $resolved = $expressionParser->resolveArgs([$expression], $object, $propertyLoader);
+        $result = $resolved[0] ?? false;
+        
+        // Check if result is boolean, log warning if not
+        if (!is_bool($result)) {
+            $originalType = gettype($result);
+            $boolResult = (bool) $result;
+            
+            $this->logger->warning('Non-boolean result in "when" expression, type coercion occurred', [
+                'attribute' => $attributeName,
+                'property' => $propertyName,
+                'class' => get_class($object),
+                'expression' => $expression,
+                'original_type' => $originalType,
+                'original_value' => is_scalar($result) ? $result : gettype($result),
+                'coerced_to' => $boolResult ? 'true' : 'false',
+            ]);
+            
+            // Collect via cascade collector if available
+            if ($this->cascadeCollector !== null) {
+                $this->cascadeCollector->collectTypeCoercion(
+                    get_class($object),
+                    $propertyName,
+                    $attributeName,
+                    $expression,
+                    $originalType,
+                    $boolResult
+                );
+            }
+            
+            return $boolResult;
+        }
+        
+        return $result;
+    }
+
+    /**
      * Load all eager properties on the given object
      *
      * @param object $object The object to load eager properties for
@@ -1661,8 +1818,8 @@ class Loader implements LoaderInterface
                 continue;
             }
             
-            // Check if property should be hydrated based on attributes
-            if (!$this->attributeReader->shouldHydrateProperty($reflectionClass, $property)) {
+            // Check if property should be hydrated based on attributes and expressions
+            if (!$this->shouldHydratePropertyWithExpressions($reflectionClass, $property, $object, $data)) {
                 continue;
             }
             

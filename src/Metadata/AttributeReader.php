@@ -623,30 +623,67 @@ class AttributeReader
 
     /**
      * Check if a property should be hydrated based on class and property attributes
+     * This method does NOT evaluate expressions in 'when' fields - that's the Loader's responsibility.
+     * Use this for static checks only.
      *
      * @param ReflectionClass $reflectionClass
      * @param ReflectionProperty $property
-     * @return bool
+     * @return bool|null Returns true/false for definitive answers, or null if expression evaluation is required
      */
     public function shouldHydrateProperty(ReflectionClass $reflectionClass, ReflectionProperty $property): bool
     {
-        $hasSkipProperty = $this->readSkipProperty($property) !== null;
-        $hasProperty = $this->readProperty($property) !== null;
-        $hasKeepProperty = $this->readKeepProperty($property) !== null;
+        $skipProperty = $this->readSkipProperty($property);
+        $propertyAttr = $this->readProperty($property);
+        $keepProperty = $this->readKeepProperty($property);
         $hasSkipAllProperties = $this->hasSkipAllProperties($reflectionClass);
         
-        // If property has SkipProperty, never hydrate
-        if ($hasSkipProperty) {
+        // If property has SkipProperty without 'when' expression, never hydrate
+        if ($skipProperty !== null && $skipProperty->when === null) {
             return false;
         }
         
+        // If property has SkipProperty with 'when' expression, defer to Loader
+        // For backward compatibility, we default to "not skipped" when expression needs evaluation
+        // The Loader will properly evaluate and decide
+        
         // If class has SkipAllProperties, only hydrate if property has Property or KeepProperty attribute
         if ($hasSkipAllProperties) {
-            return $hasProperty || $hasKeepProperty;
+            // If Property has keepWhen, defer to Loader for evaluation
+            // If KeepProperty has when, defer to Loader for evaluation
+            $hasPropertyWithoutKeepWhen = $propertyAttr !== null && $propertyAttr->keepWhen === null;
+            $hasKeepPropertyWithoutWhen = $keepProperty !== null && $keepProperty->when === null;
+            
+            return $hasPropertyWithoutKeepWhen || $hasKeepPropertyWithoutWhen;
         }
         
         // Default behavior (KeepAllProperties): hydrate unless SkipProperty
         return true;
+    }
+
+    /**
+     * Get hydration decision info including expressions that need evaluation
+     *
+     * @param ReflectionClass $reflectionClass
+     * @param ReflectionProperty $property
+     * @return array{shouldHydrate: bool|null, skipWhen: ?string, keepWhen: ?string, propertyKeepWhen: ?string}
+     */
+    public function getHydrationDecisionInfo(ReflectionClass $reflectionClass, ReflectionProperty $property): array
+    {
+        $skipProperty = $this->readSkipProperty($property);
+        $propertyAttr = $this->readProperty($property);
+        $keepProperty = $this->readKeepProperty($property);
+        $hasSkipAllProperties = $this->hasSkipAllProperties($reflectionClass);
+        
+        return [
+            'shouldHydrate' => null,  // Requires expression evaluation
+            'skipWhen' => $skipProperty?->when,
+            'keepWhen' => $keepProperty?->when,
+            'propertyKeepWhen' => $propertyAttr?->keepWhen,
+            'hasSkipProperty' => $skipProperty !== null,
+            'hasProperty' => $propertyAttr !== null,
+            'hasKeepProperty' => $keepProperty !== null,
+            'hasSkipAllProperties' => $hasSkipAllProperties,
+        ];
     }
 
     /**

@@ -234,6 +234,43 @@ final class AttributeCascadeCollector
     }
 
     /**
+     * Collect type coercion warning for 'when' expression that returned non-boolean.
+     * 
+     * @param string $className The class containing the property
+     * @param string $propertyName The property name
+     * @param string $attributeName The attribute name (SkipProperty, KeepProperty, Property.keepWhen)
+     * @param string $expression The expression that was evaluated
+     * @param string $originalType The original type of the result
+     * @param bool $coercedValue The boolean value after coercion
+     */
+    public function collectTypeCoercion(
+        string $className,
+        string $propertyName,
+        string $attributeName,
+        string $expression,
+        string $originalType,
+        bool $coercedValue
+    ): void {
+        if (!$this->enabled) {
+            return;
+        }
+
+        $this->events[] = new CascadeEvent(
+            type: CascadeEvent::TYPE_WHEN_EXPRESSION_TYPE_COERCION,
+            targetClass: $className,
+            sourceClass: '',
+            sourceType: 'expression',
+            metadata: [
+                'propertyName' => $propertyName,
+                'attributeName' => $attributeName,
+                'expression' => $expression,
+                'originalType' => $originalType,
+                'coercedValue' => $coercedValue,
+            ]
+        );
+    }
+
+    /**
      * Get all collected cascade events.
      * 
      * @return CascadeEvent[]
@@ -271,6 +308,7 @@ final class AttributeCascadeCollector
      *     dataSourceIdConflicts: int,
      *     propertyConfigIdConflicts: int,
      *     propertyAttributeOverrides: int,
+     *     whenExpressionTypeCoercions: int,
      *     total: int
      * }
      */
@@ -282,6 +320,7 @@ final class AttributeCascadeCollector
             'dataSourceIdConflicts' => count($this->getEventsByType(CascadeEvent::TYPE_DATASOURCE_ID_CONFLICT)),
             'propertyConfigIdConflicts' => count($this->getEventsByType(CascadeEvent::TYPE_PROPERTY_CONFIG_ID_CONFLICT)),
             'propertyAttributeOverrides' => count($this->getEventsByType(CascadeEvent::TYPE_PROPERTY_ATTRIBUTE_OVERRIDE)),
+            'whenExpressionTypeCoercions' => count($this->getEventsByType(CascadeEvent::TYPE_WHEN_EXPRESSION_TYPE_COERCION)),
             'total' => count($this->events),
         ];
     }

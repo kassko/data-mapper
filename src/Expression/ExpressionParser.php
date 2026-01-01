@@ -224,7 +224,18 @@ class ExpressionParser
             return $result;
         }
         
-        // Parse service('service_id')
+        // Parse serviceId('service_id') - new name
+        if (preg_match("/serviceId\('([^']+)'\)/", $expression, $matches)) {
+            $serviceId = $matches[1];
+            
+            if ($this->serviceResolver === null) {
+                throw new \RuntimeException('ServiceResolver not available for serviceId() function');
+            }
+            
+            return $this->serviceResolver->resolve($serviceId);
+        }
+        
+        // Parse service('service_id') - kept for compatibility with documentation
         if (preg_match("/service\('([^']+)'\)/", $expression, $matches)) {
             $serviceId = $matches[1];
             
@@ -235,7 +246,7 @@ class ExpressionParser
             return $this->serviceResolver->resolve($serviceId);
         }
         
-        // Parse envVar('KEY') - new preferred name
+        // Parse envVar('KEY') - get environment variable
         if (preg_match("/envVar\('([^']+)'\)/", $expression, $matches)) {
             $key = $matches[1];
             
@@ -248,17 +259,16 @@ class ExpressionParser
             return $envValue !== false ? $envValue : null;
         }
         
-        // Parse env_var('KEY') - backward compatibility
-        if (preg_match("/env_var\('([^']+)'\)/", $expression, $matches)) {
+        // Parse envVarExists('KEY') - check if environment variable exists
+        if (preg_match("/envVarExists\('([^']+)'\)/", $expression, $matches)) {
             $key = $matches[1];
             
-            // Try $_ENV first, then getenv()
+            // Check $_ENV first, then getenv()
             if (isset($_ENV[$key])) {
-                return $_ENV[$key];
+                return true;
             }
             
-            $envValue = getenv($key);
-            return $envValue !== false ? $envValue : null;
+            return getenv($key) !== false;
         }
         
         // Parse strictProperty('propertyName')

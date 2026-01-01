@@ -76,6 +76,32 @@ class Garage
 | `config` | `?string` | No | Reference to a PropertyConfig by ID |
 | `configCandidates` | `?array` | No | Array of config candidates with `when` expressions |
 | `defaultConfigCandidate` | `?string` | No | Default config ID if no rule matches |
+| `keepWhen` | `?string` | No | Expression to conditionally include this Property |
+| `cascade` | `bool` | No (default: true) | Whether this attribute cascades to child classes |
+
+## Conditional Property Inclusion (keepWhen)
+
+Use `keepWhen` to conditionally enable the Property attribute based on runtime context:
+
+```php
+use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\SkipAllProperties;
+
+#[SkipAllProperties]
+class Entity
+{
+    #[Property(name: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
+    private ?string $name = null;  // Only hydrated if 'include_name' context key exists
+    
+    private ?string $temp = null;  // Never hydrated (no Property attribute)
+}
+```
+
+**Behavior:**
+- If `keepWhen` is null (default), Property is always considered present
+- If `keepWhen` expression evaluates to `true`, Property is active
+- If `keepWhen` expression evaluates to `false`, Property is treated as absent
+- Non-boolean results are coerced with a warning logged
 
 ## Validation Rules
 
