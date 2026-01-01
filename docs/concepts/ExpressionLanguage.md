@@ -107,12 +107,16 @@ Access values from the raw data being used for hydration:
 private array $cars = [];
 ```
 
-### Service Access: `service('service_id')`
+### Service Access: `service('service_id')` or `serviceId('service_id')`
 
 Get a service from the service locator:
 
 ```php
 #[DataSource(args: ["expr(service('my.service'))"])]
+private ?string $data = null;
+
+// Alternative syntax
+#[DataSource(args: ["expr(serviceId('my.service'))"])]
 private ?string $data = null;
 ```
 
@@ -131,13 +135,18 @@ class Person
 }
 ```
 
-### Environment Variables: `envVar('KEY')`
+### Environment Variables: `envVar('KEY')` and `envVarExists('KEY')`
 
 Access environment variables:
 
 ```php
+// Get environment variable value
 #[DataSource(args: ["expr(envVar('API_KEY'))"])]
 private ?string $apiKey = null;
+
+// Check if environment variable exists
+#[SkipProperty(when: "expr(envVarExists('PRODUCTION'))")]
+private ?string $debugInfo = null;
 ```
 
 ### Property Access: `property('propertyName')` and `strictProperty('propertyName')`
@@ -164,7 +173,48 @@ Explicit property access functions:
 
 ## Conditional Expressions with `when`
 
-The `when` key in `configCandidates` and `candidates` allows conditional configuration selection:
+The `when` key in `configCandidates`, `candidates`, and hydration control attributes allows conditional behavior:
+
+### Conditional Property Inclusion/Exclusion
+
+Use `when` in `SkipProperty` and `KeepProperty` to conditionally control hydration:
+
+```php
+use Kassko\DataMapper\Attribute\SkipProperty;
+use Kassko\DataMapper\Attribute\KeepProperty;
+use Kassko\DataMapper\Attribute\SkipAllProperties;
+
+#[KeepAllProperties]  // Default behavior
+class Entity
+{
+    private ?string $firstName = null;   // Always hydrated
+    
+    #[SkipProperty(when: "expr(contextKeyExists('hide_email'))")]
+    private ?string $email = null;  // Skipped only if 'hide_email' context key exists
+}
+```
+
+```php
+#[SkipAllProperties]
+class Entity
+{
+    #[KeepProperty(when: "expr(contextKeyExists('include_id'))")]
+    private ?string $id = null;  // Kept only if 'include_id' context key exists
+    
+    private ?string $temp = null;  // Never hydrated
+}
+```
+
+### Conditional Property Attribute with keepWhen
+
+```php
+#[SkipAllProperties]
+class Entity
+{
+    #[Property(name: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
+    private ?string $name = null;  // Property is active only if condition is true
+}
+```
 
 ### PropertyConfig Candidates
 

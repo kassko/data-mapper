@@ -18,7 +18,15 @@ use Attribute;
 #[Attribute(Attribute::TARGET_PROPERTY)]
 final class SkipProperty
 {
+    /**
+     * @param string|null $when Optional expression to conditionally skip the property.
+     *                          If null (default), property is always skipped.
+     *                          If expression evaluates to true, property is skipped.
+     *                          If expression evaluates to false, property is not skipped.
+     * @param bool $cascade Whether this attribute cascades to child classes
+     */
     public function __construct(
-        public readonly bool $cascade = true,  // Whether this attribute cascades to child classes
+        public readonly ?string $when = null,
+        public readonly bool $cascade = true,
     ) {}
 }

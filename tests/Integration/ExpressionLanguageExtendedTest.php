@@ -75,7 +75,7 @@ class ExpressionLanguageExtendedTest extends TestCase
             private ?string $value = null;
         };
         
-        $args = ["expr(env_var('TEST_VAR'))"];
+        $args = ["expr(envVar('TEST_VAR'))"];
         $resolved = $parser->resolveArgs($args, $testObject, fn($prop) => null);
         
         $this->assertCount(1, $resolved);
@@ -91,11 +91,39 @@ class ExpressionLanguageExtendedTest extends TestCase
             private ?string $value = null;
         };
         
-        $args = ["expr(env_var('NON_EXISTENT_VAR'))"];
+        $args = ["expr(envVar('NON_EXISTENT_VAR'))"];
         $resolved = $parser->resolveArgs($args, $testObject, fn($prop) => null);
         
         $this->assertCount(1, $resolved);
         $this->assertNull($resolved[0]);
+    }
+
+    public function testEnvVarExistsFunction(): void
+    {
+        $_ENV['TEST_VAR_EXISTS'] = 'some_value';
+        
+        $sourceFunctionProvider = new SourceFunctionProvider(fn($id) => []);
+        $parser = new ExpressionParser($sourceFunctionProvider);
+        
+        $testObject = new class {
+            private ?string $value = null;
+        };
+        
+        // Test existing variable
+        $args = ["expr(envVarExists('TEST_VAR_EXISTS'))"];
+        $resolved = $parser->resolveArgs($args, $testObject, fn($prop) => null);
+        
+        $this->assertCount(1, $resolved);
+        $this->assertTrue($resolved[0]);
+        
+        // Test non-existing variable
+        $args = ["expr(envVarExists('NON_EXISTENT_VAR'))"];
+        $resolved = $parser->resolveArgs($args, $testObject, fn($prop) => null);
+        
+        $this->assertCount(1, $resolved);
+        $this->assertFalse($resolved[0]);
+        
+        unset($_ENV['TEST_VAR_EXISTS']);
     }
 
     public function testContextFunction(): void
@@ -164,7 +192,7 @@ class ExpressionLanguageExtendedTest extends TestCase
         };
         
         $args = [
-            "expr(env_var('TEST_VAR'))",
+            "expr(envVar('TEST_VAR'))",
             "expr(context('ctx_key'))",
             "expr(source('test')['data'])",
         ];

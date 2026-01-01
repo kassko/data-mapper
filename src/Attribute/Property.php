@@ -31,6 +31,13 @@ final class Property
         public readonly null|string|array $defaultConfigCandidate = null,  // Default config ID when no rule matches (empty array for no-op)
         public readonly ?SensitiveLevel $sensitiveLevel = null,  // Sensitivity level for lineage collection
         public readonly bool $cascade = true,      // Whether this attribute cascades to child classes
+        /**
+         * @var string|null Optional expression to conditionally include this Property attribute.
+         *                  If null (default), property is always considered for hydration.
+         *                  If expression evaluates to true, property is included in hydration.
+         *                  If expression evaluates to false, property attribute is ignored (treated as absent).
+         */
+        public readonly ?string $keepWhen = null,
     ) {
         // Validation: mapping requires class to be set
         if ($mapping !== null && $class === null) {
