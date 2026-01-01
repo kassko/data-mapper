@@ -20,8 +20,10 @@ final class DataSourcesStore
 {
     /**
      * @param array<SinglePropDataSource|DataSource|MultiPropDataSource> $sources
+     * @param bool $cascade Whether this attribute cascades to child classes
      */
     public function __construct(
         public readonly array $sources = [],
+        public readonly bool $cascade = true,
     ) {}
 }

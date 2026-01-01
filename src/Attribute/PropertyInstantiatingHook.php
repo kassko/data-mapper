@@ -22,5 +22,6 @@ final class PropertyInstantiatingHook
         public readonly string $after_instantiating = '', // Method to call after object instantiation
         public readonly ?string $class = null,            // Optional: external class/service to call
         public readonly array $args = [],                 // Arguments to pass (supports ##object, expr())
+        public readonly bool $cascade = true,             // Whether this attribute cascades to child classes
     ) {}
 }

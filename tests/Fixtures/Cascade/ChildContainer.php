@@ -31,9 +31,9 @@ class ChildContainer extends BaseContainer
     
     #[Property(
         configCandidates: [
-            ['id' => 'childConfig', 'rule' => "expr(rawDataItemExists('childType'))"],
-            ['id' => 'parentConfig', 'rule' => "expr(rawDataItemExists('parentType'))"],
-            ['id' => 'traitConfig', 'rule' => "expr(rawDataItemExists('traitType'))"],
+            ['id' => 'childConfig', 'when' => "expr(rawDataItemExists('childType'))"],
+            ['id' => 'parentConfig', 'when' => "expr(rawDataItemExists('parentType'))"],
+            ['id' => 'traitConfig', 'when' => "expr(rawDataItemExists('traitType'))"],
         ],
         defaultConfigCandidate: 'sharedConfig'
     )]

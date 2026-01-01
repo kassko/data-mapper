@@ -55,8 +55,8 @@ class Garage
 {
     #[Property(
         configCandidates: [
-            ['id' => 'gasolineCar', 'rule' => "expr(rawDataItemExists('gasolineKind'))"],
-            ['id' => 'electricCar', 'rule' => "expr(rawDataItemExists('energyProvider'))"],
+            ['id' => 'gasolineCar', 'when' => "expr(rawDataItemExists('gasolineKind'))"],
+            ['id' => 'electricCar', 'when' => "expr(rawDataItemExists('energyProvider'))"],
         ],
         defaultConfigCandidate: 'gasolineCar'
     )]
@@ -74,7 +74,7 @@ class Garage
 | `expand` | `?string` | No | Comma-separated fields to expand |
 | `noExpand` | `?string` | No | Comma-separated fields to skip |
 | `config` | `?string` | No | Reference to a PropertyConfig by ID |
-| `configCandidates` | `?array` | No | Array of config candidates with rule expressions |
+| `configCandidates` | `?array` | No | Array of config candidates with `when` expressions |
 | `defaultConfigCandidate` | `?string` | No | Default config ID if no rule matches |
 
 ## Validation Rules
@@ -83,7 +83,7 @@ class Garage
 - `config` is mutually exclusive with `class`, `expand`, `noExpand`, and `mapping`
 - `configCandidates` is mutually exclusive with `class`, `expand`, `noExpand`, `mapping`, and `config`
 - `configCandidates` and `defaultConfigCandidate` must both be present or both absent
-- Each configCandidate must have `id` and `rule` keys
+- Each configCandidate must have `id` and `when` keys
 
 ## Modes
 
@@ -112,8 +112,8 @@ Select a configuration based on runtime data evaluation:
 ```php
 #[Property(
     configCandidates: [
-        ['id' => 'typeA', 'rule' => "expr(rawDataItem('type') == 'A')"],
-        ['id' => 'typeB', 'rule' => "expr(rawDataItem('type') == 'B')"],
+        ['id' => 'typeA', 'when' => "expr(rawDataItem('type') == 'A')"],
+        ['id' => 'typeB', 'when' => "expr(rawDataItem('type') == 'B')"],
     ],
     defaultConfigCandidate: 'typeDefault'
 )]
@@ -122,14 +122,14 @@ private ?Item $item = null;
 
 **configCandidate Structure:**
 - `id` (required): Reference to a PropertyConfig ID
-- `rule` (required): Expression that returns a boolean
+- `when` (required): Expression that returns a boolean
 
 **Resolution Logic:**
-1. Each candidate's `rule` is evaluated against the raw data item
-2. First candidate whose `rule` evaluates to `true` is selected
-3. If no rule matches, `defaultConfigCandidate` is used
+1. Each candidate's `when` expression is evaluated against the raw data item
+2. First candidate whose expression evaluates to `true` is selected
+3. If no expression matches, `defaultConfigCandidate` is used
 
-## Expression Functions for Rules
+## Expression Functions
 
 - `rawDataItemExists('key')` - Check if key exists in data item
 - `rawDataItem('key')` - Get value of key from data item

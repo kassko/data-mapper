@@ -221,14 +221,14 @@ DataSourceRef now uses `id` + `fallbacks` instead of `chain` for clearer semanti
 private ?string $data = null;
 ```
 
-#### Candidates (Rule-Based Selection)
+#### Candidates (Expression-Based Selection)
 
-Select a data source dynamically based on context or conditions. When no rule matches, `defaultCandidate` is used:
+Select a data source dynamically based on context or conditions. When no expression matches, `defaultCandidate` is used:
 
 ```php
 #[DataSourceRef(
     candidates: [
-        ['id' => 'newFeatureSource', 'rule' => "expr(context('new_feature_enabled'))", 'priority' => 15],
+        ['id' => 'newFeatureSource', 'when' => "expr(context('new_feature_enabled'))", 'priority' => 15],
     ],
     defaultCandidate: ['id' => 'oldFeatureSource'],
     priority: 10
@@ -236,7 +236,7 @@ Select a data source dynamically based on context or conditions. When no rule ma
 private ?string $name = null;
 ```
 
-The first candidate whose `rule` evaluates to `true` is elected. If a candidate defines its own `priority`, it overrides the base priority. If no rule matches, `defaultCandidate` is used as fallback.
+The first candidate whose `when` expression evaluates to `true` is elected. If a candidate defines its own `priority`, it overrides the base priority. If no expression matches, `defaultCandidate` is used as fallback.
 
 #### Build-Time Validation
 

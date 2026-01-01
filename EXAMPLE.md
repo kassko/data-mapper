@@ -176,9 +176,9 @@ class Product
 private array $fullProfile = [];
 ```
 
-### DataSource Candidates (Rule-Based Selection)
+### DataSource Candidates (Expression-Based Selection)
 
-Select a data source dynamically based on context or conditions. When no rule matches, `defaultCandidate` is used:
+Select a data source dynamically based on context or conditions. When no expression matches, `defaultCandidate` is used:
 
 ```php
 use Kassko\DataMapper\Attribute\DataSourcesStore;
@@ -194,9 +194,9 @@ class User
     #[DataSourceRef(
         candidates: [
             // Candidate: selected if new_feature_enabled context is true
-            ['id' => 'newFeatureSource', 'rule' => "expr(context('new_feature_enabled'))", 'priority' => 15],
+            ['id' => 'newFeatureSource', 'when' => "expr(context('new_feature_enabled'))", 'priority' => 15],
         ],
-        // Default: used when no rule matches
+        // Default: used when no expression matches
         defaultCandidate: ['id' => 'oldFeatureSource'],
         priority: 10
     )]
@@ -251,8 +251,8 @@ class Garage
 {
     #[Property(
         configCandidates: [
-            ['id' => 'gasolineCar', 'rule' => "expr(rawDataItemExists('fuel_type'))"],
-            ['id' => 'electricCar', 'rule' => "expr(rawDataItemExists('battery_capacity'))"],
+            ['id' => 'gasolineCar', 'when' => "expr(rawDataItemExists('fuel_type'))"],
+            ['id' => 'electricCar', 'when' => "expr(rawDataItemExists('battery_capacity'))"],
         ],
         defaultConfigCandidate: 'gasolineCar'
     )]
@@ -774,8 +774,8 @@ class Chief
     // Access parent context in expressions
     #[Property(
         configCandidates: [
-            ['id' => 'premium', 'rule' => "expr(context('tier') === 'premium')"],
-            ['id' => 'regional', 'rule' => "expr(contextKeyExists('region'))"],
+            ['id' => 'premium', 'when' => "expr(context('tier') === 'premium')"],
+            ['id' => 'regional', 'when' => "expr(contextKeyExists('region'))"],
         ],
         defaultConfigCandidate: 'default'
     )]
@@ -1061,9 +1061,9 @@ class ChildContainer extends BaseContainer
     
     #[Property(
         configCandidates: [
-            ['id' => 'childConfig', 'rule' => "expr(rawDataItemExists('childType'))"],
-            ['id' => 'parentConfig', 'rule' => "expr(rawDataItemExists('parentType'))"], // Works!
-            ['id' => 'traitConfig', 'rule' => "expr(rawDataItemExists('traitType'))"], // Works!
+            ['id' => 'childConfig', 'when' => "expr(rawDataItemExists('childType'))"],
+            ['id' => 'parentConfig', 'when' => "expr(rawDataItemExists('parentType'))"], // Works!
+            ['id' => 'traitConfig', 'when' => "expr(rawDataItemExists('traitType'))"], // Works!
         ],
         defaultConfigCandidate: 'childConfig'
     )]

@@ -16,37 +16,99 @@ namespace Kassko\DataMapper\Attribute;
 use Attribute;
 
 /**
- * Adds key-value pairs to the hydration context.
+ * Adds context entries for hydration.
  * 
- * Context values accumulate as hydration descends into nested objects.
- * Later values for the same key override earlier ones (last writer wins).
- * Context values are set AFTER the property is hydrated but BEFORE 
- * any PropertyCandidate discriminators are evaluated on child objects.
+ * Context supports three levels:
+ * - Application context: Shared across all hydration sessions
+ * - Hydration context: Shared within one hydration session
+ * - Object instance context: Specific to one object instance (values may depend on object data)
+ * 
+ * Each entry can be:
+ * - A simple key-value pair: ['key' => 'myKey', 'value' => 'myValue']
+ * - A method result capture: ['key' => 'myData', 'class' => 'my.service', 'method' => 'getData', 'args' => ['#id']]
+ * 
+ * Context entries are evaluated in order, so a later entry can reference an earlier one via expressions.
  * 
  * Usage:
  * ```php
  * #[Context(
- *     key1: 'value1',
- *     key2: 'value2',
+ *     ['key' => 'staticValue', 'value' => 'hello'],
+ *     ['key' => 'personData', 'class' => 'person.service', 'method' => 'fetchData', 'args' => ['#id']],
+ *     ['key' => 'derivedData', 'class' => 'other.service', 'method' => 'process', 'args' => ["expr(context('personData'))"]],
  * )]
- * private Chief $chief;
+ * class Person
+ * {
+ *     // ...
+ * }
  * ```
  * 
  * Access in expressions:
- * - `context('key1')` - returns the value or null if not found (logs warning)
- * - `contextKeyExists('key1')` - returns true/false
+ * - `context('key')` - returns the value or null if not found (logs warning)
+ * - `contextKeyExists('key')` - returns true/false
+ * 
+ * Using ##object in class to reference a method on the current object:
+ * ```php
+ * #[MethodAlias(name: 'checkKey', class: '##object', method: 'keyExists')]
+ * #[Context(
+ *     ['key' => 'rawData', 'class' => 'data.source', 'method' => 'fetch', 'args' => ['#id']],
+ * )]
+ * class Person
+ * {
+ *     private function keyExists(array $data, string $key): bool
+ *     {
+ *         return isset($data[$key]);
+ *     }
+ * }
+ * ```
  */
-#[Attribute(Attribute::TARGET_PROPERTY | Attribute::IS_REPEATABLE)]
+#[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_PROPERTY | Attribute::IS_REPEATABLE)]
 final class Context
 {
-    /** @var array<string, mixed> Key-value pairs to add to context */
-    public readonly array $values;
+    /** @var array<array{key: string, value?: mixed, class?: string, method?: string, args?: array}> Context entries */
+    public readonly array $entries;
+    public readonly bool $cascade;  // Whether this attribute cascades to child classes
 
     /**
-     * @param mixed ...$values Named arguments become key-value pairs
+     * @param array ...$entries Each entry must have a 'key' and either 'value' or 'class'+'method'
      */
-    public function __construct(mixed ...$values)
+    public function __construct(array ...$entries)
     {
-        $this->values = $values;
+        $lastEntry = end($entries);
+        $cascade = true;
+        
+        // Check if the last entry is a cascade configuration
+        if ($lastEntry !== false && isset($lastEntry['cascade']) && count($lastEntry) === 1) {
+            $cascade = (bool) $lastEntry['cascade'];
+            array_pop($entries);
+        }
+        
+        // Validate each entry
+        foreach ($entries as $index => $entry) {
+            if (!isset($entry['key'])) {
+                throw new \InvalidArgumentException(
+                    sprintf('Context: entry at index %d must have a "key"', $index)
+                );
+            }
+            
+            $hasValue = array_key_exists('value', $entry);
+            $hasClass = isset($entry['class']);
+            $hasMethod = isset($entry['method']);
+            
+            if (!$hasValue && !($hasClass && $hasMethod)) {
+                throw new \InvalidArgumentException(
+                    sprintf('Context: entry "%s" must have either "value" or both "class" and "method"', $entry['key'])
+                );
+            }
+            
+            if ($hasValue && ($hasClass || $hasMethod)) {
+                throw new \InvalidArgumentException(
+                    sprintf('Context: entry "%s" cannot have both "value" and "class"/"method"', $entry['key'])
+                );
+            }
+        }
+        
+        $this->entries = $entries;
+        $this->cascade = $cascade;
     }
 }
+

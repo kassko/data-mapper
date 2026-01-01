@@ -25,5 +25,6 @@ final class Getter
     public function __construct(
         public readonly ?string $name = null,  // Method name
         public readonly string $type = self::TYPE_GETTER,  // 'getter', 'isser', 'haser'
+        public readonly bool $cascade = true,  // Whether this attribute cascades to child classes
     ) {}
 }

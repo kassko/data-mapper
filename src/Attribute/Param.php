@@ -67,9 +67,11 @@ final class Param
      *                      - A service expression: "expr(service('serviceId'))"
      *                      - A source expression: "expr(source('sourceId'))"
      *                      Note: For constructor params, property references are forbidden.
+     * @param bool $cascade Whether this attribute cascades to child classes
      */
     public function __construct(
-        public readonly string $value
+        public readonly string $value,
+        public readonly bool $cascade = true,
     ) {
     }
 }

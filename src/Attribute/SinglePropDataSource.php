@@ -35,6 +35,15 @@ final class SinglePropDataSource
         public readonly int $priority = 0,
         /** @var array<string, SensitiveLevel> Keys to mark as sensitive (exact name or regex pattern) */
         public readonly array $sensitiveKeys = [],
+        public readonly ?string $methodAlias = null,  // Reference to a MethodAlias by name
+        public readonly bool $cascade = true,         // Whether this attribute cascades to child classes
         // NO loadingScope/loadingScopeKeys - single property only
-    ) {}
+    ) {
+        // Validation: methodAlias is mutually exclusive with class and method
+        if ($methodAlias !== null && ($class !== null || $method !== '')) {
+            throw new \InvalidArgumentException(
+                'SinglePropDataSource: methodAlias is mutually exclusive with class and method'
+            );
+        }
+    }
 }

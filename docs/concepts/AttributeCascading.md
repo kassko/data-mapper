@@ -114,15 +114,42 @@ class ChildContainer extends BaseContainer
     
     #[Property(
         configCandidates: [
-            ['id' => 'childConfig', 'rule' => "expr(rawDataItemExists('childType'))"],
-            ['id' => 'parentConfig', 'rule' => "expr(rawDataItemExists('parentType'))"],
-            ['id' => 'traitConfig', 'rule' => "expr(rawDataItemExists('traitType'))"],
+            ['id' => 'childConfig', 'when' => "expr(rawDataItemExists('childType'))"],
+            ['id' => 'parentConfig', 'when' => "expr(rawDataItemExists('parentType'))"],
+            ['id' => 'traitConfig', 'when' => "expr(rawDataItemExists('traitType'))"],
         ],
         defaultConfigCandidate: 'childConfig'
     )]
     private ?object $item = null;
 }
 ```
+
+## Configurable Cascade Behavior
+
+All DataMapper attributes support a `cascade` field that controls whether the attribute is inherited by child classes:
+
+```php
+#[DataSourcesStore([
+    new SinglePropDataSource(id: 'parentSource', class: ParentDataSource::class, method: 'getData', cascade: false),
+])]
+abstract class BaseEntity
+{
+    // parentSource will NOT be available in child classes
+}
+```
+
+### Per-Attribute Cascade Control
+
+```php
+class ParentClass
+{
+    #[Property(name: 'parent_name', cascade: false)]
+    private ?string $name = null;
+    // Child classes will NOT inherit this Property configuration
+}
+```
+
+The `cascade` field defaults to `true` for all attributes.
 
 ## Property Attribute Override
 

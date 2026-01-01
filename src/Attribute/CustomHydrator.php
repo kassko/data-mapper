@@ -21,5 +21,6 @@ final class CustomHydrator
     public function __construct(
         public readonly string $key,             // Key to identify the custom hydrator
         public readonly ?string $objectClass = null,  // Optional: expected class for type checking
+        public readonly bool $cascade = true,    // Whether this attribute cascades to child classes
     ) {}
 }

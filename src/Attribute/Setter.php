@@ -24,5 +24,6 @@ final class Setter
     public function __construct(
         public readonly ?string $name = null,  // Method name
         public readonly string $type = self::TYPE_SETTER,  // 'setter' or 'adder'
+        public readonly bool $cascade = true,  // Whether this attribute cascades to child classes
     ) {}
 }

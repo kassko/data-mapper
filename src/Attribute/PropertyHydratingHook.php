@@ -23,5 +23,6 @@ final class PropertyHydratingHook
         public readonly string $after_hydrate_object = '',   // Method to call after hydration (receives ?object $object, array $rawData)
         public readonly ?string $class = null,               // Optional: external class/service to call
         public readonly array $args = [],                    // Arguments to pass (supports ##object, expr())
+        public readonly bool $cascade = true,                // Whether this attribute cascades to child classes
     ) {}
 }

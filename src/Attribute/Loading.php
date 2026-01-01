@@ -24,5 +24,6 @@ final class Loading
     public function __construct(
         public readonly string $type = self::TYPE_LAZY,  // 'lazy' or 'eager'
         public readonly ?int $depth = null,              // Max recursion depth
+        public readonly bool $cascade = true,            // Whether this attribute cascades to child classes
     ) {}
 }

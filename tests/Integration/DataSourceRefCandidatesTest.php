@@ -71,7 +71,7 @@ class DataSourceRefCandidatesTest extends TestCase
 
             #[DataSourceRef(
                 candidates: [
-                    ['id' => 'newFeatureSource', 'rule' => "expr(context('new_feature_enabled'))"],
+                    ['id' => 'newFeatureSource', 'when' => "expr(context('new_feature_enabled'))"],
                 ],
                 defaultCandidate: ['id' => 'oldFeatureSource']
             )]
@@ -123,7 +123,7 @@ class DataSourceRefCandidatesTest extends TestCase
 
             #[DataSourceRef(
                 candidates: [
-                    ['id' => 'newFeatureSource', 'rule' => "expr(context('new_feature_enabled'))"],
+                    ['id' => 'newFeatureSource', 'when' => "expr(context('new_feature_enabled'))"],
                 ],
                 defaultCandidate: ['id' => 'oldFeatureSource']
             )]
@@ -167,7 +167,7 @@ class DataSourceRefCandidatesTest extends TestCase
 
             #[DataSourceRef(
                 candidates: [
-                    ['id' => 'testSource', 'rule' => "expr(context('use_high_priority'))", 'priority' => 50],
+                    ['id' => 'testSource', 'when' => "expr(context('use_high_priority'))", 'priority' => 50],
                 ],
                 defaultCandidate: ['id' => 'fallbackSource'],
                 priority: 10
@@ -222,7 +222,7 @@ class DataSourceRefCandidatesTest extends TestCase
 
             #[DataSourceRef(
                 candidates: [
-                    ['id' => 'primarySource', 'rule' => "expr(context('never_matches'))"],
+                    ['id' => 'primarySource', 'when' => "expr(context('never_matches'))"],
                 ],
                 defaultCandidate: ['id' => 'fallbackSource']
             )]
@@ -267,7 +267,7 @@ class DataSourceRefCandidatesTest extends TestCase
 
             #[DataSourceRef(
                 candidates: [
-                    ['id' => 'sourceA', 'rule' => "expr(context('feature_flag'))"],
+                    ['id' => 'sourceA', 'when' => "expr(context('feature_flag'))"],
                 ],
                 defaultCandidate: ['id' => 'sourceB']
             )]
