@@ -28,7 +28,7 @@ use Kassko\Sample\HookExternalService\TestLogService;
 use Kassko\Sample\HookExternalService\TestValidationService;
 use PHPUnit\Framework\TestCase;
 
-class HookExternalServiceTest extends TestCase
+class PropertySettingHookCheckExternalServiceTest extends TestCase
 {
     use LocalFixtureAutoloadTrait;
 
