@@ -135,7 +135,7 @@ final class ServiceLocatorIntegrationTest extends TestCase
 
         $dataMapper = (new DataMapperBuilder())
             ->setContainer($container)
-            ->addLocator($locator)
+            ->addServiceLocator($locator)
             ->build();
 
 
@@ -238,8 +238,8 @@ final class ServiceLocatorIntegrationTest extends TestCase
 
         $dataMapper = (new DataMapperBuilder())
             ->setContainer($container)
-            ->addLocator($familyLocator)
-            ->addLocator($vehicleLocator)
+            ->addServiceLocator($familyLocator)
+            ->addServiceLocator($vehicleLocator)
             ->build();
 
 
@@ -279,7 +279,7 @@ final class ServiceLocatorIntegrationTest extends TestCase
         };
 
         $dataMapper = (new DataMapperBuilder())
-            ->addLocator($proofLocator)
+            ->addServiceLocator($proofLocator)
             ->build();
 
 
@@ -325,8 +325,8 @@ final class ServiceLocatorIntegrationTest extends TestCase
 
         // First locator should take priority
         $dataMapper = (new DataMapperBuilder())
-            ->addLocator($locator1)
-            ->addLocator($locator2)
+            ->addServiceLocator($locator1)
+            ->addServiceLocator($locator2)
             ->build();
 
 
@@ -383,7 +383,7 @@ final class ServiceLocatorIntegrationTest extends TestCase
 
         $dataMapper = (new DataMapperBuilder())
             ->setContainer($container)
-            ->addLocator($locator)
+            ->addServiceLocator($locator)
             ->build();
 
 

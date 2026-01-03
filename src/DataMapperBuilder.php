@@ -66,7 +66,7 @@ final class DataMapperBuilder
         return $this;
     }
 
-    public function addLocator(ServiceLocatorInterface $locator): self
+    public function addServiceLocator(ServiceLocatorInterface $locator): self
     {
         $this->locators[] = $locator;
         return $this;

@@ -63,7 +63,7 @@ class AutoLoadArgsTest extends TestCase
         ]);
         
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
         
         // Create test object WITHOUT Needs attribute
@@ -152,7 +152,7 @@ class AutoLoadArgsTest extends TestCase
         ]);
         
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
         
         // Create test object WITHOUT Needs attribute

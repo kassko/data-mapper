@@ -66,6 +66,22 @@ final class DataMapper
         return $this->serviceResolver;
     }
 
+    /**
+     * Ensure the loader is registered in the global LoaderRegistry.
+     * 
+     * This is useful when the registry has been cleared (e.g., between tests)
+     * but the DataMapper instance is reused.
+     * 
+     * @return self For method chaining
+     */
+    public function ensureLoaderRegistered(): self
+    {
+        if (!LoaderRegistry::has()) {
+            LoaderRegistry::set($this->loader);
+        }
+        return $this;
+    }
+
     public function getCache(): ?CacheInterface
     {
         return $this->cache;

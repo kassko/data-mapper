@@ -48,8 +48,8 @@ final class DataMapperBuilderTest extends TestCase
         
         $builder = new DataMapperBuilder();
         $dataMapper = $builder
-            ->addLocator($locator1)
-            ->addLocator($locator2)
+            ->addServiceLocator($locator1)
+            ->addServiceLocator($locator2)
             ->build();
 
         $this->assertInstanceOf(DataMapper::class, $dataMapper);
@@ -63,7 +63,7 @@ final class DataMapperBuilderTest extends TestCase
         $builder = new DataMapperBuilder();
         $dataMapper = $builder
             ->setContainer($container)
-            ->addLocator($locator)
+            ->addServiceLocator($locator)
             ->build();
 
         $this->assertInstanceOf(DataMapper::class, $dataMapper);
@@ -93,10 +93,10 @@ final class DataMapperBuilderTest extends TestCase
         $result = $builder->setContainer($container);
         $this->assertSame($builder, $result);
         
-        $result = $builder->addLocator($locator1);
+        $result = $builder->addServiceLocator($locator1);
         $this->assertSame($builder, $result);
         
-        $result = $builder->addLocator($locator2);
+        $result = $builder->addServiceLocator($locator2);
         $this->assertSame($builder, $result);
     }
 
@@ -111,7 +111,7 @@ final class DataMapperBuilderTest extends TestCase
         $builder = new DataMapperBuilder();
         
         foreach ($locators as $locator) {
-            $builder->addLocator($locator);
+            $builder->addServiceLocator($locator);
         }
         
         $dataMapper = $builder->build();

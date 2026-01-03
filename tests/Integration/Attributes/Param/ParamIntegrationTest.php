@@ -81,7 +81,7 @@ class ParamIntegrationTest extends TestCase
         ]);
         
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
         $loader = LoaderRegistry::get();
         
@@ -147,7 +147,7 @@ class ParamIntegrationTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $parent = new ParentWithNestedParam();

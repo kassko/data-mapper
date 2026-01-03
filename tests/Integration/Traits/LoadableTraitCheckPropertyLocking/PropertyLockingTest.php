@@ -53,7 +53,7 @@ class PropertyLockingTest extends TestCase
         ]);
         
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
         
         // Create test object
@@ -120,7 +120,7 @@ class PropertyLockingTest extends TestCase
         ]);
         
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
         
         // Create test object that can lock properties
