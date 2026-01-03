@@ -1592,8 +1592,8 @@ class Loader implements LoaderInterface
     {
         // Use Property attribute
         $propertyAttr = $this->attributeReader->readProperty($property);
-        if ($propertyAttr !== null && $propertyAttr->name !== null) {
-            return $propertyAttr->name;
+        if ($propertyAttr !== null && $propertyAttr->key !== null) {
+            return $propertyAttr->key;
         }
         
         // Default to property name
@@ -1826,8 +1826,8 @@ class Loader implements LoaderInterface
     private function mergePropertyConfig(Property $propertyAttr, PropertyConfig $config): Property
     {
         return new Property(
-            // Property.name takes precedence over PropertyConfig.name
-            name: $propertyAttr->name ?? $config->name,
+            // Property.key takes precedence over PropertyConfig.key
+            key: $propertyAttr->key ?? $config->key,
             class: $propertyAttr->class ?? $config->class,
             expand: $propertyAttr->expand ?? $config->expand,
             noExpand: $propertyAttr->noExpand ?? $config->noExpand,

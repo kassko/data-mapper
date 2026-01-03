@@ -211,7 +211,7 @@ class Entity
 #[SkipAllProperties]
 class Entity
 {
-    #[Property(name: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
+    #[Property(key: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
     private ?string $name = null;  // Property is active only if condition is true
 }
 ```

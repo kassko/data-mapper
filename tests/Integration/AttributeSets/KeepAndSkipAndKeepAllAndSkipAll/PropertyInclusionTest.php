@@ -211,7 +211,7 @@ class PropertyInclusionTest extends TestCase
         $loader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         
         $entity = new #[SkipAllProperties] class {
-            #[Property(name: 'user_name', keepWhen: "expr(contextKeyExists('keep_name'))")]
+            #[Property(key: 'user_name', keepWhen: "expr(contextKeyExists('keep_name'))")]
             private ?string $name = null;
             private ?string $temp = null;
             
@@ -241,7 +241,7 @@ class PropertyInclusionTest extends TestCase
         $loader = new Loader(new \Kassko\DataMapper\ServiceResolver());
         
         $entity = new #[SkipAllProperties] class {
-            #[Property(name: 'user_name', keepWhen: "expr(contextKeyExists('keep_name'))")]
+            #[Property(key: 'user_name', keepWhen: "expr(contextKeyExists('keep_name'))")]
             private ?string $name = null;
             private ?string $temp = null;
             

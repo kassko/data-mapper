@@ -15,7 +15,7 @@ class Entity
     #[KeepProperty]
     private ?string $id = null;  // Hydrated (explicitly kept)
     
-    #[Property(name: 'user_name')]
+    #[Property(key: 'user_name')]
     private ?string $name = null;  // Hydrated (has Property attribute)
     
     private ?string $temp = null;  // NOT hydrated

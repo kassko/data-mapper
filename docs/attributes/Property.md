@@ -11,11 +11,11 @@ use Kassko\DataMapper\Attribute\Property;
 
 class Person
 {
-    #[Property(name: 'first_name')]
+    #[Property(key: 'first_name')]
     private ?string $firstName = null;
     
     #[Property(
-        name: 'address_data',
+        key: 'address_data',
         class: Address::class,
         mapping: ['billing_street' => 'street', 'billing_city' => 'city']
     )]
@@ -68,7 +68,7 @@ class Garage
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `name` | `?string` | No | Key in raw data array |
+| `key` | `?string` | No | Key in raw data array |
 | `class` | `?string` | No | Class for nested object hydration |
 | `mapping` | `?array` | No | Instance-specific key mapping (requires `class`) |
 | `expand` | `?string` | No | Comma-separated fields to expand |
@@ -90,7 +90,7 @@ use Kassko\DataMapper\Attribute\SkipAllProperties;
 #[SkipAllProperties]
 class Entity
 {
-    #[Property(name: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
+    #[Property(key: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
     private ?string $name = null;  // Only hydrated if 'include_name' context key exists
     
     private ?string $temp = null;  // Never hydrated (no Property attribute)

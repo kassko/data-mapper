@@ -34,7 +34,7 @@ class PersonWithStore
     private int $id;
 
     #[DataSourceRef(id: 'personSource')]
-    #[Property(name: 'first_name')]
+    #[Property(key: 'first_name')]
     private ?string $firstName = null;
 
     #[DataSourceRef(id: 'personSource')]
