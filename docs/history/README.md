@@ -22,7 +22,7 @@ This folder contains the history of all evolutions made to the data-mapper libra
 
 ## Overview
 
-This repository contains an experimental data-mapper library that has evolved through numerous pull requests. Each PR document contains:
+This repository contains a data-mapper library that has evolved through numerous pull requests. Each PR document contains:
 
 - PR title and metadata (author, dates)
 - Description of changes

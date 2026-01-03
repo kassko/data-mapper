@@ -23,7 +23,7 @@ It is not affiliated with, nor owned by, any organization.
 ## Installation
 
 ```bash
-composer require kassko/data-mapper:^2.35-alpha@alpha
+composer require kassko/data-mapper:^2.46-beta@beta
 ```
 
 ## Quick Start
