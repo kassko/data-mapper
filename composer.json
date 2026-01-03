@@ -45,8 +45,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Kassko\\DataMapper\\Tests\\": "tests/",
-            "Kassko\\Sample\\": "tests/Fixtures/"
+            "Kassko\\DataMapper\\Tests\\": "tests/"
         }
     },
     "minimum-stability": "stable",

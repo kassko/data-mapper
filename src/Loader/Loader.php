@@ -16,6 +16,7 @@ namespace Kassko\DataMapper\Loader;
 use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
+use Kassko\DataMapper\Attribute\MethodAlias;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\PropertyConfigStore;
 use Kassko\DataMapper\Attribute\PropertyConfig;
@@ -27,6 +28,7 @@ use Kassko\DataMapper\Attribute\PropertyHydratingHook;
 use Kassko\DataMapper\Attribute\Param;
 use Kassko\DataMapper\DataCollector\AttributeCascadeCollector;
 use Kassko\DataMapper\DataCollector\DataLineageCollector;
+use Kassko\DataMapper\Exception\MethodAliasNotFoundException;
 use Kassko\DataMapper\Expression\ExpressionParser;
 use Kassko\DataMapper\Expression\SourceFunctionProvider;
 use Kassko\DataMapper\Metadata\AttributeReader;
@@ -1295,24 +1297,60 @@ class Loader implements LoaderInterface
      */
     private function callDataSource(SinglePropDataSource|DataSource|MultiPropDataSource $source, object $object): mixed
     {
-        $dataSourceInstance = $this->resolveDataSource($source->class ?? '');
+        // Resolve methodAlias if present
+        $class = $source->class ?? '';
+        $method = $source->method;
+        
+        if (property_exists($source, 'methodAlias') && $source->methodAlias !== null) {
+            $resolvedAlias = $this->resolveMethodAlias($source->methodAlias, $object);
+            $class = $resolvedAlias->class;
+            $method = $resolvedAlias->method;
+        }
+        
+        // Handle ##object reference for current object methods
+        if ($class === '##object') {
+            $dataSourceInstance = $object;
+        } else {
+            $dataSourceInstance = $this->resolveDataSource($class);
+        }
+        
         $resolvedArgs = $this->resolveArgs($source->args, $object);
         
         // Validate method exists before calling
-        if (!method_exists($dataSourceInstance, $source->method)) {
+        if (!method_exists($dataSourceInstance, $method)) {
             throw new \RuntimeException(
                 sprintf(
                     'Method %s does not exist on DataSource class %s',
-                    $source->method,
+                    $method,
                     get_class($dataSourceInstance)
                 )
             );
         }
         
         return call_user_func_array(
-            [$dataSourceInstance, $source->method],
+            [$dataSourceInstance, $method],
             $resolvedArgs
         );
+    }
+
+    /**
+     * Resolve a MethodAlias by name for a given object
+     *
+     * @param string $aliasName The name of the method alias to resolve
+     * @param object $object The object whose class hierarchy to search
+     * @return MethodAlias The resolved method alias
+     * @throws MethodAliasNotFoundException If the alias is not found
+     */
+    private function resolveMethodAlias(string $aliasName, object $object): MethodAlias
+    {
+        $reflectionClass = new ReflectionClass($object);
+        $aliasMap = $this->attributeReader->getMethodAliasMap($reflectionClass);
+        
+        if (!isset($aliasMap[$aliasName])) {
+            throw new MethodAliasNotFoundException($aliasName, get_class($object));
+        }
+        
+        return $aliasMap[$aliasName];
     }
 
 
@@ -1325,22 +1363,38 @@ class Loader implements LoaderInterface
      */
     private function executeDataSource(DataSource|SinglePropDataSource|MultiPropDataSource $dataSource, object $object)
     {
-        $dataSourceInstance = $this->resolveDataSource($dataSource->class ?? '');
+        // Resolve methodAlias if present
+        $class = $dataSource->class ?? '';
+        $method = $dataSource->method;
+        
+        if (property_exists($dataSource, 'methodAlias') && $dataSource->methodAlias !== null) {
+            $resolvedAlias = $this->resolveMethodAlias($dataSource->methodAlias, $object);
+            $class = $resolvedAlias->class;
+            $method = $resolvedAlias->method;
+        }
+        
+        // Handle ##object reference for current object methods
+        if ($class === '##object') {
+            $dataSourceInstance = $object;
+        } else {
+            $dataSourceInstance = $this->resolveDataSource($class);
+        }
+        
         $resolvedArgs = $this->resolveArgs($dataSource->args, $object);
         
         // Validate method exists before calling
-        if (!method_exists($dataSourceInstance, $dataSource->method)) {
+        if (!method_exists($dataSourceInstance, $method)) {
             throw new \RuntimeException(
                 sprintf(
                     'Method %s does not exist on DataSource class %s',
-                    $dataSource->method,
+                    $method,
                     get_class($dataSourceInstance)
                 )
             );
         }
         
         return call_user_func_array(
-            [$dataSourceInstance, $dataSource->method],
+            [$dataSourceInstance, $method],
             $resolvedArgs
         );
     }

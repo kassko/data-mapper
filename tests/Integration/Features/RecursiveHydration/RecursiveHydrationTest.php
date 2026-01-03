@@ -1,0 +1,63 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+ * This file is part of Data Mapper.
+ *
+ * Copyright 2025 kassko 
+ *
+ * For the full copyright and license information,
+ * please view the LICENSE and NOTICE files that were distributed with this source code.
+ */
+
+namespace Kassko\DataMapper\Tests\Integration;
+
+use Kassko\DataMapper\DataMapper;
+use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
+use Kassko\Sample\Features\RecursiveHydration\Information;
+use Kassko\Sample\Features\RecursiveHydration\Shop;
+use PHPUnit\Framework\TestCase;
+
+class RecursiveHydrationTest extends TestCase
+{
+    use LocalFixtureAutoloadTrait;
+
+    protected function tearDown(): void
+    {
+        LoaderRegistry::clear();
+    }
+
+    public function testRecursiveHydrationWithClassAttribute(): void
+    {
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
+        $info = new Information();
+
+        // Load the bestShop property (marked as eager but we're testing the recursive hydration)
+        $bestShop = $info->getBestShop();
+        
+        $this->assertNotNull($bestShop);
+        $this->assertInstanceOf(Shop::class, $bestShop);
+        $this->assertEquals('The best', $bestShop->getName());
+        $this->assertEquals('Street of the best', $bestShop->getAddress());
+    }
+
+    public function testRecursiveHydrationWithMultipleProperties(): void
+    {
+        new DataMapper(new \Kassko\DataMapper\ServiceResolver());
+        $info = new Information();
+
+        $bestShop = $info->getBestShop();
+        $worstShop = $info->getWorstShop();
+        
+        $this->assertNotNull($bestShop);
+        $this->assertInstanceOf(Shop::class, $bestShop);
+        $this->assertEquals('The best', $bestShop->getName());
+        
+        $this->assertNotNull($worstShop);
+        $this->assertInstanceOf(Shop::class, $worstShop);
+        $this->assertEquals('The worst', $worstShop->getName());
+        $this->assertEquals('Street of the worst', $worstShop->getAddress());
+    }
+}
