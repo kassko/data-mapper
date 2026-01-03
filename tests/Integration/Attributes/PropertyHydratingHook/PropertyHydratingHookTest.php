@@ -52,7 +52,7 @@ class PropertyHydratingHookTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $person = new PersonWithBeforeHook();
@@ -77,7 +77,7 @@ class PropertyHydratingHookTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $person = new PersonWithAfterHook();
@@ -101,7 +101,7 @@ class PropertyHydratingHookTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $obj = new ObjectWithBothHooks();
@@ -136,7 +136,7 @@ class PropertyHydratingHookTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $obj = new ObjectWithExternalHook();
@@ -160,7 +160,7 @@ class PropertyHydratingHookTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $obj = new ObjectWithMultipleHooks();
@@ -183,7 +183,7 @@ class PropertyHydratingHookTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         ContextRegistry::set('hookContext', 'context_value');
@@ -212,7 +212,7 @@ class PropertyHydratingHookTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $parent = new ParentWithNestedHook();

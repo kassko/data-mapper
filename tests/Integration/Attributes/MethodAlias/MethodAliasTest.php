@@ -67,7 +67,7 @@ class MethodAliasTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $user = new UserWithMethodAliasSingleProp();
@@ -99,7 +99,7 @@ class MethodAliasTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $person = new PersonWithMethodAliasMultiProp();
@@ -145,7 +145,7 @@ class MethodAliasTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $child = new ChildEntityWithInheritedMethodAlias();
@@ -174,7 +174,7 @@ class MethodAliasTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $child = new ChildEntityWithNonCascadingMethodAlias();
@@ -206,7 +206,7 @@ class MethodAliasTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $entity = new EntityWithMultipleMethodAliases();

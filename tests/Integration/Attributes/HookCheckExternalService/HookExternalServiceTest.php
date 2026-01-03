@@ -51,7 +51,7 @@ class HookExternalServiceTest extends TestCase
         
         // Create DataMapper with service locator via builder
         $builder = new \Kassko\DataMapper\DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
         
         // Create a test object with hook to external service
@@ -103,7 +103,7 @@ class HookExternalServiceTest extends TestCase
         
         // Create DataMapper via builder
         $builder = new \Kassko\DataMapper\DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
         
         // Create test object with hook to external logging service
@@ -156,7 +156,7 @@ class HookExternalServiceTest extends TestCase
         
         // Create DataMapper via builder
         $builder = new \Kassko\DataMapper\DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
         
         // Create a test object with hook on itself (no class parameter)

@@ -19,6 +19,9 @@ namespace Kassko\DataMapper\Tests\TestHelpers;
  * This trait registers a custom autoloader that loads classes from the Fixtures/
  * directory relative to the test file location.
  * 
+ * For inherited test classes (like Bundle portable tests extending Core tests),
+ * the trait looks for fixtures in the parent class directory.
+ * 
  * Usage:
  *   1. Use this trait in your test class
  *   2. Ensure your test class has a Fixtures/ subdirectory
@@ -29,11 +32,37 @@ trait LocalFixtureAutoloadTrait
 {
     private static ?\Closure $fixtureAutoloader = null;
 
+    /**
+     * Get the directory containing fixtures for this test class.
+     * 
+     * Override this method to customize the fixtures location.
+     */
+    protected static function getFixturesDirectory(): string
+    {
+        $reflectionClass = new \ReflectionClass(static::class);
+        $testFile = $reflectionClass->getFileName();
+        $fixturesDir = dirname($testFile) . '/Fixtures';
+        
+        // If no Fixtures dir exists for child class, check parent class location
+        if (!is_dir($fixturesDir)) {
+            $parentClass = $reflectionClass->getParentClass();
+            while ($parentClass && !is_dir($fixturesDir)) {
+                $parentFile = $parentClass->getFileName();
+                if ($parentFile) {
+                    $fixturesDir = dirname($parentFile) . '/Fixtures';
+                }
+                $parentClass = $parentClass->getParentClass();
+            }
+        }
+        
+        return $fixturesDir;
+    }
+
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
         
-        $fixturesDir = dirname((new \ReflectionClass(static::class))->getFileName()) . '/Fixtures';
+        $fixturesDir = static::getFixturesDirectory();
         
         if (is_dir($fixturesDir)) {
             self::$fixtureAutoloader = function (string $class) use ($fixturesDir): void {

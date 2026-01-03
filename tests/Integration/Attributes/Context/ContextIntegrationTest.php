@@ -54,7 +54,7 @@ class ContextIntegrationTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         $testObject = new #[DataSourcesStore([
@@ -142,7 +142,7 @@ class ContextIntegrationTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
 
         // Set context to test contextKeyExists
@@ -166,7 +166,7 @@ class ContextIntegrationTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $dataMapper = $builder->build();
 
         // Enable lineage collection

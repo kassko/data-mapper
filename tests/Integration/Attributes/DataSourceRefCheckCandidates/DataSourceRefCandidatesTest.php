@@ -56,7 +56,7 @@ class DataSourceRefCandidatesTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $dataMapper = $builder->build();
 
         // Set context so new feature is enabled
@@ -108,7 +108,7 @@ class DataSourceRefCandidatesTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $dataMapper = $builder->build();
 
         // Set context so new feature is DISABLED
@@ -153,7 +153,7 @@ class DataSourceRefCandidatesTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $dataMapper = $builder->build();
         $dataMapper->enableLineageCollection();
         $dataMapper->addToContext('use_high_priority', true);
@@ -208,7 +208,7 @@ class DataSourceRefCandidatesTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $dataMapper = $builder->build();
         $dataMapper->enableLineageCollection();
         $dataMapper->addToContext('never_matches', false);
@@ -253,7 +253,7 @@ class DataSourceRefCandidatesTest extends TestCase
         ]);
 
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $dataMapper = $builder->build();
         $dataMapper->enableLineageCollection();
         $dataMapper->addToContext('feature_flag', true);

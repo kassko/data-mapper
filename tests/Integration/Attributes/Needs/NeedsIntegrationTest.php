@@ -74,7 +74,7 @@ class NeedsIntegrationTest extends TestCase
         ]);
         
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
         
         // Create test object with Needs dependency
@@ -161,7 +161,7 @@ class NeedsIntegrationTest extends TestCase
         ]);
         
         $builder = new DataMapperBuilder();
-        $builder->addLocator($serviceLocator);
+        $builder->addServiceLocator($serviceLocator);
         $builder->build();
         
         // Create test object
