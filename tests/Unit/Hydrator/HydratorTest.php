@@ -16,12 +16,15 @@ namespace Kassko\DataMapper\Tests\Unit;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\DataMapperBuilder;
 use Kassko\DataMapper\Hydrator;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\Hydrator\SimpleHydratable;
 use Kassko\Sample\Hydrator\HydratableWithHooks;
 use PHPUnit\Framework\TestCase;
 
 final class HydratorTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     private DataMapper $dataMapper;
     private Hydrator $hydrator;
 

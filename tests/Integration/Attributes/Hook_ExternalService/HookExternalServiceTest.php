@@ -20,6 +20,7 @@ use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\HookExternalService\EmailDataSource;
 use Kassko\Sample\HookExternalService\NameDataSource;
 use Kassko\Sample\HookExternalService\StatusDataSource;
@@ -29,6 +30,8 @@ use PHPUnit\Framework\TestCase;
 
 class HookExternalServiceTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         LoaderRegistry::clear();

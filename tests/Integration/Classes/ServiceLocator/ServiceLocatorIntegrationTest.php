@@ -20,6 +20,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\ServiceLocator\PersonDataSource;
 use Kassko\Sample\ServiceLocator\CarRepository;
 use PHPUnit\Framework\TestCase;
@@ -27,6 +28,8 @@ use Psr\Container\ContainerInterface;
 
 final class ServiceLocatorIntegrationTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         LoaderRegistry::clear();

@@ -18,11 +18,14 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\DifferentSignatures\PersonDataSource;
 use PHPUnit\Framework\TestCase;
 
 class DifferentSignaturesTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     public function testPropertiesWithDifferentArgsAreLoadedSeparately(): void
     {
         // Create a data source that returns different data based on the type parameter

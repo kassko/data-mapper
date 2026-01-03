@@ -14,11 +14,14 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\Loader\Loader;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\Features\ParentClassHydration\ElectricCar;
 use PHPUnit\Framework\TestCase;
 
 class ParentClassHydrationTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     public function testParentClassPropertiesAreHydrated(): void
     {
         $lazyLoader = new Loader(new \Kassko\DataMapper\ServiceResolver());

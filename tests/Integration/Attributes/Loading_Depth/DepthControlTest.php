@@ -15,12 +15,15 @@ namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\Loader\Loader;
 use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\LoadingDepth\Company;
 use Kassko\Sample\LoadingDepth\Shop;
 use PHPUnit\Framework\TestCase;
 
 class DepthControlTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     public function testDepthLimitPreventsDeepNesting(): void
     {
         $lazyLoader = new Loader(new \Kassko\DataMapper\ServiceResolver());

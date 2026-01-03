@@ -16,12 +16,15 @@ namespace Kassko\DataMapper\Tests\Integration;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\DataMapperBuilder;
 use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\CustomHydrator\PersonCustomHydrator;
 use Kassko\Sample\CustomHydrator\Address;
 use PHPUnit\Framework\TestCase;
 
 class CustomHydratorTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         LoaderRegistry::clear();

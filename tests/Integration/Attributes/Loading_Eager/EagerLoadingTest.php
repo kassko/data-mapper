@@ -15,12 +15,15 @@ namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\LoadingEager\Information;
 use Kassko\Sample\LoadingEager\Shop;
 use PHPUnit\Framework\TestCase;
 
 class EagerLoadingTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         LoaderRegistry::clear();

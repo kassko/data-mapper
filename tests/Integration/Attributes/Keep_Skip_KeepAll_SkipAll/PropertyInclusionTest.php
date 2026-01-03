@@ -19,12 +19,15 @@ use Kassko\DataMapper\Attribute\SkipAllProperties;
 use Kassko\DataMapper\Attribute\SkipProperty;
 use Kassko\DataMapper\Loader\Loader;
 use Kassko\DataMapper\Registry\ContextRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\KeepSkip\ProductWithSkip;
 use Kassko\Sample\KeepSkip\ProductWithSkipAll;
 use PHPUnit\Framework\TestCase;
 
 class PropertyInclusionTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         ContextRegistry::clear();

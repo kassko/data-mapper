@@ -15,11 +15,14 @@ namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\DataMapperBuilder;
 use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\Registry\Person;
 use PHPUnit\Framework\TestCase;
 
 final class RegistryIntegrationTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         LoaderRegistry::clear();

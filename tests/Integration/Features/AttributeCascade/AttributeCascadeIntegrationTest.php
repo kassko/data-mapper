@@ -19,6 +19,7 @@ use Kassko\DataMapper\Loader\Loader;
 use Kassko\DataMapper\ServiceResolver;
 use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\Cascade\ChildEntity;
 use Kassko\Sample\Cascade\ChildDataSource;
 use Kassko\Sample\Cascade\ParentDataSource;
@@ -38,6 +39,8 @@ use PHPUnit\Framework\TestCase;
  */
 class AttributeCascadeIntegrationTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     private Loader $loader;
     private AttributeCascadeCollector $cascadeCollector;
 

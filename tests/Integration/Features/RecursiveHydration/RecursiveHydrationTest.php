@@ -15,12 +15,15 @@ namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\Features\RecursiveHydration\Information;
 use Kassko\Sample\Features\RecursiveHydration\Shop;
 use PHPUnit\Framework\TestCase;
 
 class RecursiveHydrationTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         LoaderRegistry::clear();

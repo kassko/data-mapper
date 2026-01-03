@@ -17,12 +17,15 @@ use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\LoaderValidation\PersonDataSource;
 use Kassko\Sample\LoaderValidation\EntityWithNonExistentMethod;
 use PHPUnit\Framework\TestCase;
 
 class LoaderValidationTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         LoaderRegistry::clear();

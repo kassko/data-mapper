@@ -14,12 +14,15 @@ declare(strict_types=1);
 namespace Kassko\DataMapper\Tests\Unit;
 
 use Kassko\DataMapper\Loader\Loader;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\Loader\Person;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
 class LoaderTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     public function testLoadPropertyHydratesProperty(): void
     {
         $loader = new Loader(new \Kassko\DataMapper\ServiceResolver());

@@ -20,6 +20,7 @@ use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\Exception\NoValidDataSourceException;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\DataSourceChain\ChainDataSource;
 use Kassko\Sample\DataSourceChain\UnsuitableSourceException;
 use PHPUnit\Framework\TestCase;
@@ -31,6 +32,8 @@ use PHPUnit\Framework\TestCase;
 ])]
 class DataSourceChainTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         LoaderRegistry::clear();

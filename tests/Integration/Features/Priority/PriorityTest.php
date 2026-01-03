@@ -17,6 +17,7 @@ use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\DataMapper\ServiceResolver;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\DataMapper\Tests\Fixtures\ApiService;
 use Kassko\DataMapper\Tests\Fixtures\CacheService;
 use Kassko\DataMapper\Tests\Fixtures\ConfigWithMultiSourcePriority;
@@ -31,6 +32,8 @@ use PHPUnit\Framework\TestCase;
  */
 class PriorityTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         LoaderRegistry::clear();

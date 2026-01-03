@@ -15,11 +15,14 @@ namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\Loader\Loader;
 use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\PropertyExpandNoExpand\Shop;
 use PHPUnit\Framework\TestCase;
 
 class ExpandNoExpandTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     public function testExpandOnlySpecifiedProperties(): void
     {
         $lazyLoader = new Loader(new \Kassko\DataMapper\ServiceResolver());

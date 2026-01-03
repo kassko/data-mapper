@@ -16,6 +16,7 @@ namespace Kassko\DataMapper\Tests\Unit;
 use Kassko\DataMapper\DataCollector\AttributeCascadeCollector;
 use Kassko\DataMapper\DataCollector\CascadeEvent;
 use Kassko\DataMapper\Metadata\AttributeReader;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\Cascade\BaseEntity;
 use Kassko\Sample\Cascade\ChildEntity;
 use Kassko\Sample\Cascade\BaseContainer;
@@ -30,6 +31,8 @@ use ReflectionClass;
  */
 class AttributeCascadeTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     private AttributeReader $reader;
     private AttributeCascadeCollector $collector;
 

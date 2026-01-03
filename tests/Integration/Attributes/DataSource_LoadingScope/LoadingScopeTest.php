@@ -20,11 +20,14 @@ use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\DataSourceLoadingScope\PersonFullDataSource;
 use PHPUnit\Framework\TestCase;
 
 class LoadingScopeTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         LoaderRegistry::clear();

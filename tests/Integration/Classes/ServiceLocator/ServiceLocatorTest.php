@@ -20,11 +20,14 @@ use Kassko\DataMapper\ArrayServiceLocator;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\ServiceResolver;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\ServiceLocator\PersonDataSource;
 use PHPUnit\Framework\TestCase;
 
 class ServiceLocatorTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     public function testServiceLocatorWithContainerPrefix(): void
     {
         // Create a service locator

@@ -17,12 +17,15 @@ use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Metadata\AttributeReader;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\AttributeReader\Person;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
 class AttributeReaderTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     private AttributeReader $reader;
 
     protected function setUp(): void

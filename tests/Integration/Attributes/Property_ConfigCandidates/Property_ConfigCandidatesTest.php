@@ -15,6 +15,7 @@ namespace Kassko\DataMapper\Tests\Integration;
 
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\Registry\LoaderRegistry;
+use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\Sample\PropertyConfigCandidates\Garage;
 use Kassko\Sample\PropertyConfigCandidates\GasolineCar;
 use Kassko\Sample\PropertyConfigCandidates\ElectricCar;
@@ -22,6 +23,8 @@ use PHPUnit\Framework\TestCase;
 
 class Property_ConfigCandidatesTest extends TestCase
 {
+    use LocalFixtureAutoloadTrait;
+
     protected function tearDown(): void
     {
         LoaderRegistry::clear();
