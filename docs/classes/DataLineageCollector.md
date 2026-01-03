@@ -13,7 +13,7 @@ The Data Lineage Collector is a debugging tool that records all data flow events
 - Custom hydrator invocations
 - Context changes
 
-This is an **alpha feature** intended for debugging and can be used by tools like Symfony Profiler.
+This is an **beta feature** intended for debugging and can be used by tools like Symfony Profiler.
 
 ## Usage
 

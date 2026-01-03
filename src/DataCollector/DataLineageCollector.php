@@ -29,7 +29,7 @@ use Kassko\DataMapper\Enum\SensitiveLevel;
  * The collected data can be used by debugging tools (like Symfony Profiler)
  * to visualize the data flow and help diagnose hydration issues.
  * 
- * @experimental This is an alpha feature
+ * @experimental This is a beta feature
  */
 final class DataLineageCollector
 {
