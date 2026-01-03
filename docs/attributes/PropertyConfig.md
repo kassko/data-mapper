@@ -41,7 +41,7 @@ class Garage
 |-----------|------|----------|-------------|
 | `id` | `string` | Yes | Unique identifier for this configuration |
 | `class` | `string` | No | Fully qualified class name for nested object hydration |
-| `name` | `string` | No | Key name in data array |
+| `key` | `string` | No | Key in raw data array |
 | `expand` | `string` | No | Comma-separated properties to expand |
 | `noExpand` | `string` | No | Comma-separated properties to NOT expand |
 | `mapping` | `array` | No | Instance-specific key mapping (requires `class`) |

@@ -609,7 +609,7 @@ And `Property.keepWhen` to conditionally enable the Property attribute:
 #[SkipAllProperties]
 class Entity
 {
-    #[Property(name: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
+    #[Property(key: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
     private ?string $name = null;  // Only hydrated if 'include_name' context key exists
 }
 ```

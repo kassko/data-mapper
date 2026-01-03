@@ -20,10 +20,10 @@ use Kassko\DataMapper\Attribute\Property;
  */
 class SimpleHydratable
 {
-    #[Property(name: 'first_name')]
+    #[Property(key: 'first_name')]
     private ?string $firstName = null;
 
-    #[Property(name: 'last_name')]
+    #[Property(key: 'last_name')]
     private ?string $lastName = null;
 
     private ?string $email = null;

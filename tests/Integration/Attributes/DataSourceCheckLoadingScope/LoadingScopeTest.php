@@ -50,11 +50,11 @@ class LoadingScopeTest extends TestCase
             use LoadableTrait;
             
             #[DataSourceRef(id: 'personData')]
-            #[Property(name: 'first_name')]
+            #[Property(key: 'first_name')]
             private ?string $firstName = null;
             
             #[DataSourceRef(id: 'personData')]
-            #[Property(name: 'last_name')]
+            #[Property(key: 'last_name')]
             private ?string $lastName = null;
             
             #[DataSourceRef(id: 'personData')]
@@ -104,11 +104,11 @@ class LoadingScopeTest extends TestCase
             use LoadableTrait;
             
             #[DataSourceRef(id: 'personData')]
-            #[Property(name: 'first_name')]
+            #[Property(key: 'first_name')]
             private ?string $firstName = null;
             
             #[DataSourceRef(id: 'personData')]
-            #[Property(name: 'last_name')]
+            #[Property(key: 'last_name')]
             private ?string $lastName = null;
             
             #[DataSourceRef(id: 'personData')]
@@ -168,11 +168,11 @@ class LoadingScopeTest extends TestCase
             use LoadableTrait;
             
             #[DataSourceRef(id: 'personData')]
-            #[Property(name: 'first_name')]
+            #[Property(key: 'first_name')]
             private ?string $firstName = null;
             
             #[DataSourceRef(id: 'personData')]
-            #[Property(name: 'last_name')]
+            #[Property(key: 'last_name')]
             private ?string $lastName = null;
             
             #[DataSourceRef(id: 'personData')]

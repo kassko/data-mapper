@@ -24,7 +24,7 @@ final class PropertyConfig
     public function __construct(
         public readonly string $id,
         public readonly ?string $class = null,
-        public readonly ?string $name = null,
+        public readonly ?string $key = null,
         public readonly ?string $expand = null,
         public readonly ?string $noExpand = null,
         public readonly ?array $mapping = null,
