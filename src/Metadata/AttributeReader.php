@@ -18,6 +18,8 @@ use Kassko\DataMapper\Attribute\DataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\Getter;
+use Kassko\DataMapper\Attribute\HandleAllProperties;
+use Kassko\DataMapper\Attribute\HandleProperty;
 use Kassko\DataMapper\Attribute\MethodAlias;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
@@ -26,13 +28,10 @@ use Kassko\DataMapper\Attribute\CustomHydrator;
 use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\PropertyConfig;
 use Kassko\DataMapper\Attribute\PropertyConfigStore;
-use Kassko\DataMapper\Attribute\KeepProperty;
 use Kassko\DataMapper\Attribute\Loading;
 use Kassko\DataMapper\Attribute\Needs;
+use Kassko\DataMapper\Attribute\RejectAttributeCascading;
 use Kassko\DataMapper\Attribute\Setter;
-use Kassko\DataMapper\Attribute\SkipProperty;
-use Kassko\DataMapper\Attribute\SkipAllProperties;
-use Kassko\DataMapper\Attribute\KeepAllProperties;
 use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\DataCollector\AttributeCascadeCollector;
@@ -150,7 +149,8 @@ class AttributeReader
             return null;
         }
         
-        return $attributes[0]->newInstance();
+        $instance = $attributes[0]->newInstance();
+        return $instance->enabled ? $instance : null;
     }
 
     /**
@@ -287,20 +287,21 @@ class AttributeReader
     }
 
     /**
-     * Read KeepProperty attribute from a property
+     * Read HandleProperty attribute from a property (skips disabled attributes)
      *
      * @param ReflectionProperty $property
-     * @return KeepProperty|null
+     * @return HandleProperty|null
      */
-    public function readKeepProperty(ReflectionProperty $property): ?KeepProperty
+    public function readHandleProperty(ReflectionProperty $property): ?HandleProperty
     {
-        $attributes = $property->getAttributes(KeepProperty::class);
+        $attributes = $property->getAttributes(HandleProperty::class);
         
         if (empty($attributes)) {
             return null;
         }
         
-        return $attributes[0]->newInstance();
+        $instance = $attributes[0]->newInstance();
+        return $instance->enabled ? $instance : null;
     }
 
     /**
@@ -321,46 +322,66 @@ class AttributeReader
     }
 
     /**
-     * Read SkipProperty attribute from a property
+     * Read HandleAllProperties attribute from a class (skips disabled attributes)
      *
-     * @param ReflectionProperty $property
-     * @return SkipProperty|null
+     * @param ReflectionClass $reflectionClass
+     * @return HandleAllProperties|null
      */
-    public function readSkipProperty(ReflectionProperty $property): ?SkipProperty
+    public function readHandleAllProperties(ReflectionClass $reflectionClass): ?HandleAllProperties
     {
-        $attributes = $property->getAttributes(SkipProperty::class);
+        $attributes = $reflectionClass->getAttributes(HandleAllProperties::class);
         
         if (empty($attributes)) {
             return null;
         }
         
-        return $attributes[0]->newInstance();
+        $instance = $attributes[0]->newInstance();
+        return $instance->enabled ? $instance : null;
     }
 
     /**
-     * Check if class has SkipAllProperties attribute
+     * Check if class has HandleAllProperties(value: false) attribute
      *
      * @param ReflectionClass $reflectionClass
      * @return bool
      */
-    public function hasSkipAllProperties(ReflectionClass $reflectionClass): bool
+    public function hasHandleAllPropertiesFalse(ReflectionClass $reflectionClass): bool
     {
-        return !empty($reflectionClass->getAttributes(SkipAllProperties::class));
+        $attr = $this->readHandleAllProperties($reflectionClass);
+        return $attr !== null && $attr->value === false;
     }
 
     /**
-     * Check if class has KeepAllProperties attribute
+     * Read RejectAttributeCascading attribute from a class
+     *
+     * @param ReflectionClass $reflectionClass
+     * @return RejectAttributeCascading|null
+     */
+    public function readRejectAttributeCascading(ReflectionClass $reflectionClass): ?RejectAttributeCascading
+    {
+        $attributes = $reflectionClass->getAttributes(RejectAttributeCascading::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        $instance = $attributes[0]->newInstance();
+        return $instance->enabled ? $instance : null;
+    }
+
+    /**
+     * Check if class has RejectAttributeCascading attribute
      *
      * @param ReflectionClass $reflectionClass
      * @return bool
      */
-    public function hasKeepAllProperties(ReflectionClass $reflectionClass): bool
+    public function hasRejectAttributeCascading(ReflectionClass $reflectionClass): bool
     {
-        return !empty($reflectionClass->getAttributes(KeepAllProperties::class));
+        return $this->readRejectAttributeCascading($reflectionClass) !== null;
     }
 
     /**
-     * Read DataSourcesStore attribute from a class (without cascading)
+     * Read DataSourcesStore attribute from a class (without cascading, skips disabled)
      *
      * @param ReflectionClass $reflectionClass
      * @return DataSourcesStore|null
@@ -373,7 +394,24 @@ class AttributeReader
             return null;
         }
         
-        return $attributes[0]->newInstance();
+        $instance = $attributes[0]->newInstance();
+        if (!$instance->enabled) {
+            return null;
+        }
+        
+        // Filter out disabled items
+        $enabledItems = array_filter($instance->items, fn($item) => $item->enabled);
+        
+        // If all items were filtered out, return a store with empty items
+        if (count($enabledItems) !== count($instance->items)) {
+            return new DataSourcesStore(
+                items: array_values($enabledItems),
+                cascade: $instance->cascade,
+                enabled: $instance->enabled
+            );
+        }
+        
+        return $instance;
     }
 
     /**
@@ -383,6 +421,7 @@ class AttributeReader
      * - Merges DataSources from parent classes and traits
      * - Child class DataSources override parent/trait DataSources with same ID
      * - Logs info for merges, warning for ID conflicts
+     * - RejectAttributeCascading stops cascading from ancestors
      *
      * @param ReflectionClass $reflectionClass
      * @return DataSourcesStore|null
@@ -399,17 +438,34 @@ class AttributeReader
         // so that child classes override parent sources with same ID
         $classHierarchy = array_reverse($classHierarchy);
         
-        foreach ($classHierarchy as $classInfo) {
+        // Find if any class in hierarchy has RejectAttributeCascading
+        $rejectCascadingAt = null;
+        foreach ($classHierarchy as $index => $classInfo) {
+            if ($this->hasRejectAttributeCascading($classInfo['class'])) {
+                $rejectCascadingAt = $index;
+            }
+        }
+        
+        foreach ($classHierarchy as $index => $classInfo) {
             $class = $classInfo['class'];
             $isCurrentClass = $classInfo['isCurrent'];
+            
+            // Skip ancestors if RejectAttributeCascading is set on a descendant
+            if ($rejectCascadingAt !== null && $index < $rejectCascadingAt) {
+                continue;
+            }
             
             // Read traits for this class
             $this->collectDataSourcesFromTraits($class, $targetClassName, $allSources);
             
             // Read direct class attribute
             $store = $this->readDataSourcesStore($class);
-            if ($store !== null) {
-                foreach ($store->sources as $source) {
+            if ($store !== null && $store->enabled) {
+                foreach ($store->items as $source) {
+                    // Skip disabled sources
+                    if (!$source->enabled) {
+                        continue;
+                    }
                     if ($source->id !== null) {
                         // Check for ID conflict
                         if (isset($allSources[$source->id]) && !$isCurrentClass) {
@@ -424,12 +480,12 @@ class AttributeReader
                     }
                 }
                 
-                if (!$isCurrentClass && !empty($store->sources)) {
+                if (!$isCurrentClass && !empty($store->items)) {
                     $this->cascadeCollector?->recordDataSourcesStoreMerge(
                         $targetClassName,
                         $class->getName(),
                         'parent',
-                        count($store->sources)
+                        count($store->items)
                     );
                 }
             }
@@ -439,7 +495,7 @@ class AttributeReader
             return null;
         }
         
-        return new DataSourcesStore(array_values($allSources));
+        return new DataSourcesStore(items: array_values($allSources));
     }
 
     /**
@@ -456,8 +512,12 @@ class AttributeReader
             
             // Read DataSourcesStore from trait
             $traitStore = $this->readDataSourcesStore($trait);
-            if ($traitStore !== null) {
-                foreach ($traitStore->sources as $source) {
+            if ($traitStore !== null && $traitStore->enabled) {
+                foreach ($traitStore->items as $source) {
+                    // Skip disabled sources
+                    if (!$source->enabled) {
+                        continue;
+                    }
                     if ($source->id !== null) {
                         // Check for ID conflict
                         if (isset($allSources[$source->id])) {
@@ -476,7 +536,7 @@ class AttributeReader
                     $targetClassName,
                     $trait->getName(),
                     'trait',
-                    count($traitStore->sources)
+                    count($traitStore->items)
                 );
             }
         }
@@ -496,8 +556,8 @@ class AttributeReader
         // Read from cascaded DataSourcesStore - includes parent classes and traits
         $store = $this->readCascadedDataSourcesStore($reflectionClass);
         if ($store !== null) {
-            foreach ($store->sources as $source) {
-                if ($source->id !== null) {
+            foreach ($store->items as $source) {
+                if ($source->id !== null && $source->enabled) {
                     $map[$source->id] = $source;
                 }
             }
@@ -585,8 +645,7 @@ class AttributeReader
             Setter::class,
             Loading::class,
             Needs::class,
-            KeepProperty::class,
-            SkipProperty::class,
+            HandleProperty::class,
             CustomHydrator::class,
             PropertySettingHook::class,
         ];
@@ -632,31 +691,29 @@ class AttributeReader
      */
     public function shouldHydrateProperty(ReflectionClass $reflectionClass, ReflectionProperty $property): bool
     {
-        $skipProperty = $this->readSkipProperty($property);
+        $handleProperty = $this->readHandleProperty($property);
         $propertyAttr = $this->readProperty($property);
-        $keepProperty = $this->readKeepProperty($property);
-        $hasSkipAllProperties = $this->hasSkipAllProperties($reflectionClass);
+        $handleAllPropertiesFalse = $this->hasHandleAllPropertiesFalse($reflectionClass);
         
-        // If property has SkipProperty without 'when' expression, never hydrate
-        if ($skipProperty !== null && $skipProperty->when === null) {
+        // If property has HandleProperty(value: false) without 'when' expression, never hydrate
+        if ($handleProperty !== null && $handleProperty->value === false && $handleProperty->when === null) {
             return false;
         }
         
-        // If property has SkipProperty with 'when' expression, defer to Loader
-        // For backward compatibility, we default to "not skipped" when expression needs evaluation
+        // If property has HandleProperty with 'when' expression, defer to Loader
         // The Loader will properly evaluate and decide
         
-        // If class has SkipAllProperties, only hydrate if property has Property or KeepProperty attribute
-        if ($hasSkipAllProperties) {
-            // If Property has keepWhen, defer to Loader for evaluation
-            // If KeepProperty has when, defer to Loader for evaluation
-            $hasPropertyWithoutKeepWhen = $propertyAttr !== null && $propertyAttr->keepWhen === null;
-            $hasKeepPropertyWithoutWhen = $keepProperty !== null && $keepProperty->when === null;
+        // If class has HandleAllProperties(value: false), only hydrate if property has Property or HandleProperty(value: true)
+        if ($handleAllPropertiesFalse) {
+            // If Property has handleWhen, defer to Loader for evaluation
+            // If HandleProperty has when, defer to Loader for evaluation
+            $hasPropertyWithoutHandleWhen = $propertyAttr !== null && $propertyAttr->handleWhen === null && $propertyAttr->enabled;
+            $hasHandlePropertyTrueWithoutWhen = $handleProperty !== null && $handleProperty->value === true && $handleProperty->when === null;
             
-            return $hasPropertyWithoutKeepWhen || $hasKeepPropertyWithoutWhen;
+            return $hasPropertyWithoutHandleWhen || $hasHandlePropertyTrueWithoutWhen;
         }
         
-        // Default behavior (KeepAllProperties): hydrate unless SkipProperty
+        // Default behavior (HandleAllProperties(value: true)): hydrate unless HandleProperty(value: false)
         return true;
     }
 
@@ -665,24 +722,22 @@ class AttributeReader
      *
      * @param ReflectionClass $reflectionClass
      * @param ReflectionProperty $property
-     * @return array{shouldHydrate: bool|null, skipWhen: ?string, keepWhen: ?string, propertyKeepWhen: ?string}
+     * @return array{shouldHydrate: bool|null, handlePropertyWhen: ?string, handlePropertyValue: ?bool, propertyHandleWhen: ?string, hasHandleProperty: bool, hasProperty: bool, hasHandleAllPropertiesFalse: bool}
      */
     public function getHydrationDecisionInfo(ReflectionClass $reflectionClass, ReflectionProperty $property): array
     {
-        $skipProperty = $this->readSkipProperty($property);
+        $handleProperty = $this->readHandleProperty($property);
         $propertyAttr = $this->readProperty($property);
-        $keepProperty = $this->readKeepProperty($property);
-        $hasSkipAllProperties = $this->hasSkipAllProperties($reflectionClass);
+        $handleAllPropertiesFalse = $this->hasHandleAllPropertiesFalse($reflectionClass);
         
         return [
             'shouldHydrate' => null,  // Requires expression evaluation
-            'skipWhen' => $skipProperty?->when,
-            'keepWhen' => $keepProperty?->when,
-            'propertyKeepWhen' => $propertyAttr?->keepWhen,
-            'hasSkipProperty' => $skipProperty !== null,
-            'hasProperty' => $propertyAttr !== null,
-            'hasKeepProperty' => $keepProperty !== null,
-            'hasSkipAllProperties' => $hasSkipAllProperties,
+            'handlePropertyWhen' => $handleProperty?->when,
+            'handlePropertyValue' => $handleProperty?->value,
+            'propertyHandleWhen' => $propertyAttr?->handleWhen,
+            'hasHandleProperty' => $handleProperty !== null,
+            'hasProperty' => $propertyAttr !== null && $propertyAttr->enabled,
+            'hasHandleAllPropertiesFalse' => $handleAllPropertiesFalse,
         ];
     }
 
@@ -758,7 +813,7 @@ class AttributeReader
     }
 
     /**
-     * Read PropertyConfigStore attribute from a class (without cascading)
+     * Read PropertyConfigStore attribute from a class (without cascading, skips disabled)
      *
      * @param ReflectionClass $reflectionClass
      * @return PropertyConfigStore|null
@@ -771,7 +826,24 @@ class AttributeReader
             return null;
         }
         
-        return $attributes[0]->newInstance();
+        $instance = $attributes[0]->newInstance();
+        if (!$instance->enabled) {
+            return null;
+        }
+        
+        // Filter out disabled items
+        $enabledItems = array_filter($instance->items, fn($item) => $item->enabled);
+        
+        // If all items were filtered out, return a store with empty items
+        if (count($enabledItems) !== count($instance->items)) {
+            return new PropertyConfigStore(
+                items: array_values($enabledItems),
+                cascade: $instance->cascade,
+                enabled: $instance->enabled
+            );
+        }
+        
+        return $instance;
     }
 
     /**
@@ -781,6 +853,7 @@ class AttributeReader
      * - Merges PropertyConfigs from parent classes and traits
      * - Child class configs override parent/trait configs with same ID
      * - Logs info for merges, warning for ID conflicts
+     * - RejectAttributeCascading stops cascading from ancestors
      *
      * @param ReflectionClass $reflectionClass
      * @return PropertyConfigStore|null
@@ -797,17 +870,34 @@ class AttributeReader
         // so that child classes override parent configs with same ID
         $classHierarchy = array_reverse($classHierarchy);
         
-        foreach ($classHierarchy as $classInfo) {
+        // Find if any class in hierarchy has RejectAttributeCascading
+        $rejectCascadingAt = null;
+        foreach ($classHierarchy as $index => $classInfo) {
+            if ($this->hasRejectAttributeCascading($classInfo['class'])) {
+                $rejectCascadingAt = $index;
+            }
+        }
+        
+        foreach ($classHierarchy as $index => $classInfo) {
             $class = $classInfo['class'];
             $isCurrentClass = $classInfo['isCurrent'];
+            
+            // Skip ancestors if RejectAttributeCascading is set on a descendant
+            if ($rejectCascadingAt !== null && $index < $rejectCascadingAt) {
+                continue;
+            }
             
             // Read traits for this class
             $this->collectPropertyConfigsFromTraits($class, $targetClassName, $allConfigs);
             
             // Read direct class attribute
             $store = $this->readPropertyConfigStore($class);
-            if ($store !== null) {
-                foreach ($store->configs as $id => $config) {
+            if ($store !== null && $store->enabled) {
+                foreach ($store->items as $id => $config) {
+                    // Skip disabled configs
+                    if (!$config->enabled) {
+                        continue;
+                    }
                     // Check for ID conflict
                     if (isset($allConfigs[$id]) && !$isCurrentClass) {
                         $this->cascadeCollector?->recordPropertyConfigIdConflict(
@@ -820,12 +910,12 @@ class AttributeReader
                     $allConfigs[$id] = $config;
                 }
                 
-                if (!$isCurrentClass && !empty($store->configs)) {
+                if (!$isCurrentClass && !empty($store->items)) {
                     $this->cascadeCollector?->recordPropertyConfigStoreMerge(
                         $targetClassName,
                         $class->getName(),
                         'parent',
-                        count($store->configs)
+                        count($store->items)
                     );
                 }
             }
@@ -836,7 +926,7 @@ class AttributeReader
         }
         
         // Convert back to PropertyConfig array format for constructor
-        return new PropertyConfigStore(array_values($allConfigs));
+        return new PropertyConfigStore(items: array_values($allConfigs));
     }
 
     /**
@@ -853,8 +943,12 @@ class AttributeReader
             
             // Read PropertyConfigStore from trait
             $traitStore = $this->readPropertyConfigStore($trait);
-            if ($traitStore !== null) {
-                foreach ($traitStore->configs as $id => $config) {
+            if ($traitStore !== null && $traitStore->enabled) {
+                foreach ($traitStore->items as $id => $config) {
+                    // Skip disabled configs
+                    if (!$config->enabled) {
+                        continue;
+                    }
                     // Check for ID conflict
                     if (isset($allConfigs[$id])) {
                         $this->cascadeCollector?->recordPropertyConfigIdConflict(
@@ -871,7 +965,7 @@ class AttributeReader
                     $targetClassName,
                     $trait->getName(),
                     'trait',
-                    count($traitStore->configs)
+                    count($traitStore->items)
                 );
             }
         }

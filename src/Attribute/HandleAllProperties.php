@@ -16,19 +16,21 @@ namespace Kassko\DataMapper\Attribute;
 use Attribute;
 
 /**
- * Specifies properties that must be loaded before the current property.
- * Properties are loaded in the order they appear in the list.
+ * Controls default handling behavior for all properties in a class.
+ * 
+ * When value is true (default): All properties are handled/hydrated by default.
+ * When value is false: Only properties marked with HandleProperty(value: true) or Property are handled.
  */
-#[Attribute(Attribute::TARGET_PROPERTY)]
-final class Needs
+#[Attribute(Attribute::TARGET_CLASS)]
+final class HandleAllProperties
 {
     /**
-     * @param string[] $properties List of property names to load first
+     * @param bool $value Whether to handle all properties by default (true) or skip all by default (false)
      * @param bool $cascade Whether this attribute cascades to child classes
      * @param bool $enabled Whether this attribute is active (disabled attributes are ignored)
      */
     public function __construct(
-        public readonly array $properties = [],
+        public readonly bool $value = true,
         public readonly bool $cascade = true,
         public readonly bool $enabled = true,
     ) {}

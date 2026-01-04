@@ -15,17 +15,24 @@ namespace Kassko\DataMapper\Attribute;
 
 use Attribute;
 
+/**
+ * Rejects attribute cascading from parent classes and traits.
+ * 
+ * When a class declares this attribute:
+ * - It does NOT inherit attributes from parent classes and included traits
+ * - It still cascades its own attributes to child classes by default
+ * - It acts as a "reset" point in the inheritance chain
+ * 
+ * This allows a class to start fresh without inheriting DataSourcesStore,
+ * PropertyConfigStore, and other cascaded attributes from ancestors.
+ */
 #[Attribute(Attribute::TARGET_CLASS)]
-final class DataSourcesStore
+final class RejectAttributeCascading
 {
     /**
-     * @param array<SinglePropDataSource|DataSource|MultiPropDataSource> $items Data source instances
-     * @param bool $cascade Whether this attribute cascades to child classes
      * @param bool $enabled Whether this attribute is active (disabled attributes are ignored)
      */
     public function __construct(
-        public readonly array $items = [],
-        public readonly bool $cascade = true,
         public readonly bool $enabled = true,
     ) {}
 }

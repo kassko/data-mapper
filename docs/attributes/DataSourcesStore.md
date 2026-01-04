@@ -10,7 +10,7 @@ use Kassko\DataMapper\Attribute\SinglePropDataSource;
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 
-#[DataSourcesStore([
+#[DataSourcesStore(items: [
     new SinglePropDataSource(
         id: 'nameSource',
         class: NameRepository::class,
@@ -40,15 +40,17 @@ class User
 
 ## Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `sources` | `array` | Yes | Array of SinglePropDataSource, DataSource, or MultiPropDataSource instances |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `items` | `array` | No | `[]` | Array of SinglePropDataSource, DataSource, or MultiPropDataSource instances |
+| `cascade` | `bool` | No | `true` | Whether this store cascades to child classes |
+| `enabled` | `bool` | No | `true` | Whether this attribute is active (disabled attributes are ignored) |
 
 ## Accepted Data Source Types
 
 - `SinglePropDataSource` - For single-property data sources
 - `DataSource` - Legacy single-property data sources
-- `MultiPropDataSource` - For multi-property data sources (**NEW**)
+- `MultiPropDataSource` - For multi-property data sources
 
 **Important**: `MultiPropDataSource` can ONLY be used inside `DataSourcesStore`. It cannot be used as a standalone attribute.
 
@@ -57,6 +59,7 @@ class User
 - All sources must have unique `id` values for referencing
 - `MultiPropDataSource` is **not** repeatable and must be inside `DataSourcesStore`
 - `SinglePropDataSource` is **not** repeatable
+- Individual data sources can have their own `enabled` parameter
 
 ## When to Use
 
@@ -69,7 +72,7 @@ Use `DataSourcesStore` when:
 ## Example with Multiple Types
 
 ```php
-#[DataSourcesStore([
+#[DataSourcesStore(items: [
     new SinglePropDataSource(id: 'avatar', class: AvatarService::class, method: 'get'),
     new MultiPropDataSource(id: 'personData', class: PersonSource::class, method: 'getAll', args: ['#id']),
 ])]
@@ -81,6 +84,21 @@ class Person
     #[DataSourceRef(id: 'avatar')]
     private ?string $avatar = null;
 }
+```
+
+## Disabling Data Sources
+
+You can disable individual data sources or the entire store:
+
+```php
+// Disable entire store
+#[DataSourcesStore(items: [...], enabled: false)]
+
+// Disable individual data source
+#[DataSourcesStore(items: [
+    new DataSource(id: 'active', class: ActiveService::class),
+    new DataSource(id: 'disabled', class: DisabledService::class, enabled: false),
+])]
 ```
 
 ## Attribute Cascading
@@ -95,7 +113,7 @@ When the same ID is defined in multiple places, the child's definition wins.
 
 ```php
 // Parent defines sources
-#[DataSourcesStore([
+#[DataSourcesStore(items: [
     new SinglePropDataSource(id: 'parentSource', class: ParentService::class, method: 'get'),
 ])]
 abstract class BaseEntity {}
@@ -108,6 +126,8 @@ class ChildEntity extends BaseEntity
 }
 ```
 
+Use `#[RejectAttributeCascading]` to prevent inheriting from parents.
+
 See [Attribute Cascading](AttributeCascading.md) for full details.
 
 ## See Also
@@ -116,4 +136,5 @@ See [Attribute Cascading](AttributeCascading.md) for full details.
 - [SinglePropDataSource](SinglePropDataSource.md)
 - [MultiPropDataSource](MultiPropDataSource.md)
 - [DataSourceRef](DataSourceRef.md)
+- [RejectAttributeCascading](RejectAttributeCascading.md)
 - [Attribute Cascading](AttributeCascading.md)

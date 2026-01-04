@@ -713,38 +713,6 @@ Summary
 [ERROR] Validation failed!
 ```
 
-## Migration from v1.x to v2.0
-
-### Chain → Fallbacks
-
-```php
-// v1.x (DEPRECATED)
-#[DataSourceRef(
-    chain: ['primary', 'backup'],
-    exceptionOnNoValidFallback: MyException::class
-)]
-
-// v2.0
-#[DataSourceRef(
-    id: 'primary',
-    fallbacks: ['backup'],
-    exceptionOnNoValidFallback: MyException::class
-)]
-```
-
-### Priority Addition
-
-All DataSource attributes now support priority (default: 0):
-
-```php
-// Add priority to control hydration precedence
-#[DataSource(
-    class: MyService::class,
-    method: 'getData',
-    priority: 10  // Higher priority overrides lower priority
-)]
-```
-
 ## Context
 
 ### Hydration Context with Named Arguments

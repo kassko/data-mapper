@@ -37,7 +37,8 @@ final class Property
          *                  If expression evaluates to true, property is included in hydration.
          *                  If expression evaluates to false, property attribute is ignored (treated as absent).
          */
-        public readonly ?string $keepWhen = null,
+        public readonly ?string $handleWhen = null,
+        public readonly bool $enabled = true,      // Whether this attribute is active (disabled attributes are ignored)
     ) {
         // Validation: mapping requires class to be set
         if ($mapping !== null && $class === null) {

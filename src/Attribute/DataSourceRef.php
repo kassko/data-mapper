@@ -27,6 +27,8 @@ final class DataSourceRef
     public readonly bool $ignoreProviderOnNotFound;
     public readonly int $priority;
     public readonly bool $cascade;  // Whether this attribute cascades to child classes
+    public readonly ?string $handleWhen;  // Optional expression to conditionally apply this data source ref
+    public readonly bool $enabled;  // Whether this attribute is active
 
     /**
      * @param string|null $id Single source ID (with optional fallbacks)
@@ -40,6 +42,11 @@ final class DataSourceRef
      * @param bool $ignoreProviderOnNotFound If true, missing providers are silently skipped (requires providers)
      * @param int $priority Base priority for hydration
      * @param bool $cascade Whether this attribute cascades to child classes
+     * @param string|null $handleWhen Optional expression to conditionally apply this data source ref.
+     *                                If null (default), ref is always applied.
+     *                                If expression evaluates to true, ref is applied.
+     *                                If expression evaluates to false, ref is ignored.
+     * @param bool $enabled Whether this attribute is active (disabled attributes are ignored)
      */
     public function __construct(
         ?string $id = null,
@@ -50,7 +57,9 @@ final class DataSourceRef
         ?string $exceptionOnNoValidFallback = null,
         bool $ignoreProviderOnNotFound = false,
         int $priority = 0,
-        bool $cascade = true
+        bool $cascade = true,
+        ?string $handleWhen = null,
+        bool $enabled = true
     ) {
         // Count how many "modes" are set
         $modesSet = 0;
@@ -130,5 +139,7 @@ final class DataSourceRef
         $this->ignoreProviderOnNotFound = $ignoreProviderOnNotFound;
         $this->priority = $priority;
         $this->cascade = $cascade;
+        $this->handleWhen = $handleWhen;
+        $this->enabled = $enabled;
     }
 }

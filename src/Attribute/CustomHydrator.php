@@ -22,5 +22,6 @@ final class CustomHydrator
         public readonly string $key,             // Key to identify the custom hydrator
         public readonly ?string $objectClass = null,  // Optional: expected class for type checking
         public readonly bool $cascade = true,    // Whether this attribute cascades to child classes
+        public readonly bool $enabled = true,    // Whether this attribute is active (disabled attributes are ignored)
     ) {}
 }

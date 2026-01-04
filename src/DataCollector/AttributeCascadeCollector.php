@@ -238,7 +238,7 @@ final class AttributeCascadeCollector
      * 
      * @param string $className The class containing the property
      * @param string $propertyName The property name
-     * @param string $attributeName The attribute name (SkipProperty, KeepProperty, Property.keepWhen)
+     * @param string $attributeName The attribute name (HandleProperty, Property.handleWhen)
      * @param string $expression The expression that was evaluated
      * @param string $originalType The original type of the result
      * @param bool $coercedValue The boolean value after coercion

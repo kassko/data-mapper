@@ -25,5 +25,6 @@ final class Loading
         public readonly string $type = self::TYPE_LAZY,  // 'lazy' or 'eager'
         public readonly ?int $depth = null,              // Max recursion depth
         public readonly bool $cascade = true,            // Whether this attribute cascades to child classes
+        public readonly bool $enabled = true,            // Whether this attribute is active (disabled attributes are ignored)
     ) {}
 }

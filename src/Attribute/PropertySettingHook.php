@@ -24,5 +24,6 @@ final class PropertySettingHook
         public readonly ?string $class = null,             // Optional: external class/service to call
         public readonly array $args = [],                  // Arguments to pass (supports ##object, #property, expr())
         public readonly bool $cascade = true,              // Whether this attribute cascades to child classes
+        public readonly bool $enabled = true,              // Whether this attribute is active (disabled attributes are ignored)
     ) {}
 }

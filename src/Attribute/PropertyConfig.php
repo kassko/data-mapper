@@ -30,6 +30,7 @@ final class PropertyConfig
         public readonly ?array $mapping = null,
         public readonly ?SensitiveLevel $sensitiveLevel = null,  // Sensitivity level for lineage collection
         public readonly bool $cascade = true,                    // Whether this config cascades to child classes
+        public readonly bool $enabled = true,                    // Whether this config is active (disabled configs are ignored)
     ) {
         // Validation: mapping requires class to be set
         if ($mapping !== null && $class === null) {

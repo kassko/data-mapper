@@ -485,7 +485,7 @@ class Loader implements LoaderInterface
 
     /**
      * Check if a property should be hydrated based on attributes and expressions.
-     * This method evaluates 'when' expressions in SkipProperty, KeepProperty, and Property.keepWhen.
+     * This method evaluates 'when' expressions in HandleProperty and Property.handleWhen.
      *
      * @param ReflectionClass $reflectionClass
      * @param ReflectionProperty $property
@@ -511,77 +511,47 @@ class Loader implements LoaderInterface
         
         $propertyLoader = fn(string $propName) => $this->loadProperty($object, $propName);
         
-        // 1. Check SkipProperty with optional 'when' expression
-        if ($decisionInfo['hasSkipProperty']) {
-            if ($decisionInfo['skipWhen'] !== null) {
+        // 1. Check HandleProperty with optional 'when' expression
+        if ($decisionInfo['hasHandleProperty']) {
+            $handleValue = $decisionInfo['handlePropertyValue'] ?? true;
+            
+            if ($decisionInfo['handlePropertyWhen'] !== null) {
                 // Evaluate the 'when' expression
-                $skipResult = $this->evaluateWhenExpression(
-                    $decisionInfo['skipWhen'],
+                $whenResult = $this->evaluateWhenExpression(
+                    $decisionInfo['handlePropertyWhen'],
                     $expressionParser,
                     $object,
                     $propertyLoader,
-                    'SkipProperty',
+                    'HandleProperty',
                     $property->getName()
                 );
-                if ($skipResult) {
-                    return false; // Skip this property
+                if ($whenResult) {
+                    return $handleValue; // Apply the HandleProperty value
                 }
-                // If expression is false, don't skip - continue to other checks
+                // If expression is false, apply the opposite of handleValue
+                // HandleProperty(value: true, when: false) -> skip
+                // HandleProperty(value: false, when: false) -> hydrate
+                return !$handleValue;
             } else {
-                // No 'when' expression means always skip
-                return false;
+                // No 'when' expression means always apply HandleProperty value
+                return $handleValue;
             }
         }
         
-        // 2. If class has SkipAllProperties, check Property.keepWhen and KeepProperty.when
-        if ($decisionInfo['hasSkipAllProperties']) {
-            // Check Property with keepWhen
-            if ($decisionInfo['hasProperty']) {
-                if ($decisionInfo['propertyKeepWhen'] !== null) {
-                    $keepResult = $this->evaluateWhenExpression(
-                        $decisionInfo['propertyKeepWhen'],
-                        $expressionParser,
-                        $object,
-                        $propertyLoader,
-                        'Property.keepWhen',
-                        $property->getName()
-                    );
-                    if ($keepResult) {
-                        return true; // Keep this property
-                    }
-                    // If expression is false, Property is treated as absent
-                } else {
-                    // Property without keepWhen is always considered present
-                    return true;
-                }
-            }
+        // 2. If class has HandleAllProperties(value: false), only hydrate if explicitly marked
+        if ($decisionInfo['hasHandleAllPropertiesFalse']) {
+            // Without HandleProperty(value: true), the property should not be hydrated
+            // Property.handleWhen is for conditional inclusion of the Property attribute itself,
+            // not for overriding HandleAllProperties(value: false)
             
-            // Check KeepProperty with when
-            if ($decisionInfo['hasKeepProperty']) {
-                if ($decisionInfo['keepWhen'] !== null) {
-                    $keepResult = $this->evaluateWhenExpression(
-                        $decisionInfo['keepWhen'],
-                        $expressionParser,
-                        $object,
-                        $propertyLoader,
-                        'KeepProperty',
-                        $property->getName()
-                    );
-                    if ($keepResult) {
-                        return true; // Keep this property
-                    }
-                    // If expression is false, KeepProperty is treated as absent
-                } else {
-                    // KeepProperty without 'when' is always considered present
-                    return true;
-                }
-            }
-            
-            // Neither Property nor KeepProperty effectively present
+            // If we reach here, it means:
+            // - No HandleProperty attribute was found, OR
+            // - HandleProperty had a 'when' expression that evaluated to false
+            // In either case, with HandleAllProperties(value: false), we skip this property
             return false;
         }
         
-        // Default behavior (KeepAllProperties or no class-level attribute): hydrate
+        // Default behavior (HandleAllProperties(value: true) or no class-level attribute): hydrate
         return true;
     }
 
@@ -1660,7 +1630,7 @@ class Loader implements LoaderInterface
                     }
                 } elseif ($propertyAttr->config !== null && $configStore !== null) {
                     // Single config reference
-                    $config = $configStore->configs[$propertyAttr->config] ?? null;
+                    $config = $configStore->items[$propertyAttr->config] ?? null;
                     if ($config !== null) {
                         $itemPropertyAttr = $this->mergePropertyConfig($propertyAttr, $config);
                     }
@@ -1702,7 +1672,7 @@ class Loader implements LoaderInterface
             }
         } elseif ($propertyAttr->config !== null && $configStore !== null) {
             // Single config reference
-            $config = $configStore->configs[$propertyAttr->config] ?? null;
+            $config = $configStore->items[$propertyAttr->config] ?? null;
             if ($config !== null) {
                 $effectivePropertyAttr = $this->mergePropertyConfig($propertyAttr, $config);
             }
@@ -1793,7 +1763,7 @@ class Loader implements LoaderInterface
                 }
                 
                 if ($result === true) {
-                    return $configStore->configs[$configId] ?? null;
+                    return $configStore->items[$configId] ?? null;
                 }
             }
         }
@@ -1806,7 +1776,7 @@ class Loader implements LoaderInterface
             }
             // String config ID
             if (is_string($propertyAttr->defaultConfigCandidate)) {
-                return $configStore->configs[$propertyAttr->defaultConfigCandidate] ?? null;
+                return $configStore->items[$propertyAttr->defaultConfigCandidate] ?? null;
             }
         }
         
