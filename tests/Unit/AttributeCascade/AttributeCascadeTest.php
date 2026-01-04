@@ -53,7 +53,7 @@ class AttributeCascadeTest extends TestCase
         $this->assertNotNull($store);
         
         // Should have sources from child, parent, and trait
-        $sourceIds = array_map(fn($s) => $s->id, $store->sources);
+        $sourceIds = array_map(fn($s) => $s->id, $store->items);
         
         $this->assertContains('childSource', $sourceIds, 'Should include child source');
         $this->assertContains('parentSource', $sourceIds, 'Should include parent source');
@@ -70,7 +70,7 @@ class AttributeCascadeTest extends TestCase
         
         // Find the sharedSource - should be the child's version
         $sharedSource = null;
-        foreach ($store->sources as $source) {
+        foreach ($store->items as $source) {
             if ($source->id === 'sharedSource') {
                 $sharedSource = $source;
                 break;
@@ -115,7 +115,7 @@ class AttributeCascadeTest extends TestCase
         $this->assertNotNull($store);
         
         // Should have configs from child, parent, and trait
-        $configIds = array_keys($store->configs);
+        $configIds = array_keys($store->items);
         
         $this->assertContains('childConfig', $configIds, 'Should include child config');
         $this->assertContains('parentConfig', $configIds, 'Should include parent config');
@@ -131,7 +131,7 @@ class AttributeCascadeTest extends TestCase
         $this->assertNotNull($store);
         
         // The sharedConfig should be the child's version
-        $sharedConfig = $store->configs['sharedConfig'] ?? null;
+        $sharedConfig = $store->items['sharedConfig'] ?? null;
         
         $this->assertNotNull($sharedConfig);
         // Child's ChildProduct should override parent's ParentProduct

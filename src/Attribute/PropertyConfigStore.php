@@ -23,17 +23,19 @@ use Attribute;
 final class PropertyConfigStore
 {
     /** @var array<string, PropertyConfig> Indexed by config ID */
-    public readonly array $configs;
+    public readonly array $items;
     public readonly bool $cascade;  // Whether this store cascades to child classes
+    public readonly bool $enabled;  // Whether this attribute is active
 
     /**
-     * @param PropertyConfig[] $configs Array of PropertyConfig instances
+     * @param PropertyConfig[] $items Array of PropertyConfig instances
      * @param bool $cascade Whether this store cascades to child classes
+     * @param bool $enabled Whether this attribute is active (disabled attributes are ignored)
      */
-    public function __construct(array $configs, bool $cascade = true)
+    public function __construct(array $items = [], bool $cascade = true, bool $enabled = true)
     {
         $indexed = [];
-        foreach ($configs as $config) {
+        foreach ($items as $config) {
             if (!$config instanceof PropertyConfig) {
                 throw new \InvalidArgumentException('PropertyConfigStore: all items must be PropertyConfig instances');
             }
@@ -42,7 +44,8 @@ final class PropertyConfigStore
             }
             $indexed[$config->id] = $config;
         }
-        $this->configs = $indexed;
+        $this->items = $indexed;
         $this->cascade = $cascade;
+        $this->enabled = $enabled;
     }
 }

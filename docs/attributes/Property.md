@@ -76,21 +76,22 @@ class Garage
 | `config` | `?string` | No | Reference to a PropertyConfig by ID |
 | `configCandidates` | `?array` | No | Array of config candidates with `when` expressions |
 | `defaultConfigCandidate` | `?string` | No | Default config ID if no rule matches |
-| `keepWhen` | `?string` | No | Expression to conditionally include this Property |
+| `handleWhen` | `?string` | No | Expression to conditionally include this Property |
 | `cascade` | `bool` | No (default: true) | Whether this attribute cascades to child classes |
+| `enabled` | `bool` | No (default: true) | Whether this attribute is active |
 
-## Conditional Property Inclusion (keepWhen)
+## Conditional Property Inclusion (handleWhen)
 
-Use `keepWhen` to conditionally enable the Property attribute based on runtime context:
+Use `handleWhen` to conditionally enable the Property attribute based on runtime context:
 
 ```php
 use Kassko\DataMapper\Attribute\Property;
-use Kassko\DataMapper\Attribute\SkipAllProperties;
+use Kassko\DataMapper\Attribute\HandleAllProperties;
 
-#[SkipAllProperties]
+#[HandleAllProperties(value: false)]
 class Entity
 {
-    #[Property(key: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
+    #[Property(key: 'user_name', handleWhen: "expr(contextKeyExists('include_name'))")]
     private ?string $name = null;  // Only hydrated if 'include_name' context key exists
     
     private ?string $temp = null;  // Never hydrated (no Property attribute)
@@ -98,9 +99,9 @@ class Entity
 ```
 
 **Behavior:**
-- If `keepWhen` is null (default), Property is always considered present
-- If `keepWhen` expression evaluates to `true`, Property is active
-- If `keepWhen` expression evaluates to `false`, Property is treated as absent
+- If `handleWhen` is null (default), Property is always considered present
+- If `handleWhen` expression evaluates to `true`, Property is active
+- If `handleWhen` expression evaluates to `false`, Property is treated as absent
 - Non-boolean results are coerced with a warning logged
 
 ## Validation Rules
@@ -166,5 +167,5 @@ private ?Item $item = null;
 
 - [PropertyConfig](PropertyConfig.md) - Individual configuration definitions
 - [PropertyConfigStore](PropertyConfigStore.md) - Class-level attribute for storing configs
-- [KeepProperty](KeepProperty.md)
-- [SkipProperty](SkipProperty.md)
+- [HandleProperty](HandleProperty.md)
+- [HandleAllProperties](HandleAllProperties.md)

@@ -145,7 +145,7 @@ Access environment variables:
 private ?string $apiKey = null;
 
 // Check if environment variable exists
-#[SkipProperty(when: "expr(envVarExists('PRODUCTION'))")]
+#[HandleProperty(value: false, when: "expr(envVarExists('PRODUCTION'))")]
 private ?string $debugInfo = null;
 ```
 
@@ -177,41 +177,40 @@ The `when` key in `configCandidates`, `candidates`, and hydration control attrib
 
 ### Conditional Property Inclusion/Exclusion
 
-Use `when` in `SkipProperty` and `KeepProperty` to conditionally control hydration:
+Use `when` in `HandleProperty` to conditionally control hydration with the "SAUF" (except) pattern:
 
 ```php
-use Kassko\DataMapper\Attribute\SkipProperty;
-use Kassko\DataMapper\Attribute\KeepProperty;
-use Kassko\DataMapper\Attribute\SkipAllProperties;
+use Kassko\DataMapper\Attribute\HandleProperty;
+use Kassko\DataMapper\Attribute\HandleAllProperties;
 
-#[KeepAllProperties]  // Default behavior
+#[HandleAllProperties(value: true)]  // Default: hydrate all
 class Entity
 {
     private ?string $firstName = null;   // Always hydrated
     
-    #[SkipProperty(when: "expr(contextKeyExists('hide_email'))")]
-    private ?string $email = null;  // Skipped only if 'hide_email' context key exists
+    #[HandleProperty(value: false, when: "expr(contextKeyExists('hide_email'))")]
+    private ?string $email = null;  // Skipped if 'hide_email' context key exists, hydrated otherwise (SAUF)
 }
 ```
 
 ```php
-#[SkipAllProperties]
+#[HandleAllProperties(value: false)]  // Default: skip all
 class Entity
 {
-    #[KeepProperty(when: "expr(contextKeyExists('include_id'))")]
-    private ?string $id = null;  // Kept only if 'include_id' context key exists
+    #[HandleProperty(value: true, when: "expr(contextKeyExists('include_id'))")]
+    private ?string $id = null;  // Kept if 'include_id' context key exists, skipped otherwise
     
     private ?string $temp = null;  // Never hydrated
 }
 ```
 
-### Conditional Property Attribute with keepWhen
+### Conditional Property Attribute with handleWhen
 
 ```php
-#[SkipAllProperties]
+#[HandleAllProperties(value: false)]
 class Entity
 {
-    #[Property(key: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
+    #[Property(key: 'user_name', handleWhen: "expr(contextKeyExists('include_name'))")]
     private ?string $name = null;  // Property is active only if condition is true
 }
 ```

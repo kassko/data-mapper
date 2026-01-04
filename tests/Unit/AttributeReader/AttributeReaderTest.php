@@ -72,8 +72,8 @@ class AttributeReaderTest extends TestCase
         $dataSourcesStore = $this->reader->readDataSourcesStore($reflectionClass);
         
         $this->assertNotNull($dataSourcesStore);
-        $this->assertCount(1, $dataSourcesStore->sources);
-        $this->assertInstanceOf(MultiPropDataSource::class, $dataSourcesStore->sources[0]);
-        $this->assertEquals('personData', $dataSourcesStore->sources[0]->id);
+        $this->assertCount(1, $dataSourcesStore->items);
+        $this->assertInstanceOf(MultiPropDataSource::class, $dataSourcesStore->items[0]);
+        $this->assertEquals('personData', $dataSourcesStore->items[0]->id);
     }
 }

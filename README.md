@@ -112,11 +112,9 @@ Get an overview of DataMapper's architecture and operating principles [here](doc
 - **Fallback Pattern**: Graceful degradation with source fallbacks
 - **Attribute Cascading**: Inherit `DataSourcesStore` and `PropertyConfigStore` from parent classes and traits
 
-### v2.0 New Features
+### Attribute Cascading
 
-#### Attribute Cascading
-
-DataMapper now supports cascading PHP 8 attributes from parent classes and traits:
+DataMapper supports cascading PHP 8 attributes from parent classes and traits:
 
 ```php
 // Parent class defines data sources
@@ -571,45 +569,45 @@ class Garage
 }
 ```
 
-#### KeepAllProperties, SkipAllProperties, SkipProperty, KeepProperty
+#### HandleAllProperties, HandleProperty
 
-Control property inclusion with optional conditional expressions:
+Control property inclusion with the unified Handle pattern:
 
 ```php
-#[SkipAllProperties]
+#[HandleAllProperties(value: false)]  // Default: skip all properties
 class Person
 {
-    #[KeepProperty]  // Always include
+    #[HandleProperty(value: true)]  // Always include
     private ?string $name = null;
     
-    #[KeepProperty(when: "expr(contextKeyExists('show_email'))")]  // Conditionally include
+    #[HandleProperty(value: true, when: "expr(contextKeyExists('show_email'))")]  // Include only when condition is true
     private ?string $email = null;
     
     private ?string $internal = null;  // Excluded
 }
 ```
 
-You can also use `SkipProperty` with `when` expression to conditionally skip:
+You can also use the "SAUF" (except) logic - when condition is false, the opposite of `value` is applied:
 
 ```php
-#[KeepAllProperties]  // Default behavior
+#[HandleAllProperties(value: true)]  // Default: hydrate all
 class Entity
 {
     private ?string $firstName = null;   // Hydrated
     private ?string $lastName = null;    // Hydrated
     
-    #[SkipProperty(when: "expr(contextKeyExists('hide_email'))")]
-    private ?string $email = null;  // Skipped only if 'hide_email' context key exists
+    #[HandleProperty(value: false, when: "expr(contextKeyExists('show_email'))")]
+    private ?string $email = null;  // Skipped if 'show_email' exists, hydrated otherwise (SAUF)
 }
 ```
 
-And `Property.keepWhen` to conditionally enable the Property attribute:
+And `Property.handleWhen` to conditionally enable the Property attribute:
 
 ```php
-#[SkipAllProperties]
+#[HandleAllProperties(value: false)]
 class Entity
 {
-    #[Property(key: 'user_name', keepWhen: "expr(contextKeyExists('include_name'))")]
+    #[Property(key: 'user_name', handleWhen: "expr(contextKeyExists('include_name'))")]
     private ?string $name = null;  // Only hydrated if 'include_name' context key exists
 }
 ```

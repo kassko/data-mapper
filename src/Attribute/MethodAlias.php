@@ -41,5 +41,6 @@ final class MethodAlias
         public readonly string $class,           // Service class or service ID
         public readonly string $method,          // Method name to call
         public readonly bool $cascade = true,    // Whether this attribute cascades to child classes
+        public readonly bool $enabled = true,    // Whether this attribute is active (disabled attributes are ignored)
     ) {}
 }

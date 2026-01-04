@@ -49,6 +49,7 @@ final class MultiPropDataSource
         public readonly array $sensitiveKeys = [],
         public readonly ?string $methodAlias = null,     // Reference to a MethodAlias by name
         public readonly bool $cascade = true,            // Whether this attribute cascades to child classes
+        public readonly bool $enabled = true,            // Whether this attribute is active (disabled attributes are ignored)
     ) {
         // Validation: methodAlias is mutually exclusive with class and method
         if ($methodAlias !== null && ($class !== null || $method !== '')) {

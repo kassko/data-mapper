@@ -26,5 +26,6 @@ final class Getter
         public readonly ?string $name = null,  // Method name
         public readonly string $type = self::TYPE_GETTER,  // 'getter', 'isser', 'haser'
         public readonly bool $cascade = true,  // Whether this attribute cascades to child classes
+        public readonly bool $enabled = true,  // Whether this attribute is active (disabled attributes are ignored)
     ) {}
 }

@@ -67,6 +67,7 @@ final class Context
     /** @var array<array{key: string, value?: mixed, class?: string, method?: string, args?: array}> Context entries */
     public readonly array $entries;
     public readonly bool $cascade;  // Whether this attribute cascades to child classes
+    public readonly bool $enabled;  // Whether this attribute is active
 
     /**
      * @param array ...$entries Each entry must have a 'key' and either 'value' or 'class'+'method'
@@ -75,11 +76,20 @@ final class Context
     {
         $lastEntry = end($entries);
         $cascade = true;
+        $enabled = true;
         
-        // Check if the last entry is a cascade configuration
-        if ($lastEntry !== false && isset($lastEntry['cascade']) && count($lastEntry) === 1) {
-            $cascade = (bool) $lastEntry['cascade'];
-            array_pop($entries);
+        // Check if the last entry is a configuration (cascade or enabled)
+        if ($lastEntry !== false && count($lastEntry) <= 2) {
+            $isConfig = isset($lastEntry['cascade']) || isset($lastEntry['enabled']);
+            if ($isConfig) {
+                if (isset($lastEntry['cascade'])) {
+                    $cascade = (bool) $lastEntry['cascade'];
+                }
+                if (isset($lastEntry['enabled'])) {
+                    $enabled = (bool) $lastEntry['enabled'];
+                }
+                array_pop($entries);
+            }
         }
         
         // Validate each entry
@@ -109,6 +119,7 @@ final class Context
         
         $this->entries = $entries;
         $this->cascade = $cascade;
+        $this->enabled = $enabled;
     }
 }
 

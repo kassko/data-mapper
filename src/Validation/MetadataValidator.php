@@ -92,7 +92,11 @@ class MetadataValidator
         // Validate DataSourcesStore if present
         $store = $this->attributeReader->readDataSourcesStore($class);
         if ($store !== null) {
-            foreach ($store->sources as $index => $source) {
+            foreach ($store->items as $index => $source) {
+                // Skip disabled sources
+                if (!$source->enabled) {
+                    continue;
+                }
                 if ($source->id === null) {
                     $this->warnings[] = "{$className}: DataSourcesStore source at index {$index} has no id. It cannot be referenced via DataSourceRef.";
                 }
@@ -212,8 +216,8 @@ class MetadataValidator
         }
 
         $found = false;
-        foreach ($store->sources as $source) {
-            if ($source->id === $sourceId) {
+        foreach ($store->items as $source) {
+            if ($source->enabled && $source->id === $sourceId) {
                 $found = true;
                 break;
             }
