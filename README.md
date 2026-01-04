@@ -587,7 +587,7 @@ class Person
 }
 ```
 
-You can also use the "SAUF" (except) logic - when condition is false, the opposite of `value` is applied:
+You can also use the "except" logic - when condition is false, the opposite of `value` is applied:
 
 ```php
 #[HandleAllProperties(value: true)]  // Default: hydrate all
@@ -597,7 +597,7 @@ class Entity
     private ?string $lastName = null;    // Hydrated
     
     #[HandleProperty(value: false, when: "expr(contextKeyExists('show_email'))")]
-    private ?string $email = null;  // Skipped if 'show_email' exists, hydrated otherwise (SAUF)
+    private ?string $email = null;  // Skipped if 'show_email' exists, hydrated otherwise
 }
 ```
 

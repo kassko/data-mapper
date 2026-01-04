@@ -177,7 +177,7 @@ The `when` key in `configCandidates`, `candidates`, and hydration control attrib
 
 ### Conditional Property Inclusion/Exclusion
 
-Use `when` in `HandleProperty` to conditionally control hydration with the "SAUF" (except) pattern:
+Use `when` in `HandleProperty` to conditionally control hydration with the "except" pattern:
 
 ```php
 use Kassko\DataMapper\Attribute\HandleProperty;
@@ -189,7 +189,7 @@ class Entity
     private ?string $firstName = null;   // Always hydrated
     
     #[HandleProperty(value: false, when: "expr(contextKeyExists('hide_email'))")]
-    private ?string $email = null;  // Skipped if 'hide_email' context key exists, hydrated otherwise (SAUF)
+    private ?string $email = null;  // Skipped if 'hide_email' context key exists, hydrated otherwise (EXCEPT)
 }
 ```
 
@@ -198,7 +198,7 @@ class Entity
 class Entity
 {
     #[HandleProperty(value: true, when: "expr(contextKeyExists('include_id'))")]
-    private ?string $id = null;  // Kept if 'include_id' context key exists, skipped otherwise
+    private ?string $id = null;  // Kept if 'include_id' context key exists, skipped otherwise (EXCEPT)
     
     private ?string $temp = null;  // Never hydrated
 }

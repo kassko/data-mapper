@@ -41,14 +41,14 @@ class User
 
 ## Behavior with `when` Expression
 
-The `when` parameter creates a conditional behavior that follows the "SAUF" (except) pattern:
+The `when` parameter creates a conditional behavior that follows the "except" pattern:
 
 | value | when result | Hydration |
 |-------|-------------|-----------|
 | `true` | `true` | ✅ Hydrate |
-| `true` | `false` | ❌ Skip (SAUF/EXCEPT) |
+| `true` | `false` | ❌ Skip (EXCEPT) |
 | `false` | `true` | ❌ Skip |
-| `false` | `false` | ✅ Hydrate (SAUF/EXCEPT) |
+| `false` | `false` | ✅ Hydrate (EXCEPT) |
 
 ### Examples
 
