@@ -1047,3 +1047,161 @@ When child and parent/trait define the same ID:
 - **Logged**: A warning is logged for debugging
 
 See [Attribute Cascading Documentation](docs/concepts/AttributeCascading.md) for more details.
+
+## ObjectMapper - DTO Mapping
+
+The ObjectMapper allows you to map domain objects from DTO (Data Transfer Object) sources instead of raw data arrays.
+
+### Basic DTO Mapping
+
+```php
+use Kassko\DataMapper\DataMapperBuilder;
+use Kassko\DataMapper\Attribute\Property;
+
+// Source DTO
+class PersonDto
+{
+    public function __construct(
+        public string $firstName = '',
+        public string $lastName = '',
+        public ?string $email = null
+    ) {}
+}
+
+// Domain object
+class Person
+{
+    #[Property(sourceField: 'firstName')]
+    private ?string $firstName = null;
+    
+    #[Property(sourceField: 'lastName')]
+    private ?string $lastName = null;
+    
+    private ?string $email = null;
+    
+    // Getters...
+}
+
+// Usage
+$dataMapper = (new DataMapperBuilder())->build();
+$objectMapper = $dataMapper->getObjectMapper();
+
+$dto = new PersonDto('John', 'Doe', 'john@example.com');
+$person = $objectMapper->map(Person::class, $dto);
+
+echo $person->getFirstName(); // "John"
+```
+
+### Deep Path Mapping
+
+Map properties from nested objects in the DTO:
+
+```php
+// Nested DTOs
+class AddressDto
+{
+    public function __construct(
+        public string $street = '',
+        public string $city = '',
+        public string $postalCode = ''
+    ) {}
+}
+
+class PersonDto
+{
+    public function __construct(
+        public string $firstName = '',
+        public string $lastName = '',
+        public ?AddressDto $address = null
+    ) {}
+}
+
+// Domain object with deep path mapping
+class Person
+{
+    #[Property(sourceField: 'firstName')]
+    private ?string $firstName = null;
+    
+    #[Property(sourceField: 'lastName')]
+    private ?string $lastName = null;
+    
+    // Deep path: maps from $dto->address->street
+    #[Property(sourceField: 'address.street')]
+    private ?string $street = null;
+    
+    // Deep path: maps from $dto->address->city
+    #[Property(sourceField: 'address.city')]
+    private ?string $city = null;
+    
+    // Getters...
+}
+
+// Usage
+$addressDto = new AddressDto('123 Main St', 'New York', '10001');
+$personDto = new PersonDto('John', 'Doe', $addressDto);
+
+$person = $objectMapper->map(Person::class, $personDto);
+
+echo $person->getStreet(); // "123 Main St"
+echo $person->getCity();   // "New York"
+```
+
+### Custom Object Mappers
+
+Register custom object mappers for complex transformations:
+
+```php
+use Kassko\DataMapper\DataMapperBuilder;
+use Kassko\DataMapper\Attribute\CustomObjectMapper;
+
+// Register custom mapper
+$builder = new DataMapperBuilder();
+$builder->addCustomObjectMapper('money_mapper', function(object $source): Money {
+    return new Money(
+        amount: $source->amount,
+        currency: Currency::from($source->currencyCode)
+    );
+});
+
+$dataMapper = $builder->build();
+
+// Use in a domain object
+class Order
+{
+    #[CustomObjectMapper(
+        key: 'money_mapper',
+        inputClass: MoneyDto::class,
+        outputClass: Money::class
+    )]
+    private ?Money $total = null;
+    
+    public function getTotal(): ?Money
+    {
+        return $this->total;
+    }
+}
+
+// Retrieve mapper programmatically
+$moneyMapper = $dataMapper->getCustomObjectMapper('money_mapper');
+$money = $moneyMapper($moneyDto);
+```
+
+### Hydrator vs ObjectMapper
+
+| Feature | Hydrator | ObjectMapper |
+|---------|----------|--------------|
+| Input | Array (raw data) | Object (DTO) |
+| Method | `hydrate()` | `map()` |
+| Use case | API responses, JSON | DTO transformations |
+
+```php
+$dataMapper = (new DataMapperBuilder())->build();
+
+// Use Hydrator for array data
+$hydrator = $dataMapper->getHydrator();
+$person1 = $hydrator->hydrate(Person::class, ['first_name' => 'John']);
+
+// Use ObjectMapper for DTO sources
+$objectMapper = $dataMapper->getObjectMapper();
+$person2 = $objectMapper->map(Person::class, $personDto);
+```

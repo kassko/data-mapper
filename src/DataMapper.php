@@ -29,12 +29,18 @@ final class DataMapper
     private DataLineageCollector $lineageCollector;
     private Loader $loader;
     private ?Hydrator $hydrator = null;
+    private ?ObjectMapper $objectMapper = null;
+    /** @var array<string, callable> */
+    private array $customHydrators;
+    /** @var array<string, callable> */
+    private array $customObjectMappers;
 
     /**
      * @param ServiceResolver $serviceResolver
      * @param CacheInterface|null $cache PSR-16 cache interface
      * @param LoggerInterface|null $logger PSR-3 logger interface
      * @param array<string, callable> $customHydrators Custom hydrators (key => callable)
+     * @param array<string, callable> $customObjectMappers Custom object mappers (key => callable)
      * @param array<string, SensitiveLevel> $sensitiveKeys Global sensitive keys configuration
      * @param SensitiveLevel $defaultSensitiveLevel Default sensitive level for all properties
      */
@@ -43,12 +49,15 @@ final class DataMapper
         ?CacheInterface $cache = null,
         ?LoggerInterface $logger = null,
         array $customHydrators = [],
+        array $customObjectMappers = [],
         array $sensitiveKeys = [],
         SensitiveLevel $defaultSensitiveLevel = SensitiveLevel::SHOW
     ) {
         $this->cache = $cache;
         $this->logger = $logger;
         $this->serviceResolver = $serviceResolver;
+        $this->customHydrators = $customHydrators;
+        $this->customObjectMappers = $customObjectMappers;
         $this->lineageCollector = new DataLineageCollector($sensitiveKeys, $defaultSensitiveLevel);
         
         // Register Loader in the registry
@@ -203,5 +212,69 @@ final class DataMapper
         }
         
         return $this->hydrator;
+    }
+
+    /**
+     * Get the object mapper for mapping objects from DTO sources.
+     *
+     * The ObjectMapper provides a simple interface for mapping DTO objects to domain objects:
+     *
+     * ```php
+     * $objectMapper = $dataMapper->getObjectMapper();
+     * $person = $objectMapper->map(Person::class, $personDto);
+     * ```
+     *
+     * @return ObjectMapper
+     */
+    public function getObjectMapper(): ObjectMapper
+    {
+        if ($this->objectMapper === null) {
+            $this->objectMapper = new ObjectMapper($this->loader);
+        }
+        
+        return $this->objectMapper;
+    }
+
+    /**
+     * Get a custom hydrator by key.
+     *
+     * Custom hydrators are registered via DataMapperBuilder::addCustomHydrator()
+     * and can be used to provide custom hydration logic for specific properties.
+     *
+     * ```php
+     * $customHydrator = $dataMapper->getCustomHydrator('my_hydrator');
+     * if ($customHydrator !== null) {
+     *     $value = $customHydrator($data, $context);
+     * }
+     * ```
+     *
+     * @param string $key The custom hydrator key
+     * @return callable|null The hydrator callable or null if not found
+     */
+    public function getCustomHydrator(string $key): ?callable
+    {
+        return $this->customHydrators[$key] ?? null;
+    }
+
+    /**
+     * Get a custom object mapper by key.
+     *
+     * Custom object mappers are registered via DataMapperBuilder::addCustomObjectMapper()
+     * and can be used to provide custom mapping logic for specific properties when
+     * mapping from DTO sources.
+     *
+     * ```php
+     * $customMapper = $dataMapper->getCustomObjectMapper('address_mapper');
+     * if ($customMapper !== null) {
+     *     $address = $customMapper($addressDto, $context);
+     * }
+     * ```
+     *
+     * @param string $key The custom object mapper key
+     * @return callable|null The mapper callable or null if not found
+     */
+    public function getCustomObjectMapper(string $key): ?callable
+    {
+        return $this->customObjectMappers[$key] ?? null;
     }
 }
