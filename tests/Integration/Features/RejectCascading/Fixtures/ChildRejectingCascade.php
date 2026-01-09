@@ -28,7 +28,7 @@ use Kassko\DataMapper\Attribute\RejectAttributeCascading;
 ])]
 class ChildRejectingCascade extends ParentWithDataSources
 {
-    #[Property(key: 'email')]
+    #[Property(sourceField: 'email')]
     private string $email = '';
 
     public function getEmail(): string

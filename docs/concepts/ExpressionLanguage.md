@@ -210,7 +210,7 @@ class Entity
 #[HandleAllProperties(value: false)]
 class Entity
 {
-    #[Property(key: 'user_name', handleWhen: "expr(contextKeyExists('include_name'))")]
+    #[Property(sourceField: 'user_name', handleWhen: "expr(contextKeyExists('include_name'))")]
     private ?string $name = null;  // Property is active only if condition is true
 }
 ```

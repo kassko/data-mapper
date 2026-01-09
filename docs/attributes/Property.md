@@ -11,11 +11,11 @@ use Kassko\DataMapper\Attribute\Property;
 
 class Person
 {
-    #[Property(key: 'first_name')]
+    #[Property(sourceField: 'first_name')]
     private ?string $firstName = null;
     
     #[Property(
-        key: 'address_data',
+        sourceField: 'address_data',
         class: Address::class,
         mapping: ['billing_street' => 'street', 'billing_city' => 'city']
     )]
@@ -91,7 +91,7 @@ use Kassko\DataMapper\Attribute\HandleAllProperties;
 #[HandleAllProperties(value: false)]
 class Entity
 {
-    #[Property(key: 'user_name', handleWhen: "expr(contextKeyExists('include_name'))")]
+    #[Property(sourceField: 'user_name', handleWhen: "expr(contextKeyExists('include_name'))")]
     private ?string $name = null;  // Only hydrated if 'include_name' context key exists
     
     private ?string $temp = null;  // Never hydrated (no Property attribute)

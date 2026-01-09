@@ -27,7 +27,7 @@ class HydratableWithHooks
     private bool $beforeSetNameCalled = false;
     private bool $afterSetNameCalled = false;
 
-    #[Property(key: 'first_name')]
+    #[Property(sourceField: 'first_name')]
     #[PropertySettingHook(before_set_property: 'beforeSetName', args: ["expr(rawDataItem('first_name'))"])]
     #[PropertySettingHook(after_set_property: 'afterSetName', args: ['##object', '#firstName'])]
     private ?string $firstName = null;

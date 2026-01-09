@@ -37,7 +37,7 @@ class PropertyNamePrecedenceTest extends TestCase
     {
         // Create Property with key set
         $property = new Property(
-            key: 'property_key',
+            sourceField: 'property_key',
             class: null,
             expand: 'property_expand',
             noExpand: null,
@@ -48,7 +48,7 @@ class PropertyNamePrecedenceTest extends TestCase
         $config = new PropertyConfig(
             id: 'testConfig',
             class: 'SomeClass',
-            key: 'config_key',
+            sourceField: 'config_key',
             expand: 'config_expand',
             noExpand: 'config_noExpand',
             mapping: null,
@@ -62,7 +62,7 @@ class PropertyNamePrecedenceTest extends TestCase
         $merged = $method->invoke($loader, $property, $config);
         
         // Property.key takes precedence
-        $this->assertEquals('property_key', $merged->key);
+        $this->assertEquals('property_key', $merged->sourceField);
         
         // Property.expand takes precedence
         $this->assertEquals('property_expand', $merged->expand);
@@ -81,7 +81,7 @@ class PropertyNamePrecedenceTest extends TestCase
     {
         // Create Property with only config reference (most fields null)
         $property = new Property(
-            key: null,
+            sourceField: null,
             class: null,
             expand: null,
             noExpand: null,
@@ -92,7 +92,7 @@ class PropertyNamePrecedenceTest extends TestCase
         $config = new PropertyConfig(
             id: 'testConfig',
             class: 'ConfigClass',
-            key: 'config_key',
+            sourceField: 'config_key',
             expand: 'config_expand',
             noExpand: 'config_noExpand',
             mapping: ['a' => 'b'],
@@ -105,7 +105,7 @@ class PropertyNamePrecedenceTest extends TestCase
         $merged = $method->invoke($loader, $property, $config);
         
         // All PropertyConfig values should be used
-        $this->assertEquals('config_key', $merged->key);
+        $this->assertEquals('config_key', $merged->sourceField);
         $this->assertEquals('ConfigClass', $merged->class);
         $this->assertEquals('config_expand', $merged->expand);
         $this->assertEquals('config_noExpand', $merged->noExpand);

@@ -24,6 +24,7 @@ final class CascadeEvent
     public const TYPE_PROPERTY_CONFIG_ID_CONFLICT = 'property_config_id_conflict';
     public const TYPE_PROPERTY_ATTRIBUTE_OVERRIDE = 'property_attribute_override';
     public const TYPE_WHEN_EXPRESSION_TYPE_COERCION = 'when_expression_type_coercion';
+    public const TYPE_SKIPPED_DATASOURCE_PROPERTY = 'skipped_datasource_property';
 
     public readonly float $timestamp;
 

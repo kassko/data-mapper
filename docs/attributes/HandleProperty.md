@@ -10,21 +10,21 @@ use Kassko\DataMapper\Attribute\Property;
 
 class User
 {
-    #[Property(key: 'name')]
+    #[Property(sourceField: 'name')]
     private string $name;
 
     // Always skip this property
-    #[Property(key: 'internal_note')]
+    #[Property(sourceField: 'internal_note')]
     #[HandleProperty(value: false)]
     private string $internalNote;
 
     // Conditionally include based on context
-    #[Property(key: 'email')]
+    #[Property(sourceField: 'email')]
     #[HandleProperty(value: true, when: "expr(contextKeyExists('include_email'))")]
     private string $email;
 
     // Conditionally skip based on context
-    #[Property(key: 'ssn')]
+    #[Property(sourceField: 'ssn')]
     #[HandleProperty(value: false, when: "expr(contextKeyExists('hide_sensitive'))")]
     private string $ssn;
 }

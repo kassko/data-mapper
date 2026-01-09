@@ -9,10 +9,10 @@ use Kassko\DataMapper\Attribute\Property;
 
 class Person
 {
-    #[Property(key: 'first_name')]
+    #[Property(sourceField: 'first_name')]
     private ?string $firstName = null;
     
-    #[Property(key: 'last_name')]
+    #[Property(sourceField: 'last_name')]
     private ?string $lastName = null;
 }
 
@@ -82,11 +82,11 @@ class Person
     private int $id;
     
     #[DataSourceRef(id: 'personData')]
-    #[Property(key: 'first_name')]
+    #[Property(sourceField: 'first_name')]
     private ?string $firstName = null;
     
     #[DataSourceRef(id: 'personData')]
-    #[Property(key: 'last_name')]
+    #[Property(sourceField: 'last_name')]
     private ?string $lastName = null;
     
     #[DataSourceRef(id: 'personData')]

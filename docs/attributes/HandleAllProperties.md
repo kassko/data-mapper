@@ -13,15 +13,15 @@ use Kassko\DataMapper\Attribute\Property;
 #[HandleAllProperties(value: false)]
 class User
 {
-    #[Property(key: 'id')]
+    #[Property(sourceField: 'id')]
     #[HandleProperty(value: true)]  // Explicitly included
     private int $id;
 
-    #[Property(key: 'name')]
+    #[Property(sourceField: 'name')]
     #[HandleProperty(value: true)]  // Explicitly included
     private string $name;
 
-    #[Property(key: 'internal_note')]
+    #[Property(sourceField: 'internal_note')]
     private string $internalNote;  // Will be skipped
 }
 
@@ -29,10 +29,10 @@ class User
 #[HandleAllProperties(value: true)]
 class Product
 {
-    #[Property(key: 'name')]
+    #[Property(sourceField: 'name')]
     private string $name;  // Will be hydrated
 
-    #[Property(key: 'secret')]
+    #[Property(sourceField: 'secret')]
     #[HandleProperty(value: false)]  // Explicitly excluded
     private string $secret;
 }

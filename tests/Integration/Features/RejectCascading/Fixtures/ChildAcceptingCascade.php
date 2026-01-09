@@ -26,7 +26,7 @@ use Kassko\DataMapper\Attribute\Property;
 ])]
 class ChildAcceptingCascade extends ParentWithDataSources
 {
-    #[Property(key: 'email')]
+    #[Property(sourceField: 'email')]
     private string $email = '';
 
     public function getEmail(): string

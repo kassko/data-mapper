@@ -143,7 +143,7 @@ abstract class BaseEntity
 ```php
 class ParentClass
 {
-    #[Property(key: 'parent_name', cascade: false)]
+    #[Property(sourceField: 'parent_name', cascade: false)]
     private ?string $name = null;
     // Child classes will NOT inherit this Property configuration
 }
@@ -158,13 +158,13 @@ When a child class shadows a parent's private property with its own property of 
 ```php
 class ParentClass
 {
-    #[Property(key: 'parent_name')] // This mapping is ignored when shadowed
+    #[Property(sourceField: 'parent_name')] // This mapping is ignored when shadowed
     private ?string $name = null;
 }
 
 class ChildClass extends ParentClass
 {
-    #[Property(key: 'child_name')] // This mapping is used
+    #[Property(sourceField: 'child_name')] // This mapping is used
     private ?string $name = null;
 }
 
