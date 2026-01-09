@@ -25,20 +25,20 @@ use Kassko\DataMapper\Attribute\Property;
  */
 class ConditionalHandleEntity
 {
-    #[Property(key: 'name')]
+    #[Property(sourceField: 'name')]
     private string $name = '';
 
     // Include email only when 'include_email' context key exists
     // value=true, when=true -> hydrate
     // value=true, when=false -> skip (SAUF)
-    #[Property(key: 'email')]
+    #[Property(sourceField: 'email')]
     #[HandleProperty(value: true, when: "expr(contextKeyExists('include_email'))")]
     private string $email = '';
 
     // Skip phone only when 'hide_phone' context key exists  
     // value=false, when=true -> skip
     // value=false, when=false -> hydrate (SAUF)
-    #[Property(key: 'phone')]
+    #[Property(sourceField: 'phone')]
     #[HandleProperty(value: false, when: "expr(contextKeyExists('hide_phone'))")]
     private string $phone = '';
 

@@ -112,10 +112,10 @@ use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
 
 class Person
 {
-    #[Property(key: 'first_name')]
+    #[Property(sourceField: 'first_name')]
     public string $firstName;
     
-    #[Property(key: 'last_name')]
+    #[Property(sourceField: 'last_name')]
     public string $lastName;
     
     public ?string $fullName = null;

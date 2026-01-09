@@ -26,7 +26,7 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 ])]
 class ParentWithDataSources
 {
-    #[Property(key: 'name')]
+    #[Property(sourceField: 'name')]
     protected string $name = '';
 
     public function getName(): string

@@ -23,10 +23,10 @@ use Kassko\DataMapper\Attribute\Property;
 #[HandleAllProperties(value: true)]
 class HandleAllPropertiesEntity
 {
-    #[Property(key: 'name')]
+    #[Property(sourceField: 'name')]
     private string $name = '';
 
-    #[Property(key: 'email')]
+    #[Property(sourceField: 'email')]
     private string $email = '';
 
     public function getName(): string

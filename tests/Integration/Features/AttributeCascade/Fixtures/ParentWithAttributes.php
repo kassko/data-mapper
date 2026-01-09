@@ -20,7 +20,7 @@ use Kassko\DataMapper\Attribute\Property;
  */
 class ParentWithAttributes
 {
-    #[Property(key: 'parent_name')]
+    #[Property(sourceField: 'parent_name')]
     private ?string $name = null;
     
     private ?int $id = null;

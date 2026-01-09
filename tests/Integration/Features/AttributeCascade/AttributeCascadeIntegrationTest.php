@@ -226,8 +226,8 @@ class AttributeCascadeIntegrationTest extends TestCase
 
     public function testChildPropertyAttributesTakePrecedence(): void
     {
-        // Child has #[Property(key: 'child_name')]
-        // Parent has #[Property(key: 'parent_name')]
+        // Child has #[Property(sourceField: 'child_name')]
+        // Parent has #[Property(sourceField: 'parent_name')]
         // Child's attribute should be used
         
         $rawData = [

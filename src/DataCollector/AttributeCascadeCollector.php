@@ -271,6 +271,40 @@ final class AttributeCascadeCollector
     }
 
     /**
+     * Record a property with data source attributes being skipped due to HandleProperty pattern.
+     * 
+     * @param string $className The class containing the property
+     * @param string $propertyName The property name
+     * @param string $reason The reason for skipping
+     */
+    public function collectSkippedDataSourceProperty(
+        string $className,
+        string $propertyName,
+        string $reason
+    ): void {
+        $this->logger->warning('Property with data source attributes skipped due to HandleProperty pattern', [
+            'class' => $className,
+            'property' => $propertyName,
+            'reason' => $reason,
+        ]);
+
+        if (!$this->enabled) {
+            return;
+        }
+
+        $this->events[] = new CascadeEvent(
+            type: CascadeEvent::TYPE_SKIPPED_DATASOURCE_PROPERTY,
+            targetClass: $className,
+            sourceClass: '',
+            sourceType: 'handle_property',
+            metadata: [
+                'propertyName' => $propertyName,
+                'reason' => $reason,
+            ]
+        );
+    }
+
+    /**
      * Get all collected cascade events.
      * 
      * @return CascadeEvent[]
@@ -309,6 +343,7 @@ final class AttributeCascadeCollector
      *     propertyConfigIdConflicts: int,
      *     propertyAttributeOverrides: int,
      *     whenExpressionTypeCoercions: int,
+     *     skippedDataSourceProperties: int,
      *     total: int
      * }
      */
@@ -321,6 +356,7 @@ final class AttributeCascadeCollector
             'propertyConfigIdConflicts' => count($this->getEventsByType(CascadeEvent::TYPE_PROPERTY_CONFIG_ID_CONFLICT)),
             'propertyAttributeOverrides' => count($this->getEventsByType(CascadeEvent::TYPE_PROPERTY_ATTRIBUTE_OVERRIDE)),
             'whenExpressionTypeCoercions' => count($this->getEventsByType(CascadeEvent::TYPE_WHEN_EXPRESSION_TYPE_COERCION)),
+            'skippedDataSourceProperties' => count($this->getEventsByType(CascadeEvent::TYPE_SKIPPED_DATASOURCE_PROPERTY)),
             'total' => count($this->events),
         ];
     }

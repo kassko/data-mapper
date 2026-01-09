@@ -27,17 +27,17 @@ use Kassko\DataMapper\Attribute\DataSourceRef;
 ])]
 class EnabledDisabledEntity
 {
-    #[Property(key: 'name')]
+    #[Property(sourceField: 'name')]
     private string $name = '';
 
-    #[Property(key: 'description', enabled: false)]
+    #[Property(sourceField: 'description', enabled: false)]
     private string $disabledProperty = '';
 
-    #[Property(key: 'extra')]
+    #[Property(sourceField: 'extra')]
     #[DataSourceRef(id: 'enabledSource')]
     private string $fromEnabledSource = '';
 
-    #[Property(key: 'extra')]
+    #[Property(sourceField: 'extra')]
     #[DataSourceRef(id: 'disabledSource')]
     private string $fromDisabledSource = '';
 

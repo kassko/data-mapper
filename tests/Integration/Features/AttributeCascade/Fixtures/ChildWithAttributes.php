@@ -21,7 +21,7 @@ use Kassko\DataMapper\Attribute\Property;
  */
 class ChildWithAttributes extends ParentWithAttributes
 {
-    #[Property(key: 'child_name')]
+    #[Property(sourceField: 'child_name')]
     private ?string $name = null;
     
     public function getName(): ?string

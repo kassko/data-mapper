@@ -20,8 +20,8 @@ use Kassko\DataMapper\Enum\SensitiveLevel;
 final class Property
 {
     public function __construct(
-        public readonly ?string $key = null,       // Key name in raw data array
-        public readonly ?string $class = null,     // Class for nested object hydration
+        public readonly ?string $sourceField = null,  // Field name in raw data (array key or DTO property)
+        public readonly ?string $class = null,        // Class for nested object hydration
         public readonly ?string $expand = null,    // Comma-separated props to expand
         public readonly ?string $noExpand = null,  // Comma-separated props to NOT expand
         public readonly ?array $mapping = null,    // Instance-specific key mapping

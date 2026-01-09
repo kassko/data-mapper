@@ -24,14 +24,14 @@ use Kassko\DataMapper\Attribute\Property;
 #[HandleAllProperties(value: false)]
 class SkipAllExceptMarkedEntity
 {
-    #[Property(key: 'name')]
+    #[Property(sourceField: 'name')]
     #[HandleProperty(value: true)]
     private string $name = '';
 
-    #[Property(key: 'email')]
+    #[Property(sourceField: 'email')]
     private string $email = '';
 
-    #[Property(key: 'phone')]
+    #[Property(sourceField: 'phone')]
     private string $phone = '';
 
     public function getName(): string

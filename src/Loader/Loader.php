@@ -682,6 +682,14 @@ class Loader implements LoaderInterface
         }
         
         $property = $reflectionClass->getProperty($propertyName);
+
+        // Check if property is authorized by HandleProperty pattern before loading from data sources
+        // This ensures HandleProperty exclusively controls whether data source attributes are honored
+        if (!$this->shouldHydratePropertyWithExpressions($reflectionClass, $property, $object, [])) {
+            // Log warning about property with DataSource attributes being skipped
+            $this->logSkippedPropertyWithDataSource($reflectionClass, $property);
+            return;
+        }
         
         // Check for Needs attribute - load dependencies first
         $needs = $this->attributeReader->readNeeds($property);
@@ -1193,7 +1201,13 @@ class Loader implements LoaderInterface
     }
 
     /**
-     * Filter properties based on MultiPropDataSource loading scope
+     * Filter properties based on MultiPropDataSource loading scope and data availability.
+     *
+     * A property can be loaded from MultiPropDataSource if:
+     * - Property is enabled (checked in getHydratableProperties)
+     * - Property is authorized by HandleProperty pattern (checked in getHydratableProperties)
+     * - Property has the same label as a field in the data OR sourceField maps to a field in the data
+     * - Loading scope does not contradict loading this property
      *
      * @param object $object
      * @param MultiPropDataSource $source
@@ -1207,7 +1221,8 @@ class Loader implements LoaderInterface
     ): array {
         $allProperties = $this->getHydratableProperties($object, $source);
         
-        return match ($source->loadingScope) {
+        // Filter properties based on loading scope (requirement E)
+        $scopeFilteredProperties = match ($source->loadingScope) {
             MultiPropDataSource::SCOPE_ALL => $allProperties,
             MultiPropDataSource::SCOPE_ONLY_KEYS => array_filter(
                 $allProperties,
@@ -1227,10 +1242,53 @@ class Loader implements LoaderInterface
             ),
             default => $allProperties,
         };
+        
+        // Filter properties based on data availability (requirements C and D)
+        // Property must have same label as a field in data OR sourceField must map to a field in data
+        return array_filter(
+            $scopeFilteredProperties,
+            fn($p) => $this->propertyMatchesDataField($p, $data)
+        );
+    }
+
+    /**
+     * Check if a property matches a field in the data.
+     *
+     * A property matches if:
+     * - Property has a mapping attribute (data will be extracted via mapping)
+     * - OR Property name matches a key in the data (C)
+     * - OR Property's sourceField (if set) matches a key in the data (D)
+     *
+     * @param ReflectionProperty $property
+     * @param array $data
+     * @return bool
+     */
+    private function propertyMatchesDataField(ReflectionProperty $property, array $data): bool
+    {
+        // Check if property has a mapping attribute - if so, data is extracted via mapping
+        $propertyAttr = $this->attributeReader->readProperty($property);
+        if ($propertyAttr !== null && $propertyAttr->mapping !== null) {
+            // For properties with mapping, check if any of the mapping source keys exist in data
+            foreach ($propertyAttr->mapping as $sourceKey => $targetKey) {
+                if (array_key_exists($sourceKey, $data)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // Get the mapped field name (uses sourceField if set, otherwise property name)
+        $fieldName = $this->getPropertyNameMapping($property);
+        
+        return array_key_exists($fieldName, $data);
     }
 
     /**
      * Get all hydratable properties that reference this data source
+     *
+     * Properties are only hydratable from a data source if:
+     * - They are enabled
+     * - They are authorized by the HandleProperty pattern (resolve to true)
      *
      * @param object $object
      * @param MultiPropDataSource $source
@@ -1242,20 +1300,68 @@ class Loader implements LoaderInterface
         $properties = [];
 
         foreach ($reflectionClass->getProperties() as $property) {
+            // First check if property is authorized by HandleProperty pattern
+            // Note: we pass an empty array for rawData as we're checking the pattern, not hydrating
+            if (!$this->shouldHydratePropertyWithExpressions($reflectionClass, $property, $object, [])) {
+                // Log warning about property with DataSource attributes being skipped
+                $this->logSkippedPropertyWithDataSource($reflectionClass, $property);
+                continue;
+            }
+
             // Check if property references this data source
             $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
             if ($dataSourceRef !== null && $dataSourceRef->id === $source->id) {
                 $properties[] = $property;
+                continue;
             }
 
             // Check if property has a MultiPropDataSource with the same signature
-            $dataSourceRef = $this->attributeReader->readMultiPropDataSource($property);
-            if ($dataSourceRef !== null && $dataSourceRef->id === $source->id) {
+            $multiSource = $this->attributeReader->readMultiPropDataSource($property);
+            if ($multiSource !== null && $multiSource->id === $source->id) {
                 $properties[] = $property;
             }
         }
 
         return $properties;
+    }
+
+    /**
+     * Log warning about a property with data source attributes being skipped due to HandleProperty.
+     *
+     * @param ReflectionClass $reflectionClass
+     * @param ReflectionProperty $property
+     */
+    private function logSkippedPropertyWithDataSource(ReflectionClass $reflectionClass, ReflectionProperty $property): void
+    {
+        $propName = $property->getName();
+        $className = $reflectionClass->getName();
+
+        // Check if property has any data source attributes
+        $hasDataSourceAttrs = (
+            $this->attributeReader->readDataSourceRef($property) !== null ||
+            $this->attributeReader->readSinglePropDataSource($property) !== null ||
+            $this->attributeReader->readMultiPropDataSource($property) !== null
+        );
+
+        if ($hasDataSourceAttrs) {
+            $this->logger->warning(
+                'Property with data source attributes is not handled due to HandleProperty pattern',
+                [
+                    'class' => $className,
+                    'property' => $propName,
+                    'hint' => 'Add #[HandleProperty(value: true)] to the property to enable loading from data source',
+                ]
+            );
+
+            // Collect via cascade collector for the data collector (profiler)
+            if ($this->cascadeCollector !== null) {
+                $this->cascadeCollector->collectSkippedDataSourceProperty(
+                    $className,
+                    $propName,
+                    'HandleProperty pattern exclusion'
+                );
+            }
+        }
     }
 
     /**
@@ -1562,8 +1668,8 @@ class Loader implements LoaderInterface
     {
         // Use Property attribute
         $propertyAttr = $this->attributeReader->readProperty($property);
-        if ($propertyAttr !== null && $propertyAttr->key !== null) {
-            return $propertyAttr->key;
+        if ($propertyAttr !== null && $propertyAttr->sourceField !== null) {
+            return $propertyAttr->sourceField;
         }
         
         // Default to property name
@@ -1796,8 +1902,8 @@ class Loader implements LoaderInterface
     private function mergePropertyConfig(Property $propertyAttr, PropertyConfig $config): Property
     {
         return new Property(
-            // Property.key takes precedence over PropertyConfig.key
-            key: $propertyAttr->key ?? $config->key,
+            // Property.sourceField takes precedence over PropertyConfig.sourceField
+            sourceField: $propertyAttr->sourceField ?? $config->sourceField,
             class: $propertyAttr->class ?? $config->class,
             expand: $propertyAttr->expand ?? $config->expand,
             noExpand: $propertyAttr->noExpand ?? $config->noExpand,

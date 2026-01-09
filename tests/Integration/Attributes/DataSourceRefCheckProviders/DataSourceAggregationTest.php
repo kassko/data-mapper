@@ -45,15 +45,15 @@ class DataSourceAggregationTest extends TestCase
             use LoadableTrait;
             
             #[DataSourceRef(providers: ['providerA', 'providerB', 'providerC'])]
-            #[Property(key: 'name')]
+            #[Property(sourceField: 'name')]
             private ?string $name = null;
             
             #[DataSourceRef(providers: ['providerA', 'providerB', 'providerC'])]
-            #[Property(key: 'age')]
+            #[Property(sourceField: 'age')]
             private ?int $age = null;
             
             #[DataSourceRef(providers: ['providerA', 'providerB', 'providerC'])]
-            #[Property(key: 'city')]
+            #[Property(sourceField: 'city')]
             private ?string $city = null;
             
             public function getName(): ?string
@@ -92,7 +92,7 @@ class DataSourceAggregationTest extends TestCase
             use LoadableTrait;
             
             #[DataSourceRef(providers: ['providerA', 'providerB'])]
-            #[Property(key: 'config')]
+            #[Property(sourceField: 'config')]
             private ?array $config = null;
             
             public function getConfig(): ?array
@@ -125,7 +125,7 @@ class DataSourceAggregationTest extends TestCase
                 providers: ['providerA', 'providerX'], 
                 ignoreProviderOnNotFound: true
             )]
-            #[Property(key: 'name')]
+            #[Property(sourceField: 'name')]
             private ?string $name = null;
             
             public function getName(): ?string

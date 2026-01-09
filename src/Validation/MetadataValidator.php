@@ -64,6 +64,9 @@ class MetadataValidator
             $this->validatePropertyAttributes($reflectionClass, $property);
         }
 
+        // Validate MultiPropDataSource uniqueness (no duplicate IDs)
+        $this->validateMultiPropDataSourceUniqueness($reflectionClass);
+
         return new ValidationResult($className, $this->errors, $this->warnings);
     }
 
@@ -288,6 +291,72 @@ class MetadataValidator
             $this->attributeReader->readSinglePropDataSource($property) !== null ||
             $this->attributeReader->readMultiPropDataSource($property) !== null) {
             $this->errors[] = "{$context}: CustomHydrator cannot be used with other data source attributes.";
+        }
+    }
+
+    /**
+     * Validate MultiPropDataSource uniqueness across properties.
+     * 
+     * Rules:
+     * - Multiple properties CANNOT have MultiPropDataSource with the same id
+     * - Multiple properties CANNOT have DataSourceRef pointing to the same MultiPropDataSource id
+     *
+     * This enforces that each MultiPropDataSource is declared only once per class.
+     */
+    private function validateMultiPropDataSourceUniqueness(ReflectionClass $class): void
+    {
+        $className = $class->getName();
+        
+        // Track which properties use which MultiPropDataSource IDs (direct)
+        $multiPropSourceUsages = [];
+        // Track which properties reference which MultiPropDataSource IDs (via DataSourceRef)
+        $dataSourceRefUsages = [];
+        
+        foreach ($class->getProperties() as $property) {
+            $propertyName = $property->getName();
+            
+            // Check for MultiPropDataSource with an id
+            $multiSource = $this->attributeReader->readMultiPropDataSource($property);
+            if ($multiSource !== null && $multiSource->enabled && $multiSource->id !== null) {
+                if (!isset($multiPropSourceUsages[$multiSource->id])) {
+                    $multiPropSourceUsages[$multiSource->id] = [];
+                }
+                $multiPropSourceUsages[$multiSource->id][] = $propertyName;
+            }
+            
+            // Check for DataSourceRef pointing to a MultiPropDataSource
+            $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
+            if ($dataSourceRef !== null && $dataSourceRef->enabled && $dataSourceRef->id !== null) {
+                // Check if this ref points to a MultiPropDataSource in the store
+                $store = $this->attributeReader->readDataSourcesStore($class);
+                if ($store !== null) {
+                    foreach ($store->items as $source) {
+                        if ($source instanceof MultiPropDataSource && $source->id === $dataSourceRef->id) {
+                            if (!isset($dataSourceRefUsages[$dataSourceRef->id])) {
+                                $dataSourceRefUsages[$dataSourceRef->id] = [];
+                            }
+                            $dataSourceRefUsages[$dataSourceRef->id][] = $propertyName;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Report errors for duplicate MultiPropDataSource declarations
+        foreach ($multiPropSourceUsages as $id => $properties) {
+            if (count($properties) > 1) {
+                $this->errors[] = "{$className}: MultiPropDataSource with id '{$id}' is declared on multiple properties: " 
+                    . implode(', ', $properties) . ". Each MultiPropDataSource id must be unique.";
+            }
+        }
+        
+        // Report errors for duplicate DataSourceRef to MultiPropDataSource
+        foreach ($dataSourceRefUsages as $id => $properties) {
+            if (count($properties) > 1) {
+                $this->errors[] = "{$className}: Multiple properties reference the same MultiPropDataSource id '{$id}': "
+                    . implode(', ', $properties) . ". Each MultiPropDataSource can only be referenced by one property.";
+            }
         }
     }
 }
