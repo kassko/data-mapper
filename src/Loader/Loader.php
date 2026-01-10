@@ -2503,4 +2503,315 @@ class Loader implements LoaderInterface
         $this->setPropertyValue($object, $property, $result);
         $this->loadedProperties[$object][$property->getName()] = true;
     }
+
+    /**
+     * Convert a source (object or array) to an associative array.
+     *
+     * This method extracts data from various source types:
+     * - Arrays are returned as-is
+     * - Objects have their properties extracted via reflection and getters
+     *
+     * @param mixed $source The source (object or array)
+     * @return array<string, mixed> The extracted data
+     */
+    public function convertSourceToData(mixed $source): array
+    {
+        // Arrays pass through as-is
+        if (is_array($source)) {
+            return $source;
+        }
+        
+        // Handle objects by extracting their properties
+        if (is_object($source)) {
+            return $this->extractObjectData($source);
+        }
+        
+        // For other types, return empty array
+        return [];
+    }
+
+    /**
+     * Extract data from an object using reflection and getters.
+     *
+     * This method tries multiple approaches to extract property values:
+     * 1. Public properties are accessed directly
+     * 2. Properties with getters (getX, isX, hasX) use the getter
+     * 3. Private/protected properties without getters use reflection
+     *
+     * @param object $source The source object
+     * @return array<string, mixed> The extracted data
+     */
+    private function extractObjectData(object $source): array
+    {
+        $reflectionClass = new ReflectionClass($source);
+        $data = [];
+        
+        foreach ($reflectionClass->getProperties() as $property) {
+            $propertyName = $property->getName();
+            
+            // Try to get value via getter first
+            $value = $this->getPropertyValueFromObject($source, $propertyName, $reflectionClass);
+            
+            if ($value !== null || $this->propertyExists($source, $propertyName)) {
+                $data[$propertyName] = $value;
+            }
+        }
+        
+        return $data;
+    }
+
+    /**
+     * Get a property value from an object using getters or reflection.
+     *
+     * @param object $object The object
+     * @param string $propertyName The property name
+     * @param ReflectionClass|null $reflectionClass Optional reflection class (for performance)
+     * @return mixed The property value
+     */
+    private function getPropertyValueFromObject(object $object, string $propertyName, ?ReflectionClass $reflectionClass = null): mixed
+    {
+        $reflectionClass ??= new ReflectionClass($object);
+        
+        // Try conventional getter methods
+        $getterNames = [
+            'get' . ucfirst($propertyName),
+            'is' . ucfirst($propertyName),
+            'has' . ucfirst($propertyName),
+            $propertyName, // Direct method call for fluent accessors
+        ];
+        
+        foreach ($getterNames as $getterName) {
+            if ($reflectionClass->hasMethod($getterName)) {
+                $method = $reflectionClass->getMethod($getterName);
+                if ($method->isPublic() && $method->getNumberOfRequiredParameters() === 0) {
+                    return $method->invoke($object);
+                }
+            }
+        }
+        
+        // Fall back to direct property access
+        if ($reflectionClass->hasProperty($propertyName)) {
+            $property = $reflectionClass->getProperty($propertyName);
+            if ($property->isPublic()) {
+                return $property->getValue($object);
+            }
+            // For non-public properties, use reflection
+            return $property->getValue($object);
+        }
+        
+        return null;
+    }
+
+    /**
+     * Check if a property exists on an object.
+     *
+     * @param object $object The object
+     * @param string $propertyName The property name
+     * @return bool
+     */
+    private function propertyExists(object $object, string $propertyName): bool
+    {
+        $reflectionClass = new ReflectionClass($object);
+        return $reflectionClass->hasProperty($propertyName);
+    }
+
+    /**
+     * Map an object from a source object.
+     *
+     * This method handles mapping properties from a source object (DTO) to a target object.
+     * It supports both direct property mapping and deep path mapping.
+     *
+     * @param object $object The target object
+     * @param object $sourceObject The source object (DTO)
+     * @param array<string, mixed> $data Pre-extracted data from source
+     * @param Property|null $propertyAttr Property attribute for expand/noExpand control
+     * @param int $currentDepth Current recursion depth
+     */
+    public function mapObjectFromSource(
+        object $object,
+        object $sourceObject,
+        array $data,
+        ?Property $propertyAttr = null,
+        int $currentDepth = 0
+    ): void {
+        $reflectionClass = new ReflectionClass($object);
+        
+        // Execute before_hydrate_object hooks
+        $this->executeHydratingHooks($object, 'before', $data);
+        
+        // Get all properties including from parent classes
+        $allProperties = $this->attributeReader->getAllProperties($reflectionClass);
+        
+        // Build list of properties to expand or skip
+        $expandList = $propertyAttr !== null && $propertyAttr->expand !== null 
+            ? array_map('trim', explode(',', $propertyAttr->expand)) 
+            : null;
+        $noExpandList = $propertyAttr !== null && $propertyAttr->noExpand !== null 
+            ? array_map('trim', explode(',', $propertyAttr->noExpand)) 
+            : null;
+        
+        foreach ($allProperties as $property) {
+            $propName = $property->getName();
+            
+            // Check if we should hydrate this property based on expand/noExpand
+            if ($expandList !== null && !in_array($propName, $expandList)) {
+                continue;
+            }
+            if ($noExpandList !== null && in_array($propName, $noExpandList)) {
+                continue;
+            }
+            
+            // Check if property should be hydrated based on attributes and expressions
+            if (!$this->shouldHydratePropertyWithExpressions($reflectionClass, $property, $object, $data)) {
+                continue;
+            }
+            
+            // Get the field name mapping (supports deep path)
+            $fieldName = $this->getPropertyNameMapping($property);
+            
+            // Get value from source using deep path resolution
+            $value = $this->resolveValueFromSource($fieldName, $data, $sourceObject);
+            
+            if ($value === null && !$this->sourceFieldExists($fieldName, $data, $sourceObject)) {
+                // Log warning when field is missing
+                $this->logger->debug('Source field not found for property mapping', [
+                    'class' => $reflectionClass->getName(),
+                    'property' => $propName,
+                    'expected_field' => $fieldName,
+                ]);
+                continue;
+            }
+            
+            // Apply recursive hydration if needed
+            $value = $this->applyRecursiveHydration($property, $value, $currentDepth, $object);
+            
+            // Set property value using setter resolution
+            $this->setPropertyValue($object, $property, $value);
+            
+            // Handle Context attribute
+            $this->handleContextAttribute($property, $value, $object);
+        }
+        
+        // Execute after_hydrate_object hooks
+        $this->executeHydratingHooks($object, 'after', $data);
+    }
+
+    /**
+     * Resolve a value from source using field path (supports deep path like "address.street.number").
+     *
+     * @param string $fieldPath The field path (e.g., "address.street.number")
+     * @param array<string, mixed> $data Pre-extracted data
+     * @param object|null $sourceObject The source object (for object traversal)
+     * @return mixed The resolved value or null
+     */
+    public function resolveValueFromSource(string $fieldPath, array $data, ?object $sourceObject = null): mixed
+    {
+        // Check for deep path (contains dots)
+        if (str_contains($fieldPath, '.')) {
+            return $this->resolveDeepPath($fieldPath, $data, $sourceObject);
+        }
+        
+        // Simple field - check array first, then object
+        if (array_key_exists($fieldPath, $data)) {
+            return $data[$fieldPath];
+        }
+        
+        // Try to get from source object directly
+        if ($sourceObject !== null) {
+            return $this->getPropertyValueFromObject($sourceObject, $fieldPath);
+        }
+        
+        return null;
+    }
+
+    /**
+     * Resolve a deep path (e.g., "address.street.number") from data or source object.
+     *
+     * @param string $path The dot-separated path
+     * @param array<string, mixed> $data The data array
+     * @param object|null $sourceObject The source object
+     * @return mixed The resolved value or null
+     */
+    private function resolveDeepPath(string $path, array $data, ?object $sourceObject = null): mixed
+    {
+        $segments = explode('.', $path);
+        $current = null;
+        $isFirstSegment = true;
+        
+        foreach ($segments as $segment) {
+            if ($isFirstSegment) {
+                // First segment: look in data array or source object
+                if (array_key_exists($segment, $data)) {
+                    $current = $data[$segment];
+                } elseif ($sourceObject !== null) {
+                    $current = $this->getPropertyValueFromObject($sourceObject, $segment);
+                } else {
+                    return null;
+                }
+                $isFirstSegment = false;
+            } else {
+                // Subsequent segments: traverse into the current value
+                if ($current === null) {
+                    return null;
+                }
+                
+                if (is_array($current) && array_key_exists($segment, $current)) {
+                    $current = $current[$segment];
+                } elseif (is_object($current)) {
+                    $current = $this->getPropertyValueFromObject($current, $segment);
+                } else {
+                    return null;
+                }
+            }
+        }
+        
+        return $current;
+    }
+
+    /**
+     * Check if a source field exists in data or source object.
+     *
+     * @param string $fieldPath The field path
+     * @param array<string, mixed> $data The data array
+     * @param object|null $sourceObject The source object
+     * @return bool
+     */
+    private function sourceFieldExists(string $fieldPath, array $data, ?object $sourceObject = null): bool
+    {
+        // For deep paths, we check the first segment only
+        $firstSegment = str_contains($fieldPath, '.') 
+            ? explode('.', $fieldPath)[0] 
+            : $fieldPath;
+        
+        if (array_key_exists($firstSegment, $data)) {
+            return true;
+        }
+        
+        if ($sourceObject !== null) {
+            return $this->propertyExists($sourceObject, $firstSegment);
+        }
+        
+        return false;
+    }
+
+    /**
+     * Get the custom hydrators registry.
+     *
+     * @return array<string, callable>
+     */
+    public function getCustomHydrators(): array
+    {
+        return $this->customHydrators;
+    }
+
+    /**
+     * Get a specific custom hydrator by key.
+     *
+     * @param string $key The hydrator key
+     * @return callable|null The hydrator callable or null if not found
+     */
+    public function getCustomHydrator(string $key): ?callable
+    {
+        return $this->customHydrators[$key] ?? null;
+    }
 }

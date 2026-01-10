@@ -42,6 +42,9 @@ final class DataMapperBuilder
     /** @var array<string, callable> */
     private array $customHydrators = [];
 
+    /** @var array<string, callable> */
+    private array $customObjectMappers = [];
+
     /** @var array<string, SensitiveLevel> Global sensitive keys configuration */
     private array $sensitiveKeys = [];
 
@@ -128,6 +131,29 @@ final class DataMapperBuilder
     {
         $this->customHydrators[$key] = $callable;
         return $this;
+    }
+
+    /**
+     * Add a custom object mapper
+     *
+     * @param string $key The identifier key for the object mapper
+     * @param callable $callable The mapper callable (receives object $sourceObject, returns object|null)
+     * @return self
+     */
+    public function addCustomObjectMapper(string $key, callable $callable): self
+    {
+        $this->customObjectMappers[$key] = $callable;
+        return $this;
+    }
+
+    /**
+     * Get the configured custom object mappers.
+     *
+     * @return array<string, callable>
+     */
+    public function getCustomObjectMappers(): array
+    {
+        return $this->customObjectMappers;
     }
 
     /**
@@ -219,6 +245,7 @@ final class DataMapperBuilder
             $this->cache,
             $this->logger,
             $this->customHydrators,
+            $this->customObjectMappers,
             $this->sensitiveKeys,
             $this->defaultSensitiveLevel
         );

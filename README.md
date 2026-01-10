@@ -79,6 +79,17 @@ $rawData = ['first_name' => 'John', 'last_name' => 'Doe'];
 $person = $hydrator->hydrate(Person::class, $rawData);
 ```
 
+### Map objects from DTO sources
+```php
+$objectMapper = $dataMapper->getObjectMapper();
+
+// Map a DTO to a domain object
+$personDto = new PersonDto('John', 'Doe');
+$person = $objectMapper->map(Person::class, $personDto);
+
+// Supports deep path mapping (e.g., 'address.street')
+```
+
 ### Or lazy load a property
 
 ```php
