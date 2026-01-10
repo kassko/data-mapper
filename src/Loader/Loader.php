@@ -1080,6 +1080,12 @@ class Loader implements LoaderInterface
             $source->sensitiveKeys
         );
         
+        // Check if deep path extraction is needed (for SinglePropDataSource returning nested data)
+        $fieldName = $this->getPropertyNameMapping($property);
+        if (is_array($data) && str_contains($fieldName, '.') && $this->fieldExistsInData($fieldName, $data)) {
+            $data = $this->resolveValueFromData($fieldName, $data);
+        }
+        
         // Apply recursive hydration if needed (handles PropertyCandidates, nested objects, etc.)
         $originalData = $data;
         $data = $this->applyRecursiveHydration($property, $data, 0, $object);
@@ -1270,7 +1276,8 @@ class Loader implements LoaderInterface
         if ($propertyAttr !== null && $propertyAttr->mapping !== null) {
             // For properties with mapping, check if any of the mapping source keys exist in data
             foreach ($propertyAttr->mapping as $sourceKey => $targetKey) {
-                if (array_key_exists($sourceKey, $data)) {
+                // Support deep paths in mapping keys as well
+                if ($this->fieldExistsInData($sourceKey, $data)) {
                     return true;
                 }
             }
@@ -1280,7 +1287,8 @@ class Loader implements LoaderInterface
         // Get the mapped field name (uses sourceField if set, otherwise property name)
         $fieldName = $this->getPropertyNameMapping($property);
         
-        return array_key_exists($fieldName, $data);
+        // Support deep paths like "product._keywords" or "address.street"
+        return $this->fieldExistsInData($fieldName, $data);
     }
 
     /**
@@ -1608,17 +1616,21 @@ class Loader implements LoaderInterface
         // Get the field name mapping
         $fieldName = $this->getPropertyNameMapping($property);
         
-        if (!array_key_exists($fieldName, $data)) {
-            // Log warning when key is missing
-            $this->logger->warning('Missing raw data key for property hydration', [
-                'class' => $reflectionClass->getName(),
-                'property' => $propertyName,
-                'expected_key' => $fieldName,
-            ]);
+        // Check if field exists (supports deep paths like "address.street" or "product._keywords")
+        if (!$this->fieldExistsInData($fieldName, $data)) {
+            // Log warning when key is missing (only for non-deep paths to avoid noise)
+            if (!str_contains($fieldName, '.')) {
+                $this->logger->warning('Missing raw data key for property hydration', [
+                    'class' => $reflectionClass->getName(),
+                    'property' => $propertyName,
+                    'expected_key' => $fieldName,
+                ]);
+            }
             return;
         }
         
-        $value = $data[$fieldName];
+        // Resolve value (supports deep paths like "address.street" or "product._keywords")
+        $value = $this->resolveValueFromData($fieldName, $data);
         
         // Check if we should perform recursive hydration
         $value = $this->applyRecursiveHydration($property, $value, $currentDepth, $object);

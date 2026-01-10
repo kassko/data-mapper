@@ -19,6 +19,9 @@ use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\DataMapper\Tests\TestHelpers\LocalFixtureAutoloadTrait;
 use Kassko\DataMapper\Tests\Integration\Features\DeepPathMapping\Fixtures\AddressDto;
 use Kassko\DataMapper\Tests\Integration\Features\DeepPathMapping\Fixtures\AddressWithStreetDto;
+use Kassko\DataMapper\Tests\Integration\Features\DeepPathMapping\Fixtures\BookApiDataSource;
+use Kassko\DataMapper\Tests\Integration\Features\DeepPathMapping\Fixtures\BookWithFlattenedDetails;
+use Kassko\DataMapper\Tests\Integration\Features\DeepPathMapping\Fixtures\BookWithSingleSourceDeepPath;
 use Kassko\DataMapper\Tests\Integration\Features\DeepPathMapping\Fixtures\PersonDto;
 use Kassko\DataMapper\Tests\Integration\Features\DeepPathMapping\Fixtures\PersonWithDeepAddressDto;
 use Kassko\DataMapper\Tests\Integration\Features\DeepPathMapping\Fixtures\PersonWithFlattenedAddress;
@@ -398,5 +401,175 @@ class DeepPathMappingTest extends TestCase
         $this->assertNull($person->getStreetName());
         $this->assertNull($person->getStreetNumber());
         $this->assertEquals('City', $person->getCity());
+    }
+
+    // =========================================================================
+    // MultiPropDataSource Tests (Deep Path from Data Source)
+    // =========================================================================
+
+    public function testDeepPathMappingFromMultiPropDataSource_TwoLevelNesting(): void
+    {
+        // Register the data source class
+        $builder = new DataMapperBuilder();
+        $builder->addCallable(function (string $class) {
+            if ($class === BookApiDataSource::class) {
+                return new BookApiDataSource();
+            }
+            return null;
+        });
+        $builder->build(); // This registers the Loader in LoaderRegistry
+        
+        // Create the object - lazy loading is handled via LoadableTrait + LoaderRegistry
+        $book = new BookWithFlattenedDetails('978-0132350884');
+
+        // Test 2-level deep path: book.title
+        $this->assertEquals('Clean Code', $book->getTitle());
+        
+        // Test 2-level deep path: book.author.name
+        $this->assertEquals('Robert C. Martin', $book->getAuthorName());
+        
+        // Test 2-level deep path: book.author.country
+        $this->assertEquals('USA', $book->getAuthorCountry());
+        
+        // Test 2-level deep path: availability.in_stock
+        $this->assertTrue($book->isInStock());
+    }
+
+    public function testDeepPathMappingFromMultiPropDataSource_ThreeLevelNesting(): void
+    {
+        $builder = new DataMapperBuilder();
+        $builder->addCallable(function (string $class) {
+            if ($class === BookApiDataSource::class) {
+                return new BookApiDataSource();
+            }
+            return null;
+        });
+        $builder->build();
+        
+        $book = new BookWithFlattenedDetails('978-0132350884');
+
+        // Test 3-level deep path: book.publisher.location.city
+        $this->assertEquals('Boston', $book->getPublisherCity());
+    }
+
+    public function testDeepPathMappingFromMultiPropDataSource_ArrayValue(): void
+    {
+        $builder = new DataMapperBuilder();
+        $builder->addCallable(function (string $class) {
+            if ($class === BookApiDataSource::class) {
+                return new BookApiDataSource();
+            }
+            return null;
+        });
+        $builder->build();
+        
+        $book = new BookWithFlattenedDetails('978-0132350884');
+
+        // Test 3-level deep path returning array: book.metadata._tags
+        $tags = $book->getTags();
+        $this->assertIsArray($tags);
+        $this->assertCount(3, $tags);
+        $this->assertContains('programming', $tags);
+        $this->assertContains('software', $tags);
+        $this->assertContains('best-practices', $tags);
+    }
+
+    public function testDeepPathMappingFromMultiPropDataSource_ScalarValue(): void
+    {
+        $builder = new DataMapperBuilder();
+        $builder->addCallable(function (string $class) {
+            if ($class === BookApiDataSource::class) {
+                return new BookApiDataSource();
+            }
+            return null;
+        });
+        $builder->build();
+        
+        $book = new BookWithFlattenedDetails('978-0132350884');
+
+        // Test 3-level deep path returning float: book.metadata._rating
+        $this->assertEquals(4.8, $book->getRating());
+    }
+
+    public function testDeepPathMappingFromMultiPropDataSource_MultiplePropertiesLoaded(): void
+    {
+        $builder = new DataMapperBuilder();
+        $builder->addCallable(function (string $class) {
+            if ($class === BookApiDataSource::class) {
+                return new BookApiDataSource();
+            }
+            return null;
+        });
+        $builder->build();
+        
+        $book = new BookWithFlattenedDetails('978-0132350884');
+
+        // All properties should be loaded from the same data source call
+        $this->assertEquals('Clean Code', $book->getTitle());
+        $this->assertEquals('Robert C. Martin', $book->getAuthorName());
+        $this->assertEquals('USA', $book->getAuthorCountry());
+        $this->assertEquals('Boston', $book->getPublisherCity());
+        $this->assertEquals(['programming', 'software', 'best-practices'], $book->getTags());
+        $this->assertEquals(4.8, $book->getRating());
+        $this->assertTrue($book->isInStock());
+    }
+
+    // =========================================================================
+    // SinglePropDataSource Tests (Deep Path from Single Property Data Source)
+    // =========================================================================
+
+    public function testDeepPathMappingFromSinglePropDataSource_ScalarValue(): void
+    {
+        $builder = new DataMapperBuilder();
+        $builder->addCallable(function (string $class) {
+            if ($class === BookApiDataSource::class) {
+                return new BookApiDataSource();
+            }
+            return null;
+        });
+        $builder->build();
+        
+        $book = new BookWithSingleSourceDeepPath('978-0132350884');
+
+        // Test deep path: reviews.average_rating
+        $this->assertEquals(4.5, $book->getAverageRating());
+    }
+
+    public function testDeepPathMappingFromSinglePropDataSource_ArrayValue(): void
+    {
+        $builder = new DataMapperBuilder();
+        $builder->addCallable(function (string $class) {
+            if ($class === BookApiDataSource::class) {
+                return new BookApiDataSource();
+            }
+            return null;
+        });
+        $builder->build();
+        
+        $book = new BookWithSingleSourceDeepPath('978-0132350884');
+
+        // Test deep path returning array: reviews.items
+        $items = $book->getReviewItems();
+        $this->assertIsArray($items);
+        $this->assertCount(2, $items);
+        $this->assertEquals('John', $items[0]['author']);
+        $this->assertEquals('Jane', $items[1]['author']);
+    }
+
+    public function testDeepPathMappingFromSinglePropDataSource_IntValue(): void
+    {
+        $builder = new DataMapperBuilder();
+        $builder->addCallable(function (string $class) {
+            if ($class === BookApiDataSource::class) {
+                return new BookApiDataSource();
+            }
+            return null;
+        });
+        $builder->build();
+        
+        $book = new BookWithSingleSourceDeepPath('978-0132350884');
+
+        // Test deep path: reviews.total_count
+        $this->assertEquals(2, $book->getTotalReviewsCount());
     }
 }
