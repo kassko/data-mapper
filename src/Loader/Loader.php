@@ -1956,17 +1956,21 @@ class Loader implements LoaderInterface
             // Get the field name mapping
             $fieldName = $this->getPropertyNameMapping($property);
             
-            if (!array_key_exists($fieldName, $data)) {
-                // Log warning when key is missing
-                $this->logger->warning('Missing raw data key for property hydration', [
-                    'class' => $reflectionClass->getName(),
-                    'property' => $propName,
-                    'expected_key' => $fieldName,
-                ]);
+            // Check if field exists (supports deep paths like "address.street")
+            if (!$this->fieldExistsInData($fieldName, $data)) {
+                // Log warning when key is missing (only for non-deep paths to avoid noise)
+                if (!str_contains($fieldName, '.')) {
+                    $this->logger->warning('Missing raw data key for property hydration', [
+                        'class' => $reflectionClass->getName(),
+                        'property' => $propName,
+                        'expected_key' => $fieldName,
+                    ]);
+                }
                 continue;
             }
             
-            $value = $data[$fieldName];
+            // Resolve value (supports deep paths like "address.street")
+            $value = $this->resolveValueFromData($fieldName, $data);
             
             // Apply recursive hydration if needed
             $value = $this->applyRecursiveHydration($property, $value, $currentDepth, $object);
@@ -2813,5 +2817,66 @@ class Loader implements LoaderInterface
     public function getCustomHydrator(string $key): ?callable
     {
         return $this->customHydrators[$key] ?? null;
+    }
+
+    /**
+     * Check if a field exists in data array, supporting deep paths (e.g., "address.street.number").
+     *
+     * @param string $fieldPath The field path (can be a simple key or a dot-separated deep path)
+     * @param array $data The data array to check
+     * @return bool True if the field exists, false otherwise
+     */
+    private function fieldExistsInData(string $fieldPath, array $data): bool
+    {
+        // If no dot, it's a simple key
+        if (!str_contains($fieldPath, '.')) {
+            return array_key_exists($fieldPath, $data);
+        }
+
+        // Deep path: traverse the data array
+        $keys = explode('.', $fieldPath);
+        $current = $data;
+
+        foreach ($keys as $key) {
+            if (!is_array($current) || !array_key_exists($key, $current)) {
+                return false;
+            }
+            $current = $current[$key];
+        }
+
+        return true;
+    }
+
+    /**
+     * Resolve a value from data array using deep path (e.g., "address.street.number").
+     *
+     * @param string $fieldPath The field path (can be a simple key or a dot-separated deep path)
+     * @param array $data The data array to resolve from
+     * @return mixed The resolved value
+     * @throws \RuntimeException If the path cannot be resolved
+     */
+    private function resolveValueFromData(string $fieldPath, array $data): mixed
+    {
+        // If no dot, it's a simple key
+        if (!str_contains($fieldPath, '.')) {
+            return $data[$fieldPath];
+        }
+
+        // Deep path: traverse the data array
+        $keys = explode('.', $fieldPath);
+        $current = $data;
+
+        foreach ($keys as $key) {
+            if (!is_array($current) || !array_key_exists($key, $current)) {
+                throw new \RuntimeException(sprintf(
+                    'Cannot resolve deep path "%s": key "%s" not found in data.',
+                    $fieldPath,
+                    $key
+                ));
+            }
+            $current = $current[$key];
+        }
+
+        return $current;
     }
 }
