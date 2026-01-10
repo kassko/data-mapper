@@ -2,6 +2,8 @@
 
 Defines a data source that hydrates multiple properties from an associative array.
 
+**Important**: Each `MultiPropDataSource` id can only be explicitly referenced ONCE per class via `DataSourceRef`. Other properties are automatically hydrated via "cross-hydration" when the returned data contains keys matching their source field mappings.
+
 **Note**: This attribute can be used in three ways:
 1. Inside `DataSourcesStore` (with `id`)
 2. On classes (with `id`, for shared data sources)
@@ -21,7 +23,7 @@ use Kassko\DataMapper\Attribute\Property;
     new MultiPropDataSource(
         id: 'personData',
         class: PersonRepository::class,
-        method: 'findById',
+        method: 'findById',  // Returns ['first_name' => 'John', 'last_name' => 'Doe', 'email' => 'john@example.com']
         args: ['#id'],
         loadingScope: MultiPropDataSource::SCOPE_ONLY_PROPS,
         loadingScopeProps: ['firstName', 'lastName']
@@ -31,16 +33,17 @@ class Person
 {
     private int $id;
     
+    // Only ONE property references the MultiPropDataSource explicitly
     #[DataSourceRef(id: 'personData')]
     #[Property(sourceField: 'first_name')]
     private ?string $firstName = null;
     
-    #[DataSourceRef(id: 'personData')]
+    // Cross-hydrated: no DataSourceRef, but mapped via sourceField
     #[Property(sourceField: 'last_name')]
     private ?string $lastName = null;
     
-    #[DataSourceRef(id: 'personData')]
-    private ?string $email = null;  // Excluded by loadingScopeProps
+    // Not hydrated: excluded by loadingScopeProps
+    private ?string $email = null;
 }
 ```
 
@@ -50,17 +53,18 @@ class Person
 #[MultiPropDataSource(
     id: 'personData',
     class: PersonRepository::class,
-    method: 'findById',
+    method: 'findById',  // Returns ['firstName' => 'John', 'lastName' => 'Doe']
     args: ['#id']
 )]
 class Person
 {
     private int $id;
     
+    // Only ONE property references the MultiPropDataSource
     #[DataSourceRef(id: 'personData')]
     private ?string $firstName = null;
     
-    #[DataSourceRef(id: 'personData')]
+    // Cross-hydrated automatically from 'lastName' key
     private ?string $lastName = null;
 }
 ```
@@ -135,24 +139,26 @@ class Person {
 
 ## Priority Usage with Scope
 
+The `priority` parameter controls which data source wins when multiple sources can hydrate the same property. Higher priority values take precedence. Properties with their own explicit `DataSourceRef` take precedence over cross-hydrated values at equal priority.
+
 ```php
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourcesStore;
 use Kassko\DataMapper\Attribute\DataSourceRef;
 
 #[DataSourcesStore([
-    // Load defaults for all properties
+    // Low priority: Load defaults for all properties
     new MultiPropDataSource(
         id: 'defaults',
         class: DefaultsService::class,
-        method: 'getDefaults',
+        method: 'getDefaults',  // Returns ['firstName' => 'Default', 'lastName' => 'User', 'email' => 'default@example.com']
         priority: 0
     ),
-    // Override only specific properties with database values
+    // High priority: Override specific properties with database values
     new MultiPropDataSource(
         id: 'database',
         class: DatabaseService::class,
-        method: 'findUser',
+        method: 'findUser',  // Returns ['firstName' => 'John', 'lastName' => 'Doe']
         args: ['#id'],
         loadingScope: MultiPropDataSource::SCOPE_ONLY_PROPS,
         loadingScopeProps: ['firstName', 'lastName'],
@@ -163,14 +169,15 @@ class User
 {
     private int $id;
     
+    // Only ONE reference per MultiPropDataSource id
     #[DataSourceRef(id: 'defaults')]
-    private ?string $firstName = null;  // Will be overridden by database
+    private ?string $email = null;       // Hydrated from 'defaults' (priority 0)
     
-    #[DataSourceRef(id: 'defaults')]
-    private ?string $lastName = null;   // Will be overridden by database
+    #[DataSourceRef(id: 'database')]
+    private ?string $firstName = null;   // Hydrated from 'database' (priority 10)
     
-    #[DataSourceRef(id: 'defaults')]
-    private ?string $email = null;       // Keeps default (not in database scope)
+    // Cross-hydrated from 'database' due to higher priority
+    private ?string $lastName = null;
 }
 ```
 

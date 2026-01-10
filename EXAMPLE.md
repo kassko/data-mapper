@@ -61,7 +61,9 @@ class User
 
 ### Multi-Property Data Source
 
-Use `MultiPropDataSource` when multiple properties come from the same source:
+Use `MultiPropDataSource` when multiple properties come from the same source.
+
+**Important**: Each `MultiPropDataSource` id can only be explicitly referenced ONCE per class via `DataSourceRef`. Other properties are automatically hydrated via "cross-hydration" when the returned data contains keys matching their source field mappings.
 
 ```php
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
@@ -72,7 +74,7 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 #[MultiPropDataSource(
     id: 'personData',
     class: PersonDataSource::class,
-    method: 'findById',
+    method: 'findById',  // Returns ['first_name' => 'John', 'last_name' => 'Doe', 'email' => 'john@example.com']
     args: ['#id']
 )]
 class Person
@@ -81,15 +83,16 @@ class Person
     
     private int $id;
     
+    // Only ONE property explicitly references the MultiPropDataSource
     #[DataSourceRef(id: 'personData')]
     #[Property(sourceField: 'first_name')]
     private ?string $firstName = null;
     
-    #[DataSourceRef(id: 'personData')]
+    // Cross-hydrated automatically from 'last_name' key in the returned data
     #[Property(sourceField: 'last_name')]
     private ?string $lastName = null;
     
-    #[DataSourceRef(id: 'personData')]
+    // Cross-hydrated automatically from 'email' key in the returned data
     private ?string $email = null;
     
     public function __construct(int $id)
@@ -116,7 +119,7 @@ use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 #[MultiPropDataSource(
     id: 'personData',
     class: PersonDataSource::class,
-    method: 'findById',
+    method: 'findById',  // Returns ['firstName' => 'John', 'lastName' => 'Doe']
     args: ['#id']
 )]
 class Person
@@ -125,14 +128,14 @@ class Person
     
     private int $id;
     
-    // From multi-property source
+    // From multi-property source - ONE explicit reference
     #[DataSourceRef(id: 'personData')]
     private ?string $firstName = null;
     
-    #[DataSourceRef(id: 'personData')]
+    // Cross-hydrated from 'personData' result
     private ?string $lastName = null;
     
-    // From single-property source
+    // From single-property source (independent)
     #[SinglePropDataSource(
         class: AvatarService::class,
         method: 'getAvatar',
@@ -365,7 +368,7 @@ class ValidationService
     new MultiPropDataSource(
         id: 'personSource',
         class: PersonDataSource::class,
-        method: 'getData',
+        method: 'getData',  // Returns ['email' => 'john@example.com', 'age' => 30]
         args: ['#id']
     )
 ])]
@@ -375,6 +378,7 @@ class Person
     
     private int $id;
     
+    // Only ONE property explicitly references the MultiPropDataSource
     #[DataSourceRef(id: 'personSource')]
     #[PropertySettingHook(
         after_set_property: 'validateEmail',
@@ -383,7 +387,7 @@ class Person
     )]
     private ?string $email = null;
     
-    #[DataSourceRef(id: 'personSource')]
+    // Cross-hydrated from 'personSource' result (no explicit DataSourceRef needed)
     #[PropertySettingHook(
         after_set_property: 'validateAge',
         class: ValidationService::class,

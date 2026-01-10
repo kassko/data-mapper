@@ -138,6 +138,39 @@ class Team
 }
 ```
 
+#### `addCustomObjectMapper(string $key, callable $callable): self`
+
+Adds a custom object mapper for DTO-to-domain object transformation.
+
+```php
+$builder->addCustomObjectMapper('person_mapper', function (?PersonDTO $dto): ?Person {
+    if ($dto === null) {
+        return null;
+    }
+    $person = new Person();
+    $person->firstName = $dto->getFirstName();
+    $person->lastName = $dto->getLastName();
+    return $person;
+});
+```
+
+Usage in attributes:
+
+```php
+use Kassko\DataMapper\Attribute\CustomObjectMapper;
+use Kassko\DataMapper\Attribute\Property;
+
+class Team
+{
+    #[Property]
+    public string $name;
+    
+    #[Property]
+    #[CustomObjectMapper(key: 'person_mapper', inputClass: PersonDTO::class)]
+    public Person $leader;
+}
+```
+
 ### Caching & Logging
 
 #### `setCache(CacheInterface $cache): self`
