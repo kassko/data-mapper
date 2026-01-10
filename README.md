@@ -44,6 +44,11 @@ $dataMapperbuilder->addCustomHydrator('my_parser', function(array $data): ?objec
     return new MyClass($data);
 });
 
+// Optional: Add custom object mappers (for DTO-to-domain mapping)
+$dataMapperbuilder->addCustomObjectMapper('my_mapper', function(?object $dto): ?object {
+    return $dto ? new MyDomainClass($dto->getName()) : null;
+});
+
 $dataMapper = $dataMapperbuilder->build();
 ```
 Discover everything you can configure with DataMapperBuilder [here](docs/classes/DataMapperBuilder.md#configuration-methods).
@@ -289,28 +294,38 @@ class User
 
 ### Multi-Property Hydration
 
-Use `MultiPropDataSource` on the class to hydrate multiple properties from one data source:
+Use `MultiPropDataSource` on the class to hydrate multiple properties from one data source call.
+
+**Important**: Each `MultiPropDataSource` id can only be explicitly referenced ONCE per class. Other properties are hydrated automatically via "cross-hydration" if the returned data contains keys matching their mapped source fields.
 
 ```php
 use Kassko\DataMapper\Attribute\MultiPropDataSource;
 use Kassko\DataMapper\Attribute\DataSourceRef;
+use Kassko\DataMapper\Attribute\Property;
 
 #[MultiPropDataSource(
     id: 'personData',
     class: PersonSource::class,
-    method: 'getAll',
+    method: 'getAll',  // Returns ['firstName' => 'John', 'lastName' => 'Doe']
     args: ['#id']
 )]
 class Person
 {
     private int $id;
     
+    // Only ONE property references the MultiPropDataSource explicitly
     #[DataSourceRef(id: 'personData')]
     private ?string $firstName = null;
     
-    #[DataSourceRef(id: 'personData')]
+    // Other properties are cross-hydrated if data contains matching keys
+    // No DataSourceRef needed - hydrated from 'lastName' key in personData result
     private ?string $lastName = null;
 }
+```
+
+When `firstName` is loaded, the `personData` source returns `['firstName' => 'John', 'lastName' => 'Doe']`. The `lastName` property is automatically hydrated because:
+- It has no explicit `DataSourceRef`
+- The returned data contains a `lastName` key matching its source field mapping
 ```
 
 ### Choosing Between Them
@@ -512,6 +527,38 @@ $dataMapperbuilder->addCustomHydrator('complex_parser', function(array $data): ?
 ```
 
 See [docs/attributes/CustomHydrator.md](docs/attributes/CustomHydrator.md) for details.
+
+#### CustomObjectMapper
+
+Define custom object-to-object mapping logic for DTO-based data sources:
+
+```php
+use Kassko\DataMapper\Attribute\CustomObjectMapper;
+
+class Document
+{
+    #[CustomObjectMapper(
+        key: 'dto_mapper',
+        inputClass: ContentDTO::class,
+        outputClass: ContentInterface::class
+    )]
+    private ?ContentInterface $content = null;
+}
+
+// Register the object mapper
+$dataMapperbuilder->addCustomObjectMapper('dto_mapper', function(?ContentDTO $dto): ?object {
+    if ($dto === null) {
+        return null;
+    }
+    return match($dto->getType()) {
+        'text' => new TextContent($dto->getValue()),
+        'html' => new HtmlContent($dto->getValue()),
+        default => null,
+    };
+});
+```
+
+See [docs/attributes/CustomObjectMapper.md](docs/attributes/CustomObjectMapper.md) for details.
 
 #### Needs
 

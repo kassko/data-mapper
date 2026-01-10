@@ -1297,6 +1297,9 @@ class Loader implements LoaderInterface
      * Properties are only hydratable from a data source if:
      * - They are enabled
      * - They are authorized by the HandleProperty pattern (resolve to true)
+     * 
+     * Cross-hydration: Properties without any data source can also be hydrated
+     * if the data contains a key matching their field name (property name or sourceField).
      *
      * @param object $object
      * @param MultiPropDataSource $source
@@ -1327,10 +1330,49 @@ class Loader implements LoaderInterface
             $multiSource = $this->attributeReader->readMultiPropDataSource($property);
             if ($multiSource !== null && $multiSource->id === $source->id) {
                 $properties[] = $property;
+                continue;
+            }
+
+            // Cross-hydration: Include properties WITHOUT any data source
+            // They can be hydrated if the data contains a matching key
+            if ($this->propertyHasNoDataSource($property)) {
+                $properties[] = $property;
             }
         }
 
         return $properties;
+    }
+
+    /**
+     * Check if a property has no data source attributes.
+     * Used for cross-hydration from MultiPropDataSource.
+     *
+     * @param ReflectionProperty $property
+     * @return bool True if property has no data source
+     */
+    private function propertyHasNoDataSource(ReflectionProperty $property): bool
+    {
+        $dataSourceRef = $this->attributeReader->readDataSourceRef($property);
+        if ($dataSourceRef !== null && $dataSourceRef->enabled) {
+            return false;
+        }
+
+        $singleSource = $this->attributeReader->readSinglePropDataSource($property);
+        if ($singleSource !== null && $singleSource->enabled) {
+            return false;
+        }
+
+        $multiSource = $this->attributeReader->readMultiPropDataSource($property);
+        if ($multiSource !== null && $multiSource->enabled) {
+            return false;
+        }
+
+        $customHydrator = $this->attributeReader->readCustomHydrator($property);
+        if ($customHydrator !== null && $customHydrator->enabled) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
