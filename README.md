@@ -46,6 +46,7 @@ $dataMapperbuilder->addCustomHydrator('my_parser', function(array $data): ?objec
 
 $dataMapper = $dataMapperbuilder->build();
 ```
+Discover everything you can configure with DataMapperBuilder [here](docs/classes/DataMapperBuilder.md#configuration-methods).
 
 ### Configure your data object
 
@@ -77,6 +78,8 @@ $hydrator = $dataMapper->getHydrator();
 
 $rawData = ['first_name' => 'John', 'last_name' => 'Doe'];
 $person = $hydrator->hydrate(Person::class, $rawData);
+
+// Supports deep path mapping (e.g., 'address.street')
 ```
 
 ### Map objects from DTO sources
