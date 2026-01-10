@@ -1,98 +1,114 @@
 # Summary: Deep Path Mapping - Complete Fix and Extension
 
-**Date:** 2026-01-10  
-**Branch:** `fix/code/FixAndTest_DeepPathMapping`  
+**Date:** 2026-01-10
+**Branch:** `fix/code/FixAndTest_DeepPathMapping`
 **Commits:** 3
 
 ## Context
 
-L'utilisateur avait un doute sur le fonctionnement du deep path mapping avec les sources de données de type raw data. Les tests ont confirmé ce doute : le deep path ne fonctionnait que pour les sources DTO (via ObjectMapper), pas pour les raw data (via Hydrator) ni pour les DataSources (MultiPropDataSource, SinglePropDataSource).
+Deep path mapping was not working with raw data sources. Testing confirmed this: deep path mapping only worked for DTO sources (via ObjectMapper), not for raw data (via Hydrator) or DataSources (MultiPropDataSource, SinglePropDataSource).
 
-## Problèmes Identifiés
+## Identified Issues
 
 ### 1. Hydrator (Raw Data)
-- **Symptôme:** Propriétés avec `sourceField: 'address.street'` restaient à `null`
-- **Cause:** `hydrateObject()` utilisait `array_key_exists()` directement
+- **Symptom:** Properties with `sourceField: 'address.street'` remained `null`
+- **Cause:** `hydrateObject()` used `array_key_exists()` directly
 
 ### 2. MultiPropDataSource
-- **Symptôme:** Propriétés avec deep path n'étaient pas matchées aux données
-- **Cause:** `propertyMatchesDataField()` et `hydrateProperty()` utilisaient `array_key_exists()`
+- **Symptom:** Properties with deep path were not matched to data
+- **Cause:** `propertyMatchesDataField()` and `hydrateProperty()` used `array_key_exists()`
 
 ### 3. SinglePropDataSource
-- **Symptôme:** Données imbriquées non extraites
-- **Cause:** `loadSingleProperty()` n'appliquait pas le deep path après l'appel API
+- **Symptom:** Nested data not extracted
+- **Cause:** `loadSingleProperty()` did not apply the deep path after the API call
 
-## Solution Implémentée
+## Implemented Solution
 
-### Méthodes Helper (Commit 1)
+### Helper Methods (Commit 1)
 
 ```php
 private function fieldExistsInData(string $fieldPath, array $data): bool
 private function resolveValueFromData(string $fieldPath, array $data): mixed
 ```
 
-### Méthodes Modifiées
+### Modified Methods
 
-| Méthode | Fichier | Changement |
+| Method | File | Change |
+
 |---------|---------|------------|
-| `hydrateObject()` | Loader.php | Utilise les helpers pour deep path |
-| `hydrateProperty()` | Loader.php | Utilise les helpers pour deep path |
-| `propertyMatchesDataField()` | Loader.php | Vérifie deep paths pour le matching |
-| `loadSingleProperty()` | Loader.php | Extrait valeur via deep path si spécifié |
+| `hydrateObject()` | Loader.php | Uses helpers for deep path |
 
-## Tests Créés
+| `hydrateProperty()` | Loader.php | Uses helpers for deep path |
 
-### Structure des Tests
+| `propertyMatchesDataField()` | Loader.php | Checks deep paths for matching |
+
+| `loadSingleProperty()` | Loader.php | Extracts value via deep path if specified |
+
+## Created Tests
+
+### Test Structure
 ```
 tests/Integration/Features/DeepPathMapping/
-├── DeepPathMappingTest.php           # 22 tests
+├── DeepPathMappingTest.php # 22 tests
 └── Fixtures/
-    ├── AddressDto.php                # DTO 2 niveaux
-    ├── StreetDto.php                 # DTO pour 3 niveaux
-    ├── AddressWithStreetDto.php      # DTO imbriqué (3 niveaux)
-    ├── PersonDto.php                 # DTO source
-    ├── PersonWithDeepAddressDto.php  # DTO source 3 niveaux
-    ├── PersonWithFlattenedAddress.php      # Cible 2 niveaux
-    ├── PersonWithDeeplyFlattenedAddress.php # Cible 3 niveaux
-    ├── BookApiDataSource.php         # Mock API imbriquée
-    ├── BookWithFlattenedDetails.php  # MultiPropDataSource + deep path
-    └── BookWithSingleSourceDeepPath.php # SinglePropDataSource + deep path
+├── AddressDto.php # 2-level DTO
+├── StreetDto.php # 3-level DTO
+├── AddressWithStreetDto.php # Nested DTO (3 levels)
+├── PersonDto.php # Source DTO
+├── PersonWithDeepAddressDto.php # 3-level Source DTO
+├── PersonWithFlattenedAddress.php # 2-level Target
+├── PersonWithDeeplyFlattenedAddress.php # 3-level target
+├── BookApiDataSource.php # Nested API mockup
+├── BookWithFlattenedDetails.php # MultiPropDataSource + deep path
+└── BookWithSingleSourceDeepPath.php # SinglePropDataSource + deep path
 ```
 
-### Couverture des Tests
+### Test Coverage
 
-| Scénario | DTO | Raw Data | MultiPropDS | SinglePropDS |
+| Scenario | DTO | Raw Data | MultiPropDS | SinglePropDS |
+
 |----------|-----|----------|-------------|--------------|
-| Nesting 2 niveaux | ✅ | ✅ | ✅ | ✅ |
-| Nesting 3 niveaux | ✅ | ✅ | ✅ | - |
-| Valeurs null/manquantes | ✅ | ✅ | - | - |
-| Valeurs array | ✅ | ✅ | ✅ | ✅ |
-| Valeurs scalaires | ✅ | ✅ | ✅ | ✅ |
-| Objet existant | ✅ | ✅ | - | - |
+| 2-level nesting | ✅ | ✅ | ✅ | ✅ |
 
-## Résultats
+| 3-level nesting | ✅ | ✅ | ✅ | - |
+
+| Null/missing values ​​| ✅ | ✅ | - | - |
+
+| Array values ​​| ✅ | ✅ | ✅ | ✅ |
+
+| Scalar values ​​| ✅ | ✅ | ✅ | ✅ |
+
+| Existing object | ✅ | ✅ | - | - |
+
+## Results
 
 ```
 Tests: 22, Assertions: 92
 OK (22 tests passed)
 
-All 222 integration tests pass with no regressions.
+All 222 integration tests passed with no regressions.
+
 ```
 
-## Fichiers Modifiés
+## Modified Files
 
-| Fichier | Changement |
+| File | Change |
+
 |---------|------------|
-| `src/Loader/Loader.php` | +75 lignes, 4 méthodes modifiées |
 
-## Fichiers Ajoutés
+| `src/Loader/Loader.php` | +75 lines, 4 methods modified |
 
-| Type | Fichiers |
+## Added Files
+
+| Type | Files |
+
 |------|----------|
-| Tests | 1 fichier (22 tests) |
-| Fixtures | 10 fichiers |
 
-## Commits
+| Tests | 1 file (22 tests) |
+
+| Fixtures | 10 files |
+
+##Commit
 
 1. `2ce1487` - fix: Deep path mapping now works for raw data hydration
 2. `6667867` - docs: Add PR and summary documentation
@@ -100,10 +116,10 @@ All 222 integration tests pass with no regressions.
 
 ## Impact
 
-- **Breaking Changes:** Aucun
-- **Comportement:** Le `#[Property(sourceField: 'deep.path')]` fonctionne maintenant avec :
-  - Hydrator (raw data arrays)
-  - ObjectMapper (DTO sources) - déjà fonctionnel
-  - MultiPropDataSource (lazy loading)
-  - SinglePropDataSource (lazy loading)
-- **Performance:** Impact négligeable
+- **Breaking Changes:** None
+- **Behavior:** The `#[Property(sourceField: 'deep.path')]` now works with: 
+- Hydrator (raw data arrays) 
+- ObjectMapper (DTO sources) - already working 
+- MultiPropDataSource (lazy loading) 
+- SinglePropDataSource (lazy loading)
+- **Performance:** Negligible impact
