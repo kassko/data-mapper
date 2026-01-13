@@ -192,4 +192,136 @@ class SetterGetterIntegrationTest extends TestCase
         $this->assertFalse($testClass->wasAdderCalled());
         $this->assertEquals(['key1' => 'value1', 'key2' => 'value2'], $testClass->getConfig());
     }
+
+    public function testExplicitAdderWithSetterAttribute(): void
+    {
+        $testClass = new class {
+            use SetterTrait;
+            
+            private array $items = [];
+            private array $methodCalls = [];
+
+            #[\Kassko\DataMapper\Attribute\Setter(name: 'addItem', type: \Kassko\DataMapper\Attribute\Setter::TYPE_ADDER)]
+            private array $collection = [];
+
+            public function addItem(mixed $item): void
+            {
+                $this->methodCalls[] = 'addItem';
+                $this->collection[] = $item;
+            }
+
+            public function getCollection(): array
+            {
+                return $this->collection;
+            }
+
+            public function getMethodCalls(): array
+            {
+                return $this->methodCalls;
+            }
+        };
+
+        $lazyLoader = new \Kassko\DataMapper\Loader\Loader(new \Kassko\DataMapper\ServiceResolver());
+
+        $data = ['collection' => ['item1', 'item2', 'item3']];
+        
+        $reflection = new \ReflectionClass($lazyLoader);
+        $method = $reflection->getMethod('hydrateObject');
+        $method->invoke($lazyLoader, $testClass, $data, null, 0);
+
+        $this->assertCount(3, $testClass->getMethodCalls());
+        $this->assertEquals(['item1', 'item2', 'item3'], $testClass->getCollection());
+    }
+
+    public function testIndexedAdderWithSetterAttribute(): void
+    {
+        $testClass = new class {
+            use SetterTrait;
+            
+            private array $methodCalls = [];
+
+            #[\Kassko\DataMapper\Attribute\Setter(name: 'addAddress', type: \Kassko\DataMapper\Attribute\Setter::TYPE_INDEXED_ADDER)]
+            private array $addresses = [];
+
+            public function addAddress(mixed $index, mixed $address): void
+            {
+                $this->methodCalls[] = ['method' => 'addAddress', 'index' => $index, 'value' => $address];
+                $this->addresses[$index] = $address;
+            }
+
+            public function getAddresses(): array
+            {
+                return $this->addresses;
+            }
+
+            public function getMethodCalls(): array
+            {
+                return $this->methodCalls;
+            }
+        };
+
+        $lazyLoader = new \Kassko\DataMapper\Loader\Loader(new \Kassko\DataMapper\ServiceResolver());
+
+        // Associative array - indexed adder should preserve keys
+        $data = ['addresses' => ['home' => '123 Main St', 'work' => '456 Office Blvd']];
+        
+        $reflection = new \ReflectionClass($lazyLoader);
+        $method = $reflection->getMethod('hydrateObject');
+        $method->invoke($lazyLoader, $testClass, $data, null, 0);
+
+        $this->assertCount(2, $testClass->getMethodCalls());
+        $this->assertEquals(['home' => '123 Main St', 'work' => '456 Office Blvd'], $testClass->getAddresses());
+        
+        // Verify the correct index was passed to each call
+        $this->assertEquals('home', $testClass->getMethodCalls()[0]['index']);
+        $this->assertEquals('work', $testClass->getMethodCalls()[1]['index']);
+    }
+
+    public function testIndexedAdderWithListArray(): void
+    {
+        $testClass = new class {
+            use SetterTrait;
+            
+            private array $methodCalls = [];
+
+            #[\Kassko\DataMapper\Attribute\Setter(name: 'addTag', type: \Kassko\DataMapper\Attribute\Setter::TYPE_INDEXED_ADDER)]
+            private array $tags = [];
+
+            public function addTag(mixed $index, mixed $tag): void
+            {
+                $this->methodCalls[] = ['method' => 'addTag', 'index' => $index, 'value' => $tag];
+                $this->tags[$index] = $tag;
+            }
+
+            public function getTags(): array
+            {
+                return $this->tags;
+            }
+
+            public function getMethodCalls(): array
+            {
+                return $this->methodCalls;
+            }
+        };
+
+        $lazyLoader = new \Kassko\DataMapper\Loader\Loader(new \Kassko\DataMapper\ServiceResolver());
+
+        // List array - indexed adder should get numeric indexes
+        $data = ['tags' => ['php', 'symfony', 'datamapper']];
+        
+        $reflection = new \ReflectionClass($lazyLoader);
+        $method = $reflection->getMethod('hydrateObject');
+        $method->invoke($lazyLoader, $testClass, $data, null, 0);
+
+        $this->assertCount(3, $testClass->getMethodCalls());
+        $this->assertEquals([0 => 'php', 1 => 'symfony', 2 => 'datamapper'], $testClass->getTags());
+        
+        // Verify numeric indexes were passed
+        $this->assertEquals(0, $testClass->getMethodCalls()[0]['index']);
+        $this->assertEquals(1, $testClass->getMethodCalls()[1]['index']);
+        $this->assertEquals(2, $testClass->getMethodCalls()[2]['index']);
+    }
 }
+
+// Helper trait to avoid reflection issues with anonymous classes
+trait SetterTrait {}

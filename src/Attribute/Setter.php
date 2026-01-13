@@ -20,10 +20,11 @@ final class Setter
 {
     public const TYPE_SETTER = 'setter';
     public const TYPE_ADDER = 'adder';
+    public const TYPE_INDEXED_ADDER = 'indexed_adder';
 
     public function __construct(
         public readonly ?string $name = null,  // Method name
-        public readonly string $type = self::TYPE_SETTER,  // 'setter' or 'adder'
+        public readonly string $type = self::TYPE_SETTER,  // 'setter', 'adder', or 'indexed_adder'
         public readonly bool $cascade = true,  // Whether this attribute cascades to child classes
         public readonly bool $enabled = true,  // Whether this attribute is active (disabled attributes are ignored)
     ) {}
