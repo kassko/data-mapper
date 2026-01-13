@@ -859,7 +859,7 @@ $collector->clear();
 
 ### Constructor Parameter Injection
 
-Use `#[Param]` to inject values into constructor parameters. All constructor parameters MUST have a Param attribute:
+Constructor parameters must **either be optional OR have a `#[Param]` attribute**. Property references (`#id`, `property('id')`, `##object`) are forbidden in constructors because the object does not exist yet.
 
 ```php
 use Kassko\DataMapper\Attribute\Param;
@@ -869,12 +869,17 @@ class User
 {
     use LoadableTrait;
     
+    private ?string $externalId;
     private string $userId;
     
     public function __construct(
+        // Optional parameter without #[Param] - uses default value
+        ?string $externalId = null,
+        // Parameter with #[Param] - value resolved from context
         #[Param(value: "expr(context('requestedUserId'))")]
-        string $userId
+        string $userId = ''
     ) {
+        $this->externalId = $externalId;
         $this->userId = $userId;
     }
 }
@@ -886,6 +891,7 @@ ContextRegistry::set('requestedUserId', '12345');
 $loader = LoaderRegistry::get();
 $user = $loader->instantiateWithParams(User::class);
 echo $user->userId; // "12345"
+echo $user->externalId; // null (default value)
 ```
 
 ### Getter Parameter Injection
@@ -930,6 +936,34 @@ class Person
         $this->email = $domain ? $email . '@' . $domain : $email;
     }
 }
+```
+
+### Indexed Adder Parameter Injection
+
+For indexed adders (`TYPE_INDEXED_ADDER`), the first two parameters (index and value) must NOT have Param. Additional parameters (from 3rd position) can have Param:
+
+```php
+use Kassko\DataMapper\Attribute\Param;
+use Kassko\DataMapper\Attribute\Setter;
+
+class Person
+{
+    #[Setter(name: 'addAddress', type: Setter::TYPE_INDEXED_ADDER)]
+    private array $addresses = [];
+
+    public function addAddress(
+        mixed $index,    // First parameter: index from array key, NO Param
+        mixed $address,  // Second parameter: value from array, NO Param
+        #[Param(value: "expr(context('address_prefix'))")]
+        string $prefix = ''
+    ): void {
+        $this->addresses[$prefix . $index] = $address;
+    }
+}
+
+// With context('address_prefix') = 'addr_'
+// and data: ['addresses' => ['home' => '123 Main St']]
+// Results in: $this->addresses['addr_home'] = '123 Main St'
 ```
 
 ### Supported Param Values

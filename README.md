@@ -410,13 +410,42 @@ Available scopes: `SCOPE_ALL`, `SCOPE_ONLY_KEYS`, `SCOPE_EXCEPT_KEYS`, `SCOPE_ON
 
 ### Getter & Setter
 
-Custom property access:
+Custom property access with support for different getter/setter types:
 
 ```php
-#[Getter(name: 'isEnabled', type: 'isser')]
-#[Setter(name: 'setName', type: 'setter')]
-private ?string $name = null;
+use Kassko\DataMapper\Attribute\Getter;
+use Kassko\DataMapper\Attribute\Setter;
+
+class Person
+{
+    // Standard getter and setter
+    #[Getter(name: 'getFullName', type: Getter::TYPE_GETTER)]
+    #[Setter(name: 'setName', type: Setter::TYPE_SETTER)]
+    private ?string $name = null;
+    
+    // Boolean property with isser
+    #[Getter(name: 'isActive', type: Getter::TYPE_ISSER)]
+    private bool $active = false;
+    
+    // Existence check with haser
+    #[Getter(name: 'hasEmail', type: Getter::TYPE_HASER)]
+    private ?string $email = null;
+    
+    // Collection with adder
+    #[Setter(name: 'addTag', type: Setter::TYPE_ADDER)]
+    private array $tags = [];
+    
+    // Associative array with indexed adder
+    #[Setter(name: 'addAddress', type: Setter::TYPE_INDEXED_ADDER)]
+    private array $addresses = [];
+    
+    public function addAddress(mixed $key, mixed $value): void {
+        $this->addresses[$key] = $value;
+    }
+}
 ```
+
+See [Getter](docs/attributes/Getter.md) and [Setter](docs/attributes/Setter.md) for details.
 
 #### PropertyInstantiatingHook
 

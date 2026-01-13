@@ -26,6 +26,7 @@ use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
 use Kassko\DataMapper\Attribute\PropertyHydratingHook;
 use Kassko\DataMapper\Attribute\Param;
+use Kassko\DataMapper\Attribute\Setter;
 use Kassko\DataMapper\DataCollector\AttributeCascadeCollector;
 use Kassko\DataMapper\DataCollector\DataLineageCollector;
 use Kassko\DataMapper\Exception\MethodAliasNotFoundException;
@@ -133,7 +134,7 @@ class Loader implements LoaderInterface
      * 
      * @param string $className The class to instantiate
      * @return object The instantiated object
-     * @throws \InvalidArgumentException If constructor has parameters without Param attribute
+     * @throws \InvalidArgumentException If constructor has non-optional parameters without Param attribute
      *                                   or if forbidden expressions are used
      */
     public function instantiateWithParams(string $className): object
@@ -153,9 +154,15 @@ class Loader implements LoaderInterface
             $paramAttrs = $param->getAttributes(Param::class);
             
             if (empty($paramAttrs)) {
+                // Allow optional parameters without #[Param] attribute - use default value
+                if ($param->isOptional()) {
+                    $resolvedArgs[] = $param->getDefaultValue();
+                    continue;
+                }
+                
                 throw new \InvalidArgumentException(sprintf(
-                    'Constructor parameter "%s" in class "%s" must have a #[Param] attribute. ' .
-                    'DataMapper does not support constructor parameters without Param attributes.',
+                    'Constructor parameter "%s" in class "%s" must either be optional or have a #[Param] attribute. ' .
+                    'DataMapper does not support required constructor parameters without Param attributes.',
                     $param->getName(),
                     $className
                 ));
@@ -2059,7 +2066,21 @@ class Loader implements LoaderInterface
         if ($setter !== null && $setter->name !== null) {
             // Use explicit setter method
             if (method_exists($object, $setter->name)) {
-                $object->{$setter->name}($value);
+                // Handle different setter types
+                if ($setter->type === Setter::TYPE_ADDER && is_array($value)) {
+                    // Adder: call method for each item in the array
+                    foreach ($value as $item) {
+                        $this->callMethodWithParams($object, $setter->name, $property, [$item]);
+                    }
+                } elseif ($setter->type === Setter::TYPE_INDEXED_ADDER && is_array($value)) {
+                    // Indexed adder: call method with index and item
+                    foreach ($value as $index => $item) {
+                        $this->callMethodWithParams($object, $setter->name, $property, [$index, $item]);
+                    }
+                } else {
+                    // Regular setter
+                    $this->callMethodWithParams($object, $setter->name, $property, [$value]);
+                }
                 // Execute after_set_property hooks
                 $this->executeSettingHooks($object, $property, 'after', $value);
                 return;
@@ -2093,6 +2114,40 @@ class Loader implements LoaderInterface
         
         // Execute after_set_property hooks
         $this->executeSettingHooks($object, $property, 'after', $value);
+    }
+
+    /**
+     * Call a method on an object with additional parameters resolved from Param attributes.
+     * 
+     * @param object $object The object to call the method on
+     * @param string $methodName The method name
+     * @param ReflectionProperty $property The property (for context)
+     * @param array $baseArgs The base arguments (value for setter, [item] for adder, [index, item] for indexed adder)
+     */
+    private function callMethodWithParams(object $object, string $methodName, ReflectionProperty $property, array $baseArgs): void
+    {
+        $reflectionMethod = new \ReflectionMethod($object, $methodName);
+        $parameters = $reflectionMethod->getParameters();
+        
+        // Determine how many base args we have (skip these when looking for Param)
+        $baseArgCount = count($baseArgs);
+        $resolvedArgs = $baseArgs;
+        
+        // Process additional parameters (after base args) that may have Param attribute
+        for ($i = $baseArgCount; $i < count($parameters); $i++) {
+            $param = $parameters[$i];
+            $paramAttrs = $param->getAttributes(Param::class);
+            
+            if (!empty($paramAttrs)) {
+                /** @var Param $paramAttr */
+                $paramAttr = $paramAttrs[0]->newInstance();
+                $resolvedArgs[] = $this->resolveParamValueWithContext($paramAttr->value, $object);
+            } elseif ($param->isOptional()) {
+                $resolvedArgs[] = $param->getDefaultValue();
+            }
+        }
+        
+        $reflectionMethod->invokeArgs($object, $resolvedArgs);
     }
 
     /**

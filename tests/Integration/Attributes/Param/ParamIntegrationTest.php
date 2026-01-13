@@ -11,20 +11,25 @@ declare(strict_types=1);
  * please view the LICENSE and NOTICE files that were distributed with this source code.
  */
 
-namespace Kassko\DataMapper\Tests\Integration;
+namespace Kassko\DataMapper\Tests\Integration\Attributes\Param;
 
 use Kassko\DataMapper\ArrayServiceLocator;
-use Kassko\DataMapper\Attribute\DataSourceRef;
-use Kassko\DataMapper\Attribute\DataSourcesStore;
-use Kassko\DataMapper\Attribute\MultiPropDataSource;
-use Kassko\DataMapper\Attribute\Param;
-use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\DataMapper;
 use Kassko\DataMapper\DataMapperBuilder;
-use Kassko\DataMapper\ObjectExtension\LoadableTrait;
 use Kassko\DataMapper\Registry\ContextRegistry;
 use Kassko\DataMapper\Registry\LoaderRegistry;
 use Kassko\DataMapper\ServiceResolver;
+use Kassko\DataMapper\Tests\Integration\Attributes\Param\Fixtures\Address;
+use Kassko\DataMapper\Tests\Integration\Attributes\Param\Fixtures\NestedPersonWithParam;
+use Kassko\DataMapper\Tests\Integration\Attributes\Param\Fixtures\ParentWithNestedParam;
+use Kassko\DataMapper\Tests\Integration\Attributes\Param\Fixtures\PersonWithConstructorParam;
+use Kassko\DataMapper\Tests\Integration\Attributes\Param\Fixtures\PersonWithIndexedAdder;
+use Kassko\DataMapper\Tests\Integration\Attributes\Param\Fixtures\PersonWithOptionalConstructorParam;
+use Kassko\DataMapper\Tests\Integration\Attributes\Param\Fixtures\PersonWithPropertyExprParam;
+use Kassko\DataMapper\Tests\Integration\Attributes\Param\Fixtures\PersonWithPropertyRefParam;
+use Kassko\DataMapper\Tests\Integration\Attributes\Param\Fixtures\PersonWithServiceParam;
+use Kassko\DataMapper\Tests\Integration\Attributes\Param\Fixtures\PersonWithStaticParam;
+use Kassko\DataMapper\Tests\Integration\Attributes\Param\Fixtures\PersonWithoutParam;
 use PHPUnit\Framework\TestCase;
 
 class ParamIntegrationTest extends TestCase
@@ -40,6 +45,10 @@ class ParamIntegrationTest extends TestCase
         ContextRegistry::clear();
         LoaderRegistry::clear();
     }
+
+    // ========================================================================
+    // Constructor Parameter Tests
+    // ========================================================================
 
     public function testConstructorWithContextParam(): void
     {
@@ -98,7 +107,7 @@ class ParamIntegrationTest extends TestCase
         $loader = LoaderRegistry::get();
         
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('must have a #[Param] attribute');
+        $this->expectExceptionMessage('must either be optional or have a #[Param] attribute');
         
         $loader->instantiateWithParams(PersonWithoutParam::class);
     }
@@ -161,116 +170,67 @@ class ParamIntegrationTest extends TestCase
         // Nested object should have constructor param resolved
         $this->assertEquals('Nested Person', $child->name);
     }
-}
 
-// Test fixtures
+    // ========================================================================
+    // Optional Constructor Parameter Tests (New Feature)
+    // ========================================================================
 
-class PersonWithConstructorParam
-{
-    public string $name;
-    
-    public function __construct(
-        #[Param(value: "expr(context('defaultName'))")]
-        string $name
-    ) {
-        $this->name = $name;
-    }
-}
-
-class PersonWithStaticParam
-{
-    public string $name;
-    
-    public function __construct(
-        #[Param(value: "Default Static Name")]
-        string $name
-    ) {
-        $this->name = $name;
-    }
-}
-
-class PersonWithServiceParam
-{
-    public $service;
-    
-    public function __construct(
-        #[Param(value: "expr(service('nameGenerator'))")]
-        $service
-    ) {
-        $this->service = $service;
-    }
-}
-
-class PersonWithoutParam
-{
-    public string $name;
-    
-    public function __construct(string $name)
+    public function testConstructorWithOptionalParameterWithoutParam(): void
     {
-        $this->name = $name;
+        // Set up context for the Param-annotated parameter
+        ContextRegistry::set('userId', 'user-123');
+        
+        $serviceResolver = new ServiceResolver();
+        $dataMapper = new DataMapper($serviceResolver);
+        $loader = LoaderRegistry::get();
+        
+        // Instantiate class with optional constructor parameter (no #[Param] required)
+        $object = $loader->instantiateWithParams(PersonWithOptionalConstructorParam::class);
+        
+        // Optional parameter should use default value (null)
+        $this->assertNull($object->socialSecurityNumber);
+        // Param-annotated parameter should be resolved from context
+        $this->assertEquals('user-123', $object->id);
     }
-}
 
-class PersonWithPropertyRefParam
-{
-    public string $name;
-    
-    public function __construct(
-        #[Param(value: "#name")]
-        string $name
-    ) {
-        $this->name = $name;
-    }
-}
+    // ========================================================================
+    // Indexed Adder with Param Tests (New Feature)
+    // ========================================================================
 
-class PersonWithPropertyExprParam
-{
-    public string $name;
-    
-    public function __construct(
-        #[Param(value: "expr(property('name'))")]
-        string $name
-    ) {
-        $this->name = $name;
-    }
-}
-
-class NestedPersonWithParam
-{
-    public string $name;
-    public int $age;
-    
-    public function __construct(
-        #[Param(value: "expr(context('nestedName'))")]
-        string $name
-    ) {
-        $this->name = $name;
-    }
-}
-
-#[DataSourcesStore([
-    new MultiPropDataSource(id: 'parentSource', class: 'parentSource', method: 'getData'),
-])]
-class ParentWithNestedParam
-{
-    use LoadableTrait;
-    
-    #[DataSourceRef(id: 'parentSource')]
-    private ?string $title = null;
-    
-    #[Property(class: NestedPersonWithParam::class)]
-    #[DataSourceRef(id: 'parentSource')]
-    private ?NestedPersonWithParam $child = null;
-    
-    public function getTitle(): ?string
+    public function testIndexedAdderWithParamInThirdPosition(): void
     {
-        $this->loadProperty('title');
-        return $this->title;
-    }
-    
-    public function getChild(): ?NestedPersonWithParam
-    {
-        $this->loadProperty('child');
-        return $this->child;
+        // Set up context for the Param in indexed adder
+        ContextRegistry::set('address_prefix', 'addr_');
+        
+        $serviceResolver = new ServiceResolver();
+        $dataMapper = new DataMapper($serviceResolver);
+        $loader = LoaderRegistry::get();
+        
+        $person = new PersonWithIndexedAdder();
+        
+        // Hydrate with simple address data (strings)
+        $data = [
+            'addresses' => [
+                'home' => '123 Main St, Paris',
+                'work' => '456 Office Blvd, Lyon',
+            ],
+        ];
+        
+        // Use the loader's hydrateObject method
+        $reflection = new \ReflectionClass($loader);
+        $method = $reflection->getMethod('hydrateObject');
+        $method->invoke($loader, $person, $data, null, 0);
+        
+        $addresses = $person->getAddresses();
+        $methodCalls = $person->getMethodCalls();
+        
+        // The addresses should be stored with prefix applied to keys
+        $this->assertCount(2, $addresses);
+        $this->assertArrayHasKey('addr_home', $addresses);
+        $this->assertArrayHasKey('addr_work', $addresses);
+        
+        // Verify the Param was resolved correctly
+        $this->assertEquals('addr_', $methodCalls[0]['prefix']);
+        $this->assertEquals('addr_', $methodCalls[1]['prefix']);
     }
 }
