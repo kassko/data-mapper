@@ -35,6 +35,7 @@ use Kassko\DataMapper\Expression\SourceFunctionProvider;
 use Kassko\DataMapper\Metadata\AttributeReader;
 use Kassko\DataMapper\Registry\ContextRegistry;
 use Kassko\DataMapper\Registry\LockedPropertyRegistry;
+use Kassko\DataMapper\Registry\PropertyMappingRegistry;
 use Kassko\DataMapper\ServiceResolver;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -1088,7 +1089,7 @@ class Loader implements LoaderInterface
         );
         
         // Check if deep path extraction is needed (for SinglePropDataSource returning nested data)
-        $fieldName = $this->getPropertyNameMapping($property);
+        $fieldName = $this->getSourceFieldNameAndRegister($property, $object);
         if (is_array($data) && str_contains($fieldName, '.') && $this->fieldExistsInData($fieldName, $data)) {
             $data = $this->resolveValueFromData($fieldName, $data);
         }
@@ -1239,11 +1240,11 @@ class Loader implements LoaderInterface
             MultiPropDataSource::SCOPE_ALL => $allProperties,
             MultiPropDataSource::SCOPE_ONLY_KEYS => array_filter(
                 $allProperties,
-                fn($p) => in_array($this->getPropertyNameMapping($p), $source->loadingScopeKeys)
+                fn($p) => in_array($this->getSourceFieldName($p), $source->loadingScopeKeys)
             ),
             MultiPropDataSource::SCOPE_EXCEPT_KEYS => array_filter(
                 $allProperties,
-                fn($p) => !in_array($this->getPropertyNameMapping($p), $source->loadingScopeKeys)
+                fn($p) => !in_array($this->getSourceFieldName($p), $source->loadingScopeKeys)
             ),
             MultiPropDataSource::SCOPE_ONLY_PROPS => array_filter(
                 $allProperties,
@@ -1291,8 +1292,8 @@ class Loader implements LoaderInterface
             return false;
         }
         
-        // Get the mapped field name (uses sourceField if set, otherwise property name)
-        $fieldName = $this->getPropertyNameMapping($property);
+        // Get the source field name (uses sourceField if set, otherwise property name)
+        $fieldName = $this->getSourceFieldName($property);
         
         // Support deep paths like "product._keywords" or "address.street"
         return $this->fieldExistsInData($fieldName, $data);
@@ -1662,8 +1663,8 @@ class Loader implements LoaderInterface
             return;
         }
         
-        // Get the field name mapping
-        $fieldName = $this->getPropertyNameMapping($property);
+        // Get the source field name with automatic naming convention detection
+        $fieldName = $this->getSourceFieldNameWithData($property, $object, $data);
         
         // Check if field exists (supports deep paths like "address.street" or "product._keywords")
         if (!$this->fieldExistsInData($fieldName, $data)) {
@@ -1720,21 +1721,48 @@ class Loader implements LoaderInterface
     }
 
     /**
-     * Get the field/property name mapping from attributes
+     * Get the source field name for a property (raw data key).
+     * 
+     * This method returns the name of the field in the raw data (array key or DTO property)
+     * that corresponds to this PHP object property.
+     * 
+     * If a sourceField is explicitly defined via the Property attribute, it is returned.
+     * Otherwise, the property name is used as the default (convention over configuration).
      *
-     * @param ReflectionProperty $property
-     * @return string
+     * @param ReflectionProperty $property The reflection property
+     * @return string The source field name (raw data key)
      */
-    private function getPropertyNameMapping(ReflectionProperty $property): string
+    private function getSourceFieldName(ReflectionProperty $property): string
     {
-        // Use Property attribute
+        // Use Property attribute's sourceField if defined
         $propertyAttr = $this->attributeReader->readProperty($property);
         if ($propertyAttr !== null && $propertyAttr->sourceField !== null) {
             return $propertyAttr->sourceField;
         }
         
-        // Default to property name
+        // Default: use property name as source field name (convention over configuration)
         return $property->getName();
+    }
+
+    /**
+     * Get the source field name and register the bidirectional mapping.
+     * 
+     * This method gets the source field name and also registers the mapping
+     * in the PropertyMappingRegistry for bidirectional lookup.
+     *
+     * @param ReflectionProperty $property The reflection property
+     * @param object $object The object being hydrated
+     * @return string The source field name (raw data key)
+     */
+    private function getSourceFieldNameAndRegister(ReflectionProperty $property, object $object): string
+    {
+        $propertyName = $property->getName();
+        $sourceField = $this->getSourceFieldName($property);
+        
+        // Register bidirectional mapping
+        PropertyMappingRegistry::register($object, $propertyName, $sourceField);
+        
+        return $sourceField;
     }
 
     /**
@@ -2014,8 +2042,8 @@ class Loader implements LoaderInterface
                 continue;
             }
             
-            // Get the field name mapping
-            $fieldName = $this->getPropertyNameMapping($property);
+            // Get the source field name with automatic naming convention detection
+            $fieldName = $this->getSourceFieldNameWithData($property, $object, $data);
             
             // Check if field exists (supports deep paths like "address.street")
             if (!$this->fieldExistsInData($fieldName, $data)) {
@@ -2779,8 +2807,8 @@ class Loader implements LoaderInterface
                 continue;
             }
             
-            // Get the field name mapping (supports deep path)
-            $fieldName = $this->getPropertyNameMapping($property);
+            // Get the source field name with automatic naming convention detection
+            $fieldName = $this->getSourceFieldNameWithData($property, $object, $data);
             
             // Get value from source using deep path resolution
             $value = $this->resolveValueFromSource($fieldName, $data, $sourceObject);
@@ -2987,5 +3015,101 @@ class Loader implements LoaderInterface
         }
 
         return $current;
+    }
+
+    /**
+     * Convert a camelCase string to snake_case.
+     *
+     * @param string $input The camelCase string
+     * @return string The snake_case string
+     */
+    private function camelToSnake(string $input): string
+    {
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
+    }
+
+    /**
+     * Convert a snake_case string to camelCase.
+     *
+     * @param string $input The snake_case string
+     * @return string The camelCase string
+     */
+    private function snakeToCamel(string $input): string
+    {
+        return lcfirst(str_replace('_', '', ucwords($input, '_')));
+    }
+
+    /**
+     * Find the matching field name in raw data for a property.
+     * 
+     * This method tries to find the actual key in raw data that corresponds
+     * to a property, trying different naming conventions:
+     * 1. Exact match with sourceField (or property name if no sourceField)
+     * 2. snake_case version (if property is camelCase)
+     * 3. camelCase version (if property is snake_case)
+     *
+     * @param ReflectionProperty $property The property to find a match for
+     * @param array $data The raw data to search in
+     * @return string|null The matching field name, or null if no match found
+     */
+    private function findMatchingFieldInData(ReflectionProperty $property, array $data): ?string
+    {
+        $propertyName = $property->getName();
+        
+        // First, check if sourceField is explicitly defined
+        $propertyAttr = $this->attributeReader->readProperty($property);
+        if ($propertyAttr !== null && $propertyAttr->sourceField !== null) {
+            // Explicit sourceField - use it directly (supports deep paths)
+            if ($this->fieldExistsInData($propertyAttr->sourceField, $data)) {
+                return $propertyAttr->sourceField;
+            }
+            // If explicit sourceField doesn't exist, still return it (may be deep path resolved later)
+            return $propertyAttr->sourceField;
+        }
+        
+        // No explicit sourceField - try to find matching key with naming conventions
+        
+        // 1. Try exact property name first
+        if (array_key_exists($propertyName, $data)) {
+            return $propertyName;
+        }
+        
+        // 2. Try snake_case version (firstName -> first_name)
+        $snakeCase = $this->camelToSnake($propertyName);
+        if ($snakeCase !== $propertyName && array_key_exists($snakeCase, $data)) {
+            return $snakeCase;
+        }
+        
+        // 3. Try camelCase version (first_name -> firstName)
+        $camelCase = $this->snakeToCamel($propertyName);
+        if ($camelCase !== $propertyName && array_key_exists($camelCase, $data)) {
+            return $camelCase;
+        }
+        
+        // No match found - return property name as default
+        return $propertyName;
+    }
+
+    /**
+     * Get the source field name and register the bidirectional mapping,
+     * with automatic naming convention detection.
+     * 
+     * This method finds the actual field name in raw data (trying different 
+     * naming conventions) and registers the mapping for bidirectional lookup.
+     *
+     * @param ReflectionProperty $property The reflection property
+     * @param object $object The object being hydrated
+     * @param array $data The raw data (for naming convention detection)
+     * @return string The source field name (raw data key)
+     */
+    private function getSourceFieldNameWithData(ReflectionProperty $property, object $object, array $data): string
+    {
+        $propertyName = $property->getName();
+        $sourceField = $this->findMatchingFieldInData($property, $data);     
+        
+        // Register bidirectional mapping with the actual found field
+        PropertyMappingRegistry::register($object, $propertyName, $sourceField);
+        
+        return $sourceField;
     }
 }
