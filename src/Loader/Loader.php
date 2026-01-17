@@ -1764,8 +1764,8 @@ class Loader implements LoaderInterface
             return CaseConverter::convertReverse($propertyName, $preset);
         }
         
-        // Default: use underscore_case conversion (most common convention)
-        return CaseConverter::toUnderscoreCase($propertyName);
+        // Default: use property name as source field name (convention over configuration)
+        return $propertyName;
     }
 
     /**
@@ -3107,8 +3107,32 @@ class Loader implements LoaderInterface
             return $this->findSourceFieldWithMappingStrategy($propertyName, $data, $mappingStrategy);
         }
         
-        // No explicit sourceField or MappingStrategy - use default strategy (from_common_cases_mix)
-        return CaseConverter::findSourceField($propertyName, $data, MappingStrategyPreset::default());
+        // No explicit sourceField or MappingStrategy - use default logic (camel + dash + underscore)
+        // 1. Try exact property name first (camelCase)
+        if (array_key_exists($propertyName, $data)) {
+            return $propertyName;
+        }
+        
+        // 2. Try underscore_case version (firstName -> first_name)
+        $underscoreCase = $this->camelToSnake($propertyName);
+        if ($underscoreCase !== $propertyName && array_key_exists($underscoreCase, $data)) {
+            return $underscoreCase;
+        }
+        
+        // 3. Try dash-case version (firstName -> first-name)
+        $dashCase = str_replace('_', '-', $underscoreCase);
+        if ($dashCase !== $propertyName && array_key_exists($dashCase, $data)) {
+            return $dashCase;
+        }
+        
+        // 4. Try camelCase version (first_name -> firstName)
+        $camelCase = $this->snakeToCamel($propertyName);
+        if ($camelCase !== $propertyName && array_key_exists($camelCase, $data)) {
+            return $camelCase;
+        }
+        
+        // No match found - return property name as default
+        return $propertyName;
     }
 
     /**

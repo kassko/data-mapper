@@ -17,10 +17,12 @@ use Kassko\DataMapper\Attribute as DM;
 use Kassko\DataMapper\Enum\MappingStrategyPreset;
 
 /**
- * Data object for testing common cases mix source field mapping (default).
+ * Data object for testing default source field mapping (camel + dash + underscore).
  * 
  * Source data uses mixed cases: first_name, last-name, billingAddress
  * Target properties are camelCase: firstName, lastName, billingAddress
+ * 
+ * No explicit MappingStrategy - tests the default behavior.
  */
 class PersonFromCommonCasesMix
 {

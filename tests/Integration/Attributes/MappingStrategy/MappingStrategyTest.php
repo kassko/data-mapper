@@ -134,16 +134,15 @@ class MappingStrategyTest extends TestCase
     }
 
     /**
-     * Test mapping from common cases mix (default strategy).
-     * Should handle underscore_case, dash-case, camelCase, and mixes.
+     * Test default mapping behavior (camel + dash + underscore case).
+     * Without explicit MappingStrategy, these 3 basic formats are supported.
      */
-    public function testFromCommonCasesMix(): void
+    public function testDefaultMappingBehavior(): void
     {
         $data = [
             'first_name' => 'Charlie',           // underscore_case
             'last-name' => 'Davis',              // dash-case
             'billingAddress' => '202 Elm St',    // camelCase
-            'home-delivery_address' => 'Mixed',  // mixed case
         ];
 
         $person = $this->hydrator->hydrate(PersonFromCommonCasesMix::class, $data);
@@ -151,7 +150,6 @@ class MappingStrategyTest extends TestCase
         $this->assertEquals('Charlie', $person->getFirstName());
         $this->assertEquals('Davis', $person->getLastName());
         $this->assertEquals('202 Elm St', $person->getBillingAddress());
-        $this->assertEquals('Mixed', $person->getHomeDeliveryAddress());
     }
 
     /**
