@@ -23,7 +23,7 @@ It is not affiliated with, nor owned by, any organization.
 ## Installation
 
 ```bash
-composer require kassko/data-mapper:^2.46-beta@beta
+composer require kassko/data-mapper:^2.54-rc@rc
 ```
 
 ## Quick Start
@@ -391,6 +391,30 @@ Map and configure properties:
 ```
 
 See [docs/attributes/Property.md](docs/attributes/Property.md) for details.
+
+### MappingStrategy
+
+Automatically map source fields with different naming conventions to camelCase properties:
+
+```php
+use Kassko\DataMapper\Attribute\MappingStrategy;
+use Kassko\DataMapper\Enum\MappingStrategyPreset;
+
+// Class-level: all properties use underscore_case sources
+#[MappingStrategy(preset: MappingStrategyPreset::FROM_UNDERSCORE_CASE)]
+class Person
+{
+    private ?string $firstName = null;  // Maps from 'first_name'
+    private ?string $lastName = null;   // Maps from 'last_name'
+    
+    #[MappingStrategy(preset: MappingStrategyPreset::FROM_DASH_CASE)]
+    private ?string $billingAddress = null; // Override: 'billing-address'
+}
+```
+
+Supported presets: `FROM_COMMON_CASES_MIX` (default), `FROM_CAMEL_CASE`, `FROM_UNDERSCORE_CASE`, `FROM_DASH_CASE`, `FROM_PASCAL_CASE`, `FROM_SNAKE_CASE`, `FROM_CONSTANT_CASE`, `FROM_UPPER_DASH_CASE`.
+
+See [docs/attributes/MappingStrategy.md](docs/attributes/MappingStrategy.md) for details.
 
 ### Loading Scope
 

@@ -26,7 +26,7 @@ use Psr\Log\NullLogger;
  * - DataSource ID conflicts during store merging
  * - PropertyConfig ID conflicts during store merging
  * 
- * @experimental This is an beta feature
+ * @experimental
  */
 final class AttributeCascadeCollector
 {

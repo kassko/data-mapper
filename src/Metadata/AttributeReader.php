@@ -29,6 +29,7 @@ use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\PropertyConfig;
 use Kassko\DataMapper\Attribute\PropertyConfigStore;
 use Kassko\DataMapper\Attribute\Loading;
+use Kassko\DataMapper\Attribute\MappingStrategy;
 use Kassko\DataMapper\Attribute\Needs;
 use Kassko\DataMapper\Attribute\RejectAttributeCascading;
 use Kassko\DataMapper\Attribute\Setter;
@@ -319,6 +320,66 @@ class AttributeReader
         }
         
         return $attributes[0]->newInstance();
+    }
+
+    /**
+     * Read MappingStrategy attribute from a property (skips disabled attributes)
+     *
+     * @param ReflectionProperty $property
+     * @return MappingStrategy|null
+     */
+    public function readMappingStrategyFromProperty(ReflectionProperty $property): ?MappingStrategy
+    {
+        $attributes = $property->getAttributes(MappingStrategy::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        $instance = $attributes[0]->newInstance();
+        return $instance->enabled ? $instance : null;
+    }
+
+    /**
+     * Read MappingStrategy attribute from a class (skips disabled attributes)
+     *
+     * @param ReflectionClass $reflectionClass
+     * @return MappingStrategy|null
+     */
+    public function readMappingStrategyFromClass(ReflectionClass $reflectionClass): ?MappingStrategy
+    {
+        $attributes = $reflectionClass->getAttributes(MappingStrategy::class);
+        
+        if (empty($attributes)) {
+            return null;
+        }
+        
+        $instance = $attributes[0]->newInstance();
+        return $instance->enabled ? $instance : null;
+    }
+
+    /**
+     * Get the effective MappingStrategy for a property.
+     * 
+     * Priority order (highest to lowest):
+     * 1. Property-level MappingStrategy
+     * 2. Class-level MappingStrategy
+     * 3. null (use default strategy)
+     *
+     * @param ReflectionProperty $property
+     * @param ReflectionClass $reflectionClass
+     * @return MappingStrategy|null
+     */
+    public function getEffectiveMappingStrategy(ReflectionProperty $property, ReflectionClass $reflectionClass): ?MappingStrategy
+    {
+        // Property-level takes precedence
+        $propertyStrategy = $this->readMappingStrategyFromProperty($property);
+        if ($propertyStrategy !== null) {
+            return $propertyStrategy;
+        }
+
+        // Fallback to class-level
+        return $this->readMappingStrategyFromClass($reflectionClass);
     }
 
     /**

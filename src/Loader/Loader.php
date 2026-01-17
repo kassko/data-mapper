@@ -21,6 +21,7 @@ use Kassko\DataMapper\Attribute\Property;
 use Kassko\DataMapper\Attribute\PropertyConfigStore;
 use Kassko\DataMapper\Attribute\PropertyConfig;
 use Kassko\DataMapper\Attribute\Loading;
+use Kassko\DataMapper\Attribute\MappingStrategy;
 use Kassko\DataMapper\Attribute\CustomHydrator;
 use Kassko\DataMapper\Attribute\PropertySettingHook;
 use Kassko\DataMapper\Attribute\PropertyInstantiatingHook;
@@ -29,6 +30,8 @@ use Kassko\DataMapper\Attribute\Param;
 use Kassko\DataMapper\Attribute\Setter;
 use Kassko\DataMapper\DataCollector\AttributeCascadeCollector;
 use Kassko\DataMapper\DataCollector\DataLineageCollector;
+use Kassko\DataMapper\Enum\MappingStrategyPreset;
+use Kassko\DataMapper\Exception\MappingStrategyException;
 use Kassko\DataMapper\Exception\MethodAliasNotFoundException;
 use Kassko\DataMapper\Expression\ExpressionParser;
 use Kassko\DataMapper\Expression\SourceFunctionProvider;
@@ -1727,6 +1730,7 @@ class Loader implements LoaderInterface
      * that corresponds to this PHP object property.
      * 
      * If a sourceField is explicitly defined via the Property attribute, it is returned.
+     * If a MappingStrategy is defined, it converts the property name using the preset.
      * Otherwise, the property name is used as the default (convention over configuration).
      *
      * @param ReflectionProperty $property The reflection property
@@ -1734,14 +1738,34 @@ class Loader implements LoaderInterface
      */
     private function getSourceFieldName(ReflectionProperty $property): string
     {
+        $propertyName = $property->getName();
+        $reflectionClass = $property->getDeclaringClass();
+        
         // Use Property attribute's sourceField if defined
         $propertyAttr = $this->attributeReader->readProperty($property);
         if ($propertyAttr !== null && $propertyAttr->sourceField !== null) {
+            // Check for mutual exclusivity with MappingStrategy on property
+            $mappingStrategy = $this->attributeReader->readMappingStrategyFromProperty($property);
+            if ($mappingStrategy !== null) {
+                throw MappingStrategyException::sourceFieldAndMappingStrategyAreMutuallyExclusive(
+                    $propertyName,
+                    $reflectionClass->getName()
+                );
+            }
             return $propertyAttr->sourceField;
         }
         
-        // Default: use property name as source field name (convention over configuration)
-        return $property->getName();
+        // Check for MappingStrategy
+        $mappingStrategy = $this->attributeReader->getEffectiveMappingStrategy($property, $reflectionClass);
+        
+        if ($mappingStrategy !== null && $mappingStrategy->hasPreset()) {
+            $preset = $mappingStrategy->getPresetEnum() ?? MappingStrategyPreset::default();
+            // Convert property name to expected source field format
+            return CaseConverter::convertReverse($propertyName, $preset);
+        }
+        
+        // Default: use underscore_case conversion (most common convention)
+        return CaseConverter::toUnderscoreCase($propertyName);
     }
 
     /**
@@ -3055,10 +3079,19 @@ class Loader implements LoaderInterface
     private function findMatchingFieldInData(ReflectionProperty $property, array $data): ?string
     {
         $propertyName = $property->getName();
+        $reflectionClass = $property->getDeclaringClass();
         
         // First, check if sourceField is explicitly defined
         $propertyAttr = $this->attributeReader->readProperty($property);
         if ($propertyAttr !== null && $propertyAttr->sourceField !== null) {
+            // Check for mutual exclusivity with MappingStrategy on property
+            $mappingStrategy = $this->attributeReader->readMappingStrategyFromProperty($property);
+            if ($mappingStrategy !== null) {
+                throw MappingStrategyException::sourceFieldAndMappingStrategyAreMutuallyExclusive(
+                    $propertyName,
+                    $reflectionClass->getName()
+                );
+            }
             // Explicit sourceField - use it directly (supports deep paths)
             if ($this->fieldExistsInData($propertyAttr->sourceField, $data)) {
                 return $propertyAttr->sourceField;
@@ -3067,27 +3100,80 @@ class Loader implements LoaderInterface
             return $propertyAttr->sourceField;
         }
         
-        // No explicit sourceField - try to find matching key with naming conventions
+        // Check for MappingStrategy (property-level takes precedence over class-level)
+        $mappingStrategy = $this->attributeReader->getEffectiveMappingStrategy($property, $reflectionClass);
         
-        // 1. Try exact property name first
-        if (array_key_exists($propertyName, $data)) {
-            return $propertyName;
+        if ($mappingStrategy !== null) {
+            return $this->findSourceFieldWithMappingStrategy($propertyName, $data, $mappingStrategy);
         }
         
-        // 2. Try snake_case version (firstName -> first_name)
-        $snakeCase = $this->camelToSnake($propertyName);
-        if ($snakeCase !== $propertyName && array_key_exists($snakeCase, $data)) {
-            return $snakeCase;
+        // No explicit sourceField or MappingStrategy - use default strategy (from_common_cases_mix)
+        return CaseConverter::findSourceField($propertyName, $data, MappingStrategyPreset::default());
+    }
+
+    /**
+     * Find the source field using a MappingStrategy.
+     *
+     * @param string $propertyName The property name (camelCase)
+     * @param array $data The raw data to search in
+     * @param MappingStrategy $mappingStrategy The mapping strategy to use
+     * @return string The source field name
+     */
+    private function findSourceFieldWithMappingStrategy(string $propertyName, array $data, MappingStrategy $mappingStrategy): string
+    {
+        // Custom callable takes precedence
+        if ($mappingStrategy->hasCustom()) {
+            return $this->resolveSourceFieldWithCustomCallable($propertyName, $data, $mappingStrategy);
         }
         
-        // 3. Try camelCase version (first_name -> firstName)
-        $camelCase = $this->snakeToCamel($propertyName);
-        if ($camelCase !== $propertyName && array_key_exists($camelCase, $data)) {
-            return $camelCase;
+        // Use preset strategy
+        $preset = $mappingStrategy->getPresetEnum();
+        if ($preset === null) {
+            $preset = MappingStrategyPreset::default();
         }
         
-        // No match found - return property name as default
-        return $propertyName;
+        return CaseConverter::findSourceField($propertyName, $data, $preset);
+    }
+
+    /**
+     * Resolve source field using a custom callable.
+     *
+     * @param string $propertyName The property name (camelCase)
+     * @param array $data The raw data to search in
+     * @param MappingStrategy $mappingStrategy The mapping strategy with custom callable
+     * @return string The source field name
+     */
+    private function resolveSourceFieldWithCustomCallable(string $propertyName, array $data, MappingStrategy $mappingStrategy): string
+    {
+        $custom = $mappingStrategy->custom;
+        $args = $mappingStrategy->args;
+        
+        // Build callable
+        if (is_array($custom) && count($custom) >= 2) {
+            $callable = [$custom[0], $custom[1]];
+            
+            // Resolve service if needed
+            if (is_string($custom[0]) && class_exists($custom[0])) {
+                $service = $this->serviceResolver->resolve($custom[0]);
+                $callable = [$service, $custom[1]];
+            }
+        } else {
+            throw MappingStrategyException::invalidCustomCallable(
+                'Custom must be an array with [class, method].'
+            );
+        }
+        
+        // Call the custom mapping function
+        // Signature: (string $propertyName, array $data, array $args): string
+        $result = call_user_func($callable, $propertyName, $data, $args);
+        
+        if (!is_string($result)) {
+            throw MappingStrategyException::invalidCustomCallable(
+                'Custom callable must return a string (source field name).'
+            );
+        }
+        
+        return $result;
     }
 
     /**
