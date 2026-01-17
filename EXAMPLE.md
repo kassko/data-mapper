@@ -397,6 +397,73 @@ class Person
 }
 ```
 
+## Mapping Strategy
+
+### Auto-Converting Source Field Cases
+
+Use `MappingStrategy` to automatically map source fields with different naming conventions to camelCase properties:
+
+```php
+use Kassko\DataMapper\Attribute\MappingStrategy;
+use Kassko\DataMapper\Enum\MappingStrategyPreset;
+
+// Class-level: applies to all properties
+#[MappingStrategy(preset: MappingStrategyPreset::FROM_UNDERSCORE_CASE)]
+class Person
+{
+    private ?string $firstName = null;  // Maps from 'first_name'
+    private ?string $lastName = null;   // Maps from 'last_name'
+    private ?string $billingAddress = null; // Maps from 'billing_address'
+}
+
+// Usage
+$rawData = ['first_name' => 'John', 'last_name' => 'Doe', 'billing_address' => '123 Main St'];
+$person = $hydrator->hydrate(Person::class, $rawData);
+```
+
+### Property-Level Override
+
+Override the class-level strategy for specific properties:
+
+```php
+#[MappingStrategy(preset: MappingStrategyPreset::FROM_UNDERSCORE_CASE)]
+class Person
+{
+    private ?string $firstName = null;  // Uses class strategy: 'first_name'
+    
+    #[MappingStrategy(preset: MappingStrategyPreset::FROM_DASH_CASE)]
+    private ?string $lastName = null;   // Override: maps from 'last-name'
+    
+    private ?string $billingAddress = null; // Uses class strategy: 'billing_address'
+}
+
+// Usage
+$rawData = ['first_name' => 'John', 'last-name' => 'Doe', 'billing_address' => '123 Main St'];
+$person = $hydrator->hydrate(Person::class, $rawData);
+```
+
+### Available Presets
+
+| Preset | Source Example | Result |
+|--------|---------------|--------|
+| `FROM_COMMON_CASES_MIX` (default) | `first_name`, `first-name`, `firstName` | `firstName` |
+| `FROM_UNDERSCORE_CASE` | `first_name` | `firstName` |
+| `FROM_DASH_CASE` | `first-name` | `firstName` |
+| `FROM_PASCAL_CASE` | `FirstName` | `firstName` |
+| `FROM_CONSTANT_CASE` | `FIRST_NAME` | `firstName` |
+| `FROM_UPPER_DASH_CASE` | `FIRST-NAME` | `firstName` |
+
+### Default Behavior (No Attribute)
+
+When no `MappingStrategy` is defined, the default `FROM_COMMON_CASES_MIX` strategy is used, which handles multiple case formats:
+
+```php
+class Person
+{
+    private ?string $firstName = null;  // Maps from 'first_name', 'firstName', or 'first-name'
+}
+```
+
 ## Property Dependencies with Needs
 
 ### Understanding Auto-Loading vs Needs
