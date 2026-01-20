@@ -125,7 +125,7 @@ class InstanceMappingTest extends TestCase
     public function testMappingRequiresClass(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Property: mapping can only be set when class is also specified');
+        $this->expectExceptionMessage('Property: mapping can only be set when class or itemClass is also specified');
         
         new Property(
             mapping: ['source' => 'target']

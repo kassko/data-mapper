@@ -240,6 +240,47 @@ class Order
 }
 ```
 
+### Collection Hydration with itemClass
+
+Use `itemClass` to hydrate collections of objects:
+
+```php
+use Kassko\DataMapper\Attribute\Property;
+
+class Person
+{
+    private ?string $firstName = null;
+    private ?string $lastName = null;
+    
+    // Each item in the addresses array will be hydrated as an Address object
+    #[Property(itemClass: Address::class)]
+    private ?array $addresses = null;
+}
+
+$rawData = [
+    'firstName' => 'John',
+    'lastName' => 'Doe',
+    'addresses' => [
+        ['street' => '123 Main St', 'city' => 'NYC', 'postalCode' => '10001'],
+        ['street' => '456 Oak Ave', 'city' => 'LA', 'postalCode' => '90001'],
+    ],
+];
+// Results in Person with addresses as [Address, Address]
+```
+
+### PHP Typehint Fallback
+
+When `class` is not specified, the hydrator uses the PHP typehint as a fallback:
+
+```php
+class Person
+{
+    // Will use Address class from typehint (no need to specify class: Address::class)
+    #[Property(sourceField: 'main_address')]
+    private ?Address $mainAddress = null;
+}
+```
+
 ### Polymorphic Collections
 
 ```php

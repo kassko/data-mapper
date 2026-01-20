@@ -382,12 +382,27 @@ Map and configure properties:
 
 ```php
 #[Property(
-    name: 'first_name',           // Key in data array
-    class: Address::class,        // For nested objects
+    sourceField: 'first_name',    // Key in data array
+    class: Address::class,        // For single object hydration
+    itemClass: Address::class,    // For collection item hydration
     mapping: ['src_key' => 'dest_key'],  // Instance mapping
     expand: 'field1,field2',      // Fields to expand
     noExpand: 'field3'            // Fields to skip
 )]
+```
+
+**class vs itemClass:**
+- `class`: Use for single object properties (e.g., `?Address $address`)
+- `itemClass`: Use for collection properties (e.g., `?array $addresses`)
+
+```php
+// Single object
+#[Property(class: Address::class)]
+private ?Address $address = null;
+
+// Collection of objects
+#[Property(itemClass: Address::class)]
+private ?array $addresses = null;
 ```
 
 See [docs/attributes/Property.md](docs/attributes/Property.md) for details.
