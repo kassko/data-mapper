@@ -1811,6 +1811,12 @@ class Loader implements LoaderInterface
             return $value;
         }
         
+        // Validate itemClass is not used with scalar types
+        $this->validateItemClassNotWithScalar($property, $propertyAttr);
+        
+        // Validate class is compatible with typehint
+        $this->validateClassWithTypehint($property, $propertyAttr);
+        
         // Check depth limit
         $loading = $this->attributeReader->readLoading($property);
         if ($loading !== null && $loading->depth !== null && $currentDepth >= $loading->depth) {
@@ -1855,14 +1861,19 @@ class Loader implements LoaderInterface
                     }
                 }
                 
+                // Determine the class for collection items:
+                // 1. Use itemClass if defined (preferred for collections)
+                // 2. Fall back to class for backward compatibility
+                $itemClassName = $itemPropertyAttr->itemClass ?? $itemPropertyAttr->class ?? null;
+                
                 // If still no class defined, skip this item
-                if ($itemPropertyAttr === null || $itemPropertyAttr->class === null) {
+                if ($itemClassName === null) {
                     $result[] = $itemData;
                     continue;
                 }
                 
                 // Instantiate the nested object with Param attribute support
-                $nestedObject = $this->instantiateWithParams($itemPropertyAttr->class);
+                $nestedObject = $this->instantiateWithParams($itemClassName);
                 
                 // Track parent-child relationship
                 if ($parentObject !== null) {
@@ -1897,13 +1908,15 @@ class Loader implements LoaderInterface
             }
         }
         
+        // Resolve the class to instantiate:
+        // 1. Use Property::class if defined
+        // 2. Fall back to PHP typehint class if available
+        $className = $effectivePropertyAttr->class ?? $this->resolveContainerClass($property, $effectivePropertyAttr);
+        
         // If no class defined, return as-is
-        if ($effectivePropertyAttr === null || $effectivePropertyAttr->class === null) {
+        if ($className === null) {
             return $value;
         }
-        
-        // Get the actual class to instantiate
-        $className = $effectivePropertyAttr->class;
         
         // Instantiate the nested object with Param attribute support
         $nestedObject = $this->instantiateWithParams($className);
@@ -2018,6 +2031,7 @@ class Loader implements LoaderInterface
             // Property.sourceField takes precedence over PropertyConfig.sourceField
             sourceField: $propertyAttr->sourceField ?? $config->sourceField,
             class: $propertyAttr->class ?? $config->class,
+            itemClass: $propertyAttr->itemClass ?? $config->itemClass,
             expand: $propertyAttr->expand ?? $config->expand,
             noExpand: $propertyAttr->noExpand ?? $config->noExpand,
             mapping: $propertyAttr->mapping ?? $config->mapping,
@@ -2211,6 +2225,167 @@ class Loader implements LoaderInterface
     private function isListArray(array $array): bool
     {
         return array_is_list($array);
+    }
+
+    /**
+     * Check if a PHP type is a scalar built-in type
+     *
+     * @param string $typeName
+     * @return bool
+     */
+    private function isScalarBuiltinType(string $typeName): bool
+    {
+        return in_array($typeName, ['string', 'int', 'float', 'bool', 'null', 'false', 'true', 'mixed'], true);
+    }
+
+    /**
+     * Get the container class (Property::class or typehint class) for a property
+     * Falls back to PHP typehint if Property::class is not set
+     *
+     * @param ReflectionProperty $property
+     * @param Property|null $propertyAttr
+     * @return string|null
+     */
+    private function resolveContainerClass(ReflectionProperty $property, ?Property $propertyAttr): ?string
+    {
+        // If Property::class is explicitly set, use it
+        if ($propertyAttr !== null && $propertyAttr->class !== null) {
+            return $propertyAttr->class;
+        }
+        
+        // Try to get class from PHP typehint
+        $type = $property->getType();
+        if ($type === null) {
+            return null;
+        }
+        
+        // Handle union types - take first non-null type
+        if ($type instanceof \ReflectionUnionType) {
+            foreach ($type->getTypes() as $unionType) {
+                if ($unionType instanceof \ReflectionNamedType && !$unionType->isBuiltin() && $unionType->getName() !== 'null') {
+                    return $unionType->getName();
+                }
+            }
+            return null;
+        }
+        
+        // Handle named types
+        if ($type instanceof \ReflectionNamedType) {
+            $typeName = $type->getName();
+            // Skip built-in types like array, object, int, string, etc.
+            if (!$type->isBuiltin()) {
+                return $typeName;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Validate that itemClass is not used with scalar built-in types
+     *
+     * @param ReflectionProperty $property
+     * @param Property $propertyAttr
+     * @throws \InvalidArgumentException if itemClass is used with a scalar type
+     */
+    private function validateItemClassNotWithScalar(ReflectionProperty $property, Property $propertyAttr): void
+    {
+        if ($propertyAttr->itemClass === null) {
+            return;
+        }
+        
+        $type = $property->getType();
+        if ($type === null) {
+            return; // No type constraint, allow itemClass
+        }
+        
+        // Handle named types
+        if ($type instanceof \ReflectionNamedType) {
+            $typeName = $type->getName();
+            if ($this->isScalarBuiltinType($typeName)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Property "%s" in class "%s" has itemClass defined but has scalar type "%s". ' .
+                    'itemClass can only be used with array, object, or class types.',
+                    $property->getName(),
+                    $property->getDeclaringClass()->getName(),
+                    $typeName
+                ));
+            }
+        }
+        
+        // Handle union types - check if all types are scalar
+        if ($type instanceof \ReflectionUnionType) {
+            $hasNonScalar = false;
+            foreach ($type->getTypes() as $unionType) {
+                if ($unionType instanceof \ReflectionNamedType) {
+                    $typeName = $unionType->getName();
+                    if (!$this->isScalarBuiltinType($typeName)) {
+                        $hasNonScalar = true;
+                        break;
+                    }
+                }
+            }
+            if (!$hasNonScalar) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Property "%s" in class "%s" has itemClass defined but has only scalar types. ' .
+                    'itemClass can only be used with array, object, or class types.',
+                    $property->getName(),
+                    $property->getDeclaringClass()->getName()
+                ));
+            }
+        }
+    }
+
+    /**
+     * Validate that Property::class is compatible with PHP typehint
+     *
+     * @param ReflectionProperty $property
+     * @param Property $propertyAttr
+     * @throws \InvalidArgumentException if class is incompatible with typehint
+     */
+    private function validateClassWithTypehint(ReflectionProperty $property, Property $propertyAttr): void
+    {
+        if ($propertyAttr->class === null) {
+            return;
+        }
+        
+        $type = $property->getType();
+        if ($type === null) {
+            return; // No type constraint, any class is allowed
+        }
+        
+        // Handle named types
+        if ($type instanceof \ReflectionNamedType) {
+            $typeName = $type->getName();
+            
+            // Skip built-in types like array, object
+            if ($type->isBuiltin()) {
+                // Cannot have Property::class with scalar typehint
+                if ($this->isScalarBuiltinType($typeName)) {
+                    throw new \InvalidArgumentException(sprintf(
+                        'Property "%s" in class "%s" has class "%s" defined but has scalar type "%s". ' .
+                        'Property::class cannot be used with scalar types.',
+                        $property->getName(),
+                        $property->getDeclaringClass()->getName(),
+                        $propertyAttr->class,
+                        $typeName
+                    ));
+                }
+                return;
+            }
+            
+            // Check if Property::class is compatible with typehint (must be same or subclass)
+            if (!is_a($propertyAttr->class, $typeName, true)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Property "%s" in class "%s" has class "%s" which is not compatible with typehint "%s". ' .
+                    'Property::class must be the same class or a subclass of the typehint.',
+                    $property->getName(),
+                    $property->getDeclaringClass()->getName(),
+                    $propertyAttr->class,
+                    $typeName
+                ));
+            }
+        }
     }
 
     /**

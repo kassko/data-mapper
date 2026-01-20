@@ -23,6 +23,62 @@ class Person
 }
 ```
 
+### Collection Hydration with itemClass
+
+Use `itemClass` to specify the class for collection items:
+
+```php
+use Kassko\DataMapper\Attribute\Property;
+
+class Person
+{
+    #[Property(itemClass: Address::class)]
+    private ?array $addresses = null;
+}
+```
+
+This will hydrate each item in the `addresses` array as an `Address` object.
+
+### Single Object Hydration with class
+
+Use `class` for single object properties:
+
+```php
+use Kassko\DataMapper\Attribute\Property;
+
+class Person
+{
+    #[Property(class: Address::class)]
+    private ?Address $address = null;
+}
+```
+
+### PHP Typehint Fallback
+
+When `class` is not specified, the hydrator will use the PHP typehint as a fallback:
+
+```php
+class Person
+{
+    #[Property(sourceField: 'main_address')]
+    private ?Address $mainAddress = null;  // Will use Address class from typehint
+}
+```
+
+### Using class and itemClass Together
+
+Use both when you need a specific container class with typed items:
+
+```php
+use Kassko\DataMapper\Attribute\Property;
+
+class Person
+{
+    #[Property(class: ArrayCollection::class, itemClass: Address::class)]
+    private Collection $addresses;
+}
+```
+
 ### Using PropertyConfigStore Reference
 
 ```php
@@ -68,9 +124,10 @@ class Garage
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `key` | `?string` | No | Key in raw data array |
-| `class` | `?string` | No | Class for nested object hydration |
-| `mapping` | `?array` | No | Instance-specific key mapping (requires `class`) |
+| `sourceField` | `?string` | No | Key in raw data array |
+| `class` | `?string` | No | Class for single object hydration (container type) |
+| `itemClass` | `?string` | No | Class for collection item hydration (element type) |
+| `mapping` | `?array` | No | Instance-specific key mapping (requires `class` or `itemClass`) |
 | `expand` | `?string` | No | Comma-separated fields to expand |
 | `noExpand` | `?string` | No | Comma-separated fields to skip |
 | `config` | `?string` | No | Reference to a PropertyConfig by ID |
@@ -79,6 +136,29 @@ class Garage
 | `handleWhen` | `?string` | No | Expression to conditionally include this Property |
 | `cascade` | `bool` | No (default: true) | Whether this attribute cascades to child classes |
 | `enabled` | `bool` | No (default: true) | Whether this attribute is active |
+
+## class vs itemClass
+
+| Attribute | Purpose | Use Case |
+|-----------|---------|----------|
+| `class` | Class for single object hydration | Properties with a single nested object |
+| `itemClass` | Class for collection item hydration | Properties with arrays/collections of objects |
+
+**Examples:**
+
+```php
+// Single object - use class
+#[Property(class: Address::class)]
+private ?Address $address = null;
+
+// Collection - use itemClass
+#[Property(itemClass: Address::class)]
+private ?array $addresses = null;
+
+// Collection with specific container - use both
+#[Property(class: ArrayCollection::class, itemClass: Address::class)]
+private Collection $addresses;
+```
 
 ## Conditional Property Inclusion (handleWhen)
 
@@ -106,11 +186,24 @@ class Entity
 
 ## Validation Rules
 
-- `mapping` can only be set when `class` is also specified
-- `config` is mutually exclusive with `class`, `expand`, `noExpand`, and `mapping`
-- `configCandidates` is mutually exclusive with `class`, `expand`, `noExpand`, `mapping`, and `config`
+- `mapping` can only be set when `class` or `itemClass` is also specified
+- `itemClass` cannot be used with scalar built-in types (string, int, float, bool). Use array, object, or class types.
+- `class` must be compatible with the PHP typehint (same class or subclass)
+- `class` cannot be used with scalar built-in types
+- `config` is mutually exclusive with `class`, `itemClass`, `expand`, `noExpand`, and `mapping`
+- `configCandidates` is mutually exclusive with `class`, `itemClass`, `expand`, `noExpand`, `mapping`, and `config`
 - `configCandidates` and `defaultConfigCandidate` must both be present or both absent
 - Each configCandidate must have `id` and `when` keys
+
+## Type Resolution
+
+1. For single objects:
+   - If `class` is set, use it
+   - Otherwise, fall back to PHP typehint class
+
+2. For collections:
+   - If `itemClass` is set, use it for each item
+   - Otherwise, fall back to `class` for backward compatibility
 
 ## Modes
 

@@ -40,16 +40,41 @@ class Garage
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `id` | `string` | Yes | Unique identifier for this configuration |
-| `class` | `string` | No | Fully qualified class name for nested object hydration |
+| `class` | `string` | No | Class for single object hydration (container type) |
+| `itemClass` | `string` | No | Class for collection item hydration (element type) |
 | `sourceField` | `string` | No | Field name in raw data (array key or DTO property) |
 | `expand` | `string` | No | Comma-separated properties to expand |
 | `noExpand` | `string` | No | Comma-separated properties to NOT expand |
-| `mapping` | `array` | No | Instance-specific key mapping (requires `class`) |
+| `mapping` | `array` | No | Instance-specific key mapping (requires `class` or `itemClass`) |
+
+## class vs itemClass
+
+| Attribute | Purpose | Use Case |
+|-----------|---------|----------|
+| `class` | Class for single object hydration | Configs for single nested objects |
+| `itemClass` | Class for collection item hydration | Configs for arrays/collections of objects |
+
+### Using itemClass for Collections
+
+```php
+use Kassko\DataMapper\Attribute\PropertyConfig;
+use Kassko\DataMapper\Attribute\PropertyConfigStore;
+use Kassko\DataMapper\Attribute\Property;
+
+#[PropertyConfigStore([
+    new PropertyConfig(id: 'addressCollection', itemClass: Address::class),
+])]
+class Person
+{
+    #[Property(config: 'addressCollection')]
+    private array $addresses = [];
+}
+```
 
 ## Validation
 
 - `id` is required and must be unique within the `PropertyConfigStore`
-- `mapping` can only be set when `class` is also specified
+- `mapping` can only be set when `class` or `itemClass` is also specified
 
 ## See Also
 

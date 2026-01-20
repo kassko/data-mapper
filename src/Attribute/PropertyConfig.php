@@ -23,7 +23,8 @@ final class PropertyConfig
 {
     public function __construct(
         public readonly string $id,
-        public readonly ?string $class = null,
+        public readonly ?string $class = null,        // Class for single object hydration (container type)
+        public readonly ?string $itemClass = null,    // Class for collection item hydration (element type)
         public readonly ?string $sourceField = null,  // Field name in raw data (array key or DTO property)
         public readonly ?string $expand = null,
         public readonly ?string $noExpand = null,
@@ -32,9 +33,9 @@ final class PropertyConfig
         public readonly bool $cascade = true,                    // Whether this config cascades to child classes
         public readonly bool $enabled = true,                    // Whether this config is active (disabled configs are ignored)
     ) {
-        // Validation: mapping requires class to be set
-        if ($mapping !== null && $class === null) {
-            throw new \InvalidArgumentException('PropertyConfig: mapping can only be set when class is also specified');
+        // Validation: mapping requires class or itemClass to be set
+        if ($mapping !== null && $class === null && $itemClass === null) {
+            throw new \InvalidArgumentException('PropertyConfig: mapping can only be set when class or itemClass is also specified');
         }
     }
 }

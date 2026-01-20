@@ -21,7 +21,8 @@ final class Property
 {
     public function __construct(
         public readonly ?string $sourceField = null,  // Field name in raw data (array key or DTO property)
-        public readonly ?string $class = null,        // Class for nested object hydration
+        public readonly ?string $class = null,        // Class for single object hydration (container type)
+        public readonly ?string $itemClass = null,    // Class for collection item hydration (element type)
         public readonly ?string $expand = null,    // Comma-separated props to expand
         public readonly ?string $noExpand = null,  // Comma-separated props to NOT expand
         public readonly ?array $mapping = null,    // Instance-specific key mapping
@@ -40,22 +41,22 @@ final class Property
         public readonly ?string $handleWhen = null,
         public readonly bool $enabled = true,      // Whether this attribute is active (disabled attributes are ignored)
     ) {
-        // Validation: mapping requires class to be set
-        if ($mapping !== null && $class === null) {
-            throw new \InvalidArgumentException('Property: mapping can only be set when class is also specified');
+        // Validation: mapping requires class or itemClass to be set
+        if ($mapping !== null && $class === null && $itemClass === null) {
+            throw new \InvalidArgumentException('Property: mapping can only be set when class or itemClass is also specified');
         }
 
-        // Validation: config is mutually exclusive with class, expand, noExpand, mapping
-        if ($config !== null && ($class !== null || $expand !== null || $noExpand !== null || $mapping !== null)) {
+        // Validation: config is mutually exclusive with class, itemClass, expand, noExpand, mapping
+        if ($config !== null && ($class !== null || $itemClass !== null || $expand !== null || $noExpand !== null || $mapping !== null)) {
             throw new \InvalidArgumentException(
-                'Property: config is mutually exclusive with class, expand, noExpand, and mapping'
+                'Property: config is mutually exclusive with class, itemClass, expand, noExpand, and mapping'
             );
         }
 
-        // Validation: configCandidates is mutually exclusive with class, expand, noExpand, mapping, config
-        if ($configCandidates !== null && ($class !== null || $expand !== null || $noExpand !== null || $mapping !== null || $config !== null)) {
+        // Validation: configCandidates is mutually exclusive with class, itemClass, expand, noExpand, mapping, config
+        if ($configCandidates !== null && ($class !== null || $itemClass !== null || $expand !== null || $noExpand !== null || $mapping !== null || $config !== null)) {
             throw new \InvalidArgumentException(
-                'Property: configCandidates is mutually exclusive with class, expand, noExpand, mapping, and config'
+                'Property: configCandidates is mutually exclusive with class, itemClass, expand, noExpand, mapping, and config'
             );
         }
 
