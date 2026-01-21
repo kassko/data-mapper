@@ -1803,13 +1803,19 @@ class Loader implements LoaderInterface
         // Read the Property attribute
         $propertyAttr = $this->attributeReader->readProperty($property);
         
-        // Check if this property has configCandidates (polymorphic hydration)
-        $hasConfigCandidates = $propertyAttr !== null && $propertyAttr->configCandidates !== null;
-        
-        // If no Property attribute, return value as-is
+        // If no Property attribute, try to create a synthetic one from PHP typehint
         if ($propertyAttr === null) {
-            return $value;
+            $propertyAttr = $this->createSyntheticPropertyFromTypehint($property);
+
+            
+            // If still no Property attribute (no instantiable class in typehint), return value as-is
+            if ($propertyAttr === null) {
+                return $value;
+            }
         }
+        
+        // Check if this property has configCandidates (polymorphic hydration)
+        $hasConfigCandidates = $propertyAttr->configCandidates !== null;
         
         // Validate itemClass is not used with scalar types
         $this->validateItemClassNotWithScalar($property, $propertyAttr);
@@ -2279,6 +2285,74 @@ class Loader implements LoaderInterface
         }
         
         return null;
+    }
+
+    /**
+     * Create a synthetic Property attribute from PHP typehint when no explicit Property attribute exists
+     *
+     * This allows automatic recursive hydration for properties with class typehints
+     * without requiring explicit #[Property(class: ...)] annotations.
+     *
+     * @param ReflectionProperty $property
+     * @return Property|null Returns a synthetic Property or null if typehint is not an instantiable class
+     */
+    private function createSyntheticPropertyFromTypehint(ReflectionProperty $property): ?Property
+    {
+        $type = $property->getType();
+        if ($type === null) {
+            return null;
+        }
+        
+        $className = null;
+        
+        // Handle union types - take first non-null, non-builtin type
+        if ($type instanceof \ReflectionUnionType) {
+            foreach ($type->getTypes() as $unionType) {
+                if ($unionType instanceof \ReflectionNamedType && !$unionType->isBuiltin() && $unionType->getName() !== 'null') {
+                    $className = $unionType->getName();
+                    break;
+                }
+            }
+        } elseif ($type instanceof \ReflectionNamedType) {
+            // Handle named types - skip built-in types
+            if (!$type->isBuiltin()) {
+                $className = $type->getName();
+            }
+        }
+        
+        if ($className === null) {
+            return null;
+        }
+        
+        var_dump('class name: ' . $className );
+        // Check if the class is instantiable (not interface, not abstract)
+        if (!$this->isInstantiableClass($className)) {
+            return null;
+        }
+        
+        var_dump('class name 2: ' . $className );
+        // Create and return a synthetic Property attribute
+        return new Property(class: $className);
+    }
+
+    /**
+     * Check if a class is instantiable (not an interface, not abstract)
+     *
+     * @param string $className
+     * @return bool
+     */
+    private function isInstantiableClass(string $className): bool
+    {
+        if (!class_exists($className) && !interface_exists($className)) {
+            return false;
+        }
+        
+        try {
+            $reflection = new \ReflectionClass($className);
+            return $reflection->isInstantiable();
+        } catch (\ReflectionException) {
+            return false;
+        }
     }
 
     /**

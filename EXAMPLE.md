@@ -281,6 +281,60 @@ class Person
 }
 ```
 
+### Automatic Hydration from Native PHP Typehint
+
+Properties with instantiable class typehints are automatically hydrated **without** requiring an explicit `#[Property]` attribute:
+
+```php
+class Person
+{
+    private ?string $firstName = null;
+    
+    // No #[Property] attribute needed - uses native typehint
+    private ?Address $address = null;
+    
+    // Custom collection class - also auto-hydrated
+    private ?AddressCollection $addresses = null;
+}
+
+class AddressCollection
+{
+    private array $addresses = [];
+    
+    public function setAddresses(array $addresses): self
+    {
+        $this->addresses = $addresses;
+        return $this;
+    }
+}
+
+$rawData = [
+    'firstName' => 'John',
+    'address' => [
+        'street' => '123 Main St',
+        'city' => 'New York',
+    ],
+    'addresses' => [
+        'street' => '456 Oak Ave',
+        'city' => 'Los Angeles',
+    ],
+];
+
+$person = $hydrator->hydrate(Person::class, $rawData);
+// $person->getAddress() returns an Address object
+// $person->getAddresses() returns an AddressCollection object
+```
+
+**Requirements:**
+- The typehint must be an instantiable class (not an interface or abstract class)
+- The raw data must be an array
+
+**When to use explicit `#[Property]` instead:**
+- When you need `sourceField` (raw data key differs from property name)
+- When you need custom `mapping` for nested keys
+- When you need `itemClass` for collection item types
+- When you need `expand`/`noExpand` for selective hydration
+
 ### Polymorphic Collections
 
 ```php

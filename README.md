@@ -405,6 +405,28 @@ private ?Address $address = null;
 private ?array $addresses = null;
 ```
 
+**Automatic Hydration from Native PHP Typehint:**
+
+Properties with instantiable class typehints are automatically hydrated without requiring explicit `#[Property]` attributes:
+
+```php
+class Person
+{
+    // No #[Property] needed - uses native typehint
+    private ?Address $address = null;
+    
+    // Custom collection class - also auto-hydrated
+    private ?AddressCollection $addresses = null;
+}
+```
+
+The hydrator reads the PHP typehint and automatically creates the appropriate object. This works with:
+- Single object typehints (e.g., `?Address`)
+- Custom collection classes (e.g., `?AddressCollection`)
+- Nullable types and union types
+
+**Note:** The typehint must be an instantiable class (not an interface or abstract class).
+
 See [docs/attributes/Property.md](docs/attributes/Property.md) for details.
 
 ### MappingStrategy
