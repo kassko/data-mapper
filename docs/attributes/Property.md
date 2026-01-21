@@ -65,6 +65,38 @@ class Person
 }
 ```
 
+### Automatic Hydration from Native PHP Typehint (No Property Attribute)
+
+Properties with instantiable class typehints are automatically hydrated **without** requiring an explicit `#[Property]` attribute:
+
+```php
+class Person
+{
+    private ?string $firstName = null;
+    
+    // No #[Property] attribute needed - uses native typehint
+    private ?Address $address = null;
+    
+    // Custom collection class - also auto-hydrated
+    private ?AddressCollection $addresses = null;
+}
+```
+
+**Behavior:**
+- If the property has an instantiable class typehint (not an interface, not abstract), the hydrator creates a synthetic Property attribute
+- The class from the typehint is used for hydration
+- Works with nullable types (`?Address`) and union types (`Address|null`)
+
+**Requirements:**
+- The typehint must be an instantiable class (not an interface, not abstract)
+- The raw data must be an array
+
+**When NOT to use:**
+- If you need `sourceField` mapping (raw data key differs from property name)
+- If you need `mapping` for nested key transformations
+- If you need `itemClass` for collection item typing
+- If you need `expand`/`noExpand` for selective hydration
+
 ### Using class and itemClass Together
 
 Use both when you need a specific container class with typed items:
