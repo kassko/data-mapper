@@ -2324,13 +2324,11 @@ class Loader implements LoaderInterface
             return null;
         }
         
-        var_dump('class name: ' . $className );
         // Check if the class is instantiable (not interface, not abstract)
         if (!$this->isInstantiableClass($className)) {
             return null;
         }
         
-        var_dump('class name 2: ' . $className );
         // Create and return a synthetic Property attribute
         return new Property(class: $className);
     }
