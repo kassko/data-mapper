@@ -469,6 +469,62 @@ Control which properties to hydrate with `MultiPropDataSource`:
 
 Available scopes: `SCOPE_ALL`, `SCOPE_ONLY_KEYS`, `SCOPE_EXCEPT_KEYS`, `SCOPE_ONLY_PROPS`, `SCOPE_EXCEPT_PROPS`
 
+### Loading Attribute
+
+Control lazy/eager loading and hydration depth:
+
+```php
+use Kassko\DataMapper\Attribute\Loading;
+use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
+
+class Company
+{
+    // Lazy loading (default) - loaded on first access
+    #[SinglePropDataSource(class: DeptService::class, method: 'get')]
+    #[Property(class: Department::class)]
+    #[Loading(type: Loading::TYPE_LAZY)]
+    private ?Department $department = null;
+    
+    // Eager loading - loaded immediately during hydration
+    #[SinglePropDataSource(class: SettingsService::class, method: 'get')]
+    #[Property(class: Settings::class)]
+    #[Loading(type: Loading::TYPE_EAGER)]
+    private ?Settings $settings = null;
+}
+```
+
+#### Hydration Depth Control
+
+Limit how deep nested object hydration goes with `depth`:
+
+| Depth | Behavior |
+|-------|----------|
+| `null` | No limit - hydrate all nested levels (default) |
+| `0` | Hydrate only the root object's scalar properties |
+| `1` | Hydrate root + direct child objects |
+| `N` | Hydrate N levels deep |
+
+```php
+// Organization → Department → Team → Employee
+
+// depth=0: Only Department scalars (name, code). Team NOT hydrated.
+#[Loading(depth: 0)]
+private ?Department $shallowDept = null;
+
+// depth=1: Department + Team, but NOT Employee
+#[Loading(depth: 1)]
+private ?Department $deptWithTeam = null;
+
+// depth=2: Department + Team + Employee (all levels)
+#[Loading(depth: 2)]
+private ?Department $fullDept = null;
+```
+
+Depth works with `expand`/`noExpand`: depth is evaluated first, then expand/noExpand filters within the allowed depth.
+
+See [docs/attributes/Loading.md](docs/attributes/Loading.md) for details.
+
 ### Getter & Setter
 
 Custom property access with support for different getter/setter types:

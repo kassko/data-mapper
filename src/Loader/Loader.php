@@ -30,6 +30,7 @@ use Kassko\DataMapper\Attribute\Param;
 use Kassko\DataMapper\Attribute\Setter;
 use Kassko\DataMapper\DataCollector\AttributeCascadeCollector;
 use Kassko\DataMapper\DataCollector\DataLineageCollector;
+use Kassko\DataMapper\Enum\HydrationResult;
 use Kassko\DataMapper\Enum\MappingStrategyPreset;
 use Kassko\DataMapper\Exception\MappingStrategyException;
 use Kassko\DataMapper\Exception\MethodAliasNotFoundException;
@@ -71,6 +72,15 @@ class Loader implements LoaderInterface
     
     /** @var array<string, callable> */
     private array $customHydrators;
+    
+    /**
+     * Current depth limit for recursive hydration.
+     * Set from Loading::depth on the root property that triggers hydration.
+     * null means no limit (hydrate all nested levels).
+     * 0 means hydrate only the root property itself.
+     * 1 means hydrate root + direct children, etc.
+     */
+    private ?int $currentDepthLimit = null;
 
     /**
      * @param ServiceResolver $serviceResolver
@@ -711,6 +721,30 @@ class Loader implements LoaderInterface
             }
         }
         
+        // Read Loading::depth from the root property and set context for recursive hydration.
+        // This applies to ALL loading variations (SingleProp, MultiProp, Fallbacks, Candidates, Providers).
+        $loading = $this->attributeReader->readLoading($property);
+        $previousDepthLimit = $this->currentDepthLimit;
+        $this->currentDepthLimit = $loading?->depth;
+        
+        try {
+            $this->doLoadProperty($object, $propertyName, $property);
+        } finally {
+            // Restore previous depth limit (in case of nested loadProperty calls)
+            $this->currentDepthLimit = $previousDepthLimit;
+        }
+    }
+    
+    /**
+     * Internal method to perform the actual property loading.
+     * Called by loadProperty after setting up the depth limit context.
+     *
+     * @param object $object The object containing the property
+     * @param string $propertyName The name of the property to load
+     * @param ReflectionProperty $property The reflection property
+     */
+    private function doLoadProperty(object $object, string $propertyName, ReflectionProperty $property): void
+    {
         // Check for CustomHydrator attribute
         $customHydrator = $this->attributeReader->readCustomHydrator($property);
         if ($customHydrator !== null) {
@@ -1098,8 +1132,14 @@ class Loader implements LoaderInterface
         }
         
         // Apply recursive hydration if needed (handles PropertyCandidates, nested objects, etc.)
+        // Note: $this->currentDepthLimit is already set by loadProperty() which called us
         $originalData = $data;
         $data = $this->applyRecursiveHydration($property, $data, 0, $object);
+        
+        // Skip setting property if depth limit was exceeded
+        if ($data === HydrationResult::Skip) {
+            return;
+        }
         
         $this->setPropertyValue($object, $property, $data);
         $this->registerPropertyHydration($object, $propertyName, $sourcePriority, $sourceSignature);
@@ -1660,6 +1700,10 @@ class Loader implements LoaderInterface
             // Only proceed if we have mapped data
             if (!empty($mappedData)) {
                 $value = $this->applyRecursiveHydration($property, $mappedData, $currentDepth, $object);
+                // Skip setting property if depth limit was exceeded
+                if ($value === HydrationResult::Skip) {
+                    return;
+                }
                 $this->setPropertyValue($object, $property, $value);
                 $this->handleContextAttribute($property, $value, $object);
             }
@@ -1688,6 +1732,11 @@ class Loader implements LoaderInterface
         // Check if we should perform recursive hydration
         $value = $this->applyRecursiveHydration($property, $value, $currentDepth, $object);
         
+        // Skip setting property if depth limit was exceeded
+        if ($value === HydrationResult::Skip) {
+            return;
+        }
+        
         // Set property value using setter resolution
         $this->setPropertyValue($object, $property, $value);
         
@@ -1715,6 +1764,11 @@ class Loader implements LoaderInterface
         
         // Check if we should perform recursive hydration
         $value = $this->applyRecursiveHydration($property, $value, $currentDepth, $object);
+        
+        // Skip setting property if depth limit was exceeded
+        if ($value === HydrationResult::Skip) {
+            return;
+        }
         
         // Set property value using setter resolution
         $this->setPropertyValue($object, $property, $value);
@@ -1796,7 +1850,7 @@ class Loader implements LoaderInterface
      * @param mixed $value
      * @param int $currentDepth
      * @param object|null $parentObject Parent object for tracking parent-child relationships
-     * @return mixed
+     * @return mixed Returns HydrationResult::Skip when depth limit is exceeded
      */
     private function applyRecursiveHydration(ReflectionProperty $property, mixed $value, int $currentDepth, ?object $parentObject = null): mixed
     {
@@ -1823,15 +1877,18 @@ class Loader implements LoaderInterface
         // Validate class is compatible with typehint
         $this->validateClassWithTypehint($property, $propertyAttr);
         
-        // Check depth limit
-        $loading = $this->attributeReader->readLoading($property);
-        if ($loading !== null && $loading->depth !== null && $currentDepth >= $loading->depth) {
+        // If value is not an array, can't hydrate into object - return as-is (scalars)
+        if (!is_array($value)) {
             return $value;
         }
         
-        // If value is not an array, can't hydrate
-        if (!is_array($value)) {
-            return $value;
+        // Check depth limit from root property's Loading::depth (stored in $this->currentDepthLimit)
+        // null = no limit, 0 = only root, 1 = root + children, etc.
+        // When depth limit is exceeded, return HydrationResult::Skip to signal that
+        // the property should not be set at all (keeping its current value).
+        // This check is done AFTER scalar checks to allow scalar properties to be hydrated at any depth.
+        if ($this->currentDepthLimit !== null && $currentDepth > $this->currentDepthLimit) {
+            return HydrationResult::Skip;
         }
         
         // Get PropertyConfigStore for the parent class if we have configCandidates or config reference
@@ -2107,6 +2164,11 @@ class Loader implements LoaderInterface
             
             // Apply recursive hydration if needed
             $value = $this->applyRecursiveHydration($property, $value, $currentDepth, $object);
+            
+            // Skip setting property if depth limit was exceeded
+            if ($value === HydrationResult::Skip) {
+                continue;
+            }
             
             // Set property value using setter resolution
             $this->setPropertyValue($object, $property, $value);
@@ -3096,6 +3158,11 @@ class Loader implements LoaderInterface
             
             // Apply recursive hydration if needed
             $value = $this->applyRecursiveHydration($property, $value, $currentDepth, $object);
+            
+            // Skip setting property if depth limit was exceeded
+            if ($value === HydrationResult::Skip) {
+                continue;
+            }
             
             // Set property value using setter resolution
             $this->setPropertyValue($object, $property, $value);
