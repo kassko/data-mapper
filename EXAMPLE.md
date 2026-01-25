@@ -145,6 +145,76 @@ class Person
 }
 ```
 
+## Hydration Depth Control
+
+### Limiting Nested Object Hydration
+
+When loading nested objects, use `Loading::depth` to control how deep the hydration goes:
+
+```php
+use Kassko\DataMapper\Attribute\Loading;
+use Kassko\DataMapper\Attribute\Property;
+use Kassko\DataMapper\Attribute\SinglePropDataSource;
+use Kassko\DataMapper\ObjectExtension\LoadableTrait;
+
+// Given this hierarchy: Organization → Department → Team → Employee
+
+class Organization
+{
+    use LoadableTrait;
+    
+    // depth=0: Only Department scalars (name, code). Team is NOT hydrated.
+    #[SinglePropDataSource(class: DeptService::class, method: 'get')]
+    #[Property(class: Department::class)]
+    #[Loading(depth: 0)]
+    private ?Department $shallowDept = null;
+    
+    // depth=1: Department + Team (but not Employee)
+    #[SinglePropDataSource(class: DeptService::class, method: 'get')]
+    #[Property(class: Department::class)]
+    #[Loading(depth: 1)]
+    private ?Department $deptWithTeam = null;
+    
+    // depth=2: Department + Team + Employee (all levels)
+    #[SinglePropDataSource(class: DeptService::class, method: 'get')]
+    #[Property(class: Department::class)]
+    #[Loading(depth: 2)]
+    private ?Department $fullDept = null;
+    
+    // No depth limit (default): hydrate all nested levels
+    #[SinglePropDataSource(class: DeptService::class, method: 'get')]
+    #[Property(class: Department::class)]
+    #[Loading]
+    private ?Department $unlimitedDept = null;
+    
+    public function getShallowDept(): ?Department
+    {
+        $this->loadProperty('shallowDept');
+        return $this->shallowDept;
+    }
+}
+```
+
+### Depth with expand/noExpand
+
+Combine `depth` with `expand`/`noExpand` for fine-grained control. Depth is evaluated first, then expand/noExpand filters within the allowed depth:
+
+```php
+// depth=1 allows Team hydration
+// expand filters which Team properties are hydrated
+#[SinglePropDataSource(class: DeptService::class, method: 'get')]
+#[Property(class: Department::class, expand: 'name,code,mainTeam')]
+#[Loading(depth: 1)]
+private ?Department $department = null;
+
+// depth=0 prevents ALL nested objects, even if expand includes them!
+#[SinglePropDataSource(class: DeptService::class, method: 'get')]
+#[Property(class: Department::class, expand: 'name,mainTeam')]
+#[Loading(depth: 0)]
+private ?Department $shallowDepartment = null;
+// mainTeam will NOT be hydrated because depth=0 takes precedence
+```
+
 ## Advanced Features
 
 ### DataSource Chaining (Fallback)
