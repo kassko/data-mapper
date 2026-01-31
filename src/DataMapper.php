@@ -24,7 +24,9 @@ use Psr\SimpleCache\CacheInterface;
 final class DataMapper
 {
     private ServiceResolver $serviceResolver;
-    private ?CacheInterface $cache;
+    private ?CacheInterface $dataSourceCache;
+    private ?CacheInterface $mappingCache;
+    private bool $mappingStrategyEnabled;
     private ?LoggerInterface $logger;
     private DataLineageCollector $lineageCollector;
     private Loader $loader;
@@ -37,7 +39,9 @@ final class DataMapper
 
     /**
      * @param ServiceResolver $serviceResolver
-     * @param CacheInterface|null $cache PSR-16 cache interface
+     * @param CacheInterface|null $dataSourceCache PSR-16 cache interface for data source results
+     * @param CacheInterface|null $mappingCache PSR-16 cache interface for mapping strategy conversions
+     * @param bool $mappingStrategyEnabled Whether MappingStrategy feature is enabled
      * @param LoggerInterface|null $logger PSR-3 logger interface
      * @param array<string, callable> $customHydrators Custom hydrators (key => callable)
      * @param array<string, callable> $customObjectMappers Custom object mappers (key => callable)
@@ -46,14 +50,18 @@ final class DataMapper
      */
     public function __construct(
         ServiceResolver $serviceResolver,
-        ?CacheInterface $cache = null,
+        ?CacheInterface $dataSourceCache = null,
+        ?CacheInterface $mappingCache = null,
+        bool $mappingStrategyEnabled = false,
         ?LoggerInterface $logger = null,
         array $customHydrators = [],
         array $customObjectMappers = [],
         array $sensitiveKeys = [],
         SensitiveLevel $defaultSensitiveLevel = SensitiveLevel::SHOW
     ) {
-        $this->cache = $cache;
+        $this->dataSourceCache = $dataSourceCache;
+        $this->mappingCache = $mappingCache;
+        $this->mappingStrategyEnabled = $mappingStrategyEnabled;
         $this->logger = $logger;
         $this->serviceResolver = $serviceResolver;
         $this->customHydrators = $customHydrators;
@@ -61,7 +69,15 @@ final class DataMapper
         $this->lineageCollector = new DataLineageCollector($sensitiveKeys, $defaultSensitiveLevel);
         
         // Register Loader in the registry
-        $this->loader = new Loader($this->serviceResolver, $this->logger, $customHydrators, $this->lineageCollector);
+        $this->loader = new Loader(
+            $this->serviceResolver,
+            $this->logger,
+            $customHydrators,
+            $this->lineageCollector,
+            null, // cascadeCollector
+            $this->mappingCache,
+            $this->mappingStrategyEnabled
+        );
         LoaderRegistry::set($this->loader);
         
         // Set logger for context registry
@@ -91,9 +107,9 @@ final class DataMapper
         return $this;
     }
 
-    public function getCache(): ?CacheInterface
+    public function getDataSourceCache(): ?CacheInterface
     {
-        return $this->cache;
+        return $this->dataSourceCache;
     }
 
     /**

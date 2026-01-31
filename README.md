@@ -39,6 +39,13 @@ $dataMapperbuilder = new DataMapperBuilder();
 // Optional: Add a PSR-3 logger
 $dataMapperbuilder->setLogger($yourLogger);
 
+// Optional: Add PSR-16 caches
+$dataMapperbuilder->setDataSourceCache($cache);    // Cache for data sources
+$dataMapperbuilder->setMappingCache($cache);       // Cache for MappingStrategy conversions
+
+// Optional: Enable MappingStrategy feature (disabled by default)
+$dataMapperbuilder->enableMappingStrategy();
+
 // Optional: Add custom hydrators
 $dataMapperbuilder->addCustomHydrator('my_parser', function(array $data): ?object {
     return new MyClass($data);

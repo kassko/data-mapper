@@ -564,6 +564,19 @@ class Person
 
 ## Mapping Strategy
 
+### ⚠️ Enable MappingStrategy First
+
+MappingStrategy is **disabled by default**. Enable it before using:
+
+```php
+use Kassko\DataMapper\DataMapperBuilder;
+
+$dataMapper = (new DataMapperBuilder())
+    ->enableMappingStrategy()  // Required!
+    ->setMappingCache($cache)  // Optional: PSR-16 cache for performance
+    ->build();
+```
+
 ### Auto-Converting Source Field Cases
 
 Use `MappingStrategy` to automatically map source fields with different naming conventions to camelCase properties:

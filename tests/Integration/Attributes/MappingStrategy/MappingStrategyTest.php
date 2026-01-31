@@ -48,6 +48,7 @@ class MappingStrategyTest extends TestCase
     protected function setUp(): void
     {
         $builder = new DataMapperBuilder();
+        $builder->enableMappingStrategy();
         $this->dataMapper = $builder->build();
         $this->hydrator = $this->dataMapper->getHydrator();
     }
@@ -206,6 +207,7 @@ class MappingStrategyTest extends TestCase
         
         $builder = new DataMapperBuilder();
         $builder->addServiceLocator($locator);
+        $builder->enableMappingStrategy();
         
         $dataMapper = $builder->build();
         $hydrator = $dataMapper->getHydrator();
@@ -291,5 +293,27 @@ class MappingStrategyTest extends TestCase
         $this->assertFalse($strategy->enabled);
         $this->assertNull($strategy->preset);
         $this->assertNull($strategy->custom);
+    }
+
+    /**
+     * Test that using MappingStrategy without enabling the feature throws a helpful exception.
+     */
+    public function testMappingStrategyNotEnabledThrowsException(): void
+    {
+        // Create a new DataMapper WITHOUT enabling MappingStrategy
+        $builder = new DataMapperBuilder();
+        $dataMapper = $builder->build();
+        $hydrator = $dataMapper->getHydrator();
+
+        $data = [
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+        ];
+
+        $this->expectException(MappingStrategyException::class);
+        $this->expectExceptionMessage('MappingStrategy feature is not enabled');
+        $this->expectExceptionMessage('enableMappingStrategy()');
+
+        $hydrator->hydrate(PersonFromUnderscoreCase::class, $data);
     }
 }

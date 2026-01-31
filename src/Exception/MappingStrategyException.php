@@ -74,4 +74,22 @@ class MappingStrategyException extends \InvalidArgumentException
             $context
         ));
     }
+
+    /**
+     * Create exception when MappingStrategy attribute is used but the feature is not enabled.
+     * 
+     * This helps guide users who add MappingStrategy attributes but forget to enable
+     * the feature via DataMapperBuilder::enableMappingStrategy().
+     */
+    public static function mappingStrategyNotEnabled(string $propertyName, string $className): self
+    {
+        return new self(sprintf(
+            'MappingStrategy attribute found on property "%s" in class "%s", but the MappingStrategy feature ' .
+            'is not enabled. Please call DataMapperBuilder::enableMappingStrategy() to enable this feature. ' .
+            'Note: When enabled, MappingStrategy has a performance cost. Consider providing a persistent cache ' .
+            'via DataMapperBuilder::setMappingCache() to minimize this impact.',
+            $propertyName,
+            $className
+        ));
+    }
 }

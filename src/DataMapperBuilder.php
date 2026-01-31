@@ -24,8 +24,10 @@ use Psr\Log\LoggerInterface;
 final class DataMapperBuilder
 {
     private ?ContainerInterface $container = null;
-    private ?CacheInterface $cache = null;
+    private ?CacheInterface $dataSourceCache = null;
+    private ?CacheInterface $mappingCache = null;
     private ?LoggerInterface $logger = null;
+    private bool $mappingStrategyEnabled = false;
     
     /** @var ServiceLocatorInterface[] */
     private array $locators = [];
@@ -57,9 +59,50 @@ final class DataMapperBuilder
         return $this;
     }
 
-    public function setCache(CacheInterface $cache): self
+    public function setDataSourceCache(CacheInterface $dataSourceCache): self
     {
-        $this->cache = $cache;
+        $this->dataSourceCache = $dataSourceCache;
+        return $this;
+    }
+
+    /**
+     * Set the mapping cache for MappingStrategy conversions.
+     * 
+     * When MappingStrategy is enabled, case conversions can be expensive.
+     * Providing a persistent cache (e.g., Redis, filesystem) significantly
+     * improves performance by memoizing conversion results.
+     * 
+     * If no cache is provided, an in-memory array cache will be used
+     * which only persists for the current request.
+     *
+     * @param CacheInterface $mappingCache PSR-16 cache for mapping conversions
+     * @return self
+     */
+    public function setMappingCache(CacheInterface $mappingCache): self
+    {
+        $this->mappingCache = $mappingCache;
+        return $this;
+    }
+
+    /**
+     * Enable the MappingStrategy feature.
+     * 
+     * MappingStrategy allows automatic field name conversion between different
+     * case formats (underscore_case, dash-case, PascalCase, etc.) and camelCase
+     * properties.
+     * 
+     * This feature is disabled by default because it has a performance cost
+     * due to case conversion calculations. When disabled, Property::sourceField
+     * must be used for explicit field mapping.
+     * 
+     * When enabled, it's recommended to provide a persistent cache via
+     * setMappingCache() to minimize performance impact.
+     *
+     * @return self
+     */
+    public function enableMappingStrategy(): self
+    {
+        $this->mappingStrategyEnabled = true;
         return $this;
     }
 
@@ -242,7 +285,9 @@ final class DataMapperBuilder
         // Create the DataMapper which will create and register the Loader
         return new DataMapper(
             $serviceResolver,
-            $this->cache,
+            $this->dataSourceCache,
+            $this->mappingCache,
+            $this->mappingStrategyEnabled,
             $this->logger,
             $this->customHydrators,
             $this->customObjectMappers,

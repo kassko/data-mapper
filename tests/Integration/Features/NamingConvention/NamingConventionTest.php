@@ -169,7 +169,7 @@ class CompanyWithEmployees
 {
     public string $companyName = '';
 
-    #[Property(class: Employee::class)]
+    #[Property(itemClass: Employee::class)]
     public array $employees = [];
 }
 

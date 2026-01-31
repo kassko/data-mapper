@@ -21,16 +21,16 @@ class SourceFunctionProvider
     private $dataSourceExecutor;
     
     /** @var CacheInterface|null PSR-16 cache for DataSource results */
-    private ?CacheInterface $cache;
+    private ?CacheInterface $dataSourceCache;
 
     /**
      * @param callable $dataSourceExecutor Callback to execute a DataSource: function(string $sourceId): mixed
-     * @param CacheInterface|null $cache Optional PSR-16 cache for storing DataSource results
+     * @param CacheInterface|null $dataSourceCache Optional PSR-16 cache for storing DataSource results
      */
-    public function __construct(callable $dataSourceExecutor, ?CacheInterface $cache = null)
+    public function __construct(callable $dataSourceExecutor, ?CacheInterface $dataSourceCache = null)
     {
         $this->dataSourceExecutor = $dataSourceExecutor;
-        $this->cache = $cache;
+        $this->dataSourceCache = $dataSourceCache;
     }
 
     /**
@@ -42,15 +42,15 @@ class SourceFunctionProvider
      */
     public function getSourceResult(string $sourceId)
     {
-        if ($this->cache !== null) {
+        if ($this->dataSourceCache !== null) {
             $cacheKey = $this->getCacheKey($sourceId);
             
-            if ($this->cache->has($cacheKey)) {
-                return $this->cache->get($cacheKey);
+            if ($this->dataSourceCache->has($cacheKey)) {
+                return $this->dataSourceCache->get($cacheKey);
             }
             
             $result = ($this->dataSourceExecutor)($sourceId);
-            $this->cache->set($cacheKey, $result);
+            $this->dataSourceCache->set($cacheKey, $result);
             
             return $result;
         }
@@ -60,17 +60,17 @@ class SourceFunctionProvider
     }
 
     /**
-     * Clear the cache for a specific source or all sources
+     * Clear the data source cache for a specific source or all sources
      *
      * @param string|null $sourceId If null, clears entire cache
      */
-    public function clearCache(?string $sourceId = null): void
+    public function clearDataSourceCache(?string $sourceId = null): void
     {
-        if ($this->cache !== null) {
+        if ($this->dataSourceCache !== null) {
             if ($sourceId !== null) {
-                $this->cache->delete($this->getCacheKey($sourceId));
+                $this->dataSourceCache->delete($this->getCacheKey($sourceId));
             } else {
-                $this->cache->clear();
+                $this->dataSourceCache->clear();
             }
         }
     }
@@ -81,13 +81,13 @@ class SourceFunctionProvider
      * @param string $sourceId
      * @return bool
      */
-    public function isCached(string $sourceId): bool
+    public function isDataSourceCached(string $sourceId): bool
     {
-        if ($this->cache === null) {
+        if ($this->dataSourceCache === null) {
             return false;
         }
         
-        return $this->cache->has($this->getCacheKey($sourceId));
+        return $this->dataSourceCache->has($this->getCacheKey($sourceId));
     }
 
     /**

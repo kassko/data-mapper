@@ -43,6 +43,7 @@ use Kassko\DataMapper\Registry\PropertyMappingRegistry;
 use Kassko\DataMapper\ServiceResolver;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Psr\SimpleCache\CacheInterface;
 use ReflectionClass;
 use ReflectionProperty;
 use WeakMap;
@@ -70,6 +71,15 @@ class Loader implements LoaderInterface
     private ?DataLineageCollector $lineageCollector;
     private ?AttributeCascadeCollector $cascadeCollector;
     
+    /** @var CacheInterface|null PSR-16 cache for mapping strategy conversions */
+    private ?CacheInterface $mappingCache;
+    
+    /** @var bool Whether MappingStrategy feature is enabled */
+    private bool $mappingStrategyEnabled;
+    
+    /** @var array<string, string> In-memory cache for mapping conversions (fallback when no cache provided) */
+    private array $mappingCacheArray = [];
+    
     /** @var array<string, callable> */
     private array $customHydrators;
     
@@ -88,13 +98,17 @@ class Loader implements LoaderInterface
      * @param array<string, callable> $customHydrators
      * @param DataLineageCollector|null $lineageCollector
      * @param AttributeCascadeCollector|null $cascadeCollector
+     * @param CacheInterface|null $mappingCache PSR-16 cache for mapping strategy conversions
+     * @param bool $mappingStrategyEnabled Whether MappingStrategy feature is enabled
      */
     public function __construct(
         ServiceResolver $serviceResolver,
         ?LoggerInterface $logger = null,
         array $customHydrators = [],
         ?DataLineageCollector $lineageCollector = null,
-        ?AttributeCascadeCollector $cascadeCollector = null
+        ?AttributeCascadeCollector $cascadeCollector = null,
+        ?CacheInterface $mappingCache = null,
+        bool $mappingStrategyEnabled = false
     ) {
         $this->loadedProperties = new WeakMap();
         $this->sourceFunctionProviders = new WeakMap();
@@ -107,6 +121,8 @@ class Loader implements LoaderInterface
         $this->lineageCollector = $lineageCollector;
         $this->cascadeCollector = $cascadeCollector ?? new AttributeCascadeCollector($this->logger);
         $this->attributeReader = new AttributeReader($this->cascadeCollector);
+        $this->mappingCache = $mappingCache;
+        $this->mappingStrategyEnabled = $mappingStrategyEnabled;
     }
 
     public function getServiceResolver(): ServiceResolver
@@ -1784,7 +1800,7 @@ class Loader implements LoaderInterface
      * that corresponds to this PHP object property.
      * 
      * If a sourceField is explicitly defined via the Property attribute, it is returned.
-     * If a MappingStrategy is defined, it converts the property name using the preset.
+     * If MappingStrategy is enabled and defined, it converts the property name using the preset.
      * Otherwise, the property name is used as the default (convention over configuration).
      *
      * @param ReflectionProperty $property The reflection property
@@ -1794,6 +1810,7 @@ class Loader implements LoaderInterface
     {
         $propertyName = $property->getName();
         $reflectionClass = $property->getDeclaringClass();
+        $className = $reflectionClass->getName();
         
         // Use Property attribute's sourceField if defined
         $propertyAttr = $this->attributeReader->readProperty($property);
@@ -1803,23 +1820,68 @@ class Loader implements LoaderInterface
             if ($mappingStrategy !== null) {
                 throw MappingStrategyException::sourceFieldAndMappingStrategyAreMutuallyExclusive(
                     $propertyName,
-                    $reflectionClass->getName()
+                    $className
                 );
             }
             return $propertyAttr->sourceField;
         }
         
-        // Check for MappingStrategy
+        // Check for MappingStrategy attribute on property or class
         $mappingStrategy = $this->attributeReader->getEffectiveMappingStrategy($property, $reflectionClass);
         
         if ($mappingStrategy !== null && $mappingStrategy->hasPreset()) {
+            // Check if MappingStrategy feature is enabled
+            if (!$this->mappingStrategyEnabled) {
+                throw MappingStrategyException::mappingStrategyNotEnabled(
+                    $propertyName,
+                    $className
+                );
+            }
+            
             $preset = $mappingStrategy->getPresetEnum() ?? MappingStrategyPreset::default();
-            // Convert property name to expected source field format
-            return CaseConverter::convertReverse($propertyName, $preset);
+            
+            // Use cached conversion if available
+            return $this->getCachedMappingConversion($className, $propertyName, $preset);
         }
         
         // Default: use property name as source field name (convention over configuration)
         return $propertyName;
+    }
+
+    /**
+     * Get a cached mapping conversion result.
+     * 
+     * Uses the configured mapping cache if available, otherwise falls back
+     * to an in-memory array cache.
+     *
+     * @param string $className The class name
+     * @param string $propertyName The property name
+     * @param MappingStrategyPreset $preset The mapping strategy preset
+     * @return string The converted source field name
+     */
+    private function getCachedMappingConversion(string $className, string $propertyName, MappingStrategyPreset $preset): string
+    {
+        $cacheKey = 'data_mapper_mapping_' . md5($className . '::' . $propertyName . '::' . $preset->value);
+        
+        // Try PSR-16 cache first
+        if ($this->mappingCache !== null) {
+            if ($this->mappingCache->has($cacheKey)) {
+                return $this->mappingCache->get($cacheKey);
+            }
+            
+            $result = CaseConverter::convertReverse($propertyName, $preset);
+            $this->mappingCache->set($cacheKey, $result);
+            return $result;
+        }
+        
+        // Fallback to in-memory array cache
+        if (isset($this->mappingCacheArray[$cacheKey])) {
+            return $this->mappingCacheArray[$cacheKey];
+        }
+        
+        $result = CaseConverter::convertReverse($propertyName, $preset);
+        $this->mappingCacheArray[$cacheKey] = $result;
+        return $result;
     }
 
     /**
@@ -1860,7 +1922,6 @@ class Loader implements LoaderInterface
         // If no Property attribute, try to create a synthetic one from PHP typehint
         if ($propertyAttr === null) {
             $propertyAttr = $this->createSyntheticPropertyFromTypehint($property);
-
             
             // If still no Property attribute (no instantiable class in typehint), return value as-is
             if ($propertyAttr === null) {
@@ -1925,9 +1986,9 @@ class Loader implements LoaderInterface
                 }
                 
                 // Determine the class for collection items:
-                // 1. Use itemClass if defined (preferred for collections)
-                // 2. Fall back to class for backward compatibility
-                $itemClassName = $itemPropertyAttr->itemClass ?? $itemPropertyAttr->class ?? null;
+                // - For polymorphic resolution via configCandidates: use class from resolved PropertyConfig
+                // - For standard collections: use itemClass from Property attribute
+                $itemClassName = $itemPropertyAttr->itemClass ?? ($hasConfigCandidates ? $itemPropertyAttr->class : null);
                 
                 // If still no class defined, skip this item
                 if ($itemClassName === null) {
@@ -2204,16 +2265,16 @@ class Loader implements LoaderInterface
                 if ($setter->type === Setter::TYPE_ADDER && is_array($value)) {
                     // Adder: call method for each item in the array
                     foreach ($value as $item) {
-                        $this->callMethodWithParams($object, $setter->name, $property, [$item]);
+                        $this->callMethodWithParams($object, $setter->name, $property, [$item], true);
                     }
                 } elseif ($setter->type === Setter::TYPE_INDEXED_ADDER && is_array($value)) {
                     // Indexed adder: call method with index and item
                     foreach ($value as $index => $item) {
-                        $this->callMethodWithParams($object, $setter->name, $property, [$index, $item]);
+                        $this->callMethodWithParams($object, $setter->name, $property, [$index, $item], true);
                     }
                 } else {
                     // Regular setter
-                    $this->callMethodWithParams($object, $setter->name, $property, [$value]);
+                    $this->callMethodWithParams($object, $setter->name, $property, [$value], false);
                 }
                 // Execute after_set_property hooks
                 $this->executeSettingHooks($object, $property, 'after', $value);
@@ -2237,14 +2298,22 @@ class Loader implements LoaderInterface
         // 3. Look for setter method
         $setterMethod = 'set' . ucfirst($propertyName);
         if (method_exists($object, $setterMethod)) {
-            $object->$setterMethod($value);
+            try {
+                $object->$setterMethod($value);
+            } catch (\TypeError $e) {
+                throw $this->enhanceSetterTypeError($e, $object, $property, $setterMethod, $value);
+            }
             // Execute after_set_property hooks
             $this->executeSettingHooks($object, $property, 'after', $value);
             return;
         }
         
         // 4. Fall back to direct property assignment via reflection
-        $property->setValue($object, $value);
+        try {
+            $property->setValue($object, $value);
+        } catch (\TypeError $e) {
+            throw $this->enhancePropertyTypeError($e, $object, $property, $value);
+        }
         
         // Execute after_set_property hooks
         $this->executeSettingHooks($object, $property, 'after', $value);
@@ -2257,8 +2326,9 @@ class Loader implements LoaderInterface
      * @param string $methodName The method name
      * @param ReflectionProperty $property The property (for context)
      * @param array $baseArgs The base arguments (value for setter, [item] for adder, [index, item] for indexed adder)
+     * @param bool $isAdder Whether this is an adder method call
      */
-    private function callMethodWithParams(object $object, string $methodName, ReflectionProperty $property, array $baseArgs): void
+    private function callMethodWithParams(object $object, string $methodName, ReflectionProperty $property, array $baseArgs, bool $isAdder = false): void
     {
         $reflectionMethod = new \ReflectionMethod($object, $methodName);
         $parameters = $reflectionMethod->getParameters();
@@ -2281,7 +2351,78 @@ class Loader implements LoaderInterface
             }
         }
         
-        $reflectionMethod->invokeArgs($object, $resolvedArgs);
+        try {
+            $reflectionMethod->invokeArgs($object, $resolvedArgs);
+        } catch (\TypeError $e) {
+            throw $this->enhanceMethodTypeError($e, $object, $property, $methodName, $resolvedArgs[0] ?? null, $isAdder);
+        }
+    }
+
+    /**
+     * Enhance a TypeError from a method call (setter or adder) with helpful context.
+     *
+     * @param \TypeError $originalError The original TypeError
+     * @param object $object The object being hydrated
+     * @param ReflectionProperty $property The property
+     * @param string $methodName The method name
+     * @param mixed $value The first argument value that likely caused the error
+     * @param bool $isAdder Whether this was an adder method
+     * @return \TypeError Enhanced TypeError with better message
+     */
+    private function enhanceMethodTypeError(
+        \TypeError $originalError,
+        object $object,
+        ReflectionProperty $property,
+        string $methodName,
+        mixed $value,
+        bool $isAdder
+    ): \TypeError {
+        if (!is_array($value)) {
+            return $originalError;
+        }
+        
+        $propertyName = $property->getName();
+        $className = get_class($object);
+        
+        $reflectionMethod = new \ReflectionMethod($object, $methodName);
+        $parameters = $reflectionMethod->getParameters();
+        
+        if (!empty($parameters)) {
+            $expectedType = $parameters[0]->getType();
+            $expectedTypeName = $expectedType instanceof \ReflectionNamedType 
+                ? $expectedType->getName() 
+                : (string) $expectedType;
+            
+            if ($expectedTypeName !== 'array' && $expectedTypeName !== 'mixed') {
+                if ($isAdder) {
+                    return new \TypeError(sprintf(
+                        'Type mismatch for property "%s" in class "%s": Adder method "%s" expects type "%s", ' .
+                        'but received an array. This typically happens when the property or collection items ' .
+                        'are not typed. Consider adding #[Property(itemClass: %s::class)] attribute to specify ' .
+                        'the collection item type.',
+                        $propertyName,
+                        $className,
+                        $methodName,
+                        $expectedTypeName,
+                        $expectedTypeName
+                    ), 0, $originalError);
+                } else {
+                    return new \TypeError(sprintf(
+                        'Type mismatch for property "%s" in class "%s": Setter method "%s" expects type "%s", ' .
+                        'but received an array. This typically happens when the property is not typed with ' .
+                        'the expected class. Consider adding #[Property(class: %s::class)] attribute or typing ' .
+                        'the property.',
+                        $propertyName,
+                        $className,
+                        $methodName,
+                        $expectedTypeName,
+                        $expectedTypeName
+                    ), 0, $originalError);
+                }
+            }
+        }
+        
+        return $originalError;
     }
 
     /**
@@ -3418,7 +3559,14 @@ class Loader implements LoaderInterface
         $mappingStrategy = $this->attributeReader->getEffectiveMappingStrategy($property, $reflectionClass);
         
         if ($mappingStrategy !== null) {
-            return $this->findSourceFieldWithMappingStrategy($propertyName, $data, $mappingStrategy);
+            // Check if MappingStrategy feature is enabled
+            if (!$this->mappingStrategyEnabled) {
+                throw MappingStrategyException::mappingStrategyNotEnabled(
+                    $propertyName,
+                    $reflectionClass->getName()
+                );
+            }
+            return $this->findSourceFieldWithMappingStrategy($propertyName, $data, $mappingStrategy, $reflectionClass->getName());
         }
         
         // No explicit sourceField or MappingStrategy - use default logic (camel + dash + underscore)
@@ -3455,22 +3603,71 @@ class Loader implements LoaderInterface
      * @param string $propertyName The property name (camelCase)
      * @param array $data The raw data to search in
      * @param MappingStrategy $mappingStrategy The mapping strategy to use
+     * @param string $className The class name for caching purposes
      * @return string The source field name
      */
-    private function findSourceFieldWithMappingStrategy(string $propertyName, array $data, MappingStrategy $mappingStrategy): string
+    private function findSourceFieldWithMappingStrategy(string $propertyName, array $data, MappingStrategy $mappingStrategy, string $className): string
     {
-        // Custom callable takes precedence
+        // Custom callable takes precedence (no caching for custom logic)
         if ($mappingStrategy->hasCustom()) {
             return $this->resolveSourceFieldWithCustomCallable($propertyName, $data, $mappingStrategy);
         }
         
-        // Use preset strategy
+        // Use preset strategy with caching
         $preset = $mappingStrategy->getPresetEnum();
         if ($preset === null) {
             $preset = MappingStrategyPreset::default();
         }
         
-        return CaseConverter::findSourceField($propertyName, $data, $preset);
+        // Use cached findSourceField result
+        return $this->getCachedFindSourceField($className, $propertyName, $data, $preset);
+    }
+
+    /**
+     * Get a cached findSourceField result.
+     * 
+     * Uses the configured mapping cache if available, otherwise falls back
+     * to an in-memory array cache.
+     *
+     * @param string $className The class name
+     * @param string $propertyName The property name
+     * @param array $data The raw data to search in
+     * @param MappingStrategyPreset $preset The mapping strategy preset
+     * @return string The source field name
+     */
+    private function getCachedFindSourceField(string $className, string $propertyName, array $data, MappingStrategyPreset $preset): string
+    {
+        $cacheKey = 'data_mapper_find_' . md5($className . '::' . $propertyName . '::' . $preset->value);
+        
+        // Try PSR-16 cache first
+        if ($this->mappingCache !== null) {
+            if ($this->mappingCache->has($cacheKey)) {
+                $cachedField = $this->mappingCache->get($cacheKey);
+                // Verify the cached field exists in current data
+                if (array_key_exists($cachedField, $data)) {
+                    return $cachedField;
+                }
+                // Cached value not in current data - compute fresh
+            }
+            
+            $result = CaseConverter::findSourceField($propertyName, $data, $preset);
+            $this->mappingCache->set($cacheKey, $result);
+            return $result;
+        }
+        
+        // Fallback to in-memory array cache
+        if (isset($this->mappingCacheArray[$cacheKey])) {
+            $cachedField = $this->mappingCacheArray[$cacheKey];
+            // Verify the cached field exists in current data
+            if (array_key_exists($cachedField, $data)) {
+                return $cachedField;
+            }
+            // Cached value not in current data - compute fresh
+        }
+        
+        $result = CaseConverter::findSourceField($propertyName, $data, $preset);
+        $this->mappingCacheArray[$cacheKey] = $result;
+        return $result;
     }
 
     /**
@@ -3535,5 +3732,134 @@ class Loader implements LoaderInterface
         PropertyMappingRegistry::register($object, $propertyName, $sourceField);
         
         return $sourceField;
+    }
+
+    /**
+     * Enhance a TypeError from a setter method with helpful context.
+     * 
+     * This method provides a better error message when a setter receives a value
+     * of the wrong type, particularly when the property is not typed but the setter is.
+     *
+     * @param \TypeError $originalError The original TypeError
+     * @param object $object The object being hydrated
+     * @param ReflectionProperty $property The property
+     * @param string $setterMethod The setter method name
+     * @param mixed $value The value that caused the error
+     * @return \TypeError Enhanced TypeError with better message
+     */
+    private function enhanceSetterTypeError(
+        \TypeError $originalError,
+        object $object,
+        ReflectionProperty $property,
+        string $setterMethod,
+        mixed $value
+    ): \TypeError {
+        $propertyName = $property->getName();
+        $className = get_class($object);
+        $valueType = get_debug_type($value);
+        
+        // Check if this is an array value being passed to a typed setter
+        if (is_array($value)) {
+            // Get the setter's expected type
+            $reflectionMethod = new \ReflectionMethod($object, $setterMethod);
+            $parameters = $reflectionMethod->getParameters();
+            
+            if (!empty($parameters)) {
+                $expectedType = $parameters[0]->getType();
+                $expectedTypeName = $expectedType instanceof \ReflectionNamedType 
+                    ? $expectedType->getName() 
+                    : (string) $expectedType;
+                
+                // Check if property is not typed (or typed as array/mixed)
+                $propertyType = $property->getType();
+                $propertyHasClassType = $propertyType instanceof \ReflectionNamedType 
+                    && !$propertyType->isBuiltin();
+                
+                if (!$propertyHasClassType && $expectedTypeName !== 'array' && $expectedTypeName !== 'mixed') {
+                    // The property is not typed with a class, but the setter expects a class
+                    if ($this->isListArray($value)) {
+                        return new \TypeError(sprintf(
+                            'Type mismatch for property "%s" in class "%s": Setter "%s" expects type "%s", ' .
+                            'but received an array. This typically happens when the property is not typed with ' .
+                            'the expected class. Consider adding #[Property(itemClass: %s::class)] attribute ' .
+                            'to specify the collection item type, or type the property with the expected class.',
+                            $propertyName,
+                            $className,
+                            $setterMethod,
+                            $expectedTypeName,
+                            $expectedTypeName
+                        ), 0, $originalError);
+                    } else {
+                        return new \TypeError(sprintf(
+                            'Type mismatch for property "%s" in class "%s": Setter "%s" expects type "%s", ' .
+                            'but received an array. This typically happens when the property is not typed with ' .
+                            'the expected class. Consider adding #[Property(class: %s::class)] attribute ' .
+                            'to specify the object type, or type the property with the expected class.',
+                            $propertyName,
+                            $className,
+                            $setterMethod,
+                            $expectedTypeName,
+                            $expectedTypeName
+                        ), 0, $originalError);
+                    }
+                }
+            }
+        }
+        
+        // Return the original error if we can't provide better context
+        return $originalError;
+    }
+
+    /**
+     * Enhance a TypeError from direct property assignment with helpful context.
+     *
+     * @param \TypeError $originalError The original TypeError
+     * @param object $object The object being hydrated
+     * @param ReflectionProperty $property The property
+     * @param mixed $value The value that caused the error
+     * @return \TypeError Enhanced TypeError with better message
+     */
+    private function enhancePropertyTypeError(
+        \TypeError $originalError,
+        object $object,
+        ReflectionProperty $property,
+        mixed $value
+    ): \TypeError {
+        $propertyName = $property->getName();
+        $className = get_class($object);
+        $valueType = get_debug_type($value);
+        
+        $propertyType = $property->getType();
+        $expectedTypeName = $propertyType instanceof \ReflectionNamedType 
+            ? $propertyType->getName() 
+            : (string) $propertyType;
+        
+        // Check if this is an array value being assigned to a class-typed property
+        if (is_array($value) && $propertyType instanceof \ReflectionNamedType && !$propertyType->isBuiltin()) {
+            if ($this->isListArray($value)) {
+                return new \TypeError(sprintf(
+                    'Type mismatch for property "%s" in class "%s": Property expects type "%s", ' .
+                    'but received an array. For collections, use #[Property(itemClass: %s::class)] ' .
+                    'to specify the item type so each array element is hydrated as an object.',
+                    $propertyName,
+                    $className,
+                    $expectedTypeName,
+                    $expectedTypeName
+                ), 0, $originalError);
+            } else {
+                return new \TypeError(sprintf(
+                    'Type mismatch for property "%s" in class "%s": Property expects type "%s", ' .
+                    'but received an array. Ensure the array data structure matches what the hydrator ' .
+                    'expects, or add #[Property(class: %s::class)] to explicitly specify the class.',
+                    $propertyName,
+                    $className,
+                    $expectedTypeName,
+                    $expectedTypeName
+                ), 0, $originalError);
+            }
+        }
+        
+        // Return the original error if we can't provide better context
+        return $originalError;
     }
 }
