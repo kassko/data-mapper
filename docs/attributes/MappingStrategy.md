@@ -2,6 +2,36 @@
 
 Defines a mapping strategy for converting source field names (various cases) to property names (camelCase). Can be applied at class level or property level.
 
+## ⚠️ Important: Enabling MappingStrategy
+
+MappingStrategy feature is **disabled by default** for performance reasons. You must explicitly enable it before using MappingStrategy attributes.
+
+### Enabling via DataMapperBuilder
+
+```php
+use Kassko\DataMapper\DataMapperBuilder;
+
+$dataMapper = (new DataMapperBuilder())
+    ->enableMappingStrategy()  // Required to use MappingStrategy
+    ->build();
+```
+
+### Enabling via Symfony Bundle
+
+```yaml
+# config/packages/kassko_data_mapper.yaml
+kassko_data_mapper:
+    mapping_strategy:
+        enabled: true  # Enable MappingStrategy feature
+    
+    # Optional: Enable caching for better performance
+    mapping_cache:
+        enabled: true
+        service: 'cache.app'  # PSR-16 cache service
+```
+
+> **Note:** Using MappingStrategy without enabling it will throw a `MappingStrategyException`.
+
 ## Overview
 
 When working with external data sources (APIs, databases, files), field names often use different naming conventions than PHP camelCase properties. `MappingStrategy` provides automatic conversion between these conventions.
@@ -169,6 +199,42 @@ private ?string $firstName = null;
 2. **Medium**: Property-level `MappingStrategy`
 3. **Lowest**: Class-level `MappingStrategy`
 4. **Default**: `from_common_cases_mix` (when no mapping defined)
+
+## Performance Considerations
+
+Case conversion operations can be expensive, especially with large datasets or frequently accessed objects. To optimize performance:
+
+### Using Mapping Cache
+
+Enable the mapping cache to cache case conversion results:
+
+```php
+use Kassko\DataMapper\DataMapperBuilder;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Cache\Psr16Cache;
+
+$cache = new Psr16Cache(new FilesystemAdapter());
+
+$dataMapper = (new DataMapperBuilder())
+    ->enableMappingStrategy()
+    ->setMappingCache($cache)  // PSR-16 cache for conversions
+    ->build();
+```
+
+### Bundle Configuration
+
+```yaml
+kassko_data_mapper:
+    mapping_strategy:
+        enabled: true
+    mapping_cache:
+        enabled: true
+        service: 'cache.app'  # Use Symfony's PSR-16 cache
+```
+
+### In-Memory Cache (Default)
+
+When no external cache is provided, an in-memory array cache is used automatically. This provides good performance within a single request but doesn't persist across requests.
 
 ## See Also
 
