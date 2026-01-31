@@ -6,7 +6,7 @@ Defines a mapping strategy for converting source field names (various cases) to 
 
 MappingStrategy feature is **disabled by default** for performance reasons. You must explicitly enable it before using MappingStrategy attributes.
 
-### Enabling via DataMapperBuilder
+### Enabling it
 
 ```php
 use Kassko\DataMapper\DataMapperBuilder;
@@ -14,20 +14,6 @@ use Kassko\DataMapper\DataMapperBuilder;
 $dataMapper = (new DataMapperBuilder())
     ->enableMappingStrategy()  // Required to use MappingStrategy
     ->build();
-```
-
-### Enabling via Symfony Bundle
-
-```yaml
-# config/packages/kassko_data_mapper.yaml
-kassko_data_mapper:
-    mapping_strategy:
-        enabled: true  # Enable MappingStrategy feature
-    
-    # Optional: Enable caching for better performance
-    mapping_cache:
-        enabled: true
-        service: 'cache.app'  # PSR-16 cache service
 ```
 
 > **Note:** Using MappingStrategy without enabling it will throw a `MappingStrategyException`.
@@ -219,17 +205,6 @@ $dataMapper = (new DataMapperBuilder())
     ->enableMappingStrategy()
     ->setMappingCache($cache)  // PSR-16 cache for conversions
     ->build();
-```
-
-### Bundle Configuration
-
-```yaml
-kassko_data_mapper:
-    mapping_strategy:
-        enabled: true
-    mapping_cache:
-        enabled: true
-        service: 'cache.app'  # Use Symfony's PSR-16 cache
 ```
 
 ### In-Memory Cache (Default)

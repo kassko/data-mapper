@@ -577,16 +577,6 @@ $dataMapper = (new DataMapperBuilder())
     ->build();
 ```
 
-Or in Symfony Bundle:
-```yaml
-kassko_data_mapper:
-    mapping_strategy:
-        enabled: true
-    mapping_cache:
-        enabled: true
-        service: 'cache.app'
-```
-
 ### Auto-Converting Source Field Cases
 
 Use `MappingStrategy` to automatically map source fields with different naming conventions to camelCase properties:
